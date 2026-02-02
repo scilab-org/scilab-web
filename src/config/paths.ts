@@ -3,4 +3,8 @@ export const paths = {
     path: '/',
     getHref: () => '/',
   },
+  dashboard: {
+    path: '/dashboard',
+    getHref: () => '/dashboard',
+  },
 } as const;

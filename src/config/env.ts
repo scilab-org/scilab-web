@@ -4,6 +4,9 @@ const createEnv = () => {
   const EnvSchema = z.object({
     API_URL: z.string(),
     APP_URL: z.string().optional().default('http://localhost:3000'),
+    KEYCLOAK_URL: z.string(),
+    KEYCLOAK_REALM: z.string(),
+    KEYCLOAK_CLIENT_ID: z.string(),
   });
 
   const envVars = Object.entries(import.meta.env).reduce<

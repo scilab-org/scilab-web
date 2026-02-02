@@ -1,16 +1,28 @@
 import { useNavigate } from 'react-router';
 import { Home } from 'lucide-react';
+import * as React from 'react';
 
 import { Head } from '@/components/seo';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { paths } from '@/config/paths';
+import { useLogin, useUser } from '@/lib/auth';
 
 const LandingRoute = () => {
   const navigate = useNavigate();
+  const { data: user } = useUser();
+  const { mutate: login } = useLogin();
+
+  // Redirect to dashboard if already authenticated
+  React.useEffect(() => {
+    if (user) {
+      navigate(paths.dashboard.getHref());
+    }
+  }, [user, navigate]);
 
   const handleStart = () => {
-    navigate(paths.home.getHref());
+    // Trigger Keycloak login which will redirect to dashboard
+    login();
   };
 
   return (

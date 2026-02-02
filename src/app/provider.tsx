@@ -2,10 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import * as React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { ReactKeycloakProvider } from '@react-keycloak/web';
 
 import { Loader2 } from 'lucide-react';
 
 import { MainErrorFallback } from '@/components/errors/main';
+import { keycloak, keycloakInitOptions } from '@/config/keycloak';
 import { queryConfig } from '@/lib/react-query';
 
 type AppProviderProps = {
@@ -29,10 +31,20 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       }
     >
       <ErrorBoundary FallbackComponent={MainErrorFallback}>
-        <QueryClientProvider client={queryClient}>
-          {import.meta.env.DEV && <ReactQueryDevtools />}
-          {children}
-        </QueryClientProvider>
+        <ReactKeycloakProvider
+          authClient={keycloak}
+          initOptions={keycloakInitOptions}
+          LoadingComponent={
+            <div className="flex h-screen w-screen items-center justify-center">
+              <Loader2 className="text-muted-foreground size-24 animate-spin" />
+            </div>
+          }
+        >
+          <QueryClientProvider client={queryClient}>
+            {import.meta.env.DEV && <ReactQueryDevtools />}
+            {children}
+          </QueryClientProvider>
+        </ReactKeycloakProvider>
       </ErrorBoundary>
     </React.Suspense>
   );

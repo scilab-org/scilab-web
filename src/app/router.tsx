@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 
+import { ProtectedRoute } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
 const convert = (queryClient: QueryClient) => (m: any) => {
@@ -20,6 +21,18 @@ export const createAppRouter = (queryClient: QueryClient) =>
     {
       path: paths.home.path,
       lazy: () => import('./routes/landing').then(convert(queryClient)),
+    },
+    {
+      path: paths.dashboard.path,
+      lazy: () =>
+        import('./routes/dashboard').then((m) => ({
+          ...convert(queryClient)(m),
+          Component: () => (
+            <ProtectedRoute>
+              <m.default />
+            </ProtectedRoute>
+          ),
+        })),
     },
     {
       path: '*',
