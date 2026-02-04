@@ -26,12 +26,12 @@ const navigationItems: NavItem[] = [
   },
   {
     name: 'Projects',
-    href: '/projects',
+    href: paths.projects.path,
     icon: FolderOpen,
   },
   {
     name: 'Settings',
-    href: '/settings',
+    href: paths.settings.path,
     icon: Settings,
   },
 ];

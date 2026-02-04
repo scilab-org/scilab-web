@@ -7,4 +7,12 @@ export const paths = {
     path: '/dashboard',
     getHref: () => '/dashboard',
   },
+  projects: {
+    path: '/projects',
+    getHref: () => '/projects',
+  },
+  settings: {
+    path: '/settings',
+    getHref: () => '/settings',
+  },
 } as const;
