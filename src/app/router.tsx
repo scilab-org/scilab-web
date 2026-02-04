@@ -6,6 +6,11 @@ import { RouterProvider } from 'react-router/dom';
 import { ProtectedRoute } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
+import {
+  default as AppRoot,
+  ErrorBoundary as AppRootErrorBoundary,
+} from './routes/app/root';
+
 const convert = (queryClient: QueryClient) => (m: any) => {
   const { clientLoader, clientAction, default: Component, ...rest } = m;
   return {
@@ -23,16 +28,29 @@ export const createAppRouter = (queryClient: QueryClient) =>
       lazy: () => import('./routes/landing').then(convert(queryClient)),
     },
     {
-      path: paths.dashboard.path,
-      lazy: () =>
-        import('./routes/dashboard').then((m) => ({
-          ...convert(queryClient)(m),
-          Component: () => (
-            <ProtectedRoute>
-              <m.default />
-            </ProtectedRoute>
-          ),
-        })),
+      path: paths.app.root.path,
+      element: (
+        <ProtectedRoute>
+          <AppRoot />
+        </ProtectedRoute>
+      ),
+      ErrorBoundary: AppRootErrorBoundary,
+      children: [
+        {
+          path: paths.app.dashboard.path,
+          lazy: () =>
+            import('./routes/app/dashboard').then(convert(queryClient)),
+        },
+        {
+          path: paths.app.sample.path,
+          lazy: () => import('./routes/app/sample').then(convert(queryClient)),
+        },
+        {
+          path: paths.app.settings.path,
+          lazy: () =>
+            import('./routes/app/settings').then(convert(queryClient)),
+        },
+      ],
     },
     {
       path: '*',

@@ -16,7 +16,7 @@ const LandingRoute = () => {
   // Redirect to dashboard if already authenticated
   React.useEffect(() => {
     if (user) {
-      navigate(paths.dashboard.getHref());
+      navigate(paths.app.dashboard.getHref());
     }
   }, [user, navigate]);
 
