@@ -167,7 +167,7 @@ export const getUserInfo = () => {
  * Login to Keycloak
  */
 export const login = () => {
-  keycloak.login({ redirectUri: `${window.location.origin}/dashboard` });
+  keycloak.login({ redirectUri: `${window.location.origin}/app` });
 };
 
 /**
