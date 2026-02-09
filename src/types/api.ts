@@ -20,3 +20,49 @@ export type Comment = {
   discussionId: string;
   author: User;
 };
+
+export type Project = {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  status: number;
+  startDate: string;
+  endDate: string;
+  createdOnUtc: string;
+  createdBy: string | null;
+  lastModifiedOnUtc: string;
+  lastModifiedBy: string | null;
+};
+
+export type Paging = {
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  hasItem: boolean;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type ProjectsResponse = {
+  result: {
+    items: Project[];
+    paging: Paging;
+  };
+};
+
+export type Dataset = {
+  id: string;
+  name: string;
+  description: string;
+  filePath: string;
+  status: number;
+};
+
+export type DatasetsResponse = {
+  result: {
+    items: Dataset[];
+    paging: Paging;
+  };
+};

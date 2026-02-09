@@ -16,6 +16,14 @@ export const paths = {
       path: 'sample',
       getHref: () => '/app/sample',
     },
+    projects: {
+      path: 'projects',
+      getHref: () => '/app/projects',
+    },
+    projectDetail: {
+      path: 'projects/details/:projectId',
+      getHref: (projectId: string) => `/app/projects/details/${projectId}`,
+    },
     settings: {
       path: 'settings',
       getHref: () => '/app/settings',
