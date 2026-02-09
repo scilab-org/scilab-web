@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import * as React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ReactKeycloakProvider } from '@react-keycloak/web';
+import { Toaster } from 'sonner';
 
 import { Loader2 } from 'lucide-react';
 
@@ -41,6 +42,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           }
         >
           <QueryClientProvider client={queryClient}>
+            <Toaster position="top-right" richColors />
             {import.meta.env.DEV && <ReactQueryDevtools />}
             {children}
           </QueryClientProvider>

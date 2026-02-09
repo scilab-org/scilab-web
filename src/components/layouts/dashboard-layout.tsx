@@ -2,6 +2,7 @@ import {
   Bell,
   BookOpen,
   ChevronRight,
+  FolderKanban,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -99,10 +100,22 @@ const Breadcrumb = () => {
   const location = useLocation();
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
-  const breadcrumbItems = pathSegments.map((segment, index) => {
-    const label = segment.charAt(0).toUpperCase() + segment.slice(1);
-    return { label, path: '/' + pathSegments.slice(0, index + 1).join('/') };
-  });
+  const breadcrumbItems = pathSegments
+    .map((segment, index) => {
+      // Skip UUID-like segments (long alphanumeric strings)
+      if (
+        segment.length > 30 ||
+        /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+          segment,
+        )
+      ) {
+        return null;
+      }
+
+      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
+      return { label, path: '/' + pathSegments.slice(0, index + 1).join('/') };
+    })
+    .filter(Boolean);
 
   return (
     <nav className="flex items-center gap-1 text-sm">
@@ -113,17 +126,17 @@ const Breadcrumb = () => {
         Home
       </NavLink>
       {breadcrumbItems.map((item, index) => (
-        <span key={item.path} className="flex items-center gap-1">
+        <span key={item!.path} className="flex items-center gap-1">
           <ChevronRight className="text-muted-foreground size-4" />
           <NavLink
-            to={item.path}
+            to={item!.path}
             className={cn(
               index === breadcrumbItems.length - 1
                 ? 'text-foreground font-medium'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {item.label}
+            {item!.label}
           </NavLink>
         </span>
       ))}
@@ -192,6 +205,7 @@ const navigation: SideNavigationItem[] = [
     icon: LayoutDashboard,
   },
   { name: 'Sample', to: paths.app.sample.getHref(), icon: BookOpen },
+  { name: 'Projects', to: paths.app.projects.getHref(), icon: FolderKanban },
   { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
 ];
 
