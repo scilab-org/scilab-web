@@ -20,5 +20,25 @@ export const paths = {
       path: 'settings',
       getHref: () => '/app/settings',
     },
+    userManagement: {
+      users: {
+        path: 'users',
+        getHref: () => '/app/users',
+      },
+      user: {
+        path: 'users/:userId',
+        getHref: (userId: string) => `/app/users/${userId}`,
+      },
+    },
+    groupRoleManagement: {
+      groups: {
+        path: 'groups',
+        getHref: () => '/app/groups',
+      },
+      group: {
+        path: 'groups/:groupId',
+        getHref: (groupId: string) => `/app/groups/${groupId}`,
+      },
+    },
   },
 } as const;

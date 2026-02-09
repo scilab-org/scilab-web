@@ -7,6 +7,8 @@ import {
   LogOut,
   Search,
   Settings,
+  User,
+  Users,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigation } from 'react-router';
@@ -190,6 +192,16 @@ const navigation: SideNavigationItem[] = [
     name: 'Dashboard',
     to: paths.app.dashboard.getHref(),
     icon: LayoutDashboard,
+  },
+  {
+    name: 'Users',
+    to: paths.app.userManagement.users.getHref(),
+    icon: Users,
+  },
+  {
+    name: 'Permissions',
+    to: paths.app.groupRoleManagement.groups.getHref(),
+    icon: User,
   },
   { name: 'Sample', to: paths.app.sample.getHref(), icon: BookOpen },
   { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },

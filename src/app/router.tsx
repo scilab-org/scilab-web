@@ -50,6 +50,34 @@ export const createAppRouter = (queryClient: QueryClient) =>
           lazy: () =>
             import('./routes/app/settings').then(convert(queryClient)),
         },
+        {
+          path: paths.app.userManagement.users.path,
+          lazy: () =>
+            import('./routes/app/user-management/users').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.userManagement.user.path,
+          lazy: () =>
+            import('./routes/app/user-management/user').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.groupRoleManagement.groups.path,
+          lazy: () =>
+            import('./routes/app/group-role-management/groups').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.groupRoleManagement.group.path,
+          lazy: () =>
+            import('./routes/app/group-role-management/group').then(
+              convert(queryClient),
+            ),
+        },
       ],
     },
     {
