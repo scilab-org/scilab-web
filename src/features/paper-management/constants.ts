@@ -1,0 +1,28 @@
+const SERVICE_PREFIX = '';
+
+export const PAPER_MANAGEMENT_API = {
+  PAPERS: `${SERVICE_PREFIX}/papers`,
+  PAPER_BY_ID: (paperId: string) => `${SERVICE_PREFIX}/papers/${paperId}`,
+  ADMIN_PAPERS: `${SERVICE_PREFIX}/admin/papers`,
+  ADMIN_PAPER_BY_ID: (paperId: string) =>
+    `${SERVICE_PREFIX}/admin/papers/${paperId}`,
+} as const;
+
+export const PAPER_MANAGEMENT_QUERY_KEYS = {
+  PAPERS: 'papers',
+  PAPER: 'paper',
+} as const;
+
+export const PAPER_STATUS_MAP: Record<number, string> = {
+  1: 'Draft',
+  2: 'Processing',
+  3: 'Submited',
+  4: 'Released',
+};
+
+export const PAPER_STATUS_OPTIONS = [
+  { value: 1, label: 'Draft' },
+  { value: 2, label: 'Processing' },
+  { value: 3, label: 'Submited' },
+  { value: 4, label: 'Released' },
+];

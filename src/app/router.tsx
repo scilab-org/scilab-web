@@ -88,6 +88,20 @@ export const createAppRouter = (queryClient: QueryClient) =>
               convert(queryClient),
             ),
         },
+        {
+          path: paths.app.paperManagement.papers.path,
+          lazy: () =>
+            import('./routes/app/paper-management/papers').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.paperManagement.paper.path,
+          lazy: () =>
+            import('./routes/app/paper-management/paper').then(
+              convert(queryClient),
+            ),
+        },
       ],
     },
     {
