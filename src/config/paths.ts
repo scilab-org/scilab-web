@@ -48,5 +48,15 @@ export const paths = {
         getHref: (groupId: string) => `/app/groups/${groupId}`,
       },
     },
+    paperManagement: {
+      papers: {
+        path: 'papers',
+        getHref: () => '/app/papers',
+      },
+      paper: {
+        path: 'papers/:paperId',
+        getHref: (paperId: string) => `/app/papers/${paperId}`,
+      },
+    },
   },
 } as const;

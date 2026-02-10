@@ -2,6 +2,7 @@ import {
   Bell,
   BookOpen,
   ChevronRight,
+  FileText,
   FolderKanban,
   GraduationCap,
   LayoutDashboard,
@@ -218,6 +219,11 @@ const navigation: SideNavigationItem[] = [
   },
   { name: 'Sample', to: paths.app.sample.getHref(), icon: BookOpen },
   { name: 'Projects', to: paths.app.projects.getHref(), icon: FolderKanban },
+  {
+    name: 'Papers',
+    to: paths.app.paperManagement.papers.getHref(),
+    icon: FileText,
+  },
   { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
 ];
 
