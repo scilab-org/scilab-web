@@ -106,6 +106,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
               convert(queryClient),
             ),
         },
+        {
+          path: paths.app.tagManagement.tags.path,
+          lazy: () =>
+            import('./routes/app/tag-management/tags').then(
+              convert(queryClient),
+            ),
+        },
       ],
     },
     {
