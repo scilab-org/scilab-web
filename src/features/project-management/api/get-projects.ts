@@ -12,13 +12,7 @@ import { ProjectsResponse, GetProjectsParams } from '../types';
 export const getProjects = (
   params: GetProjectsParams = {},
 ): Promise<ProjectsResponse> => {
-  return api.get(PROJECT_MANAGEMENT_API.PROJECTS, {
-    params: {
-      SearchText: params.searchText || '',
-      PageNumber: params.pageNumber || 1,
-      PageSize: params.pageSize || 10,
-    },
-  });
+  return api.get(PROJECT_MANAGEMENT_API.PROJECTS, { params });
 };
 
 export const getProjectsQueryOptions = (params: GetProjectsParams = {}) => {

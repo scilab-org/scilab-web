@@ -19,7 +19,7 @@ export const updateProject = ({
   projectId,
   data,
 }: UpdateProjectPayload): Promise<void> => {
-  return api.put(PROJECT_MANAGEMENT_API.PROJECT_BY_ID(projectId), data);
+  return api.put(PROJECT_MANAGEMENT_API.ADMIN_PROJECT_BY_ID(projectId), data);
 };
 
 type UseUpdateProjectOptions = {

@@ -10,7 +10,7 @@ import {
 } from '../constants';
 
 export const deleteProject = async (projectId: string): Promise<void> => {
-  await api.delete(PROJECT_MANAGEMENT_API.PROJECT_BY_ID(projectId));
+  await api.delete(PROJECT_MANAGEMENT_API.ADMIN_PROJECT_BY_ID(projectId));
 };
 
 type UseDeleteProjectOptions = {

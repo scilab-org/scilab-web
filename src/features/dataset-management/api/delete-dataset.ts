@@ -4,21 +4,22 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { MutationConfig } from '@/lib/react-query';
 
-const DATASET_QUERY_KEY = 'datasets';
+import {
+  DATASET_MANAGEMENT_API,
+  DATASET_MANAGEMENT_QUERY_KEYS,
+} from '../constants';
 
 export const deleteDataset = async (datasetId: string): Promise<void> => {
-  await api.delete(`/mananger/datasets/${datasetId}`);
+  await api.delete(DATASET_MANAGEMENT_API.DATASET_BY_ID(datasetId));
 };
 
 type UseDeleteDatasetOptions = {
-  projectId: string;
   mutationConfig?: MutationConfig<typeof deleteDataset>;
 };
 
 export const useDeleteDataset = ({
-  projectId,
   mutationConfig,
-}: UseDeleteDatasetOptions) => {
+}: UseDeleteDatasetOptions = {}) => {
   const queryClient = useQueryClient();
 
   const { onSuccess, ...restConfig } = mutationConfig || {};
@@ -26,7 +27,7 @@ export const useDeleteDataset = ({
   return useMutation({
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
-        queryKey: [DATASET_QUERY_KEY, { projectId }],
+        queryKey: [DATASET_MANAGEMENT_QUERY_KEYS.DATASETS],
       });
       toast.success('Dataset deleted successfully');
       onSuccess?.(...args);

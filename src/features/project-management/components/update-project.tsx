@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Pencil, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -201,13 +201,35 @@ export const UpdateProject = ({
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                disabled={project?.status === 4}
+                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="1">Draft</option>
-                <option value="2">Active</option>
-                <option value="3">Completed</option>
-                <option value="4">Archived</option>
+                {project?.status === 4 ? (
+                  <option value="4">Archived</option>
+                ) : project?.status === 3 ? (
+                  <>
+                    <option value="3">Completed</option>
+                    <option value="4">Archived</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="1">Draft</option>
+                    <option value="2">Active</option>
+                    <option value="3">Completed</option>
+                    <option value="4">Archived</option>
+                  </>
+                )}
               </select>
+              {project?.status === 4 && (
+                <p className="text-muted-foreground text-xs">
+                  Archived projects cannot change status
+                </p>
+              )}
+              {project?.status === 3 && (
+                <p className="text-muted-foreground text-xs">
+                  Completed projects can only be archived
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

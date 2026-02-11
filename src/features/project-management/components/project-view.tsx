@@ -1,5 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 import { Project } from '../types';
@@ -42,23 +43,55 @@ export const ProjectView = ({
     }
   };
 
-  const getStatusColor = (status: number) => {
+  const getStatusVariant = (
+    status: number,
+  ): {
+    variant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline';
+    className?: string;
+  } => {
     switch (status) {
       case 1:
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+        return { variant: 'secondary' };
       case 2:
-        return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return {
+          variant: 'default',
+          className: 'bg-blue-600 text-white hover:bg-blue-700',
+        };
       case 3:
-        return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+        return {
+          variant: 'default',
+          className: 'bg-green-600 text-white hover:bg-green-700',
+        };
       case 4:
-        return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+        return {
+          variant: 'default',
+          className: 'bg-amber-500 text-white hover:bg-amber-600',
+        };
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+        return { variant: 'outline' };
     }
   };
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onUpdate}>
+            <Pencil className="size-4" />
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onDelete}
+            disabled={isDeleting}
+          >
+            <Trash2 className="size-4" />
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </div>
+      </div>
+
       {/* Project Header */}
       <div className="border-border from-muted/50 to-muted/30 rounded-xl border bg-linear-to-br p-6 shadow-sm">
         <div className="flex items-start justify-between gap-6">
@@ -67,11 +100,6 @@ export const ProjectView = ({
               <h1 className="text-foreground text-3xl font-bold tracking-tight">
                 {project.name}
               </h1>
-              <span
-                className={`inline-flex items-center rounded-md border px-3 py-1 text-sm font-medium ${getStatusColor(project.status)}`}
-              >
-                {getStatusText(project.status)}
-              </span>
             </div>
             <div className="flex items-center gap-4">
               <p className="text-muted-foreground bg-background/60 rounded-md px-3 py-1.5 font-mono text-sm">
@@ -82,27 +110,6 @@ export const ProjectView = ({
                 {project.createdBy || 'System'}
               </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onUpdate}
-              className="flex items-center gap-2"
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onDelete}
-              disabled={isDeleting}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
           </div>
         </div>
       </div>
@@ -157,13 +164,14 @@ export const ProjectView = ({
                 <dd className="bg-muted/30 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-foreground text-sm font-medium">
-                      {getStatusText(project.status)}
+                      Current Status
                     </span>
-                    <span
-                      className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium ${getStatusColor(project.status)}`}
+                    <Badge
+                      variant={getStatusVariant(project.status).variant}
+                      className={getStatusVariant(project.status).className}
                     >
                       {getStatusText(project.status)}
-                    </span>
+                    </Badge>
                   </div>
                 </dd>
               </div>

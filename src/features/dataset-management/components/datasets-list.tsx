@@ -135,7 +135,7 @@ export const DatasetsList = ({
   const pageSize = 5;
 
   const datasetsQuery = useDatasets({
-    params: { projectId, pageNumber: page, pageSize },
+    params: { projectId: projectId, PageNumber: page, PageSize: pageSize },
   });
 
   if (datasetsQuery.isLoading) {
@@ -169,7 +169,7 @@ export const DatasetsList = ({
           <Button
             onClick={onCreateClick}
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
           >
             <Plus className="h-4 w-4" />
             Upload Dataset

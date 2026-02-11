@@ -8,16 +8,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { paths } from '@/config/paths';
 
 import {
-  useProject,
+  useProjectDetail,
   getProjectQueryOptions,
 } from '@/features/project-management/api/get-project';
 import { useDeleteProject } from '@/features/project-management/api/delete-project';
+import { useDeleteDataset } from '@/features/dataset-management/api/delete-dataset';
 import { ProjectView } from '@/features/project-management/components/project-view';
-import { DatasetsList } from '@/features/project-management/components/datasets-list';
+import { DatasetsList } from '@/features/dataset-management/components/datasets-list';
 import { UpdateProject } from '@/features/project-management/components/update-project';
-import { CreateDataset } from '@/features/project-management/components/create-dataset';
-import { UpdateDataset } from '@/features/project-management/components/update-dataset';
-import { Dataset } from '@/features/project-management/types';
+import { CreateDataset } from '@/features/dataset-management/components/create-dataset';
+import { UpdateDataset } from '@/features/dataset-management/components/update-dataset';
+import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
@@ -26,10 +27,14 @@ export const clientLoader =
 
     const query = getProjectQueryOptions(projectId);
 
-    return (
-      queryClient.getQueryData(query.queryKey) ??
-      (await queryClient.fetchQuery(query))
-    );
+    try {
+      return (
+        queryClient.getQueryData(query.queryKey) ??
+        (await queryClient.fetchQuery(query))
+      );
+    } catch {
+      return null;
+    }
   };
 
 const ProjectDetailRoute = () => {
@@ -40,7 +45,7 @@ const ProjectDetailRoute = () => {
   const [updateDatasetOpen, setUpdateDatasetOpen] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
 
-  const projectQuery = useProject({
+  const projectQuery = useProjectDetail({
     projectId: projectId!,
     queryConfig: {
       enabled: !!projectId,
@@ -51,6 +56,14 @@ const ProjectDetailRoute = () => {
     mutationConfig: {
       onSuccess: () => {
         navigate(paths.app.projects.getHref());
+      },
+    },
+  });
+
+  const deleteDatasetMutation = useDeleteDataset({
+    mutationConfig: {
+      onSuccess: () => {
+        // Dataset list will automatically refresh due to query invalidation
       },
     },
   });
@@ -80,7 +93,7 @@ const ProjectDetailRoute = () => {
         'Are you sure you want to delete this dataset? This action cannot be undone.',
       )
     ) {
-      // The deletion is handled by the DatasetsList component through its callback
+      deleteDatasetMutation.mutate(datasetId);
     }
   };
 
@@ -112,7 +125,7 @@ const ProjectDetailRoute = () => {
     );
   }
 
-  if (!projectQuery.data) {
+  if (!projectQuery.data?.result?.project) {
     return (
       <ContentLayout title="Project Not Found">
         <div className="py-12 text-center">
@@ -128,7 +141,7 @@ const ProjectDetailRoute = () => {
     );
   }
 
-  const project = projectQuery.data;
+  const project = projectQuery.data.result.project;
 
   return (
     <ContentLayout

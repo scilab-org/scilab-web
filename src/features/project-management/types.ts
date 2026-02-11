@@ -42,53 +42,13 @@ export type UpdateProjectDto = {
   endDate: string;
 };
 
-export type Dataset = {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string;
-  filePath: string;
-  status: number;
-  createdOnUtc: string;
-  modifiedOnUtc: string;
-};
-
-export type CreateDatasetDto = {
-  projectId: string;
-  name: string;
-  description: string;
-  file: File;
-};
-
-export type UpdateDatasetDto = {
-  datasetId: string;
-  name: string;
-  description: string;
-  file?: File;
-};
-
-export type GetDatasetsParams = {
-  projectId: string;
-  pageNumber?: number;
-  pageSize?: number;
-};
-
-export type GetDatasetsResult = {
-  items: Dataset[];
-  paging: PagingResult;
-};
-
-export type DatasetsResponse = {
-  success: boolean;
-  message: string | null;
-  result: GetDatasetsResult;
-  errors: string[] | null;
-};
-
 export type GetProjectsParams = {
-  searchText?: string;
-  pageNumber?: number;
-  pageSize?: number;
+  Name?: string;
+  Code?: string;
+  Status?: string;
+  IsDeleted?: string;
+  PageNumber?: number;
+  PageSize?: number;
 };
 
 export type GetProjectsResult = {
@@ -101,6 +61,12 @@ export type ProjectsResponse = {
   message: string | null;
   result: GetProjectsResult;
   errors: string[] | null;
+};
+
+export type GetProjectByIdResultApiResponse = {
+  result: {
+    project: Project;
+  };
 };
 
 export type ApiResponse<T> = {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,7 +112,13 @@ export const CreateProject = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button>Create Project</Button>
+        <Button
+          size="sm"
+          className="bg-green-600 text-white hover:bg-green-700"
+        >
+          <Plus className="size-4" />
+          Create Project
+        </Button>
       </SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-150">
         <SheetHeader>
@@ -203,10 +210,10 @@ export const CreateProject = () => {
                 onChange={handleChange}
                 className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               >
-                <option value={1}>Draft</option>
-                <option value={2}>Active</option>
-                <option value={3}>Completed</option>
-                <option value={4}>Archived</option>
+                <option value="1">Draft</option>
+                <option value="2">Active</option>
+                <option value="3">Completed</option>
+                <option value="4">Archived</option>
               </select>
             </div>
 

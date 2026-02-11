@@ -4,34 +4,35 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { MutationConfig } from '@/lib/react-query';
 
-import { UpdateDatasetDto } from '../types';
+import {
+  DATASET_MANAGEMENT_API,
+  DATASET_MANAGEMENT_QUERY_KEYS,
+} from '../constants';
+import { CreateDatasetDto } from '../types';
 
-const DATASET_QUERY_KEY = 'datasets';
-
-export const updateDataset = async (data: UpdateDatasetDto): Promise<void> => {
+export const createDataset = async (data: CreateDatasetDto): Promise<void> => {
   const formData = new FormData();
+  formData.append('projectId', data.projectId);
   formData.append('name', data.name);
   formData.append('description', data.description);
-  if (data.file) {
-    formData.append('file', data.file);
-  }
+  formData.append('file', data.file);
 
-  await api.put(`/mananger/datasets/${data.datasetId}`, formData, {
+  await api.post(DATASET_MANAGEMENT_API.MANAGER_DATASETS, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
 };
 
-type UseUpdateDatasetOptions = {
+type UseCreateDatasetOptions = {
   projectId: string;
-  mutationConfig?: MutationConfig<typeof updateDataset>;
+  mutationConfig?: MutationConfig<typeof createDataset>;
 };
 
-export const useUpdateDataset = ({
-  projectId,
+export const useCreateDataset = ({
+  projectId: _projectId,
   mutationConfig,
-}: UseUpdateDatasetOptions) => {
+}: UseCreateDatasetOptions) => {
   const queryClient = useQueryClient();
 
   const { onSuccess, ...restConfig } = mutationConfig || {};
@@ -39,12 +40,12 @@ export const useUpdateDataset = ({
   return useMutation({
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
-        queryKey: [DATASET_QUERY_KEY, { projectId }],
+        queryKey: [DATASET_MANAGEMENT_QUERY_KEYS.DATASETS],
       });
-      toast.success('Dataset updated successfully');
+      toast.success('Dataset added successfully');
       onSuccess?.(...args);
     },
     ...restConfig,
-    mutationFn: updateDataset,
+    mutationFn: createDataset,
   });
 };

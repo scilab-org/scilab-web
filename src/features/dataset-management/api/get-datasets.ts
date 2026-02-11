@@ -3,21 +3,21 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { QueryConfig } from '@/lib/react-query';
 
+import {
+  DATASET_MANAGEMENT_API,
+  DATASET_MANAGEMENT_QUERY_KEYS,
+} from '../constants';
 import { DatasetsResponse, GetDatasetsParams } from '../types';
 
-const DATASET_QUERY_KEY = 'datasets';
-
-export const getDatasets = async (
+export const getDatasets = (
   params: GetDatasetsParams,
 ): Promise<DatasetsResponse> => {
-  return await api.get(
-    `/datasets?projectId=${params.projectId}&PageNumber=${params.pageNumber || 1}&PageSize=${params.pageSize || 5}`,
-  );
+  return api.get(DATASET_MANAGEMENT_API.DATASETS, { params });
 };
 
 export const getDatasetsQueryOptions = (params: GetDatasetsParams) => {
   return queryOptions({
-    queryKey: [DATASET_QUERY_KEY, params],
+    queryKey: [DATASET_MANAGEMENT_QUERY_KEYS.DATASETS, params],
     queryFn: () => getDatasets(params),
   });
 };

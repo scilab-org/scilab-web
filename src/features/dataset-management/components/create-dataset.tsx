@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -162,17 +162,58 @@ export const CreateDataset = ({
               >
                 File <span className="text-destructive">*</span>
               </label>
-              <Input
-                id="dataset-file"
-                type="file"
-                onChange={handleFileChange}
-                accept=".csv,.xlsx,.xls,.json"
-                className="cursor-pointer"
-              />
-              {formData.file && (
-                <p className="text-muted-foreground text-xs">
-                  Selected: {formData.file.name}
-                </p>
+              {formData.file ? (
+                <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
+                  <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                    <Upload className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {formData.file.name}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {(formData.file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, file: null }));
+                      if (errors.file) {
+                        setErrors((prev) => ({ ...prev, file: '' }));
+                      }
+                    }}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="dataset-file"
+                  className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors"
+                >
+                  <div className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
+                    <Upload className="size-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium">
+                      Click to upload dataset
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      CSV, Excel, or JSON files
+                    </p>
+                  </div>
+                  <input
+                    id="dataset-file"
+                    type="file"
+                    accept=".csv,.xlsx,.xls,.json"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </label>
               )}
               {errors.file && (
                 <p className="text-destructive text-sm">{errors.file}</p>
