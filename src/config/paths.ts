@@ -58,5 +58,11 @@ export const paths = {
         getHref: (paperId: string) => `/app/papers/${paperId}`,
       },
     },
+    tagManagement: {
+      tags: {
+        path: 'tags',
+        getHref: () => '/app/tags',
+      },
+    },
   },
 } as const;

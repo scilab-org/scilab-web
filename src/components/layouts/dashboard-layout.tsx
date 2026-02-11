@@ -9,6 +9,7 @@ import {
   LogOut,
   Search,
   Settings,
+  Tag,
   User,
   Users,
 } from 'lucide-react';
@@ -223,6 +224,11 @@ const navigation: SideNavigationItem[] = [
     name: 'Papers',
     to: paths.app.paperManagement.papers.getHref(),
     icon: FileText,
+  },
+  {
+    name: 'Tags',
+    to: paths.app.tagManagement.tags.getHref(),
+    icon: Tag,
   },
   { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
 ];
