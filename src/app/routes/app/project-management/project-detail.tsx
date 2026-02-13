@@ -18,6 +18,7 @@ import { DatasetsList } from '@/features/dataset-management/components/datasets-
 import { UpdateProject } from '@/features/project-management/components/update-project';
 import { CreateDataset } from '@/features/dataset-management/components/create-dataset';
 import { UpdateDataset } from '@/features/dataset-management/components/update-dataset';
+import { ExcelChartViewer } from '@/features/dataset-management/components/excel-chart-viewer';
 import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
@@ -44,6 +45,8 @@ const ProjectDetailRoute = () => {
   const [createDatasetOpen, setCreateDatasetOpen] = useState(false);
   const [updateDatasetOpen, setUpdateDatasetOpen] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
+  const [chartViewerOpen, setChartViewerOpen] = useState(false);
+  const [chartDataset, setChartDataset] = useState<Dataset | null>(null);
 
   const projectQuery = useProjectDetail({
     projectId: projectId!,
@@ -95,6 +98,16 @@ const ProjectDetailRoute = () => {
     ) {
       deleteDatasetMutation.mutate(datasetId);
     }
+  };
+
+  const handleViewChart = (dataset: Dataset) => {
+    setChartDataset(dataset);
+    setChartViewerOpen(true);
+  };
+
+  const handleCloseChartViewer = () => {
+    setChartViewerOpen(false);
+    setChartDataset(null);
   };
 
   if (!projectId) {
@@ -161,6 +174,7 @@ const ProjectDetailRoute = () => {
           onCreateClick={() => setCreateDatasetOpen(true)}
           onUpdateClick={handleUpdateDataset}
           onDeleteClick={handleDeleteDataset}
+          onViewChartClick={handleViewChart}
         />
       </div>
 
@@ -182,6 +196,14 @@ const ProjectDetailRoute = () => {
         open={updateDatasetOpen}
         onOpenChange={setUpdateDatasetOpen}
       />
+
+      {chartViewerOpen && chartDataset && (
+        <ExcelChartViewer
+          fileUrl={chartDataset.filePath}
+          fileName={chartDataset.name}
+          onClose={handleCloseChartViewer}
+        />
+      )}
     </ContentLayout>
   );
 };

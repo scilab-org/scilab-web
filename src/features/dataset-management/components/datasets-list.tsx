@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Download, Pencil, Trash2, Plus, Loader2 } from 'lucide-react';
+import {
+  Download,
+  Pencil,
+  Trash2,
+  Plus,
+  Loader2,
+  BarChart3,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,9 +18,21 @@ type DatasetCardProps = {
   dataset: Dataset;
   onUpdate: (dataset: Dataset) => void;
   onDelete: (datasetId: string) => void;
+  onViewChart?: (dataset: Dataset) => void;
 };
 
-const DatasetCard = ({ dataset, onUpdate, onDelete }: DatasetCardProps) => {
+const DatasetCard = ({
+  dataset,
+  onUpdate,
+  onDelete,
+  onViewChart,
+}: DatasetCardProps) => {
+  // Check if file supports chart viewing (Excel and CSV)
+  const canViewChart = (filePath: string) => {
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    return extension === 'xlsx' || extension === 'xls' || extension === 'csv';
+  };
+
   const getStatusText = (status: number) => {
     switch (status) {
       case 1:
@@ -84,6 +103,17 @@ const DatasetCard = ({ dataset, onUpdate, onDelete }: DatasetCardProps) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {canViewChart(dataset.filePath) && onViewChart && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onViewChart(dataset)}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700"
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                View Chart
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -123,6 +153,7 @@ type DatasetsListProps = {
   onCreateClick: () => void;
   onUpdateClick: (dataset: Dataset) => void;
   onDeleteClick: (datasetId: string) => void;
+  onViewChartClick?: (dataset: Dataset) => void;
 };
 
 export const DatasetsList = ({
@@ -130,6 +161,7 @@ export const DatasetsList = ({
   onCreateClick,
   onUpdateClick,
   onDeleteClick,
+  onViewChartClick,
 }: DatasetsListProps) => {
   const [page, setPage] = useState(1);
   const pageSize = 5;
@@ -190,6 +222,7 @@ export const DatasetsList = ({
                   dataset={dataset}
                   onUpdate={onUpdateClick}
                   onDelete={onDeleteClick}
+                  onViewChart={onViewChartClick}
                 />
               ))}
             </div>
