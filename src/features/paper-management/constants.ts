@@ -1,4 +1,4 @@
-const SERVICE_PREFIX = 'lab-service';
+const SERVICE_PREFIX = '';
 
 export const PAPER_MANAGEMENT_API = {
   PAPERS: `${SERVICE_PREFIX}/papers`,
@@ -6,6 +6,8 @@ export const PAPER_MANAGEMENT_API = {
   ADMIN_PAPERS: `${SERVICE_PREFIX}/admin/papers`,
   ADMIN_PAPER_BY_ID: (paperId: string) =>
     `${SERVICE_PREFIX}/admin/papers/${paperId}`,
+  PARSE_PAPER: `${SERVICE_PREFIX}/papers/parse`,
+  AUTO_TAG: `${SERVICE_PREFIX}/papers/auto-tag`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {

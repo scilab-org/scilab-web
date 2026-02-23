@@ -5,10 +5,14 @@ export type PaperDto = {
   doi: string | null;
   filePath: string | null;
   status: number;
+  isIngested: boolean;
+  isAutoTagged: boolean;
+  parsedText: string | null;
   publicationDate: string | null;
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  tagNames: string[];
   createdOnUtc: string | null;
   createdBy: string | null;
   lastModifiedOnUtc: string | null;
@@ -50,6 +54,7 @@ export type GetPapersParams = {
   PaperType?: string;
   JournalName?: string;
   ConferenceName?: string;
+  Tag?: string[];
   IsDeleted?: boolean;
   PageNumber?: number;
   PageSize?: number;
@@ -63,7 +68,26 @@ export type CreatePaperDto = {
   paperType: string;
   journalName: string;
   conferenceName: string;
-  file?: File;
+  file: File;
+  parsedText: string;
+  tagNames: string[];
+  isAutoTagged: boolean;
+  isIngested: boolean;
+  status: number;
+};
+
+export type ParsePaperResponse = {
+  parsedText: string;
+  tags: string[];
+};
+
+export type AutoTagRequest = {
+  parsedText: string;
+  tagNames: string[];
+};
+
+export type AutoTagResponse = {
+  tags: string[];
 };
 
 export type UpdatePaperDto = {
@@ -75,7 +99,8 @@ export type UpdatePaperDto = {
   journalName?: string;
   conferenceName?: string;
   status?: number;
-  file?: File;
+  tagNames?: string[];
+  isAutoTagged?: boolean;
 };
 
 export type StringApiCreatedResponse = {

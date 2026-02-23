@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Pencil, Upload, X } from 'lucide-react';
+import { Pencil, X, Tags, Loader2 } from 'lucide-react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +17,7 @@ import {
 import { useUpdatePaper } from '../api/update-paper';
 import { PaperDto } from '../types';
 import { PAPER_STATUS_OPTIONS } from '../constants';
+import { BTN } from '@/lib/button-styles';
 
 type UpdatePaperProps = {
   paperId: string;
@@ -36,7 +38,12 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     conferenceName: paper.conferenceName || '',
     status: paper.status,
   });
-  const [file, setFile] = React.useState<File | undefined>(undefined);
+  const [tagList, setTagList] = React.useState<string[]>(paper.tagNames || []);
+  const [tagInput, setTagInput] = React.useState('');
+  const [isAutoTagging, setIsAutoTagging] = React.useState(false);
+  const [isAutoTagged, setIsAutoTagged] = React.useState(
+    paper.isAutoTagged || false,
+  );
 
   const updatePaperMutation = useUpdatePaper({
     mutationConfig: {
@@ -60,9 +67,67 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         conferenceName: paper.conferenceName || '',
         status: paper.status,
       });
-      setFile(undefined);
+      setTagList(paper.tagNames || []);
+      setTagInput('');
+      setIsAutoTagging(false);
+      setIsAutoTagged(paper.isAutoTagged || false);
     }
   }, [open, paper]);
+
+  const handleAutoTag = async () => {
+    const currentParsedText = paper.parsedText || '';
+    if (!currentParsedText) return;
+
+    // TODO: Replace with real API call when Python service is ready
+    // try {
+    //   setIsAutoTagging(true);
+    //   const response = await autoTagPaper({
+    //     parsedText: currentParsedText,
+    //     tagNames: tagList,
+    //   });
+    //   const newTags = response.tags || [];
+    //   setTagList([...newTags]);
+    //   setIsAutoTagged(true);
+    // } catch {
+    //   // handle error
+    // } finally {
+    //   setIsAutoTagging(false);
+    // }
+
+    // Fake data for development
+    setIsAutoTagging(true);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const fakeTags = [
+      'machine learning',
+      'deep learning',
+      'natural language processing',
+      'computer science',
+    ];
+    setTagList([...fakeTags]);
+    setIsAutoTagging(false);
+    setIsAutoTagged(true);
+  };
+
+  const handleAddTag = (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed && !tagList.includes(trimmed)) {
+      setTagList((prev) => [...prev, trimmed]);
+    }
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTagList((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    } else if (e.key === 'Backspace' && !tagInput && tagList.length > 0) {
+      setTagList((prev) => prev.slice(0, -1));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +148,8 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         journalName: formData.journalName,
         conferenceName: formData.conferenceName,
         status: formData.status,
-        file,
+        tagNames: tagList,
+        isAutoTagged,
       },
     });
   };
@@ -91,7 +157,11 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className={`gap-1 ${BTN.EDIT_OUTLINE}`}
+        >
           <Pencil className="size-4" />
           Edit
         </Button>
@@ -121,6 +191,67 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               }
               placeholder="Enter title"
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                Tags {tagList.length > 0 && `(${tagList.length})`}
+              </label>
+              {paper.parsedText && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoTag}
+                  disabled={isAutoTagging}
+                  className={`h-7 gap-1 text-xs ${BTN.AUTO_TAG}`}
+                >
+                  {isAutoTagging ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      Tagging...
+                    </>
+                  ) : (
+                    <>
+                      <Tags className="size-3" />
+                      Auto Tag
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+            <div className="border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1">
+              {tagList.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="gap-1 pr-1 text-xs"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={() => {
+                  if (tagInput.trim()) handleAddTag(tagInput);
+                }}
+                placeholder={
+                  tagList.length === 0 ? 'Type a tag and press Enter...' : ''
+                }
+                className="placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -261,56 +392,6 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               ))}
             </select>
           </div>
-
-          <div className="space-y-2">
-            <label htmlFor="update-paper-file" className="text-sm font-medium">
-              PDF File
-            </label>
-            {file ? (
-              <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
-                <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
-                  <Upload className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{file.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 shrink-0"
-                  onClick={() => setFile(undefined)}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            ) : (
-              <label
-                htmlFor="update-paper-file"
-                className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors"
-              >
-                <div className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
-                  <Upload className="size-5" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium">Click to upload PDF</p>
-                  <p className="text-muted-foreground text-xs">
-                    {paper.filePath ? 'Replace current file' : 'PDF files only'}
-                  </p>
-                </div>
-                <input
-                  id="update-paper-file"
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0])}
-                />
-              </label>
-            )}
-          </div>
         </form>
 
         <SheetFooter>
@@ -318,6 +399,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             type="submit"
             form="update-paper-form"
             disabled={updatePaperMutation.isPending}
+            className={BTN.EDIT}
           >
             {updatePaperMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>

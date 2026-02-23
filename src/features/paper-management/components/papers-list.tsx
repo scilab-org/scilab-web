@@ -1,12 +1,24 @@
 import { useSearchParams, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Tags,
+  Calendar,
+  BookOpen,
+} from 'lucide-react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -23,6 +35,27 @@ import { getPaperQueryOptions } from '../api/get-paper';
 import { DeletePaper } from './delete-paper';
 import { PAPER_STATUS_MAP } from '../constants';
 
+const TAG_COLORS = [
+  'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
+  'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800',
+  'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800',
+  'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-800',
+  'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
+  'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-800',
+  'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800',
+  'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
+  'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800',
+  'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
+];
+
+const getTagColor = (tag: string) => {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
+};
+
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);
   params.set('page', page.toString());
@@ -37,19 +70,29 @@ const getStatusVariant = (
 } => {
   switch (status) {
     case 1:
-      return { variant: 'secondary' };
+      return {
+        variant: 'outline',
+        className:
+          'border-slate-300 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300',
+      };
     case 2:
       return {
         variant: 'default',
-        className: 'bg-blue-600 text-white hover:bg-blue-700',
+        className:
+          'bg-blue-500 text-white hover:bg-blue-600 shadow-sm shadow-blue-200 dark:shadow-blue-900/30',
       };
     case 3:
       return {
         variant: 'default',
-        className: 'bg-amber-500 text-white hover:bg-amber-600',
+        className:
+          'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 dark:shadow-amber-900/30',
       };
     case 4:
-      return { variant: 'success' };
+      return {
+        variant: 'default',
+        className:
+          'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30',
+      };
     default:
       return { variant: 'outline' };
   }
@@ -73,6 +116,9 @@ export const PapersList = () => {
   const journalName = searchParams.get('journalName') || undefined;
   const conferenceName = searchParams.get('conferenceName') || undefined;
   const isDeleted = searchParams.get('isDeleted') === 'true';
+  const tags = searchParams.getAll('tag').length
+    ? searchParams.getAll('tag')
+    : undefined;
 
   const papersQuery = usePapers({
     params: {
@@ -87,6 +133,7 @@ export const PapersList = () => {
       PaperType: paperType,
       JournalName: journalName,
       ConferenceName: conferenceName,
+      Tag: tags,
       IsDeleted: isDeleted,
     },
   });
@@ -114,31 +161,58 @@ export const PapersList = () => {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[25%]">Title</TableHead>
-            <TableHead className="w-[12%]">DOI</TableHead>
-            <TableHead className="w-[10%]">Paper Type</TableHead>
-            <TableHead className="w-[15%]">Journal / Conference</TableHead>
-            <TableHead className="w-[12%]">Publication Date</TableHead>
-            <TableHead className="w-[8%]">Status</TableHead>
-            <TableHead className="w-[18%] text-right">Actions</TableHead>
+          <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 hover:from-blue-50 hover:to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+            <TableHead className="w-[25%] font-semibold text-blue-900 dark:text-blue-200">
+              Title
+            </TableHead>
+            <TableHead className="w-[12%] font-semibold text-blue-900 dark:text-blue-200">
+              DOI
+            </TableHead>
+            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
+              Paper Type
+            </TableHead>
+            <TableHead className="w-[15%] font-semibold text-blue-900 dark:text-blue-200">
+              Journal / Conference
+            </TableHead>
+            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
+              Publication Date
+            </TableHead>
+            <TableHead className="w-[8%] font-semibold text-blue-900 dark:text-blue-200">
+              Status
+            </TableHead>
+            <TableHead className="w-[12%] font-semibold text-blue-900 dark:text-blue-200">
+              Tags
+            </TableHead>
+            <TableHead className="w-[15%] text-center font-semibold text-blue-900 dark:text-blue-200">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {papers.map((paper) => (
-            <TableRow key={paper.id}>
+          {papers.map((paper, index) => (
+            <TableRow
+              key={paper.id}
+              className={`transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-950/20 ${
+                index % 2 === 0
+                  ? 'bg-white dark:bg-transparent'
+                  : 'bg-slate-50/50 dark:bg-slate-900/20'
+              }`}
+            >
               <TableCell className="truncate font-medium">
                 <Link
                   to={paths.app.paperManagement.paper.getHref(paper.id)}
-                  className="text-primary hover:underline"
+                  className="text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                   onMouseEnter={() => {
                     queryClient.prefetchQuery(getPaperQueryOptions(paper.id));
                   }}
                 >
-                  {paper.title || 'N/A'}
+                  <span className="flex items-center gap-1.5">
+                    <BookOpen className="size-3.5 shrink-0 text-blue-400" />
+                    {paper.title || 'N/A'}
+                  </span>
                 </Link>
               </TableCell>
               <TableCell className="truncate">{paper.doi || 'N/A'}</TableCell>
@@ -149,9 +223,16 @@ export const PapersList = () => {
                 {paper.journalName || paper.conferenceName || 'N/A'}
               </TableCell>
               <TableCell>
-                {paper.publicationDate
-                  ? new Date(paper.publicationDate).toLocaleDateString()
-                  : 'N/A'}
+                {paper.publicationDate ? (
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Calendar className="size-3.5 text-violet-400" />
+                    {new Date(paper.publicationDate).toLocaleDateString()}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground text-xs italic">
+                    —
+                  </span>
+                )}
               </TableCell>
               <TableCell>
                 {(() => {
@@ -166,32 +247,65 @@ export const PapersList = () => {
                   );
                 })()}
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
+              <TableCell>
+                {paper.tagNames && paper.tagNames.length > 0 ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        className="gap-1 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                      >
+                        <Tags className="size-3" />
+                        {paper.tagNames.length} tags
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-64">
+                      <p className="mb-2 text-sm font-medium">Tags</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {paper.tagNames.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className={`text-xs ${getTagColor(tag)}`}
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <span className="text-muted-foreground inline-flex items-center gap-1 text-xs italic">
+                    <Tags className="size-3 opacity-40" />
+                    No tags
+                  </span>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center justify-center gap-2">
                   {paper.filePath ? (
-                    <Button variant="outline" size="xs" asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="gap-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                    >
                       <a
                         href={paper.filePath}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <FileText className="size-3" />
+                        <FileText className="size-4" />
                         PDF
                       </a>
                     </Button>
                   ) : (
-                    <Button variant="ghost" size="xs" disabled>
-                      <FileText className="size-3" />
+                    <Button variant="ghost" size="sm" disabled>
+                      <FileText className="size-4" />
                       No file
                     </Button>
                   )}
-                  <Button variant="outline" size="xs" asChild>
-                    <Link
-                      to={paths.app.paperManagement.paper.getHref(paper.id)}
-                    >
-                      View
-                    </Link>
-                  </Button>
                   <DeletePaper paperId={paper.id} />
                 </div>
               </TableCell>
@@ -201,7 +315,7 @@ export const PapersList = () => {
       </Table>
 
       {paging && (
-        <div className="mt-6 grid grid-cols-3 items-center border-t pt-4">
+        <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
           <p className="text-muted-foreground text-sm">
             Page{' '}
             <span className="text-foreground font-medium">

@@ -12,7 +12,12 @@ import { GetPapersResultApiResponse, GetPapersParams } from '../types';
 export const getPapers = (
   params: GetPapersParams = {},
 ): Promise<GetPapersResultApiResponse> => {
-  return api.get(PAPER_MANAGEMENT_API.PAPERS, { params });
+  return api.get(PAPER_MANAGEMENT_API.PAPERS, {
+    params,
+    paramsSerializer: {
+      indexes: null, // serialize arrays as Tag=a&Tag=b (no brackets)
+    },
+  });
 };
 
 export const getPapersQueryOptions = (params: GetPapersParams = {}) => {

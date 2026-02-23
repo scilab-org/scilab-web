@@ -22,9 +22,12 @@ export const createPaper = (
   formData.append('paperType', data.paperType);
   formData.append('journalName', data.journalName);
   formData.append('conferenceName', data.conferenceName);
-  if (data.file) {
-    formData.append('file', data.file);
-  }
+  formData.append('file', data.file);
+  formData.append('parsedText', data.parsedText);
+  formData.append('isAutoTagged', String(data.isAutoTagged));
+  formData.append('isIngested', String(data.isIngested));
+  formData.append('status', String(data.status));
+  data.tagNames.forEach((tag) => formData.append('tagNames', tag));
 
   return api.post(PAPER_MANAGEMENT_API.ADMIN_PAPERS, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
