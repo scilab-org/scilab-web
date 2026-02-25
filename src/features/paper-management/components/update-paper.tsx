@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { Pencil, X, Tags, Loader2 } from 'lucide-react';
+import { Pencil, Tags, Loader2 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,6 +16,7 @@ import {
 import { useUpdatePaper } from '../api/update-paper';
 import { PaperDto } from '../types';
 import { PAPER_STATUS_OPTIONS } from '../constants';
+import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
 
 type UpdatePaperProps = {
@@ -27,22 +27,21 @@ type UpdatePaperProps = {
 export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
-    title: paper.title || '',
-    abstract: paper.abstract || '',
-    doi: paper.doi || '',
-    publicationDate: paper.publicationDate
+    title: paper?.title || '',
+    abstract: paper?.abstract || '',
+    doi: paper?.doi || '',
+    publicationDate: paper?.publicationDate
       ? new Date(paper.publicationDate).toISOString().slice(0, 16)
       : '',
-    paperType: paper.paperType || '',
-    journalName: paper.journalName || '',
-    conferenceName: paper.conferenceName || '',
-    status: paper.status,
+    paperType: paper?.paperType || '',
+    journalName: paper?.journalName || '',
+    conferenceName: paper?.conferenceName || '',
+    status: paper?.status || 1,
   });
-  const [tagList, setTagList] = React.useState<string[]>(paper.tagNames || []);
-  const [tagInput, setTagInput] = React.useState('');
+  const [tagList, setTagList] = React.useState<string[]>(paper?.tagNames || []);
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [isAutoTagged, setIsAutoTagged] = React.useState(
-    paper.isAutoTagged || false,
+    paper?.isAutoTagged || false,
   );
 
   const updatePaperMutation = useUpdatePaper({
@@ -54,7 +53,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   });
 
   React.useEffect(() => {
-    if (open) {
+    if (open && paper) {
       setFormData({
         title: paper.title || '',
         abstract: paper.abstract || '',
@@ -65,16 +64,17 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         paperType: paper.paperType || '',
         journalName: paper.journalName || '',
         conferenceName: paper.conferenceName || '',
-        status: paper.status,
+        status: paper.status || 1,
       });
       setTagList(paper.tagNames || []);
-      setTagInput('');
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
     }
-  }, [open, paper]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleAutoTag = async () => {
+    if (!paper) return;
     const currentParsedText = paper.parsedText || '';
     if (!currentParsedText) return;
 
@@ -110,23 +110,16 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
   const handleAddTag = (value: string) => {
     const trimmed = value.trim();
-    if (trimmed && !tagList.includes(trimmed)) {
+    if (
+      trimmed &&
+      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+    ) {
       setTagList((prev) => [...prev, trimmed]);
     }
-    setTagInput('');
   };
 
   const handleRemoveTag = (tag: string) => {
     setTagList((prev) => prev.filter((t) => t !== tag));
-  };
-
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag(tagInput);
-    } else if (e.key === 'Backspace' && !tagInput && tagList.length > 0) {
-      setTagList((prev) => prev.slice(0, -1));
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -198,7 +191,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               <label className="text-sm font-medium">
                 Tags {tagList.length > 0 && `(${tagList.length})`}
               </label>
-              {paper.parsedText && (
+              {paper?.parsedText && (
                 <Button
                   type="button"
                   variant="outline"
@@ -221,37 +214,13 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                 </Button>
               )}
             </div>
-            <div className="border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1">
-              {tagList.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="gap-1 pr-1 text-xs"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </Badge>
-              ))}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                onBlur={() => {
-                  if (tagInput.trim()) handleAddTag(tagInput);
-                }}
-                placeholder={
-                  tagList.length === 0 ? 'Type a tag and press Enter...' : ''
-                }
-                className="placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none"
-              />
-            </div>
+            <TagAutocompleteInput
+              key={`${paperId}-${open}`}
+              tagList={tagList}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+              placeholder="Type a tag and press Enter..."
+            />
           </div>
 
           <div className="space-y-2">

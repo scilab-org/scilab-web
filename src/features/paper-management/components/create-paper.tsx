@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Plus, Upload, X, Tags, Loader2 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +15,7 @@ import {
 
 import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
+import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
 
 const initialFormData = {
@@ -38,7 +38,6 @@ export const CreatePaper = () => {
   const [parsedText, setParsedText] = React.useState('');
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [tagList, setTagList] = React.useState<string[]>([]);
-  const [tagInput, setTagInput] = React.useState('');
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
   const [showTags, setShowTags] = React.useState(false);
 
@@ -57,7 +56,6 @@ export const CreatePaper = () => {
     setParsedText('');
     setSuggestedTags([]);
     setTagList([]);
-    setTagInput('');
     setIsAutoTagged(false);
     setShowTags(false);
   };
@@ -131,23 +129,16 @@ export const CreatePaper = () => {
 
   const handleAddTag = (value: string) => {
     const trimmed = value.trim();
-    if (trimmed && !tagList.includes(trimmed)) {
+    if (
+      trimmed &&
+      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+    ) {
       setTagList((prev) => [...prev, trimmed]);
     }
-    setTagInput('');
   };
 
   const handleRemoveTag = (tag: string) => {
     setTagList((prev) => prev.filter((t) => t !== tag));
-  };
-
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag(tagInput);
-    } else if (e.key === 'Backspace' && !tagInput && tagList.length > 0) {
-      setTagList((prev) => prev.slice(0, -1));
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -230,30 +221,6 @@ export const CreatePaper = () => {
                     <X className="size-4" />
                   </Button>
                 </div>
-
-                {/* Parsing indicator */}
-                {isParsing && (
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Loader2 className="size-4 animate-spin" />
-                    Parsing file and generating tags...
-                  </div>
-                )}
-
-                {/* Auto Tag button - shows when file is selected and not yet auto-tagged */}
-                {!isParsing && !showTags && (
-                  <div className="space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={`gap-1.5 ${BTN.AUTO_TAG}`}
-                      onClick={handleAutoTag}
-                    >
-                      <Tags className="size-4" />
-                      Auto Tag
-                    </Button>
-                  </div>
-                )}
               </div>
             ) : (
               <label
@@ -280,44 +247,6 @@ export const CreatePaper = () => {
             )}
           </div>
 
-          {/* Tags editor - always visible */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">
-              Tags {tagList.length > 0 && `(${tagList.length})`}
-            </label>
-            <div className="border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1">
-              {tagList.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="gap-1 pr-1 text-xs"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </Badge>
-              ))}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                onBlur={() => {
-                  if (tagInput.trim()) handleAddTag(tagInput);
-                }}
-                placeholder={
-                  tagList.length === 0 ? 'Type a tag and press Enter...' : ''
-                }
-                className="placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none"
-              />
-            </div>
-          </div>
-
           <div className="space-y-1.5">
             <label htmlFor="create-paper-title" className="text-sm font-medium">
               Title <span className="text-destructive">*</span>
@@ -330,6 +259,42 @@ export const CreatePaper = () => {
               }
               placeholder="Enter paper title"
               required
+            />
+          </div>
+
+          {/* Auto Tag button */}
+          {file && (
+            <div className="flex items-center gap-3">
+              {isParsing ? (
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                  <Loader2 className="size-4 animate-spin" />
+                  Parsing file and generating tags...
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={`gap-1.5 ${BTN.AUTO_TAG}`}
+                  onClick={handleAutoTag}
+                >
+                  <Tags className="size-4" />
+                  Auto Tag
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Tags editor - always visible */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">
+              Tags {tagList.length > 0 && `(${tagList.length})`}
+            </label>
+            <TagAutocompleteInput
+              tagList={tagList}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+              placeholder="Type a tag and press Enter..."
             />
           </div>
 

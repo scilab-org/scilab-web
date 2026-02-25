@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { useSearchParams } from 'react-router';
-import { Search, X, ChevronDown } from 'lucide-react';
+import { Search, ChevronDown, X } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { PAPER_STATUS_OPTIONS } from '../constants';
+import { TagAutocompleteInput } from './tag-autocomplete-input';
 
 export const PapersFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,27 +37,19 @@ export const PapersFilter = () => {
   const [tagList, setTagList] = React.useState<string[]>(
     searchParams.getAll('tag'),
   );
-  const [tagInput, setTagInput] = React.useState('');
 
   const handleAddTag = (value: string) => {
     const trimmed = value.trim();
-    if (trimmed && !tagList.includes(trimmed)) {
+    if (
+      trimmed &&
+      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+    ) {
       setTagList((prev) => [...prev, trimmed]);
     }
-    setTagInput('');
   };
 
   const handleRemoveTag = (tag: string) => {
     setTagList((prev) => prev.filter((t) => t !== tag));
-  };
-
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag(tagInput);
-    } else if (e.key === 'Backspace' && !tagInput && tagList.length > 0) {
-      setTagList((prev) => prev.slice(0, -1));
-    }
   };
 
   const activeFilterCount =
@@ -100,7 +92,6 @@ export const PapersFilter = () => {
       isDeleted: 'false',
     });
     setTagList([]);
-    setTagInput('');
     setSearchParams({ page: '1' });
   };
 
@@ -192,44 +183,15 @@ export const PapersFilter = () => {
 
         {/* Tags */}
         <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-          <label
-            htmlFor="filter-tag"
-            className="text-muted-foreground text-xs font-medium"
-          >
+          <label className="text-muted-foreground text-xs font-medium">
             Tags
           </label>
-          <div className="border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1">
-            {tagList.map((tag) => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="gap-1 pr-1 text-xs"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(tag)}
-                  className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
-                >
-                  <X className="size-3" />
-                </button>
-              </Badge>
-            ))}
-            <input
-              id="filter-tag"
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleTagKeyDown}
-              onBlur={() => {
-                if (tagInput.trim()) handleAddTag(tagInput);
-              }}
-              placeholder={
-                tagList.length === 0 ? 'Type a tag and press Enter...' : ''
-              }
-              className="placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none"
-            />
-          </div>
+          <TagAutocompleteInput
+            tagList={tagList}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            placeholder="Type a tag and press Enter..."
+          />
         </div>
       </div>
 
