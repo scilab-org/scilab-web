@@ -43,6 +43,13 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const [isAutoTagged, setIsAutoTagged] = React.useState(
     paper?.isAutoTagged || false,
   );
+  const [cooldownSeconds, setCooldownSeconds] = React.useState(0);
+  const [lastAutoTagTime, setLastAutoTagTime] = React.useState<number | null>(
+    () => {
+      const stored = localStorage.getItem(`autoTagCooldown_${paperId}`);
+      return stored ? parseInt(stored) : null;
+    },
+  );
 
   const updatePaperMutation = useUpdatePaper({
     mutationConfig: {
@@ -69,9 +76,28 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setTagList(paper.tagNames || []);
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
+
+      // Calculate cooldown based on stored timestamp
+      if (lastAutoTagTime) {
+        const elapsed = Math.floor((Date.now() - lastAutoTagTime) / 1000);
+        const remaining = Math.max(0, 180 - elapsed);
+        setCooldownSeconds(remaining);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Countdown timer
+  React.useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCooldownSeconds((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (cooldownSeconds === 0 && lastAutoTagTime) {
+      localStorage.removeItem(`autoTagCooldown_${paperId}`);
+    }
+  }, [cooldownSeconds, lastAutoTagTime, paperId]);
 
   const handleAutoTag = async () => {
     if (!paper) return;
@@ -106,6 +132,10 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     setTagList([...fakeTags]);
     setIsAutoTagging(false);
     setIsAutoTagged(true);
+    const now = Date.now();
+    setLastAutoTagTime(now);
+    localStorage.setItem(`autoTagCooldown_${paperId}`, now.toString());
+    setCooldownSeconds(180);
   };
 
   const handleAddTag = (value: string) => {
@@ -197,13 +227,18 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   variant="outline"
                   size="sm"
                   onClick={handleAutoTag}
-                  disabled={isAutoTagging}
+                  disabled={isAutoTagging || cooldownSeconds > 0}
                   className={`h-7 gap-1 text-xs ${BTN.AUTO_TAG}`}
                 >
                   {isAutoTagging ? (
                     <>
                       <Loader2 className="size-3 animate-spin" />
                       Tagging...
+                    </>
+                  ) : cooldownSeconds > 0 ? (
+                    <>
+                      <Tags className="size-3" />
+                      {`${Math.floor(cooldownSeconds / 60)}:${(cooldownSeconds % 60).toString().padStart(2, '0')}`}
                     </>
                   ) : (
                     <>
