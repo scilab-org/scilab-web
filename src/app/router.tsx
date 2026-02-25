@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 
+import { Navigate } from 'react-router';
+
 import { ProtectedRoute } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
@@ -25,7 +27,7 @@ export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: paths.home.path,
-      lazy: () => import('./routes/landing').then(convert(queryClient)),
+      element: <Navigate to={paths.app.root.getHref()} replace />,
     },
     {
       path: paths.app.root.path,

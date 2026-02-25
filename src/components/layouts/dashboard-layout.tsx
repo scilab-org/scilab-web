@@ -124,7 +124,7 @@ const Breadcrumb = () => {
   return (
     <nav className="flex items-center gap-1 text-sm">
       <NavLink
-        to={paths.home.getHref()}
+        to={paths.app.dashboard.getHref()}
         className="text-muted-foreground hover:text-foreground"
       >
         Home
