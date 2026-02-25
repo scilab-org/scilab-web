@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +28,10 @@ export const DeleteTag = ({ tagId }: DeleteTagProps) => {
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
+        toast.success('Tag deleted successfully');
+      },
+      onError: () => {
+        toast.error('Failed to delete tag');
       },
     },
   });

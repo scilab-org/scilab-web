@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Pencil, Tags, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,10 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
+        toast.success('Paper updated successfully');
+      },
+      onError: () => {
+        toast.error('Failed to update paper');
       },
     },
   });

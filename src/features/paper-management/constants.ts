@@ -1,4 +1,4 @@
-const SERVICE_PREFIX = '';
+const SERVICE_PREFIX = '/lab-service';
 
 export const PAPER_MANAGEMENT_API = {
   PAPERS: `${SERVICE_PREFIX}/papers`,

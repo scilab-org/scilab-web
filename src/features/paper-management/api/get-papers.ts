@@ -15,7 +15,7 @@ export const getPapers = (
   return api.get(PAPER_MANAGEMENT_API.PAPERS, {
     params,
     paramsSerializer: {
-      indexes: null, // serialize arrays as Tag=a&Tag=b (no brackets)
+      indexes: null,
     },
   });
 };

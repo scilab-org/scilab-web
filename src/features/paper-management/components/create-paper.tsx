@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Plus, Upload, X, Tags, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,10 @@ export const CreatePaper = () => {
       onSuccess: () => {
         setOpen(false);
         resetForm();
+        toast.success('Paper created successfully');
+      },
+      onError: () => {
+        toast.error('Failed to create paper');
       },
     },
   });
