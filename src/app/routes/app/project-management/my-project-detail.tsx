@@ -4,13 +4,13 @@ import { useParams, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
-  Calendar,
-  Database,
+  Users,
   FileText,
+  Database,
+  Calendar,
   Hash,
   Info,
-  Trash2,
-  Users,
+  Pencil,
 } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
@@ -22,19 +22,26 @@ import {
   useProjectDetail,
   getProjectQueryOptions,
 } from '@/features/project-management/api/projects/get-project';
-import { useDeleteProject } from '@/features/project-management/api/projects/delete-project';
+import { useMyProjectRole } from '@/features/project-management/api/projects/get-my-role';
+import { useRemoveMembers } from '@/features/project-management/api/members/remove-members';
+import { useRemoveProjectPapers } from '@/features/project-management/api/papers/remove-project-papers';
 import { ProjectView } from '@/features/project-management/components/projects/project-view';
+import { UpdateProject } from '@/features/project-management/components/projects/update-project';
 import { ProjectMembersList } from '@/features/project-management/components/members/project-members-list';
+import { AddMembersModal } from '@/features/project-management/components/members/add-members-modal';
 import { ProjectPapersList } from '@/features/project-management/components/papers/project-papers-list';
+import { AddPapersModal } from '@/features/project-management/components/papers/add-papers-modal';
 import { DatasetsList } from '@/features/dataset-management/components/datasets-list';
+import { CreateDataset } from '@/features/dataset-management/components/create-dataset';
+import { UpdateDataset } from '@/features/dataset-management/components/update-dataset';
 import { ExcelChartViewer } from '@/features/dataset-management/components/excel-chart-viewer';
+import { useDeleteDataset } from '@/features/dataset-management/api/delete-dataset';
 import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
   async ({ params }: { params: Record<string, string | undefined> }) => {
     const projectId = params.projectId as string;
-
     const query = getProjectQueryOptions(projectId);
 
     try {
@@ -70,10 +77,10 @@ const STATUS_LABEL: Record<number, string> = {
 };
 
 const STATUS_CLASS: Record<number, string> = {
-  1: 'border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  2: 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  3: 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300',
-  4: 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  1: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+  2: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+  3: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+  4: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
 };
 
 const BORDER_CLASS: Record<number, string> = {
@@ -90,35 +97,110 @@ const formatDate = (dateString: string) =>
     day: 'numeric',
   });
 
-const ProjectDetailRoute = () => {
+const MyProjectDetailRoute = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [addMembersOpen, setAddMembersOpen] = useState(false);
+  const [addPapersOpen, setAddPapersOpen] = useState(false);
+  const [createDatasetOpen, setCreateDatasetOpen] = useState(false);
+  const [updateDatasetOpen, setUpdateDatasetOpen] = useState(false);
+  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<
+    string | undefined
+  >();
+  const [removingPaperId, setRemovingPaperId] = useState<string | undefined>();
   const [chartViewerOpen, setChartViewerOpen] = useState(false);
   const [chartDataset, setChartDataset] = useState<Dataset | null>(null);
 
+  // Detect role from API: GET /projects/{projectId}/my-role
+  const roleQuery = useMyProjectRole({
+    projectId: projectId!,
+    queryConfig: { enabled: !!projectId },
+  });
+  const isManager = roleQuery.data?.result === 'project:project-manager';
+
   const projectQuery = useProjectDetail({
     projectId: projectId!,
-    queryConfig: {
-      enabled: !!projectId,
-    },
+    queryConfig: { enabled: !!projectId },
   });
 
-  const deleteMutation = useDeleteProject({
+  const removeMemberMutation = useRemoveMembers({
+    projectId: projectId!,
     mutationConfig: {
       onSuccess: () => {
-        navigate(paths.app.projects.getHref());
+        setRemovingMemberId(undefined);
+        toast.success('Member removed successfully');
+      },
+      onError: (error: any) => {
+        setRemovingMemberId(undefined);
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          toast.error('You do not have permission to perform this action.');
+        } else {
+          toast.error('Failed to remove member. Please try again.');
+        }
       },
     },
   });
 
-  const handleDelete = () => {
+  const removePaperMutation = useRemoveProjectPapers({
+    projectId: projectId!,
+    mutationConfig: {
+      onSuccess: () => {
+        setRemovingPaperId(undefined);
+        toast.success('Paper removed successfully');
+      },
+      onError: (error: any) => {
+        setRemovingPaperId(undefined);
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          toast.error('You do not have permission to perform this action.');
+        } else {
+          toast.error('Failed to remove paper. Please try again.');
+        }
+      },
+    },
+  });
+
+  const deleteDatasetMutation = useDeleteDataset({
+    mutationConfig: {
+      onSuccess: () => {
+        // Dataset list will automatically refresh due to query invalidation
+      },
+    },
+  });
+
+  const handleRemoveMember = (memberId: string) => {
     if (
       confirm(
-        'Are you sure you want to delete this project? This action cannot be undone.',
+        'Are you sure you want to remove this member from the project? This action cannot be undone.',
       )
     ) {
-      deleteMutation.mutate(projectId!);
+      setRemovingMemberId(memberId);
+      removeMemberMutation.mutate({ memberIds: [memberId] });
+    }
+  };
+
+  const handleRemovePaper = (paperId: string) => {
+    setRemovingPaperId(paperId);
+    removePaperMutation.mutate({ paperIds: [paperId] });
+  };
+
+  const handleUpdateDataset = (dataset: Dataset) => {
+    setSelectedDataset(dataset);
+    setUpdateDatasetOpen(true);
+  };
+
+  const handleDeleteDataset = (datasetId: string) => {
+    if (
+      confirm(
+        'Are you sure you want to delete this dataset? This action cannot be undone.',
+      )
+    ) {
+      deleteDatasetMutation.mutate(datasetId);
     }
   };
 
@@ -138,10 +220,10 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project ID is required</p>
           <Button
-            onClick={() => navigate(paths.app.projects.getHref())}
+            onClick={() => navigate(paths.app.assignedProjects.list.getHref())}
             className="mt-4"
           >
-            Back to Projects
+            Back to Assigned Projects
           </Button>
         </div>
       </ContentLayout>
@@ -167,10 +249,10 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project not found</p>
           <Button
-            onClick={() => navigate(paths.app.projects.getHref())}
+            onClick={() => navigate(paths.app.assignedProjects.list.getHref())}
             className="mt-4"
           >
-            Back to Projects
+            Back to Assigned Projects
           </Button>
         </div>
       </ContentLayout>
@@ -187,11 +269,11 @@ const ProjectDetailRoute = () => {
       <div className="space-y-5">
         {/* Back navigation */}
         <button
-          onClick={() => navigate(paths.app.projects.getHref())}
+          onClick={() => navigate(paths.app.assignedProjects.list.getHref())}
           className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Projects
+          Back to Assigned Projects
         </button>
 
         {/* Project banner */}
@@ -199,7 +281,6 @@ const ProjectDetailRoute = () => {
           className={`border-border bg-card rounded-xl border border-l-4 px-6 py-5 shadow-sm ${borderClass}`}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
-            {/* Left: name, code, description */}
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-foreground text-2xl font-bold">
@@ -223,22 +304,21 @@ const ProjectDetailRoute = () => {
                 </p>
               )}
             </div>
-
-            {/* Right: actions + dates */}
             <div className="flex flex-col items-end gap-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={deleteMutation.isPending}
-                  className="flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
-                </Button>
-              </div>
-              <div className="flex flex-col gap-1 text-sm">
+              {isManager && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUpdateOpen(true)}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                </div>
+              )}
+              <div className="flex flex-col gap-1.5 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="text-muted-foreground h-4 w-4" />
                   <span className="text-muted-foreground">Start:</span>
@@ -289,22 +369,84 @@ const ProjectDetailRoute = () => {
           )}
 
           {activeTab === 'members' && (
-            <ProjectMembersList projectId={projectId} readOnly />
+            <ProjectMembersList
+              projectId={projectId}
+              viewerIsProjectManager={isManager}
+              onAddMembersClick={
+                isManager ? () => setAddMembersOpen(true) : undefined
+              }
+              onRemoveMember={isManager ? handleRemoveMember : undefined}
+              removingMemberId={removingMemberId}
+            />
           )}
 
           {activeTab === 'papers' && (
-            <ProjectPapersList projectId={projectId} readOnly />
+            <ProjectPapersList
+              projectId={projectId}
+              onAddPapersClick={
+                isManager ? () => setAddPapersOpen(true) : undefined
+              }
+              onRemovePaper={isManager ? handleRemovePaper : undefined}
+              removingPaperId={removingPaperId}
+              readOnly={!isManager}
+            />
           )}
 
           {activeTab === 'datasets' && (
             <DatasetsList
               projectId={projectId}
-              readOnly
+              onCreateClick={
+                isManager ? () => setCreateDatasetOpen(true) : undefined
+              }
+              onUpdateClick={isManager ? handleUpdateDataset : undefined}
+              onDeleteClick={isManager ? handleDeleteDataset : undefined}
+              readOnly={!isManager}
               onViewChartClick={handleViewChart}
             />
           )}
         </div>
       </div>
+
+      {isManager && (
+        <UpdateProject
+          project={project}
+          open={updateOpen}
+          onOpenChange={setUpdateOpen}
+        />
+      )}
+
+      {isManager && (
+        <AddMembersModal
+          projectId={projectId}
+          open={addMembersOpen}
+          onOpenChange={setAddMembersOpen}
+        />
+      )}
+
+      {isManager && (
+        <AddPapersModal
+          projectId={projectId}
+          open={addPapersOpen}
+          onOpenChange={setAddPapersOpen}
+        />
+      )}
+
+      {isManager && (
+        <CreateDataset
+          projectId={projectId}
+          open={createDatasetOpen}
+          onOpenChange={setCreateDatasetOpen}
+        />
+      )}
+
+      {isManager && (
+        <UpdateDataset
+          projectId={projectId}
+          dataset={selectedDataset}
+          open={updateDatasetOpen}
+          onOpenChange={setUpdateDatasetOpen}
+        />
+      )}
 
       {chartViewerOpen && chartDataset && (
         <ExcelChartViewer
@@ -317,4 +459,4 @@ const ProjectDetailRoute = () => {
   );
 };
 
-export default ProjectDetailRoute;
+export default MyProjectDetailRoute;

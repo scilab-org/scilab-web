@@ -3,20 +3,22 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { Project } from '../types';
+import { Project } from '../../types';
 
 type ProjectViewProps = {
   project: Project;
-  onUpdate: () => void;
-  onDelete: () => void;
-  isDeleting: boolean;
+  onUpdate?: () => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
+  readOnly?: boolean;
 };
 
 export const ProjectView = ({
   project,
   onUpdate,
   onDelete,
-  isDeleting,
+  isDeleting = false,
+  readOnly = false,
 }: ProjectViewProps) => {
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -74,23 +76,25 @@ export const ProjectView = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onUpdate}>
-            <Pencil className="size-4" />
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="size-4" />
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
+      {!readOnly && (
+        <div className="flex items-center justify-end">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onUpdate}>
+              <Pencil className="size-4" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={onDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="size-4" />
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Project Header */}
       <div className="border-border from-muted/50 to-muted/30 rounded-xl border bg-linear-to-br p-6 shadow-sm">

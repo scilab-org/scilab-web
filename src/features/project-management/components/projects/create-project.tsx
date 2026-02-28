@@ -14,8 +14,8 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
-import { useCreateProject } from '../api/create-project';
-import { CreateProjectDto } from '../types';
+import { useCreateProject } from '../../api/projects/create-project';
+import { CreateProjectDto } from '../../types';
 
 export const CreateProject = () => {
   const [open, setOpen] = useState(false);

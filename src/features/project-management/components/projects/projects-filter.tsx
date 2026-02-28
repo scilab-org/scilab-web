@@ -5,7 +5,7 @@ import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-import { PROJECT_STATUS_OPTIONS } from '../constants';
+import { PROJECT_STATUS_OPTIONS } from '../../constants';
 
 export const ProjectsFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();

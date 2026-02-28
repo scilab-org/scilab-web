@@ -7,8 +7,8 @@ import { MutationConfig } from '@/lib/react-query';
 import {
   PROJECT_MANAGEMENT_API,
   PROJECT_MANAGEMENT_QUERY_KEYS,
-} from '../constants';
-import { UpdateProjectDto } from '../types';
+} from '../../constants';
+import { UpdateProjectDto } from '../../types';
 
 export type UpdateProjectPayload = {
   projectId: string;

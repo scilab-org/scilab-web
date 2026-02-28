@@ -13,8 +13,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
-import { useUpdateProject } from '../api/update-project';
-import { Project, UpdateProjectDto } from '../types';
+import { useUpdateProject } from '../../api/projects/update-project';
+import { Project, UpdateProjectDto } from '../../types';
 
 type UpdateProjectProps = {
   project: Project | null;

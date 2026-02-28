@@ -17,11 +17,11 @@ import {
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
 
-import { useProjects } from '../api/get-projects';
-import { getProjectQueryOptions } from '../api/get-project';
-import { useDeleteProject } from '../api/delete-project';
+import { useProjects } from '../../api/projects/get-projects';
+import { getProjectQueryOptions } from '../../api/projects/get-project';
+import { useDeleteProject } from '../../api/projects/delete-project';
 import { UpdateProject } from './update-project';
-import { Project } from '../types';
+import { Project } from '../../types';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);
