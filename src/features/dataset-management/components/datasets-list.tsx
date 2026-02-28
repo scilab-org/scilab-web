@@ -19,6 +19,7 @@ type DatasetCardProps = {
   onUpdate: (dataset: Dataset) => void;
   onDelete: (datasetId: string) => void;
   onViewChart?: (dataset: Dataset) => void;
+  readOnly?: boolean;
 };
 
 const DatasetCard = ({
@@ -26,6 +27,7 @@ const DatasetCard = ({
   onUpdate,
   onDelete,
   onViewChart,
+  readOnly = false,
 }: DatasetCardProps) => {
   // Check if file supports chart viewing (Excel and CSV)
   const canViewChart = (filePath: string) => {
@@ -123,24 +125,28 @@ const DatasetCard = ({
               <Download className="h-3.5 w-3.5" />
               Download
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onUpdate(dataset)}
-              className="flex items-center gap-1.5"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete(dataset.id)}
-              className="flex items-center gap-1.5"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete
-            </Button>
+            {!readOnly && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onUpdate(dataset)}
+                  className="flex items-center gap-1.5"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(dataset.id)}
+                  className="flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -150,10 +156,11 @@ const DatasetCard = ({
 
 type DatasetsListProps = {
   projectId: string;
-  onCreateClick: () => void;
-  onUpdateClick: (dataset: Dataset) => void;
-  onDeleteClick: (datasetId: string) => void;
+  onCreateClick?: () => void;
+  onUpdateClick?: (dataset: Dataset) => void;
+  onDeleteClick?: (datasetId: string) => void;
   onViewChartClick?: (dataset: Dataset) => void;
+  readOnly?: boolean;
 };
 
 export const DatasetsList = ({
@@ -162,6 +169,7 @@ export const DatasetsList = ({
   onUpdateClick,
   onDeleteClick,
   onViewChartClick,
+  readOnly = false,
 }: DatasetsListProps) => {
   const [page, setPage] = useState(1);
   const pageSize = 5;
@@ -198,14 +206,16 @@ export const DatasetsList = ({
               </p>
             )}
           </div>
-          <Button
-            onClick={onCreateClick}
-            size="sm"
-            className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
-          >
-            <Plus className="h-4 w-4" />
-            Upload Dataset
-          </Button>
+          {!readOnly && (
+            <Button
+              onClick={onCreateClick}
+              size="sm"
+              className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+            >
+              <Plus className="h-4 w-4" />
+              Upload Dataset
+            </Button>
+          )}
         </div>
       </div>
       <div className="p-6">
@@ -220,9 +230,10 @@ export const DatasetsList = ({
                 <DatasetCard
                   key={dataset.id}
                   dataset={dataset}
-                  onUpdate={onUpdateClick}
-                  onDelete={onDeleteClick}
+                  onUpdate={onUpdateClick ?? (() => {})}
+                  onDelete={onDeleteClick ?? (() => {})}
                   onViewChart={onViewChartClick}
+                  readOnly={readOnly}
                 />
               ))}
             </div>

@@ -1,10 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
-import { getProjectsQueryOptions } from '@/features/project-management/api/get-projects';
-import { CreateProject } from '@/features/project-management/components/create-project';
-import { ProjectsList } from '@/features/project-management/components/projects-list';
-import { ProjectsFilter } from '@/features/project-management/components/projects-filter';
+import { getProjectsQueryOptions } from '@/features/project-management/api/projects/get-projects';
+import { CreateProject } from '@/features/project-management/components/projects/create-project';
+import { ProjectsList } from '@/features/project-management/components/projects/projects-list';
+import { ProjectsFilter } from '@/features/project-management/components/projects/projects-filter';
 
 export const clientLoader =
   (queryClient: QueryClient) =>

@@ -1,5 +1,6 @@
 import {
   Bell,
+  Bookmark,
   BookOpen,
   ChevronRight,
   FileText,
@@ -220,6 +221,11 @@ const navigation: SideNavigationItem[] = [
   },
   { name: 'Sample', to: paths.app.sample.getHref(), icon: BookOpen },
   { name: 'Projects', to: paths.app.projects.getHref(), icon: FolderKanban },
+  {
+    name: 'Assigned Projects',
+    to: paths.app.assignedProjects.list.getHref(),
+    icon: Bookmark,
+  },
   {
     name: 'Papers',
     to: paths.app.paperManagement.papers.getHref(),

@@ -64,5 +64,15 @@ export const paths = {
         getHref: () => '/app/tags',
       },
     },
+    assignedProjects: {
+      list: {
+        path: 'my-projects',
+        getHref: () => '/app/my-projects',
+      },
+      detail: {
+        path: 'my-projects/:projectId',
+        getHref: (projectId: string) => `/app/my-projects/${projectId}`,
+      },
+    },
   },
 } as const;
