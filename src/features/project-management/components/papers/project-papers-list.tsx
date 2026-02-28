@@ -1,131 +1,32 @@
 import { useState, useEffect } from 'react';
-import {
-  FileText,
-  Trash2,
-  Loader2,
-  Search,
-  Plus,
-  Download,
-} from 'lucide-react';
+import { Trash2, Loader2, Search, Plus, Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { ProjectPaper } from '../../types';
 
-type PaperCardProps = {
-  paper: ProjectPaper;
-  onRemove: (paperId: string) => void;
-  isRemoving?: boolean;
-  readOnly?: boolean;
-};
-
-const PaperCard = ({
-  paper,
-  onRemove,
-  isRemoving,
-  readOnly = false,
-}: PaperCardProps) => {
-  const getStatusColor = (status: string | null) => {
-    switch (status?.toLowerCase()) {
-      case 'published':
-        return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-      default:
-        return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-    }
-  };
-
-  return (
-    <div className="border-border rounded-lg border p-4 transition-all duration-200 hover:shadow-md">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-            <FileText className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-foreground font-medium">
-                {paper.title || '(Untitled)'}
-              </h4>
-              {paper.status && (
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
-                >
-                  {paper.status}
-                </span>
-              )}
-            </div>
-            {paper.abstract && (
-              <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
-                {paper.abstract}
-              </p>
-            )}
-            <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-              {paper.doi && (
-                <span>
-                  <span className="font-medium">DOI:</span> {paper.doi}
-                </span>
-              )}
-              {paper.journalName && (
-                <span>
-                  <span className="font-medium">Journal:</span>{' '}
-                  {paper.journalName}
-                </span>
-              )}
-              {paper.conferenceName && (
-                <span>
-                  <span className="font-medium">Conference:</span>{' '}
-                  {paper.conferenceName}
-                </span>
-              )}
-              {paper.publicationDate && (
-                <span>
-                  <span className="font-medium">Published:</span>{' '}
-                  {new Date(paper.publicationDate).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {paper.filePath && (
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href={paper.filePath}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span className="ml-1.5">Download</span>
-              </a>
-            </Button>
-          )}
-          {!readOnly && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onRemove(paper.id)}
-              disabled={isRemoving}
-            >
-              {isRemoving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-              <span className="ml-1.5">Remove</span>
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+const getStatusColor = (status: string | null) => {
+  switch (status?.toLowerCase()) {
+    case 'published':
+      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+    case 'draft':
+      return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
+    case 'rejected':
+      return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+    default:
+      return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+  }
 };
 
 type ProjectPapersListProps = {
@@ -205,25 +106,91 @@ export const ProjectPapersList = ({
       </div>
 
       {/* Body */}
-      <div className="p-6">
+      <div>
         {papersQuery.isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+          <div className="space-y-2 p-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : papers.length > 0 ? (
-          <div className="space-y-3">
-            {papers.map((paper) => (
-              <PaperCard
-                key={paper.id}
-                paper={paper}
-                onRemove={onRemovePaper ?? (() => {})}
-                isRemoving={removingPaperId === paper.id}
-                readOnly={readOnly}
-              />
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>DOI</TableHead>
+                <TableHead>Journal / Conference</TableHead>
+                <TableHead>Published</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {papers.map((paper) => (
+                <TableRow key={paper.id}>
+                  <TableCell className="font-medium">
+                    {paper.title || '(Untitled)'}
+                  </TableCell>
+                  <TableCell>
+                    {paper.status ? (
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
+                      >
+                        {paper.status}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {paper.doi || '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
+                    {paper.journalName || paper.conferenceName || '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {paper.publicationDate
+                      ? new Date(paper.publicationDate).toLocaleDateString()
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {paper.filePath && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={paper.filePath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span className="ml-1.5">Download</span>
+                          </a>
+                        </Button>
+                      )}
+                      {!readOnly && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() =>
+                            (onRemovePaper ?? (() => {}))(paper.id)
+                          }
+                          disabled={removingPaperId === paper.id}
+                        >
+                          {removingPaperId === paper.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                          <span className="ml-1.5">Remove</span>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         ) : searchDebounce ? (
           <div className="bg-muted/30 rounded-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">

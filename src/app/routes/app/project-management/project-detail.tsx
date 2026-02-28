@@ -12,6 +12,10 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
+import { useRemoveMembers } from '@/features/project-management/api/members/remove-members';
+import { useRemoveProjectManagers } from '@/features/project-management/api/members/remove-project-managers';
+import { AddMembersModal } from '@/features/project-management/components/members/add-members-modal';
+import { getUserGroups } from '@/lib/auth';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
@@ -96,6 +100,15 @@ const ProjectDetailRoute = () => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [chartViewerOpen, setChartViewerOpen] = useState(false);
   const [chartDataset, setChartDataset] = useState<Dataset | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<
+    string | undefined
+  >();
+  const [removingManagerId, setRemovingManagerId] = useState<
+    string | undefined
+  >();
+  const [addManagersOpen, setAddManagersOpen] = useState(false);
+
+  const viewerIsSystemAdmin = getUserGroups().includes('system:admin');
 
   const projectQuery = useProjectDetail({
     projectId: projectId!,
@@ -111,6 +124,66 @@ const ProjectDetailRoute = () => {
       },
     },
   });
+
+  const removeMemberMutation = useRemoveMembers({
+    projectId: projectId!,
+    mutationConfig: {
+      onSuccess: () => {
+        setRemovingMemberId(undefined);
+        toast.success('Member removed successfully');
+      },
+      onError: (error: any) => {
+        setRemovingMemberId(undefined);
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          toast.error('You do not have permission to perform this action.');
+        } else {
+          toast.error('Failed to remove member. Please try again.');
+        }
+      },
+    },
+  });
+
+  const removeManagerMutation = useRemoveProjectManagers({
+    projectId: projectId!,
+    mutationConfig: {
+      onSuccess: () => {
+        setRemovingManagerId(undefined);
+        toast.success('Manager removed successfully');
+      },
+      onError: (error: any) => {
+        setRemovingManagerId(undefined);
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          toast.error('You do not have permission to perform this action.');
+        } else {
+          toast.error('Failed to remove manager. Please try again.');
+        }
+      },
+    },
+  });
+
+  const handleRemoveManager = (memberId: string) => {
+    if (
+      confirm(
+        'Are you sure you want to remove this manager from the project? This action cannot be undone.',
+      )
+    ) {
+      setRemovingManagerId(memberId);
+      removeManagerMutation.mutate({ memberIds: [memberId] });
+    }
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    if (
+      confirm(
+        'Are you sure you want to remove this member from the project? This action cannot be undone.',
+      )
+    ) {
+      setRemovingMemberId(memberId);
+      removeMemberMutation.mutate({ memberIds: [memberId] });
+    }
+  };
 
   const handleDelete = () => {
     if (
@@ -289,7 +362,16 @@ const ProjectDetailRoute = () => {
           )}
 
           {activeTab === 'members' && (
-            <ProjectMembersList projectId={projectId} readOnly />
+            <ProjectMembersList
+              projectId={projectId}
+              onRemoveMember={handleRemoveMember}
+              removingMemberId={removingMemberId}
+              onRemoveManager={handleRemoveManager}
+              removingManagerId={removingManagerId}
+              onAddManagersClick={
+                viewerIsSystemAdmin ? () => setAddManagersOpen(true) : undefined
+              }
+            />
           )}
 
           {activeTab === 'papers' && (
@@ -305,6 +387,14 @@ const ProjectDetailRoute = () => {
           )}
         </div>
       </div>
+
+      {viewerIsSystemAdmin && (
+        <AddMembersModal
+          projectId={projectId!}
+          open={addManagersOpen}
+          onOpenChange={setAddManagersOpen}
+        />
+      )}
 
       {chartViewerOpen && chartDataset && (
         <ExcelChartViewer

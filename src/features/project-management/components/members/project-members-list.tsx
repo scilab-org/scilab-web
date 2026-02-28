@@ -4,14 +4,31 @@ import {
   Trash2,
   Loader2,
   Search,
-  Users,
-  ChevronDown,
   Pencil,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { getUserGroups } from '@/lib/auth';
@@ -28,30 +45,34 @@ const isManagerRole = (role: string) =>
 
 type Group = { id?: string | null; name?: string | null };
 
-type MemberCardProps = {
+type MemberTableRowProps = {
   member: ProjectMember;
   availableGroups: Group[];
   viewerIsSystemAdmin: boolean;
   viewerIsProjectManager: boolean;
   onRemove: (memberId: string) => void;
+  onRemoveManager: (memberId: string) => void;
   onUpdateRole: (memberId: string, groupName: string) => void;
   isRemoving?: boolean;
+  isRemovingManager?: boolean;
   isUpdatingRole?: boolean;
   readOnly?: boolean;
 };
 
-const MemberCard = ({
+const MemberTableRow = ({
   member,
   availableGroups,
   viewerIsSystemAdmin,
   viewerIsProjectManager,
   onRemove,
+  onRemoveManager,
   onUpdateRole,
   isRemoving,
+  isRemovingManager,
   isUpdatingRole,
   readOnly = false,
-}: MemberCardProps) => {
-  const [editingRole, setEditingRole] = useState(false);
+}: MemberTableRowProps) => {
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [newRole, setNewRole] = useState(member.role);
 
   const getRoleColor = (role: string) => {
@@ -78,132 +99,77 @@ const MemberCard = ({
 
   const handleSaveRole = () => {
     if (!newRole || newRole === member.role) {
-      setEditingRole(false);
+      setRoleSheetOpen(false);
       return;
     }
     onUpdateRole(member.memberId, newRole);
-    setEditingRole(false);
+    setRoleSheetOpen(false);
   };
 
-  const handleCancelEdit = () => {
+  const handleOpenRoleSheet = () => {
     setNewRole(member.role);
-    setEditingRole(false);
+    setRoleSheetOpen(true);
   };
 
   return (
-    <div className="border-border rounded-lg border transition-all duration-200 hover:shadow-md">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full">
-            <Users className="h-5 w-5" />
+    <>
+      <TableRow>
+        <TableCell>
+          <div className="font-medium">
+            {member.firstName} {member.lastName}
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h4 className="text-foreground font-medium">
-                {member.firstName} {member.lastName}
-              </h4>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getRoleColor(member.role)}`}
+          {!member.enabled && (
+            <span className="rounded-full border border-red-200 bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+              Disabled
+            </span>
+          )}
+        </TableCell>
+        <TableCell className="text-muted-foreground text-sm">
+          {member.email}
+        </TableCell>
+        <TableCell className="text-muted-foreground text-sm">
+          {member.username}
+        </TableCell>
+        <TableCell>
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getRoleColor(member.role)}`}
+          >
+            {member.role}
+          </span>
+        </TableCell>
+        <TableCell className="text-muted-foreground text-sm">
+          {formatDate(member.joinedAt)}
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-2">
+            {/* System admin: Remove only for manager members */}
+            {!readOnly && viewerIsSystemAdmin && isManager && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onRemoveManager(member.memberId)}
+                disabled={isRemovingManager}
+                className="flex items-center gap-1.5"
               >
-                {member.role}
-              </span>
-              {!member.enabled && (
-                <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-                  Disabled
-                </span>
-              )}
-            </div>
-            <div className="mt-1 space-y-0.5">
-              <p className="text-muted-foreground text-sm">
-                <span className="font-medium">Email:</span> {member.email}
-              </p>
-              <p className="text-muted-foreground text-sm">
-                <span className="font-medium">Username:</span> {member.username}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                <span className="font-medium">Joined:</span>{' '}
-                {formatDate(member.joinedAt)}
-              </p>
-            </div>
-          </div>
-        </div>
+                {isRemovingManager ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                Remove
+              </Button>
+            )}
 
-        {/* System admin: Remove only for manager members */}
-        {!readOnly && viewerIsSystemAdmin && isManager && (
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onRemove(member.memberId)}
-              disabled={isRemoving}
-              className="flex items-center gap-1.5"
-            >
-              {isRemoving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-              Remove
-            </Button>
-          </div>
-        )}
-
-        {/* Project manager viewer: Update Role + Remove for non-manager members */}
-        {!readOnly &&
-          !viewerIsSystemAdmin &&
-          viewerIsProjectManager &&
-          !isManager && (
-            <div className="flex shrink-0 items-center gap-2">
-              {editingRole ? (
-                <>
-                  <div className="relative">
-                    <select
-                      value={newRole}
-                      onChange={(e) => setNewRole(e.target.value)}
-                      className="border-input bg-background text-foreground focus:ring-ring h-8 appearance-none rounded-md border py-0 pr-7 pl-3 text-sm shadow-sm focus:ring-2 focus:outline-none"
-                    >
-                      {availableGroups.map((group) => (
-                        <option
-                          key={group.id ?? group.name}
-                          value={group.name ?? ''}
-                        >
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 h-3 w-3 -translate-y-1/2" />
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveRole}
-                    disabled={isUpdatingRole || !newRole}
-                    className="h-8 px-3"
-                  >
-                    {isUpdatingRole ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      'Save'
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleCancelEdit}
-                    disabled={isUpdatingRole}
-                    className="h-8 px-3"
-                  >
-                    Cancel
-                  </Button>
-                </>
-              ) : (
+            {/* Project manager: Update Role + Remove for non-manager members */}
+            {!readOnly &&
+              !viewerIsSystemAdmin &&
+              viewerIsProjectManager &&
+              !isManager && (
                 <>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setNewRole(member.role);
-                      setEditingRole(true);
-                    }}
+                    onClick={handleOpenRoleSheet}
                     disabled={isRemoving}
                     className="flex items-center gap-1.5"
                   >
@@ -226,10 +192,96 @@ const MemberCard = ({
                   </Button>
                 </>
               )}
-            </div>
-          )}
-      </div>
-    </div>
+          </div>
+        </TableCell>
+      </TableRow>
+
+      {/* Update Role Sheet */}
+      <Sheet open={roleSheetOpen} onOpenChange={setRoleSheetOpen}>
+        <SheetContent className="flex w-full flex-col sm:max-w-md">
+          <SheetHeader className="space-y-1">
+            <SheetTitle className="flex items-center gap-2">
+              <ShieldCheck className="text-primary h-5 w-5" />
+              Update Member Role
+            </SheetTitle>
+            <SheetDescription>
+              Changing role for{' '}
+              <span className="text-foreground font-semibold">
+                {member.firstName} {member.lastName}
+              </span>
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* Current role */}
+          <div className="border-border bg-muted/30 mt-6 rounded-lg border p-4">
+            <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
+              Current Role
+            </p>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleColor(member.role)}`}
+            >
+              {member.role}
+            </span>
+          </div>
+
+          {/* Role options */}
+          <div className="mt-6 flex-1 space-y-2">
+            <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
+              Select New Role
+            </p>
+            {availableGroups.length === 0 ? (
+              <div className="text-muted-foreground py-8 text-center text-sm">
+                No roles available
+              </div>
+            ) : (
+              availableGroups.map((group) => {
+                const name = group.name ?? '';
+                const isSelected = newRole === name;
+                return (
+                  <button
+                    key={group.id ?? name}
+                    type="button"
+                    onClick={() => setNewRole(name)}
+                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/5 text-foreground font-medium shadow-sm'
+                        : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-muted/40'
+                    }`}
+                  >
+                    <span>{name}</span>
+                    {isSelected && (
+                      <Check className="text-primary h-4 w-4 shrink-0" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <SheetFooter className="mt-6 flex gap-2 sm:flex-row">
+            <SheetClose asChild>
+              <Button variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </SheetClose>
+            <Button
+              className="flex-1"
+              onClick={handleSaveRole}
+              disabled={isUpdatingRole || !newRole || newRole === member.role}
+            >
+              {isUpdatingRole ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 
@@ -237,8 +289,11 @@ type ProjectMembersListProps = {
   projectId: string;
   viewerIsProjectManager?: boolean;
   onAddMembersClick?: () => void;
+  onAddManagersClick?: () => void;
   onRemoveMember?: (memberId: string) => void;
+  onRemoveManager?: (memberId: string) => void;
   removingMemberId?: string;
+  removingManagerId?: string;
   readOnly?: boolean;
 };
 
@@ -246,8 +301,11 @@ export const ProjectMembersList = ({
   projectId,
   viewerIsProjectManager = false,
   onAddMembersClick,
+  onAddManagersClick,
   onRemoveMember,
+  onRemoveManager,
   removingMemberId,
+  removingManagerId,
   readOnly = false,
 }: ProjectMembersListProps) => {
   // Detect role from JWT groups directly — reliable regardless of project membership
@@ -342,16 +400,28 @@ export const ProjectMembersList = ({
               </p>
             )}
           </div>
-          {!readOnly && !!onAddMembersClick && (
-            <Button
-              onClick={onAddMembersClick}
-              size="sm"
-              className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add Members
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {viewerIsSystemAdmin && !!onAddManagersClick && (
+              <Button
+                onClick={onAddManagersClick}
+                size="sm"
+                className="flex items-center gap-2 bg-orange-600 text-white hover:bg-orange-700"
+              >
+                <UserPlus className="h-4 w-4" />
+                Add Manager
+              </Button>
+            )}
+            {!readOnly && !!onAddMembersClick && (
+              <Button
+                onClick={onAddMembersClick}
+                size="sm"
+                className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <UserPlus className="h-4 w-4" />
+                Add Members
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -372,32 +442,48 @@ export const ProjectMembersList = ({
         </div>
       </div>
 
-      <div className="p-6">
+      <div>
         {membersQuery.isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          <div className="space-y-2 p-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : members && members.length > 0 ? (
           <>
-            <div className="space-y-3">
-              {sortedMembers.map((member: ProjectMember) => (
-                <MemberCard
-                  key={member.memberId}
-                  member={member}
-                  availableGroups={availableGroups}
-                  viewerIsSystemAdmin={viewerIsSystemAdmin}
-                  viewerIsProjectManager={viewerIsProjectManager}
-                  onRemove={onRemoveMember ?? (() => {})}
-                  onUpdateRole={handleUpdateRole}
-                  isRemoving={removingMemberId === member.memberId}
-                  isUpdatingRole={updatingMemberId === member.memberId}
-                  readOnly={readOnly}
-                />
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedMembers.map((member: ProjectMember) => (
+                  <MemberTableRow
+                    key={member.memberId}
+                    member={member}
+                    availableGroups={availableGroups}
+                    viewerIsSystemAdmin={viewerIsSystemAdmin}
+                    viewerIsProjectManager={viewerIsProjectManager}
+                    onRemove={onRemoveMember ?? (() => {})}
+                    onRemoveManager={onRemoveManager ?? (() => {})}
+                    onUpdateRole={handleUpdateRole}
+                    isRemoving={removingMemberId === member.memberId}
+                    isRemovingManager={removingManagerId === member.memberId}
+                    isUpdatingRole={updatingMemberId === member.memberId}
+                    readOnly={readOnly}
+                  />
+                ))}
+              </TableBody>
+            </Table>
 
             {paging && paging.totalPages > 1 && (
-              <div className="border-border mt-6 flex items-center justify-center gap-2 border-t pt-6">
+              <div className="border-border mt-4 flex items-center justify-center gap-2 border-t px-6 py-4">
                 <Button
                   variant="outline"
                   size="sm"
