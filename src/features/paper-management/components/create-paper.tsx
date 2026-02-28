@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Plus, Upload, X } from 'lucide-react';
+import { Plus, Upload, X, Tags, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,9 @@ import {
 } from '@/components/ui/sheet';
 
 import { useCreatePaper } from '../api/create-paper';
+import { parsePaperFile } from '../api/parse-paper';
+import { TagAutocompleteInput } from './tag-autocomplete-input';
+import { BTN } from '@/lib/button-styles';
 
 const initialFormData = {
   title: '',
@@ -30,19 +34,121 @@ export const CreatePaper = () => {
   const [formData, setFormData] = React.useState(initialFormData);
   const [file, setFile] = React.useState<File | undefined>(undefined);
 
+  // Parse state
+  const [isParsing, setIsParsing] = React.useState(false);
+  const [parsedText, setParsedText] = React.useState('');
+  const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
+  const [tagList, setTagList] = React.useState<string[]>([]);
+  const [isAutoTagged, setIsAutoTagged] = React.useState(false);
+  const [showTags, setShowTags] = React.useState(false);
+
   const createPaperMutation = useCreatePaper({
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
-        setFormData(initialFormData);
-        setFile(undefined);
+        resetForm();
+        toast.success('Paper created successfully');
+      },
+      onError: () => {
+        toast.error('Failed to create paper');
       },
     },
   });
 
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setFile(undefined);
+    setParsedText('');
+    setSuggestedTags([]);
+    setTagList([]);
+    setIsAutoTagged(false);
+    setShowTags(false);
+  };
+
+  const handleFileChange = async (selectedFile: File | undefined) => {
+    if (!selectedFile) return;
+    setFile(selectedFile);
+    setSuggestedTags([]);
+    setTagList([]);
+    setIsAutoTagged(false);
+    setShowTags(false);
+    setIsParsing(false);
+
+    // TODO: Replace with real API call when Python service is ready
+    // const response = await parsePaperFile(selectedFile);
+    // setParsedText(response.parsedText || '');
+
+    // Fake parsedText for development
+    setParsedText('This is a sample parsed text from the uploaded PDF file.');
+  };
+
+  const handleRemoveFile = () => {
+    setFile(undefined);
+    setParsedText('');
+    setSuggestedTags([]);
+    setTagList([]);
+    setIsAutoTagged(false);
+    setShowTags(false);
+  };
+
+  const handleAutoTag = async () => {
+    if (!file) return;
+
+    // TODO: Replace with real API call when Python service is ready
+    // try {
+    //   setIsParsing(true);
+    //   const response = await parsePaperFile(file);
+    //   setParsedText(response.parsedText || '');
+    //   const tags = response.tags || [];
+    //   setSuggestedTags(tags);
+    //   setTagList([...tags]);
+    // } catch {
+    //   setParsedText('');
+    //   setSuggestedTags([]);
+    // } finally {
+    //   setIsParsing(false);
+    // }
+
+    // Fake data for development
+    setIsParsing(true);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const fakeTags = [
+      'machine learning',
+      'deep learning',
+      'natural language processing',
+      'computer science',
+    ];
+    setSuggestedTags(fakeTags);
+    setTagList((prev) => {
+      const merged = [...prev];
+      fakeTags.forEach((tag) => {
+        if (!merged.includes(tag)) merged.push(tag);
+      });
+      return merged;
+    });
+    setIsParsing(false);
+
+    setIsAutoTagged(true);
+    setShowTags(true);
+  };
+
+  const handleAddTag = (value: string) => {
+    const trimmed = value.trim();
+    if (
+      trimmed &&
+      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+    ) {
+      setTagList((prev) => [...prev, trimmed]);
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTagList((prev) => prev.filter((t) => t !== tag));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
+    if (!formData.title.trim() || !file) return;
     if (
       formData.publicationDate &&
       new Date(formData.publicationDate) > new Date()
@@ -58,16 +164,24 @@ export const CreatePaper = () => {
       journalName: formData.journalName,
       conferenceName: formData.conferenceName,
       file,
+      parsedText,
+      tagNames: tagList,
+      isAutoTagged,
+      isIngested: false,
+      status: 1,
     });
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
       <SheetTrigger asChild>
-        <Button
-          size="sm"
-          className="bg-green-600 text-white hover:bg-green-700"
-        >
+        <Button size="sm" className={BTN.CREATE}>
           <Plus className="size-4" />
           Create Paper
         </Button>
@@ -76,7 +190,8 @@ export const CreatePaper = () => {
         <SheetHeader>
           <SheetTitle>Create New Paper</SheetTitle>
           <SheetDescription>
-            Fill in the details below. Only title is required.
+            Upload a PDF file and fill in the details. Title and file are
+            required.
           </SheetDescription>
         </SheetHeader>
         <form
@@ -84,6 +199,59 @@ export const CreatePaper = () => {
           onSubmit={handleSubmit}
           className="space-y-4 overflow-y-auto px-4 py-4"
         >
+          {/* File upload - required, placed first */}
+          <div className="space-y-1.5">
+            <label htmlFor="create-paper-file" className="text-sm font-medium">
+              PDF File <span className="text-destructive">*</span>
+            </label>
+            {file ? (
+              <div className="space-y-3">
+                <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
+                  <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                    <Upload className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{file.name}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                    onClick={handleRemoveFile}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <label
+                htmlFor="create-paper-file"
+                className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors"
+              >
+                <div className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
+                  <Upload className="size-5" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">Click to upload PDF</p>
+                  <p className="text-muted-foreground text-xs">
+                    PDF files only (required)
+                  </p>
+                </div>
+                <input
+                  id="create-paper-file"
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                />
+              </label>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <label htmlFor="create-paper-title" className="text-sm font-medium">
               Title <span className="text-destructive">*</span>
@@ -96,6 +264,42 @@ export const CreatePaper = () => {
               }
               placeholder="Enter paper title"
               required
+            />
+          </div>
+
+          {/* Auto Tag button */}
+          {file && (
+            <div className="flex items-center gap-3">
+              {isParsing ? (
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                  <Loader2 className="size-4 animate-spin" />
+                  Parsing file and generating tags...
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={`gap-1.5 ${BTN.AUTO_TAG}`}
+                  onClick={handleAutoTag}
+                >
+                  <Tags className="size-4" />
+                  Auto Tag
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Tags editor - always visible */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">
+              Tags {tagList.length > 0 && `(${tagList.length})`}
+            </label>
+            <TagAutocompleteInput
+              tagList={tagList}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+              placeholder="Type a tag and press Enter..."
             />
           </div>
 
@@ -218,69 +422,26 @@ export const CreatePaper = () => {
               placeholder="Enter conference name"
             />
           </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="create-paper-file" className="text-sm font-medium">
-              PDF File
-            </label>
-            {file ? (
-              <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
-                <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
-                  <Upload className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{file.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 shrink-0"
-                  onClick={() => setFile(undefined)}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            ) : (
-              <label
-                htmlFor="create-paper-file"
-                className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors"
-              >
-                <div className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
-                  <Upload className="size-5" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium">Click to upload PDF</p>
-                  <p className="text-muted-foreground text-xs">
-                    PDF files only
-                  </p>
-                </div>
-                <input
-                  id="create-paper-file"
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0])}
-                />
-              </label>
-            )}
-          </div>
         </form>
         <SheetFooter>
           <Button
             type="button"
             variant="outline"
             onClick={() => setOpen(false)}
+            className={BTN.CANCEL}
           >
             Cancel
           </Button>
           <Button
             type="submit"
             form="create-paper-form"
-            disabled={createPaperMutation.isPending || !formData.title.trim()}
+            disabled={
+              createPaperMutation.isPending ||
+              !formData.title.trim() ||
+              !file ||
+              isParsing
+            }
+            className={BTN.CREATE}
           >
             {createPaperMutation.isPending ? 'Creating...' : 'Create'}
           </Button>

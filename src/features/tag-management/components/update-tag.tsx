@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,17 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
+        toast.success('Tag updated successfully');
+      },
+      onError: (error: any) => {
+        const errorData = error?.response?.data;
+        if (
+          errorData?.errors?.[0]?.errorMessage === 'TAG_NAME_ALREADY_EXISTS'
+        ) {
+          toast.error('Tag name already exists');
+        } else {
+          toast.error('Failed to update tag');
+        }
       },
     },
   });
@@ -46,12 +58,10 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
-    const cleaned = formData.name.trim().replace(/\s+/g, '');
-    const tagName = cleaned.startsWith('#') ? cleaned : `#${cleaned}`;
     updateTagMutation.mutate({
       tagId,
       data: {
-        name: tagName,
+        name: formData.name.trim(),
       },
     });
   };
@@ -84,9 +94,9 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
             <Input
               id="update-tag-name"
               value={formData.name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
-              }
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, name: e.target.value }));
+              }}
               placeholder="Enter tag name"
               required
             />

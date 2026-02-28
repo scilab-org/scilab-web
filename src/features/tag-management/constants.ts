@@ -1,4 +1,4 @@
-const SERVICE_PREFIX = 'lab-service';
+const SERVICE_PREFIX = '/lab-service';
 
 export const TAG_MANAGEMENT_API = {
   TAGS: `${SERVICE_PREFIX}/tags`,

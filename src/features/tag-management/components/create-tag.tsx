@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,17 @@ export const CreateTag = () => {
       onSuccess: () => {
         setOpen(false);
         setFormData(initialFormData);
+        toast.success('Tag created successfully');
+      },
+      onError: (error: any) => {
+        const errorData = error?.response?.data;
+        if (
+          errorData?.errors?.[0]?.errorMessage === 'TAG_NAME_ALREADY_EXISTS'
+        ) {
+          toast.error('Tag name already exists');
+        } else {
+          toast.error('Failed to create tag');
+        }
       },
     },
   });
@@ -35,10 +47,8 @@ export const CreateTag = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
-    const cleaned = formData.name.trim().replace(/\s+/g, '');
-    const tagName = cleaned.startsWith('#') ? cleaned : `#${cleaned}`;
     createTagMutation.mutate({
-      name: tagName,
+      name: formData.name.trim(),
     });
   };
 
@@ -72,10 +82,10 @@ export const CreateTag = () => {
             <Input
               id="create-tag-name"
               value={formData.name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
-              }
-              placeholder="Enter tag name (e.g. #newtag)"
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, name: e.target.value }));
+              }}
+              placeholder="Enter tag name"
               required
             />
           </div>

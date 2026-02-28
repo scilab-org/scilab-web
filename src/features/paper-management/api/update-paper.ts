@@ -32,7 +32,11 @@ export const updatePaper = ({
     formData.append('conferenceName', data.conferenceName);
   if (data.status !== undefined)
     formData.append('status', data.status.toString());
-  if (data.file) formData.append('file', data.file);
+  if (data.tagNames) {
+    data.tagNames.forEach((tag) => formData.append('tagNames', tag));
+  }
+  if (data.isAutoTagged !== undefined)
+    formData.append('isAutoTagged', data.isAutoTagged.toString());
 
   return api.put(PAPER_MANAGEMENT_API.ADMIN_PAPER_BY_ID(paperId), formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router';
 import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +32,10 @@ export const DeletePaper = ({ paperId }: DeletePaperProps) => {
       onSuccess: () => {
         setOpen(false);
         navigate(paths.app.paperManagement.papers.getHref());
+        toast.success('Paper deleted successfully');
+      },
+      onError: () => {
+        toast.error('Failed to delete paper');
       },
     },
   });
