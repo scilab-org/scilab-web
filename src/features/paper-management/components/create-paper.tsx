@@ -18,6 +18,7 @@ import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
+import { PAPER_STATUS_OPTIONS } from '../constants';
 
 const initialFormData = {
   title: '',
@@ -27,6 +28,7 @@ const initialFormData = {
   paperType: '',
   journalName: '',
   conferenceName: '',
+  status: 5,
 };
 
 export const CreatePaper = () => {
@@ -168,7 +170,7 @@ export const CreatePaper = () => {
       tagNames: tagList,
       isAutoTagged,
       isIngested: false,
-      status: 1,
+      status: formData.status,
     });
   };
 
@@ -421,6 +423,32 @@ export const CreatePaper = () => {
               }
               placeholder="Enter conference name"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="create-paper-status"
+              className="text-sm font-medium"
+            >
+              Status
+            </label>
+            <select
+              id="create-paper-status"
+              className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+              value={formData.status}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  status: Number(e.target.value),
+                }))
+              }
+            >
+              {PAPER_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </form>
         <SheetFooter>

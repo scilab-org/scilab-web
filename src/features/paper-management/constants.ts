@@ -20,11 +20,11 @@ export const PAPER_STATUS_MAP: Record<number, string> = {
   2: 'Processing',
   3: 'Submited',
   4: 'Released',
+  5: 'Sampled',
 };
 
 export const PAPER_STATUS_OPTIONS = [
-  { value: 1, label: 'Draft' },
-  { value: 2, label: 'Processing' },
   { value: 3, label: 'Submited' },
   { value: 4, label: 'Released' },
+  { value: 5, label: 'Sampled' },
 ];
