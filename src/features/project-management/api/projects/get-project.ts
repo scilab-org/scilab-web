@@ -6,8 +6,8 @@ import { QueryConfig } from '@/lib/react-query';
 import {
   PROJECT_MANAGEMENT_API,
   PROJECT_MANAGEMENT_QUERY_KEYS,
-} from '../constants';
-import { GetProjectByIdResultApiResponse } from '../types';
+} from '../../constants';
+import { GetProjectByIdResultApiResponse } from '../../types';
 
 export const getProject = ({
   projectId,

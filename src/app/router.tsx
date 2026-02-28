@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 
+import { Navigate } from 'react-router';
+
 import { ProtectedRoute } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
@@ -25,7 +27,7 @@ export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: paths.home.path,
-      lazy: () => import('./routes/landing').then(convert(queryClient)),
+      element: <Navigate to={paths.app.root.getHref()} replace />,
     },
     {
       path: paths.app.root.path,
@@ -56,6 +58,20 @@ export const createAppRouter = (queryClient: QueryClient) =>
           path: paths.app.projectDetail.path,
           lazy: () =>
             import('./routes/app/project-management/project-detail').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.assignedProjects.list.path,
+          lazy: () =>
+            import('./routes/app/project-management/my-projects').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.assignedProjects.detail.path,
+          lazy: () =>
+            import('./routes/app/project-management/my-project-detail').then(
               convert(queryClient),
             ),
         },

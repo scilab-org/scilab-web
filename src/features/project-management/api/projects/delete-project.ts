@@ -7,20 +7,19 @@ import { MutationConfig } from '@/lib/react-query';
 import {
   PROJECT_MANAGEMENT_API,
   PROJECT_MANAGEMENT_QUERY_KEYS,
-} from '../constants';
-import { CreateProjectDto } from '../types';
+} from '../../constants';
 
-export const createProject = async (data: CreateProjectDto): Promise<void> => {
-  await api.post(PROJECT_MANAGEMENT_API.PROJECTS, data);
+export const deleteProject = async (projectId: string): Promise<void> => {
+  await api.delete(PROJECT_MANAGEMENT_API.ADMIN_PROJECT_BY_ID(projectId));
 };
 
-type UseCreateProjectOptions = {
-  mutationConfig?: MutationConfig<typeof createProject>;
+type UseDeleteProjectOptions = {
+  mutationConfig?: MutationConfig<typeof deleteProject>;
 };
 
-export const useCreateProject = ({
+export const useDeleteProject = ({
   mutationConfig,
-}: UseCreateProjectOptions = {}) => {
+}: UseDeleteProjectOptions = {}) => {
   const queryClient = useQueryClient();
 
   const { onSuccess, ...restConfig } = mutationConfig || {};
@@ -30,10 +29,10 @@ export const useCreateProject = ({
       queryClient.invalidateQueries({
         queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.PROJECTS],
       });
-      toast.success('Project created successfully');
+      toast.success('Project deleted successfully');
       onSuccess?.(...args);
     },
     ...restConfig,
-    mutationFn: createProject,
+    mutationFn: deleteProject,
   });
 };

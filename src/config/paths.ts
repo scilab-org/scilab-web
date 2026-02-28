@@ -1,7 +1,7 @@
 export const paths = {
   home: {
     path: '/',
-    getHref: () => '/',
+    getHref: () => '/app',
   },
   app: {
     root: {
@@ -62,6 +62,16 @@ export const paths = {
       tags: {
         path: 'tags',
         getHref: () => '/app/tags',
+      },
+    },
+    assignedProjects: {
+      list: {
+        path: 'my-projects',
+        getHref: () => '/app/my-projects',
+      },
+      detail: {
+        path: 'my-projects/:projectId',
+        getHref: (projectId: string) => `/app/my-projects/${projectId}`,
       },
     },
   },

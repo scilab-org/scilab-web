@@ -1,5 +1,6 @@
 import {
   Bell,
+  Bookmark,
   BookOpen,
   ChevronRight,
   FileText,
@@ -124,7 +125,7 @@ const Breadcrumb = () => {
   return (
     <nav className="flex items-center gap-1 text-sm">
       <NavLink
-        to={paths.home.getHref()}
+        to={paths.app.dashboard.getHref()}
         className="text-muted-foreground hover:text-foreground"
       >
         Home
@@ -220,6 +221,11 @@ const navigation: SideNavigationItem[] = [
   },
   { name: 'Sample', to: paths.app.sample.getHref(), icon: BookOpen },
   { name: 'Projects', to: paths.app.projects.getHref(), icon: FolderKanban },
+  {
+    name: 'Assigned Projects',
+    to: paths.app.assignedProjects.list.getHref(),
+    icon: Bookmark,
+  },
   {
     name: 'Papers',
     to: paths.app.paperManagement.papers.getHref(),

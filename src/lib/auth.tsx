@@ -1,9 +1,7 @@
 import { useKeycloak } from '@react-keycloak/web';
 import * as React from 'react';
-import { Navigate, useLocation } from 'react-router';
 
 import { keycloak } from '@/config/keycloak';
-import { paths } from '@/config/paths';
 import { User } from '@/types/api';
 
 /**
@@ -257,7 +255,6 @@ export const AuthLoader = ({ children }: { children: React.ReactNode }) => {
  */
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { data: user, isLoading } = useUser();
-  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -268,9 +265,8 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) {
-    return (
-      <Navigate to={paths.home.getHref()} state={{ from: location }} replace />
-    );
+    login();
+    return null;
   }
 
   return <>{children}</>;
