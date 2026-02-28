@@ -93,6 +93,12 @@ const getStatusVariant = (
         className:
           'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30',
       };
+    case 5:
+      return {
+        variant: 'default',
+        className:
+          'bg-purple-500 text-white hover:bg-purple-600 shadow-sm shadow-purple-200 dark:shadow-purple-900/30',
+      };
     default:
       return { variant: 'outline' };
   }
