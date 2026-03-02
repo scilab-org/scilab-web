@@ -179,3 +179,36 @@ export type AddProjectPapersRequest = {
 export type RemoveProjectPapersRequest = {
   paperIds: string[];
 };
+
+// ─── Sub-Projects (authored papers within project) ──────────────────────────
+
+export type SubProjectPaper = {
+  id: string;
+  title: string | null;
+  abstract: string | null;
+  doi: string | null;
+  filePath: string | null;
+  status: string | null;
+  publicationDate: string | null;
+  paperType: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+};
+
+export type GetSubProjectsResult = {
+  items: SubProjectPaper[];
+  paging: {
+    totalCount: number;
+    pageNumber: number;
+    pageSize: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    totalPages: number;
+  };
+};
+
+export type GetSubProjectsParams = {
+  PageNumber?: number;
+  PageSize?: number;
+  title?: string;
+};

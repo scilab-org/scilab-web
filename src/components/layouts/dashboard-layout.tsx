@@ -7,6 +7,7 @@ import {
   FolderKanban,
   GraduationCap,
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
   Search,
   Settings,
@@ -235,6 +236,11 @@ const navigation: SideNavigationItem[] = [
     name: 'Tags',
     to: paths.app.tagManagement.tags.getHref(),
     icon: Tag,
+  },
+  {
+    name: 'Paper Templates',
+    to: paths.app.paperTemplateManagement.paperTemplates.getHref(),
+    icon: LayoutTemplate,
   },
   { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
 ];

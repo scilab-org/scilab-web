@@ -31,6 +31,8 @@ import { ProjectMembersList } from '@/features/project-management/components/mem
 import { AddMembersModal } from '@/features/project-management/components/members/add-members-modal';
 import { ProjectPapersList } from '@/features/project-management/components/papers/project-papers-list';
 import { AddPapersModal } from '@/features/project-management/components/papers/add-papers-modal';
+import { ProjectWritingPapersList } from '@/features/project-management/components/papers/project-writing-papers-list';
+import { CreatePaperInProject } from '@/features/paper-management/components/create-paper-in-project';
 import { DatasetsList } from '@/features/dataset-management/components/datasets-list';
 import { CreateDataset } from '@/features/dataset-management/components/create-dataset';
 import { UpdateDataset } from '@/features/dataset-management/components/update-dataset';
@@ -54,7 +56,7 @@ export const clientLoader =
     }
   };
 
-type Tab = 'overview' | 'members' | 'papers' | 'datasets';
+type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
 type TabConfig = {
   id: Tab;
@@ -65,7 +67,8 @@ type TabConfig = {
 const TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Info },
   { id: 'members', label: 'Members', icon: Users },
-  { id: 'papers', label: 'Papers', icon: FileText },
+  { id: 'papers', label: 'Paper Sample', icon: FileText },
+  { id: 'writing-papers', label: 'Papers', icon: FileText },
   { id: 'datasets', label: 'Datasets', icon: Database },
 ];
 
@@ -105,6 +108,7 @@ const MyProjectDetailRoute = () => {
   const [updateOpen, setUpdateOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [addPapersOpen, setAddPapersOpen] = useState(false);
+  const [createPaperOpen, setCreatePaperOpen] = useState(false);
   const [createDatasetOpen, setCreateDatasetOpen] = useState(false);
   const [updateDatasetOpen, setUpdateDatasetOpen] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
@@ -121,6 +125,7 @@ const MyProjectDetailRoute = () => {
     queryConfig: { enabled: !!projectId },
   });
   const isManager = roleQuery.data?.result === 'project:project-manager';
+  const isAuthor = roleQuery.data?.result === 'project:author';
 
   const projectQuery = useProjectDetail({
     projectId: projectId!,
@@ -392,6 +397,15 @@ const MyProjectDetailRoute = () => {
             />
           )}
 
+          {activeTab === 'writing-papers' && (
+            <ProjectWritingPapersList
+              projectId={projectId}
+              onCreatePaperClick={
+                isAuthor ? () => setCreatePaperOpen(true) : undefined
+              }
+            />
+          )}
+
           {activeTab === 'datasets' && (
             <DatasetsList
               projectId={projectId}
@@ -428,6 +442,14 @@ const MyProjectDetailRoute = () => {
           projectId={projectId}
           open={addPapersOpen}
           onOpenChange={setAddPapersOpen}
+        />
+      )}
+
+      {isAuthor && (
+        <CreatePaperInProject
+          projectId={projectId}
+          open={createPaperOpen}
+          onOpenChange={setCreatePaperOpen}
         />
       )}
 
