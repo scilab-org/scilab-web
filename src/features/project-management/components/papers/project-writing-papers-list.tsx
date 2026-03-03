@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import { Plus, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
 
 import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { SubProjectPaper } from '../../types';
+import { paths } from '@/config/paths';
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
@@ -126,7 +128,12 @@ export const ProjectWritingPapersList = ({
               {papers.map((paper) => (
                 <TableRow key={paper.id}>
                   <TableCell className="font-medium">
-                    {paper.title || '(Untitled)'}
+                    <Link
+                      to={paths.app.paperManagement.paper.getHref(paper.id)}
+                      className="text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      {paper.title || '(Untitled)'}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {paper.paperType || '—'}
