@@ -41,6 +41,9 @@ export const PROJECT_MANAGEMENT_API = {
   // Current user's role in a project
   MY_ROLE: (projectId: string) =>
     `${SERVICE_PREFIX}/projects/${projectId}/my-role`,
+  // Sub-projects (papers authored within the project)
+  SUB_PROJECTS: (projectId: string) =>
+    `${SERVICE_PREFIX}/projects/${projectId}/sub-projects`,
 } as const;
 
 export const PROJECT_MANAGEMENT_QUERY_KEYS = {
@@ -52,6 +55,7 @@ export const PROJECT_MANAGEMENT_QUERY_KEYS = {
   AVAILABLE_PAPERS: 'available-papers',
   MY_PROJECTS: 'my-projects',
   MY_ROLE: 'my-role',
+  SUB_PROJECTS: 'sub-projects',
 } as const;
 
 export const PROJECT_STATUS_MAP: Record<number, string> = {

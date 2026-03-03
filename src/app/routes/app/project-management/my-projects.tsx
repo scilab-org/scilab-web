@@ -1,20 +1,20 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  FolderOpen,
-  Calendar,
-  Hash,
-  ChevronRight as ArrowRight,
-} from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, FolderOpen } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { paths } from '@/config/paths';
 import {
   getMyProjectsQueryOptions,
@@ -104,92 +104,6 @@ const STATUS_FILTERS = [
   { label: 'Completed', value: '3' },
   { label: 'Archived', value: '4' },
 ];
-
-const ProjectCard = ({ project }: { project: Project }) => {
-  const cfg = getStatusConfig(project.status);
-
-  return (
-    <Link
-      to={paths.app.assignedProjects.detail.getHref(project.id)}
-      className={`border-border bg-card group relative block overflow-hidden rounded-xl border border-l-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${cfg.borderClass}`}
-    >
-      <div className="p-5">
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div
-              className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${cfg.iconBg}`}
-            >
-              <FolderOpen className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-foreground group-hover:text-primary text-base leading-tight font-semibold transition-colors">
-                {project.name}
-              </h3>
-              <div className="mt-1 flex items-center gap-1">
-                <Hash className="text-muted-foreground h-3 w-3" />
-                <span className="text-muted-foreground font-mono text-xs">
-                  {project.code}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span
-              className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${cfg.badgeClass}`}
-            >
-              {cfg.label}
-            </span>
-            <ArrowRight className="text-muted-foreground h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
-          </div>
-        </div>
-
-        {/* Description */}
-        {project.description && (
-          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed">
-            {project.description}
-          </p>
-        )}
-
-        {/* Footer: dates */}
-        <div className="border-border/60 mt-4 flex flex-wrap items-center gap-3 border-t pt-3">
-          <div className="flex items-center gap-1.5 text-xs">
-            <Calendar className="text-muted-foreground h-3.5 w-3.5" />
-            <span className="text-muted-foreground">Start:</span>
-            <span className="text-foreground font-medium">
-              {formatDate(project.startDate)}
-            </span>
-          </div>
-          <span className="text-muted-foreground text-xs">→</span>
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">End:</span>
-            <span className="text-foreground font-medium">
-              {formatDate(project.endDate)}
-            </span>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-const ProjectCardSkeleton = () => (
-  <div className="border-border border-l-muted bg-card rounded-xl border border-l-4 p-5 shadow-sm">
-    <div className="flex items-start gap-3">
-      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-      <div className="flex-1 space-y-2">
-        <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-3.5 w-1/4" />
-      </div>
-      <Skeleton className="h-6 w-20 rounded-full" />
-    </div>
-    <Skeleton className="mt-3 h-8 w-full" />
-    <div className="mt-4 flex gap-4 border-t pt-3">
-      <Skeleton className="h-4 w-32" />
-      <Skeleton className="h-4 w-32" />
-    </div>
-  </div>
-);
 
 const MyProjectsRoute = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -297,87 +211,134 @@ const MyProjectsRoute = () => {
         </p>
       )}
 
-      {/* List */}
-      {projectsQuery.isLoading ? (
-        <div className="space-y-4">
-          <ProjectCardSkeleton />
-          <ProjectCardSkeleton />
-          <ProjectCardSkeleton />
-        </div>
-      ) : projects.length > 0 ? (
-        <>
-          <div className="space-y-4">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
+      {/* Table */}
+      <div className="border-border rounded-xl border shadow-sm">
+        {projectsQuery.isLoading ? (
+          <div className="space-y-2 p-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
+        ) : projects.length > 0 ? (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Start</TableHead>
+                  <TableHead>End</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projects.map((project) => {
+                  const cfg = getStatusConfig(project.status);
+                  return (
+                    <TableRow key={project.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          to={paths.app.assignedProjects.detail.getHref(
+                            project.id,
+                          )}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {project.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-sm">
+                        {project.code}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
+                        {project.description || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${cfg.badgeClass}`}
+                        >
+                          {cfg.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatDate(project.startDate)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatDate(project.endDate)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
 
-          {paging && paging.totalPages > 1 && (
-            <div className="border-border mt-6 flex items-center justify-center gap-2 border-t pt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.set('page', String(page - 1));
-                    return next;
-                  })
-                }
-                disabled={!paging.hasPreviousPage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <div className="bg-muted text-muted-foreground flex items-center rounded-md px-3 py-1.5 text-sm font-medium">
-                Page {paging.pageNumber} of {paging.totalPages}
+            {paging && paging.totalPages > 1 && (
+              <div className="border-border flex items-center justify-center gap-2 border-t px-6 py-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set('page', String(page - 1));
+                      return next;
+                    })
+                  }
+                  disabled={!paging.hasPreviousPage}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <div className="bg-muted text-muted-foreground flex items-center rounded-md px-3 py-1.5 text-sm font-medium">
+                  Page {paging.pageNumber} of {paging.totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set('page', String(page + 1));
+                      return next;
+                    })
+                  }
+                  disabled={!paging.hasNextPage}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-xl py-20 text-center">
+            <FolderOpen className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+            <p className="text-foreground font-medium">
+              {hasFilters
+                ? 'No projects match your filters'
+                : 'No assigned projects yet'}
+            </p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {hasFilters
+                ? 'Try adjusting your search or filter'
+                : 'Projects you are added to will appear here'}
+            </p>
+            {hasFilters && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.set('page', String(page + 1));
-                    return next;
-                  })
-                }
-                disabled={!paging.hasNextPage}
+                className="mt-4"
+                onClick={() => {
+                  setSearchText('');
+                  setSearchParams({});
+                }}
               >
-                Next
-                <ChevronRight className="h-4 w-4" />
+                Clear filters
               </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="border-border rounded-xl border border-dashed py-20 text-center">
-          <FolderOpen className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
-          <p className="text-foreground font-medium">
-            {hasFilters
-              ? 'No projects match your filters'
-              : 'No assigned projects yet'}
-          </p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {hasFilters
-              ? 'Try adjusting your search or filter'
-              : 'Projects you are added to will appear here'}
-          </p>
-          {hasFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={() => {
-                setSearchText('');
-                setSearchParams({});
-              }}
-            >
-              Clear filters
-            </Button>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </ContentLayout>
   );
 };

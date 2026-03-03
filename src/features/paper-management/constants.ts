@@ -7,6 +7,7 @@ export const PAPER_MANAGEMENT_API = {
   ADMIN_PAPERS: `${LAB_SERVICE_PREFIX}/admin/papers`,
   ADMIN_PAPER_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/admin/papers/${paperId}`,
+  ADMIN_PAPERS_INITIALIZE: `${LAB_SERVICE_PREFIX}/admin/papers/initialize`,
   PARSE_PAPER: `${AI_SERVICE_PREFIX}/papers/parse`,
   AUTO_TAG: `${AI_SERVICE_PREFIX}/papers/auto-tag`,
 } as const;
@@ -28,4 +29,9 @@ export const PAPER_STATUS_OPTIONS = [
   { value: 3, label: 'Submitted' },
   { value: 4, label: 'Released' },
   { value: 5, label: 'Sampled' },
+];
+
+export const PAPER_INITIALIZE_STATUS_OPTIONS = [
+  { value: 1, label: 'Draft' },
+  { value: 2, label: 'Processing' },
 ];

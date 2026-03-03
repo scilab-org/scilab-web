@@ -1,157 +1,45 @@
 import { useState } from 'react';
-import {
-  Download,
-  Pencil,
-  Trash2,
-  Plus,
-  Loader2,
-  BarChart3,
-} from 'lucide-react';
+import { Download, Pencil, Trash2, Plus, BarChart3 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 import { useDatasets } from '../api/get-datasets';
 import { Dataset } from '../types';
 
-type DatasetCardProps = {
-  dataset: Dataset;
-  onUpdate: (dataset: Dataset) => void;
-  onDelete: (datasetId: string) => void;
-  onViewChart?: (dataset: Dataset) => void;
-  readOnly?: boolean;
+const canViewChart = (filePath: string) => {
+  const extension = filePath.split('.').pop()?.toLowerCase();
+  return extension === 'xlsx' || extension === 'xls' || extension === 'csv';
 };
 
-const DatasetCard = ({
-  dataset,
-  onUpdate,
-  onDelete,
-  onViewChart,
-  readOnly = false,
-}: DatasetCardProps) => {
-  // Check if file supports chart viewing (Excel and CSV)
-  const canViewChart = (filePath: string) => {
-    const extension = filePath.split('.').pop()?.toLowerCase();
-    return extension === 'xlsx' || extension === 'xls' || extension === 'csv';
-  };
+const getStatusText = (status: number) => {
+  switch (status) {
+    case 1:
+      return 'Active';
+    case 0:
+      return 'Inactive';
+    default:
+      return 'Unknown';
+  }
+};
 
-  const getStatusText = (status: number) => {
-    switch (status) {
-      case 1:
-        return 'Active';
-      case 0:
-        return 'Inactive';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const getStatusColor = (status: number) => {
-    switch (status) {
-      case 1:
-        return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-      case 0:
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-    }
-  };
-
-  const handleDownload = () => {
-    if (dataset.filePath.startsWith('http')) {
-      window.open(dataset.filePath, '_blank');
-    } else {
-      window.open(`${window.location.origin}${dataset.filePath}`, '_blank');
-    }
-  };
-
-  const fileName = dataset.filePath.split('/').pop() || 'Unknown';
-  const fileExtension = fileName.split('.').pop()?.toUpperCase() || '';
-
-  return (
-    <div className="bg-card border-border group overflow-hidden rounded-lg border shadow-sm transition-all hover:shadow-md">
-      <div className="from-muted/40 to-muted/20 bg-linear-to-r px-5 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 flex items-center gap-2">
-              <h4 className="text-foreground text-base font-semibold tracking-tight">
-                {dataset.name}
-              </h4>
-              <span
-                className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${getStatusColor(dataset.status)}`}
-              >
-                {getStatusText(dataset.status)}
-              </span>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              {dataset.description}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="px-5 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold">
-              {fileExtension}
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                File Name
-              </p>
-              <p className="text-foreground mt-0.5 font-mono text-sm">
-                {fileName}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {canViewChart(dataset.filePath) && onViewChart && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => onViewChart(dataset)}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700"
-              >
-                <BarChart3 className="h-3.5 w-3.5" />
-                View Chart
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="flex items-center gap-1.5"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Download
-            </Button>
-            {!readOnly && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onUpdate(dataset)}
-                  className="flex items-center gap-1.5"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => onDelete(dataset.id)}
-                  className="flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const getStatusColor = (status: number) => {
+  switch (status) {
+    case 1:
+      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+    case 0:
+      return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+  }
 };
 
 type DatasetsListProps = {
@@ -218,28 +106,123 @@ export const DatasetsList = ({
           )}
         </div>
       </div>
-      <div className="p-6">
+      <div>
         {datasetsQuery.isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          <div className="space-y-2 p-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : datasets && datasets.length > 0 ? (
           <>
-            <div className="space-y-3">
-              {datasets.map((dataset) => (
-                <DatasetCard
-                  key={dataset.id}
-                  dataset={dataset}
-                  onUpdate={onUpdateClick ?? (() => {})}
-                  onDelete={onDeleteClick ?? (() => {})}
-                  onViewChart={onViewChartClick}
-                  readOnly={readOnly}
-                />
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>File</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {datasets.map((dataset) => {
+                  const fileName =
+                    dataset.filePath.split('/').pop() || 'Unknown';
+                  const fileExtension =
+                    fileName.split('.').pop()?.toUpperCase() || '';
+                  const handleDownload = () => {
+                    if (dataset.filePath.startsWith('http')) {
+                      window.open(dataset.filePath, '_blank');
+                    } else {
+                      window.open(
+                        `${window.location.origin}${dataset.filePath}`,
+                        '_blank',
+                      );
+                    }
+                  };
+                  return (
+                    <TableRow key={dataset.id}>
+                      <TableCell className="font-medium">
+                        {dataset.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
+                        {dataset.description || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                            {fileExtension}
+                          </span>
+                          <span className="font-mono text-sm">{fileName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${getStatusColor(dataset.status)}`}
+                        >
+                          {getStatusText(dataset.status)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {canViewChart(dataset.filePath) &&
+                            onViewChartClick && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => onViewChartClick(dataset)}
+                                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700"
+                              >
+                                <BarChart3 className="h-3.5 w-3.5" />
+                                Chart
+                              </Button>
+                            )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDownload}
+                            className="flex items-center gap-1.5"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Download
+                          </Button>
+                          {!readOnly && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  (onUpdateClick ?? (() => {}))(dataset)
+                                }
+                                className="flex items-center gap-1.5"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  (onDeleteClick ?? (() => {}))(dataset.id)
+                                }
+                                className="flex items-center gap-1.5"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
             {/* Pagination Controls */}
             {paging && paging.totalPages > 1 && (
-              <div className="border-border mt-6 flex items-center justify-center gap-2 border-t pt-6">
+              <div className="border-border mt-4 flex items-center justify-center gap-2 border-t px-6 py-4">
                 <Button
                   variant="outline"
                   size="sm"

@@ -64,6 +64,12 @@ export const paths = {
         getHref: () => '/app/tags',
       },
     },
+    paperTemplateManagement: {
+      paperTemplates: {
+        path: 'paper-templates',
+        getHref: () => '/app/paper-templates',
+      },
+    },
     assignedProjects: {
       list: {
         path: 'my-projects',
