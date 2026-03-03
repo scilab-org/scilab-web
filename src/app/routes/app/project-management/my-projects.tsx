@@ -1,13 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  FolderOpen,
-  Eye,
-} from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, FolderOpen } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
@@ -236,7 +230,6 @@ const MyProjectsRoute = () => {
                   <TableHead>Status</TableHead>
                   <TableHead>Start</TableHead>
                   <TableHead>End</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -245,7 +238,14 @@ const MyProjectsRoute = () => {
                   return (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">
-                        {project.name}
+                        <Link
+                          to={paths.app.assignedProjects.detail.getHref(
+                            project.id,
+                          )}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {project.name}
+                        </Link>
                       </TableCell>
                       <TableCell className="text-muted-foreground font-mono text-sm">
                         {project.code}
@@ -265,18 +265,6 @@ const MyProjectsRoute = () => {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {formatDate(project.endDate)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link
-                            to={paths.app.assignedProjects.detail.getHref(
-                              project.id,
-                            )}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            View Detail
-                          </Link>
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );

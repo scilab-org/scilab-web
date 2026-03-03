@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { X, Loader2, Search, Check, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-import { cn } from '@/utils/cn';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,22 +22,34 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { api } from '@/lib/api-client';
-import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
 import {
-  PAPER_STATUS_OPTIONS,
-  PAPER_MANAGEMENT_API,
+  PAPER_INITIALIZE_STATUS_OPTIONS,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '../constants';
+import { PROJECT_MANAGEMENT_QUERY_KEYS } from '@/features/project-management/constants';
 import { usePaperTemplates } from '@/features/paper-template-management/api/get-paper-templates';
 import { usePaperTemplate } from '@/features/paper-template-management/api/get-paper-template';
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
+import { useInitializePaper } from '../api/initialize-paper';
+import { InitializePaperDto, PaperSection } from '../types';
 
-type SectionRow = {
+const generateGuid = () => {
+  return crypto.randomUUID();
+};
+
+/** Convert a human-readable section title to its LaTeX command.
+ *  Main sections  → \section{Title}
+ *  Sub-sections   → \subsection{Title}
+ */
+const toLatex = (title: string, isSubSection = false): string => {
+  const cmd = isSubSection ? 'subsection' : 'section';
+  return `\\${cmd}{${title}}`;
+};
+
+type SectionRow = PaperSection & {
   _id: string;
-  title: string;
-  parentId?: string;
+  latex: string;
   allowSubsections?: boolean;
 };
 
@@ -53,11 +63,8 @@ const initialFormData = {
   title: '',
   abstract: '',
   doi: '',
-  publicationDate: '',
   paperType: '',
-  journalName: '',
-  conferenceName: '',
-  status: 5,
+  status: 1,
 };
 
 export const CreatePaperInProject = ({
@@ -68,7 +75,6 @@ export const CreatePaperInProject = ({
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = React.useState(initialFormData);
-  const [tagList, setTagList] = React.useState<string[]>([]);
 
   // Template selector state
   const [templateCodeInput, setTemplateCodeInput] = React.useState('');
@@ -80,6 +86,33 @@ export const CreatePaperInProject = ({
   // Sections editor state
   const [sections, setSections] = React.useState<SectionRow[]>([]);
   const [newSectionTitle, setNewSectionTitle] = React.useState('');
+
+  const mainSections = React.useMemo(
+    () =>
+      sections
+        .filter((section) => !section.parentSectionId)
+        .sort((a, b) => a.displayOrder - b.displayOrder),
+    [sections],
+  );
+
+  const subSectionsByParent = React.useMemo(() => {
+    const grouped = new Map<string, SectionRow[]>();
+    sections
+      .filter((section) => !!section.parentSectionId)
+      .forEach((section) => {
+        const parentId = section.parentSectionId!;
+        const siblings = grouped.get(parentId) ?? [];
+        siblings.push(section);
+        grouped.set(parentId, siblings);
+      });
+
+    grouped.forEach((subSections, parentId) => {
+      subSections.sort((a, b) => a.displayOrder - b.displayOrder);
+      grouped.set(parentId, subSections);
+    });
+
+    return grouped;
+  }, [sections]);
 
   // Debounce template search
   React.useEffect(() => {
@@ -109,45 +142,45 @@ export const CreatePaperInProject = ({
     if (!detail) return;
     const rawSections = detail.templateStructure?.sections ?? [];
     setSections(
-      rawSections.map((s, i) => ({
-        _id: `tpl-${i}-${s.key ?? s.title}`,
-        title: s.title,
-        allowSubsections: s.allowSubsections,
-      })),
+      rawSections.map((s, i) => {
+        const sectionId = generateGuid();
+        return {
+          _id: `tpl-${sectionId}`,
+          id: sectionId,
+          title: s.title,
+          latex: s.latex ?? toLatex(s.title, false),
+          content: '',
+          numbered: s.numbered ?? true,
+          displayOrder: s.displayOrder ?? s.order ?? i,
+          sectionSumary: '',
+          allowSubsections: s.allowSubsections,
+        };
+      }),
     );
   }, [templateDetailQuery.data]);
 
-  // Mutation without file
-  const createMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => {
-      const fd = new FormData();
-      Object.entries(data).forEach(([k, v]) => {
-        if (Array.isArray(v)) {
-          v.forEach((item) => fd.append(k, String(item)));
-        } else if (v !== undefined && v !== null && v !== '') {
-          fd.append(k, String(v));
-        }
-      });
-      return api.post(PAPER_MANAGEMENT_API.ADMIN_PAPERS, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPERS],
-      });
-      onOpenChange(false);
-      resetForm();
-      toast.success('Paper created successfully');
-    },
-    onError: () => {
-      toast.error('Failed to create paper');
+  // Mutation using initialize endpoint
+  const initializeMutation = useInitializePaper({
+    mutationConfig: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPERS],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.SUB_PROJECTS, _projectId],
+        });
+        onOpenChange(false);
+        resetForm();
+        toast.success('Paper initialized successfully');
+      },
+      onError: () => {
+        toast.error('Failed to initialize paper');
+      },
     },
   });
 
   const resetForm = () => {
     setFormData(initialFormData);
-    setTagList([]);
     setTemplateCodeInput('');
     setTemplateSearch('');
     setSelectedTemplate(null);
@@ -184,76 +217,89 @@ export const CreatePaperInProject = ({
   const handleAddSection = () => {
     const trimmed = newSectionTitle.trim();
     if (!trimmed) return;
+    const maxOrder = Math.max(...sections.map((s) => s.displayOrder), -1);
+    const sectionId = generateGuid();
     setSections((prev) => [
       ...prev,
-      { _id: `custom-${Date.now()}`, title: trimmed },
+      {
+        _id: `custom-${sectionId}`,
+        id: sectionId,
+        title: trimmed,
+        latex: toLatex(trimmed, false),
+        content: '',
+        numbered: true,
+        displayOrder: maxOrder + 1,
+        sectionSumary: '',
+      },
     ]);
     setNewSectionTitle('');
   };
 
-  const handleRemoveSection = (id: string) => {
+  const handleRemoveSection = (rowId: string, sectionId: string) => {
     // Remove the section and any sub-sections belonging to it
     setSections((prev) =>
-      prev.filter((s) => s._id !== id && s.parentId !== id),
+      prev.filter((s) => s._id !== rowId && s.parentSectionId !== sectionId),
     );
   };
 
   const handleAddSubSection = (parentId: string) => {
     setSections((prev) => {
-      // Insert new sub-section after the last item that is this parent or its child
-      let insertIdx = prev.length;
-      for (let i = prev.length - 1; i >= 0; i--) {
-        if (prev[i]._id === parentId || prev[i].parentId === parentId) {
-          insertIdx = i + 1;
-          break;
-        }
-      }
-      const next = [...prev];
-      next.splice(insertIdx, 0, {
-        _id: `sub-${Date.now()}`,
-        title: '',
-        parentId,
-      });
-      return next;
+      // Find the parent section to get its actual ID
+      const parentSection = prev.find(
+        (s) => s._id === parentId || s.id === parentId,
+      );
+      if (!parentSection) return prev;
+
+      const siblingSubSections = prev.filter(
+        (s) => s.parentSectionId === parentSection.id,
+      );
+      const maxDisplayOrder = Math.max(
+        ...siblingSubSections.map((s) => s.displayOrder),
+        0,
+      );
+      const subSectionDisplayOrder = maxDisplayOrder + 1;
+      const newSubSectionId = generateGuid();
+
+      return [
+        ...prev,
+        {
+          _id: `sub-${newSubSectionId}`,
+          id: newSubSectionId,
+          title: '',
+          latex: toLatex('', true),
+          content: '',
+          numbered: true,
+          displayOrder: subSectionDisplayOrder,
+          sectionSumary: '',
+          parentSectionId: parentSection.id,
+        },
+      ];
     });
-  };
-
-  const handleAddTag = (value: string) => {
-    const trimmed = value.trim();
-    if (
-      trimmed &&
-      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
-    ) {
-      setTagList((prev) => [...prev, trimmed]);
-    }
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    setTagList((prev) => prev.filter((t) => t !== tag));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
-    if (
-      formData.publicationDate &&
-      new Date(formData.publicationDate) > new Date()
-    )
-      return;
-    createMutation.mutate({
+
+    const payload: InitializePaperDto = {
+      projectId: _projectId,
       title: formData.title,
       abstract: formData.abstract,
       doi: formData.doi,
-      publicationDate: formData.publicationDate || undefined,
-      paperType: formData.paperType,
-      journalName: formData.journalName,
-      conferenceName: formData.conferenceName,
-      parsedText: '',
-      isAutoTagged: false,
-      isIngested: false,
       status: formData.status,
-      tagNames: tagList,
-    });
+      paperType: formData.paperType,
+      sections: sections.map((sec) => ({
+        id: sec.id,
+        title: sec.latex || sec.title,
+        content: sec.content || '',
+        numbered: sec.numbered,
+        displayOrder: sec.displayOrder,
+        sectionSumary: sec.sectionSumary || '',
+        ...(sec.parentSectionId && { parentSectionId: sec.parentSectionId }),
+      })),
+    };
+
+    initializeMutation.mutate(payload);
   };
 
   return (
@@ -266,9 +312,9 @@ export const CreatePaperInProject = ({
     >
       <SheetContent side="right">
         <SheetHeader>
-          <SheetTitle>Create New Paper</SheetTitle>
+          <SheetTitle>Initialize New Paper</SheetTitle>
           <SheetDescription>
-            Select a template, fill in the details, and customise sections.
+            Select a template, fill in the details, and customize sections.
             Title is required.
           </SheetDescription>
         </SheetHeader>
@@ -278,6 +324,22 @@ export const CreatePaperInProject = ({
           onSubmit={handleSubmit}
           className="space-y-4 overflow-y-auto px-4 py-4"
         >
+          {/* ── Title ── */}
+          <div className="space-y-1.5">
+            <label htmlFor="cpp-title" className="text-sm font-medium">
+              Title <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="cpp-title"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
+              placeholder="Enter paper title"
+              required
+            />
+          </div>
+
           {/* ── Template selector ── */}
           <div className="space-y-1.5">
             <label htmlFor="cpp-template-code" className="text-sm font-medium">
@@ -404,7 +466,12 @@ export const CreatePaperInProject = ({
                 </div>
               ) : sections.length > 0 ? (
                 <div className="rounded-lg border">
-                  <Table>
+                  <Table className="table-fixed">
+                    <colgroup>
+                      <col className="w-10" />
+                      <col />
+                      <col className="w-20" />
+                    </colgroup>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-10">#</TableHead>
@@ -413,90 +480,133 @@ export const CreatePaperInProject = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(() => {
-                        const mainNumMap = new Map<string, number>();
-                        const subCountMap = new Map<string, number>();
-                        let mainIdx = 0;
-                        return sections.map((sec) => {
-                          let displayNum: string;
-                          const isSubSection = !!sec.parentId;
-                          if (!isSubSection) {
-                            mainIdx++;
-                            mainNumMap.set(sec._id, mainIdx);
-                            displayNum = String(mainIdx);
-                          } else {
-                            const parentNum =
-                              mainNumMap.get(sec.parentId!) ?? 0;
-                            const subCount =
-                              (subCountMap.get(sec.parentId!) ?? 0) + 1;
-                            subCountMap.set(sec.parentId!, subCount);
-                            displayNum = `${parentNum}.${subCount}`;
-                          }
-                          return (
-                            <TableRow
-                              key={sec._id}
-                              className={isSubSection ? 'bg-muted/30' : ''}
-                            >
-                              <TableCell
-                                className={cn(
-                                  'text-muted-foreground text-sm',
-                                  isSubSection && 'pl-7',
-                                )}
-                              >
-                                {displayNum}
+                      {mainSections.map((mainSection, mainIndex) => {
+                        const subSections =
+                          subSectionsByParent.get(mainSection.id) ?? [];
+
+                        return (
+                          <React.Fragment key={mainSection._id}>
+                            {/* Main section row */}
+                            <TableRow>
+                              <TableCell className="text-muted-foreground text-sm font-medium">
+                                {mainIndex + 1}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="align-top">
                                 <Input
-                                  value={sec.title}
+                                  value={mainSection.title}
                                   onChange={(e) =>
                                     setSections((prev) =>
-                                      prev.map((s) =>
-                                        s._id === sec._id
-                                          ? { ...s, title: e.target.value }
-                                          : s,
+                                      prev.map((section) =>
+                                        section._id === mainSection._id
+                                          ? {
+                                              ...section,
+                                              title: e.target.value,
+                                              latex: toLatex(
+                                                e.target.value,
+                                                false,
+                                              ),
+                                            }
+                                          : section,
                                       ),
                                     )
                                   }
-                                  className="h-7 text-sm"
-                                  placeholder={
-                                    isSubSection
-                                      ? 'Sub-section title...'
-                                      : undefined
-                                  }
+                                  className="h-8 text-sm"
                                 />
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center justify-end gap-0.5">
-                                  {!isSubSection &&
-                                    sec.allowSubsections !== false && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        title="Add sub-section"
-                                        className="size-6 text-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30"
-                                        onClick={() =>
-                                          handleAddSubSection(sec._id)
-                                        }
-                                      >
-                                        <Plus className="size-3.5" />
-                                      </Button>
-                                    )}
+                                  {mainSection.allowSubsections !== false && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Add sub-section"
+                                      className="size-6 text-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30"
+                                      onClick={() =>
+                                        handleAddSubSection(mainSection.id)
+                                      }
+                                    >
+                                      <Plus className="size-3.5" />
+                                    </Button>
+                                  )}
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
                                     className="size-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                                    onClick={() => handleRemoveSection(sec._id)}
+                                    onClick={() =>
+                                      handleRemoveSection(
+                                        mainSection._id,
+                                        mainSection.id,
+                                      )
+                                    }
                                   >
                                     <Trash2 className="size-3.5" />
                                   </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
-                          );
-                        });
-                      })()}
+
+                            {/* Subsection rows – each gets its own full-width row */}
+                            {subSections.map((subSection, subIndex) => (
+                              <TableRow
+                                key={subSection._id}
+                                className="bg-muted/20 hover:bg-muted/30"
+                              >
+                                <TableCell className="text-muted-foreground text-xs">
+                                  <div className="flex items-center gap-1 pl-3">
+                                    <span className="bg-muted-foreground/30 h-3.5 w-px" />
+                                    {`${mainIndex + 1}.${subIndex + 1}`}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="pl-3">
+                                    <Input
+                                      value={subSection.title}
+                                      onChange={(e) =>
+                                        setSections((prev) =>
+                                          prev.map((section) =>
+                                            section._id === subSection._id
+                                              ? {
+                                                  ...section,
+                                                  title: e.target.value,
+                                                  latex: toLatex(
+                                                    e.target.value,
+                                                    true,
+                                                  ),
+                                                }
+                                              : section,
+                                          ),
+                                        )
+                                      }
+                                      className="h-8 text-sm"
+                                      placeholder="Sub-section title..."
+                                    />
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex justify-end">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                      onClick={() =>
+                                        handleRemoveSection(
+                                          subSection._id,
+                                          subSection.id,
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -531,35 +641,6 @@ export const CreatePaperInProject = ({
             </div>
           )}
 
-          {/* ── Title ── */}
-          <div className="space-y-1.5">
-            <label htmlFor="cpp-title" className="text-sm font-medium">
-              Title <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="cpp-title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Enter paper title"
-              required
-            />
-          </div>
-
-          {/* ── Tags ── */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">
-              Tags {tagList.length > 0 && `(${tagList.length})`}
-            </label>
-            <TagAutocompleteInput
-              tagList={tagList}
-              onAddTag={handleAddTag}
-              onRemoveTag={handleRemoveTag}
-              placeholder="Type a tag and press Enter..."
-            />
-          </div>
-
           {/* ── DOI ── */}
           <div className="space-y-1.5">
             <label htmlFor="cpp-doi" className="text-sm font-medium">
@@ -591,84 +672,21 @@ export const CreatePaperInProject = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* ── Publication Date ── */}
-            <div className="space-y-1.5">
-              <label htmlFor="cpp-pubdate" className="text-sm font-medium">
-                Publication Date
-              </label>
-              <Input
-                id="cpp-pubdate"
-                type="datetime-local"
-                value={formData.publicationDate}
-                max={new Date().toISOString().slice(0, 16)}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    publicationDate: e.target.value,
-                  }))
-                }
-              />
-              {formData.publicationDate &&
-                new Date(formData.publicationDate) > new Date() && (
-                  <p className="text-destructive text-xs">
-                    Publication date cannot be in the future.
-                  </p>
-                )}
-            </div>
-
-            {/* ── Paper Type ── */}
-            <div className="space-y-1.5">
-              <label htmlFor="cpp-type" className="text-sm font-medium">
-                Paper Type
-              </label>
-              <Input
-                id="cpp-type"
-                value={formData.paperType}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    paperType: e.target.value,
-                  }))
-                }
-                placeholder="e.g. Research, Review"
-              />
-            </div>
-          </div>
-
-          {/* ── Journal Name ── */}
+          {/* ── Paper Type ── */}
           <div className="space-y-1.5">
-            <label htmlFor="cpp-journal" className="text-sm font-medium">
-              Journal Name
+            <label htmlFor="cpp-type" className="text-sm font-medium">
+              Paper Type
             </label>
             <Input
-              id="cpp-journal"
-              value={formData.journalName}
+              id="cpp-type"
+              value={formData.paperType}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  journalName: e.target.value,
+                  paperType: e.target.value,
                 }))
               }
-              placeholder="Enter journal name"
-            />
-          </div>
-
-          {/* ── Conference Name ── */}
-          <div className="space-y-1.5">
-            <label htmlFor="cpp-conference" className="text-sm font-medium">
-              Conference Name
-            </label>
-            <Input
-              id="cpp-conference"
-              value={formData.conferenceName}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  conferenceName: e.target.value,
-                }))
-              }
-              placeholder="Enter conference name"
+              placeholder="e.g. Research, Review"
             />
           </div>
 
@@ -688,7 +706,7 @@ export const CreatePaperInProject = ({
                 }))
               }
             >
-              {PAPER_STATUS_OPTIONS.map((opt) => (
+              {PAPER_INITIALIZE_STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -709,10 +727,10 @@ export const CreatePaperInProject = ({
           <Button
             type="submit"
             form="create-paper-in-project-form"
-            disabled={createMutation.isPending || !formData.title.trim()}
+            disabled={initializeMutation.isPending || !formData.title.trim()}
             className={BTN.CREATE}
           >
-            {createMutation.isPending ? 'Creating...' : 'Create'}
+            {initializeMutation.isPending ? 'Initializing...' : 'Initialize'}
           </Button>
         </SheetFooter>
       </SheetContent>

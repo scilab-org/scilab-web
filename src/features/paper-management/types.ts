@@ -103,6 +103,26 @@ export type UpdatePaperDto = {
   isAutoTagged?: boolean;
 };
 
+export type PaperSection = {
+  id: string;
+  title: string;
+  content?: string;
+  numbered: boolean;
+  displayOrder: number;
+  sectionSumary?: string;
+  parentSectionId?: string;
+};
+
+export type InitializePaperDto = {
+  projectId: string;
+  title: string;
+  abstract: string;
+  doi: string;
+  status: number;
+  paperType: string;
+  sections: PaperSection[];
+};
+
 export type StringApiCreatedResponse = {
   value: string | null;
 };
