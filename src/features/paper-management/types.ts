@@ -83,7 +83,7 @@ export type ParsePaperResponse = {
 
 export type AutoTagRequest = {
   parsedText: string;
-  tagNames: string[];
+  existingTags: string[];
 };
 
 export type AutoTagResponse = {

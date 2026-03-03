@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
   Sheet,
   SheetContent,
@@ -16,6 +17,7 @@ import {
 
 import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
+import { autoTagPaper } from '../api/auto-tag-paper';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
@@ -38,11 +40,19 @@ export const CreatePaper = () => {
 
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
+  const [parseProgress, setParseProgress] = React.useState(0);
   const [parsedText, setParsedText] = React.useState('');
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [tagList, setTagList] = React.useState<string[]>([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
   const [showTags, setShowTags] = React.useState(false);
+  
+  // Auto-tag rate limiting state
+  const [isAutoTagging, setIsAutoTagging] = React.useState(false);
+  const [autoTagCooldown, setAutoTagCooldown] = React.useState(0);
+
+  // Abort controller for canceling uploads
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   const createPaperMutation = useCreatePaper({
     mutationConfig: {
@@ -61,6 +71,7 @@ export const CreatePaper = () => {
     setFormData(initialFormData);
     setFile(undefined);
     setParsedText('');
+    setParseProgress(0);
     setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
@@ -69,24 +80,106 @@ export const CreatePaper = () => {
 
   const handleFileChange = async (selectedFile: File | undefined) => {
     if (!selectedFile) return;
+    // Cancel any ongoing upload
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Create new abort controller for this upload
+    abortControllerRef.current = new AbortController();
     setFile(selectedFile);
     setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
     setShowTags(false);
-    setIsParsing(false);
+    setParseProgress(0);
+    setIsParsing(true);
 
-    // TODO: Replace with real API call when Python service is ready
-    // const response = await parsePaperFile(selectedFile);
-    // setParsedText(response.parsedText || '');
+    try {
+      const response = await parsePaperFile(
+        selectedFile,
+        (progressEvent) => {
+          if (!progressEvent.total) return;
+          const uploadPercent =
+            (progressEvent.loaded * 100) / progressEvent.total;
+          // only push forward, never backward
+          setParseProgress((prev) =>
+            Math.max(prev, Math.floor(uploadPercent * 0.1)),
+          );
+        },
+        abortControllerRef.current.signal,
+      );
+      console.log('Parse response:', response);
+      setParseProgress(100);
+      setParsedText(response.parsedText || '');
+    } catch (error) {
+      console.error('Parse error:', error);
+      
+      // Check if the error was due to user cancellation
+      if ((error as any)?.name === 'CanceledError' || (error as any)?.code === 'ERR_CANCELED') {
+        toast.info('Upload cancelled');
+      } else {
+        // Reset file and parsing state on error
+        setFile(undefined);
+        setParsedText('');
+        setParseProgress(0);
+        
+        // Provide specific error message for timeout
+        if ((error as any)?.code === 'ECONNABORTED' || (error as any)?.response?.status === 504) {
+          toast.error('PDF parsing timed out. The file may be too large or complex. Please try a smaller file.');
+        } else {
+          toast.error('Failed to parse the PDF file');
+        }
+      }
+    } finally {
+      setIsParsing(false);
+      abortControllerRef.current = null;
+    }
+  };
 
-    // Fake parsedText for development
-    setParsedText('This is a sample parsed text from the uploaded PDF file.');
+  React.useEffect(() => {
+    if (!isParsing) return;
+
+    let current = Math.max(parseProgress || 1, 1);
+
+    const timer = setInterval(() => {
+      const remaining = 99 - current;
+      if (remaining <= 0) {
+        clearInterval(timer);
+        return;
+      }
+      // ease out: slower as we approach 99
+      current += Math.max(remaining * 0.01, Math.random());
+
+      if (current > 99) current = 99;
+      setParseProgress(Math.floor(current));
+    }, 300);
+
+    return () => clearInterval(timer);
+  }, [isParsing, parseProgress]);
+
+  // Auto-tag cooldown timer
+  React.useEffect(() => {
+    if (autoTagCooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setAutoTagCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [autoTagCooldown]);
+
+  const handleCancelUpload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    handleRemoveFile();
   };
 
   const handleRemoveFile = () => {
     setFile(undefined);
     setParsedText('');
+    setParseProgress(0);
     setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
@@ -94,44 +187,56 @@ export const CreatePaper = () => {
   };
 
   const handleAutoTag = async () => {
-    if (!file) return;
+    if (!file || !parsedText) {
+      toast.warning('Please wait for the PDF to finish parsing first');
+      return;
+    }
 
-    // TODO: Replace with real API call when Python service is ready
-    // try {
-    //   setIsParsing(true);
-    //   const response = await parsePaperFile(file);
-    //   setParsedText(response.parsedText || '');
-    //   const tags = response.tags || [];
-    //   setSuggestedTags(tags);
-    //   setTagList([...tags]);
-    // } catch {
-    //   setParsedText('');
-    //   setSuggestedTags([]);
-    // } finally {
-    //   setIsParsing(false);
-    // }
+    if (autoTagCooldown > 0) {
+      toast.warning(`Please wait ${autoTagCooldown} seconds before trying again`);
+      return;
+    }
 
-    // Fake data for development
-    setIsParsing(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const fakeTags = [
-      'machine learning',
-      'deep learning',
-      'natural language processing',
-      'computer science',
-    ];
-    setSuggestedTags(fakeTags);
-    setTagList((prev) => {
-      const merged = [...prev];
-      fakeTags.forEach((tag) => {
-        if (!merged.includes(tag)) merged.push(tag);
+    setIsAutoTagging(true);
+
+    try {
+      const response = await autoTagPaper({
+        parsedText: parsedText,
+        existingTags: tagList,
       });
-      return merged;
-    });
-    setIsParsing(false);
 
-    setIsAutoTagged(true);
-    setShowTags(true);
+      const suggestedTagsList = response.tags || [];
+      setSuggestedTags(suggestedTagsList);
+
+      // Merge suggested tags with existing tags (avoiding duplicates)
+      setTagList((prev) => {
+        const merged = [...prev];
+        suggestedTagsList.forEach((tag) => {
+          const normalizedTag = tag.trim();
+          if (
+            normalizedTag &&
+            !merged.some((t) => t.toLowerCase() === normalizedTag.toLowerCase())
+          ) {
+            merged.push(normalizedTag);
+          }
+        });
+        return merged;
+      });
+
+      setIsAutoTagged(true);
+      setShowTags(true);
+      setAutoTagCooldown(60); // 60 seconds cooldown
+      toast.success(`Added ${suggestedTagsList.length} suggested tags`);
+    } catch (error) {
+      console.error('Auto-tag error:', error);
+      const errorMessage =
+        (error as any)?.response?.data?.message ||
+        (error as any)?.message ||
+        'Failed to auto-tag paper';
+      toast.error(errorMessage);
+    } finally {
+      setIsAutoTagging(false);
+    }
   };
 
   const handleAddTag = (value: string) => {
@@ -175,13 +280,7 @@ export const CreatePaper = () => {
   };
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (!v) resetForm();
-      }}
-    >
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button size="sm" className={BTN.CREATE}>
           <Plus className="size-4" />
@@ -223,11 +322,32 @@ export const CreatePaper = () => {
                     variant="ghost"
                     size="icon"
                     className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                    onClick={handleRemoveFile}
+                    onClick={isParsing ? handleCancelUpload : handleRemoveFile}
+                    title={isParsing ? 'Cancel upload' : 'Remove file'}
                   >
                     <X className="size-4" />
                   </Button>
                 </div>
+                {/* Parsing progress bar */}
+                {isParsing && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <Loader2 className="size-3 animate-spin" />
+                        Parsing PDF...
+                      </span>
+                      <span className="text-muted-foreground font-medium">
+                        {parseProgress}%
+                      </span>
+                    </div>
+                    <Progress value={parseProgress} />
+                  </div>
+                )}
+                {!isParsing && parsedText && (
+                  <p className="text-muted-foreground text-xs">
+                    ✓ PDF parsed successfully
+                  </p>
+                )}
               </div>
             ) : (
               <label
@@ -272,23 +392,25 @@ export const CreatePaper = () => {
           {/* Auto Tag button */}
           {file && (
             <div className="flex items-center gap-3">
-              {isParsing ? (
-                <div className="text-muted-foreground flex items-center gap-2 text-sm">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={`gap-1.5 ${BTN.AUTO_TAG}`}
+                onClick={handleAutoTag}
+                disabled={isAutoTagging || autoTagCooldown > 0 || isParsing || !parsedText}
+              >
+                {isAutoTagging ? (
                   <Loader2 className="size-4 animate-spin" />
-                  Parsing file and generating tags...
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={`gap-1.5 ${BTN.AUTO_TAG}`}
-                  onClick={handleAutoTag}
-                >
+                ) : (
                   <Tags className="size-4" />
-                  Auto Tag
-                </Button>
-              )}
+                )}
+                {isAutoTagging
+                  ? 'Auto Tagging...'
+                  : autoTagCooldown > 0
+                  ? `Wait ${autoTagCooldown}s`
+                  : 'Auto Tag'}
+              </Button>
             </div>
           )}
 
@@ -455,7 +577,10 @@ export const CreatePaper = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              resetForm();
+              setOpen(false);
+            }}
             className={BTN.CANCEL}
           >
             Cancel
