@@ -30,6 +30,7 @@ import { useDeleteProject } from '@/features/project-management/api/projects/del
 import { ProjectView } from '@/features/project-management/components/projects/project-view';
 import { ProjectMembersList } from '@/features/project-management/components/members/project-members-list';
 import { ProjectPapersList } from '@/features/project-management/components/papers/project-papers-list';
+import { ProjectWritingPapersList } from '@/features/project-management/components/papers/project-writing-papers-list';
 import { DatasetsList } from '@/features/dataset-management/components/datasets-list';
 import { ExcelChartViewer } from '@/features/dataset-management/components/excel-chart-viewer';
 import { Dataset } from '@/features/dataset-management/types';
@@ -51,7 +52,7 @@ export const clientLoader =
     }
   };
 
-type Tab = 'overview' | 'members' | 'papers' | 'datasets';
+type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
 type TabConfig = {
   id: Tab;
@@ -62,7 +63,8 @@ type TabConfig = {
 const TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Info },
   { id: 'members', label: 'Members', icon: Users },
-  { id: 'papers', label: 'Papers', icon: FileText },
+  { id: 'papers', label: 'Paper Sample', icon: FileText },
+  { id: 'writing-papers', label: 'Papers', icon: FileText },
   { id: 'datasets', label: 'Datasets', icon: Database },
 ];
 
@@ -376,6 +378,10 @@ const ProjectDetailRoute = () => {
 
           {activeTab === 'papers' && (
             <ProjectPapersList projectId={projectId} readOnly />
+          )}
+
+          {activeTab === 'writing-papers' && (
+            <ProjectWritingPapersList projectId={projectId!} />
           )}
 
           {activeTab === 'datasets' && (

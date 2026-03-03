@@ -129,6 +129,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
               convert(queryClient),
             ),
         },
+        {
+          path: paths.app.paperTemplateManagement.paperTemplates.path,
+          lazy: () =>
+            import('./routes/app/paper-template-management/paper-templates').then(
+              convert(queryClient),
+            ),
+        },
       ],
     },
     {
