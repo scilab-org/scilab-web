@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
 
+import { BTN } from '@/lib/button-styles';
 import { usePapers } from '../api/get-papers';
 import { getPaperQueryOptions } from '../api/get-paper';
 import { DeletePaper } from './delete-paper';
@@ -170,29 +171,29 @@ export const PapersList = () => {
     <div className="overflow-x-auto rounded-xl border shadow-sm">
       <Table className="table-fixed">
         <TableHeader>
-          <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 hover:from-blue-50 hover:to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-            <TableHead className="w-[22%] font-semibold text-blue-900 dark:text-blue-200">
+          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+            <TableHead className="w-[22%] font-semibold text-green-900 dark:text-green-200">
               Title
             </TableHead>
-            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
               DOI
             </TableHead>
-            <TableHead className="w-[9%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[9%] font-semibold text-green-900 dark:text-green-200">
               Paper Type
             </TableHead>
-            <TableHead className="w-[14%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[14%] font-semibold text-green-900 dark:text-green-200">
               Journal / Conference
             </TableHead>
-            <TableHead className="w-[11%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[11%] font-semibold text-green-900 dark:text-green-200">
               Publication Date
             </TableHead>
-            <TableHead className="w-[8%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[8%] font-semibold text-green-900 dark:text-green-200">
               Status
             </TableHead>
-            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
               Tags
             </TableHead>
-            <TableHead className="w-[16%] text-center font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[16%] text-center font-semibold text-green-900 dark:text-green-200">
               Actions
             </TableHead>
           </TableRow>
@@ -201,7 +202,7 @@ export const PapersList = () => {
           {papers.map((paper, index) => (
             <TableRow
               key={paper.id}
-              className={`transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-950/20 ${
+              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${
                 index % 2 === 0
                   ? 'bg-white dark:bg-transparent'
                   : 'bg-slate-50/50 dark:bg-slate-900/20'
@@ -307,7 +308,12 @@ export const PapersList = () => {
                       </a>
                     </Button>
                   ) : (
-                    <Button variant="ghost" size="sm" disabled>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled
+                      className={BTN.CANCEL}
+                    >
                       <FileText className="size-4" />
                       No file
                     </Button>

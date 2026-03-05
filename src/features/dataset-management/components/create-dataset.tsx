@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useCreateDataset } from '../api/create-dataset';
 
 type CreateDatasetProps = {
@@ -229,6 +230,7 @@ export const CreateDataset = ({
               variant="outline"
               onClick={resetForm}
               disabled={createMutation.isPending}
+              className={BTN.CANCEL}
             >
               Cancel
             </Button>
@@ -237,7 +239,7 @@ export const CreateDataset = ({
             type="submit"
             form="create-dataset-form"
             disabled={createMutation.isPending}
-            className="min-w-25"
+            className={`min-w-25 ${BTN.CREATE}`}
           >
             {createMutation.isPending ? (
               <>

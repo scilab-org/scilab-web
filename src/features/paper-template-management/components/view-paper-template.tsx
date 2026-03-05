@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { usePaperTemplate } from '../api/get-paper-template';
 
 type ViewPaperTemplateProps = {
@@ -33,7 +34,7 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className={BTN.VIEW_OUTLINE}>
           <Eye className="size-4" />
           View
         </Button>

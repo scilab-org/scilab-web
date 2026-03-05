@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+import { BTN } from '@/lib/button-styles';
 import { useDeleteTag } from '../api/delete-tag';
 
 type DeleteTagProps = {
@@ -39,7 +40,7 @@ export const DeleteTag = ({ tagId }: DeleteTagProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm">
+        <Button variant="destructive" size="sm" className={BTN.DANGER}>
           <Trash2 className="size-4" />
           Delete
         </Button>

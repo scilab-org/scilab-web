@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import { BTN } from '@/lib/button-styles';
 import { usePaperMembers } from '../../api/papers/get-paper-members';
 import { usePaperMembersAvailable } from '../../api/papers/get-paper-members-available';
 import { useAddSubProjectMembers } from '../../api/papers/add-sub-project-members';
@@ -430,14 +431,18 @@ export const PaperMembersSheet = ({
         <SheetFooter className="mt-6 flex-col gap-2 sm:flex-col">
           {panel === 'default' && (
             <SheetClose asChild>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className={`w-full ${BTN.CANCEL}`}>
                 Close
               </Button>
             </SheetClose>
           )}
 
           {panel === 'view' && (
-            <Button variant="outline" onClick={goBack} className="w-full">
+            <Button
+              variant="outline"
+              onClick={goBack}
+              className={`w-full ${BTN.CANCEL}`}
+            >
               Back
             </Button>
           )}
@@ -447,7 +452,7 @@ export const PaperMembersSheet = ({
               <Button
                 onClick={handleAdd}
                 disabled={selectedCount === 0 || addMembersMutation.isPending}
-                className="flex flex-1 items-center gap-2"
+                className={`flex flex-1 items-center gap-2 ${BTN.CREATE}`}
               >
                 {addMembersMutation.isPending ? (
                   <>
@@ -465,6 +470,7 @@ export const PaperMembersSheet = ({
                 variant="outline"
                 onClick={goBack}
                 disabled={addMembersMutation.isPending}
+                className={BTN.CANCEL}
               >
                 Cancel
               </Button>

@@ -3,6 +3,8 @@ import { Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
+import { BTN } from '@/lib/button-styles';
+
 import { useRemoveRolesFromGroup } from '../api/remove-roles-from-group';
 
 type RemoveRolesFromGroupProps = {
@@ -33,6 +35,7 @@ export const RemoveRolesFromGroup = ({
           size="xs"
           disabled={removeRolesMutation.isPending}
           onClick={() => removeRolesMutation.mutate({ groupId, roleNames })}
+          className={BTN.DANGER}
         >
           {removeRolesMutation.isPending ? 'Removing...' : 'Confirm'}
         </Button>
@@ -40,6 +43,7 @@ export const RemoveRolesFromGroup = ({
           variant="outline"
           size="xs"
           onClick={() => setIsConfirming(false)}
+          className={BTN.CANCEL}
         >
           Cancel
         </Button>
@@ -52,6 +56,7 @@ export const RemoveRolesFromGroup = ({
       variant="destructive"
       size="xs"
       onClick={() => setIsConfirming(true)}
+      className={BTN.DANGER}
     >
       <Trash2 className="size-3" />
       Remove

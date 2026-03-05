@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useUpdatePaperTemplate } from '../api/update-paper-template';
 import { PaperTemplateDto, CreateTemplateSectionDto } from '../types';
 
@@ -126,7 +127,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
           <Pencil className="size-4" />
           Edit
         </Button>
@@ -282,6 +283,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             type="button"
             variant="outline"
             onClick={() => setOpen(false)}
+            className={BTN.CANCEL}
           >
             Cancel
           </Button>
@@ -289,6 +291,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             type="submit"
             form="update-pt-form"
             disabled={mutation.isPending}
+            className={BTN.EDIT}
           >
             {mutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>

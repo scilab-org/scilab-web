@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useUpdateProject } from '../../api/projects/update-project';
 import { Project, UpdateProjectDto } from '../../types';
 
@@ -275,6 +276,7 @@ export const UpdateProject = ({
               type="button"
               variant="outline"
               disabled={updateMutation.isPending}
+              className={BTN.CANCEL}
             >
               Cancel
             </Button>
@@ -283,7 +285,7 @@ export const UpdateProject = ({
             type="submit"
             form="update-project-form"
             disabled={updateMutation.isPending}
-            className="min-w-25"
+            className={`min-w-25 ${BTN.EDIT}`}
           >
             {updateMutation.isPending ? (
               <>

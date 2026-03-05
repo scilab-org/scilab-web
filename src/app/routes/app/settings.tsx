@@ -2,6 +2,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 
 import { Head } from '@/components/seo';
 import { Button } from '@/components/ui/button';
+import { BTN } from '@/lib/button-styles';
 import { useTheme } from '@/lib/theme';
 import { cn } from '@/utils/cn';
 
@@ -129,7 +130,9 @@ const SettingsRoute = () => {
                   Update your profile information and preferences.
                 </p>
               </div>
-              <Button variant="outline">Edit Profile</Button>
+              <Button variant="outline" className={BTN.EDIT_OUTLINE}>
+                Edit Profile
+              </Button>
             </div>
           </div>
         </div>
@@ -154,7 +157,9 @@ const SettingsRoute = () => {
                   Receive email updates about your account activity.
                 </p>
               </div>
-              <Button variant="outline">Configure</Button>
+              <Button variant="outline" className={BTN.VIEW_OUTLINE}>
+                Configure
+              </Button>
             </div>
           </div>
         </div>

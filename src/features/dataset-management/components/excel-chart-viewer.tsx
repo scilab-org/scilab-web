@@ -15,6 +15,7 @@ import {
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Download, FileSpreadsheet, AlertCircle } from 'lucide-react';
 
+import { BTN } from '@/lib/button-styles';
 import { Button } from '@/components/ui/button';
 
 // Register Chart.js components
@@ -427,7 +428,12 @@ export const ExcelChartViewer = ({
               <p className="text-muted-foreground text-sm">{fileName}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            className={BTN.CANCEL}
+          >
             Close
           </Button>
         </div>
@@ -586,7 +592,7 @@ export const ExcelChartViewer = ({
                     variant="default"
                     size="sm"
                     onClick={handleExportChart}
-                    className="flex items-center gap-2"
+                    className={`flex items-center gap-2 ${BTN.EDIT}`}
                   >
                     <Download className="h-4 w-4" />
                     Export as PNG

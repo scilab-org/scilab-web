@@ -5,6 +5,7 @@ import { Search, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
@@ -183,9 +184,9 @@ export const PapersFilter = () => {
 
         {/* Tags */}
         <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-          <label className="text-muted-foreground text-xs font-medium">
+          <span className="text-muted-foreground text-xs font-medium">
             Tags
-          </label>
+          </span>
           <TagAutocompleteInput
             tagList={tagList}
             onAddTag={handleAddTag}
@@ -352,14 +353,16 @@ export const PapersFilter = () => {
             Clear ({activeFilterCount})
           </Button>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={handleClear}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClear}
+          className={BTN.CANCEL}
+        >
           Reset
         </Button>
-        <Button
-          type="submit"
-          size="sm"
-          className="bg-blue-600 text-white hover:bg-blue-700"
-        >
+        <Button type="submit" size="sm" className={BTN.EDIT}>
           <Search className="size-4" />
           Search
         </Button>

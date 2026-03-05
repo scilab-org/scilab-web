@@ -430,13 +430,14 @@ export const CreatePaperInProject = ({
                     variant="outline"
                     size="sm"
                     onClick={handleResetTemplateSearch}
+                    className={BTN.CANCEL}
                   >
                     Reset
                   </Button>
                   <Button
                     type="button"
                     size="sm"
-                    className="bg-blue-600 text-white hover:bg-blue-700"
+                    className={BTN.EDIT}
                     onClick={handleSearchTemplate}
                   >
                     <Search className="size-4" />
@@ -465,7 +466,7 @@ export const CreatePaperInProject = ({
                   Loading sections...
                 </div>
               ) : sections.length > 0 ? (
-                <div className="rounded-lg border">
+                <div className="overflow-x-auto rounded-xl border shadow-sm">
                   <Table className="table-fixed">
                     <colgroup>
                       <col className="w-10" />
@@ -473,9 +474,13 @@ export const CreatePaperInProject = ({
                       <col className="w-20" />
                     </colgroup>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">#</TableHead>
-                        <TableHead>Section Title</TableHead>
+                      <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                        <TableHead className="w-10 font-semibold text-green-900 dark:text-green-200">
+                          #
+                        </TableHead>
+                        <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                          Section Title
+                        </TableHead>
                         <TableHead className="w-20" />
                       </TableRow>
                     </TableHeader>

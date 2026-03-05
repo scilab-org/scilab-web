@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useUpdateDataset } from '../api/update-dataset';
 import { Dataset } from '../types';
 
@@ -206,6 +207,7 @@ export const UpdateDataset = ({
               variant="outline"
               onClick={resetForm}
               disabled={updateMutation.isPending}
+              className={BTN.CANCEL}
             >
               Cancel
             </Button>
@@ -214,7 +216,7 @@ export const UpdateDataset = ({
             type="submit"
             form="update-dataset-form"
             disabled={updateMutation.isPending}
-            className="min-w-25"
+            className={`min-w-25 ${BTN.EDIT}`}
           >
             {updateMutation.isPending ? (
               <>

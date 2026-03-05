@@ -4,6 +4,7 @@ import { Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BTN } from '@/lib/button-styles';
 
 import { PROJECT_STATUS_OPTIONS } from '../../constants';
 
@@ -143,14 +144,16 @@ export const ProjectsFilter = () => {
             Clear ({activeFilterCount})
           </Button>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={handleClear}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClear}
+          className={BTN.CANCEL}
+        >
           Reset
         </Button>
-        <Button
-          type="submit"
-          size="sm"
-          className="bg-blue-600 text-white hover:bg-blue-700"
-        >
+        <Button type="submit" size="sm" className={BTN.EDIT}>
           <Search className="size-4" />
           Search
         </Button>
