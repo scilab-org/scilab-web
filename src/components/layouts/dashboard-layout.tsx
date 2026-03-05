@@ -1,7 +1,6 @@
 import {
   Bell,
   Bookmark,
-  BookOpen,
   ChevronRight,
   FileText,
   FolderKanban,
@@ -220,7 +219,7 @@ const navigation: SideNavigationItem[] = [
     to: paths.app.groupRoleManagement.groups.getHref(),
     icon: User,
   },
-  { name: 'Sample', to: paths.app.sample.getHref(), icon: BookOpen },
+
   { name: 'Projects', to: paths.app.projects.getHref(), icon: FolderKanban },
   {
     name: 'Assigned Projects',
@@ -311,7 +310,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={defaultOpen}>
       <Progress />
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-hidden">
         {/* Header */}
         <header className="border-border bg-background sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b px-4 sm:px-6">
           {/* Sidebar trigger and breadcrumb */}
@@ -344,7 +343,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

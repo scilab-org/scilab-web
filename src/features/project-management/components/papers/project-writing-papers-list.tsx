@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import { BTN } from '@/lib/button-styles';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
@@ -110,7 +111,7 @@ export const ProjectWritingPapersList = ({
             <Button
               onClick={onCreatePaperClick}
               size="sm"
-              className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+              className="btn-create flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               Create Paper
@@ -144,80 +145,97 @@ export const ProjectWritingPapersList = ({
             <Skeleton className="h-10 w-full" />
           </div>
         ) : papers.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Journal / Conference</TableHead>
-                <TableHead>Published</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {papers.map((paper) => (
-                <TableRow key={paper.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      to={paths.app.paperManagement.paper.getHref(paper.id)}
-                      className="text-blue-600 hover:underline dark:text-blue-400"
-                    >
-                      {paper.title || '(Untitled)'}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {paper.paperType || '—'}
-                  </TableCell>
-                  <TableCell>
-                    {paper.status ? (
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Title
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Type
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Journal / Conference
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Published
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {papers.map((paper, index) => (
+                  <TableRow
+                    key={paper.id}
+                    className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+                  >
+                    <TableCell className="font-medium">
+                      <Link
+                        to={paths.app.paperManagement.paper.getHref(paper.id)}
+                        className="text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        {paper.status}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
-                    {paper.journalName || paper.conferenceName || '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {paper.publicationDate
-                      ? new Date(paper.publicationDate).toLocaleDateString()
-                      : '—'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setMembersSheetPaper(paper)}
-                        disabled={!paper.subProjectId}
-                        className="flex items-center gap-1.5"
-                      >
-                        <Users className="h-3.5 w-3.5" />
-                        Members
-                      </Button>
-                      {isManager && (
+                        {paper.title || '(Untitled)'}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {paper.paperType || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {paper.status ? (
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
+                        >
+                          {paper.status}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
+                      {paper.journalName || paper.conferenceName || '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {paper.publicationDate
+                        ? new Date(paper.publicationDate).toLocaleDateString()
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setPaperToDelete(paper)}
+                          onClick={() => setMembersSheetPaper(paper)}
                           disabled={!paper.subProjectId}
-                          className="text-destructive hover:text-destructive flex items-center gap-1.5"
+                          className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
+                          <Users className="h-3.5 w-3.5" />
+                          Members
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                        {isManager && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPaperToDelete(paper)}
+                            disabled={!paper.subProjectId}
+                            className={`flex items-center gap-1.5 ${BTN.DANGER_OUTLINE}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : searchDebounce ? (
           <div className="bg-muted/30 rounded-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">

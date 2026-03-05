@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useCreateTag } from '../api/create-tag';
 
 const initialFormData = {
@@ -55,15 +56,12 @@ export const CreateTag = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          size="sm"
-          className="bg-green-600 text-white hover:bg-green-700"
-        >
+        <Button size="sm" className={BTN.CREATE}>
           <Plus className="size-4" />
           Create Tag
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Create New Tag</SheetTitle>
           <SheetDescription>
@@ -95,6 +93,7 @@ export const CreateTag = () => {
             type="button"
             variant="outline"
             onClick={() => setOpen(false)}
+            className={BTN.CANCEL}
           >
             Cancel
           </Button>
@@ -102,6 +101,7 @@ export const CreateTag = () => {
             type="submit"
             form="create-tag-form"
             disabled={createTagMutation.isPending || !formData.name.trim()}
+            className={BTN.CREATE}
           >
             {createTagMutation.isPending ? 'Creating...' : 'Create'}
           </Button>

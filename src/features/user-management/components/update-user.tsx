@@ -16,6 +16,7 @@ import {
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { GroupDto } from '@/features/group-role-management/types';
 
+import { BTN } from '@/lib/button-styles';
 import { useUpdateUser } from '../api/update-user';
 import { UserDto } from '../types';
 
@@ -94,12 +95,12 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
           <Pencil className="size-4" />
           Edit
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Edit User</SheetTitle>
           <SheetDescription>
@@ -110,11 +111,14 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
         <form
           id="update-user-form"
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 overflow-y-auto px-4"
+          className="space-y-4 overflow-y-auto px-4 py-4"
         >
-          <div className="space-y-2">
-            <label className="text-sm font-medium">First Name</label>
+          <div className="space-y-1.5">
+            <label htmlFor="uu-firstName" className="text-sm font-medium">
+              First Name
+            </label>
             <Input
+              id="uu-firstName"
               value={formData.firstName}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -126,9 +130,12 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Last Name</label>
+          <div className="space-y-1.5">
+            <label htmlFor="uu-lastName" className="text-sm font-medium">
+              Last Name
+            </label>
             <Input
+              id="uu-lastName"
               value={formData.lastName}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -140,7 +147,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-medium">
               <input
                 type="checkbox"
@@ -157,7 +164,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
             </label>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className="text-sm font-medium">Groups</label>
             {groupsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">Loading groups...</p>
@@ -188,9 +195,18 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
 
         <SheetFooter>
           <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+            className={BTN.CANCEL}
+          >
+            Cancel
+          </Button>
+          <Button
             type="submit"
             form="update-user-form"
             disabled={updateUserMutation.isPending}
+            className={BTN.EDIT}
           >
             {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>

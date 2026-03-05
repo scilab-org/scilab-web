@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { getUserGroups, getUserRoles } from '@/lib/auth';
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 
+import { BTN } from '@/lib/button-styles';
 import { useAvailableUsers } from '../../api/members/get-available-users';
 import { useAddManagers } from '../../api/members/add-project-manager';
 import { useAddProjectMembers } from '../../api/members/add-project-members';
@@ -309,7 +310,7 @@ export const AddMembersModal = ({
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col sm:max-w-2xl">
+      <SheetContent className="flex flex-col sm:max-w-sm">
         <SheetHeader>
           <div className="flex items-center gap-2">
             {isAdmin ? (
@@ -406,14 +407,18 @@ export const AddMembersModal = ({
 
         <SheetFooter className="mt-6">
           <SheetClose asChild>
-            <Button variant="outline" disabled={isPending}>
+            <Button
+              variant="outline"
+              disabled={isPending}
+              className={BTN.CANCEL}
+            >
               Cancel
             </Button>
           </SheetClose>
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit || isPending}
-            className="gap-2"
+            className={`gap-2 ${BTN.CREATE}`}
           >
             {isPending ? (
               <>

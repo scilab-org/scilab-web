@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useUpdateTag } from '../api/update-tag';
 import { TagDto } from '../types';
 
@@ -69,12 +70,12 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
           <Pencil className="size-4" />
           Edit
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Edit Tag</SheetTitle>
           <SheetDescription>
@@ -108,6 +109,7 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
             type="submit"
             form="update-tag-form"
             disabled={updateTagMutation.isPending || !formData.name.trim()}
+            className={BTN.EDIT}
           >
             {updateTagMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>

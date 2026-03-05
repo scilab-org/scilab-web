@@ -56,47 +56,60 @@ export const GroupRolesView = ({ groupId }: { groupId: string }) => {
               No roles assigned to this group.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roles.map((role) => (
-                  <TableRow key={role.id}>
-                    <TableCell className="font-medium">{role.name}</TableCell>
-                    <TableCell>
-                      {role.description || (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {role.composite && (
-                          <Badge variant="secondary">Composite</Badge>
-                        )}
-                        {role.clientRole && (
-                          <Badge variant="outline">Client</Badge>
-                        )}
-                        {!role.composite && !role.clientRole && (
-                          <Badge variant="outline">Realm</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <RemoveRolesFromGroup
-                        groupId={groupId}
-                        roleNames={[role.name!]}
-                      />
-                    </TableCell>
+            <div className="overflow-x-auto rounded-xl border shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Description
+                    </TableHead>
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Type
+                    </TableHead>
+                    <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {roles.map((role, index) => (
+                    <TableRow
+                      key={role.id}
+                      className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+                    >
+                      <TableCell className="font-medium">{role.name}</TableCell>
+                      <TableCell>
+                        {role.description || (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {role.composite && (
+                            <Badge variant="secondary">Composite</Badge>
+                          )}
+                          {role.clientRole && (
+                            <Badge variant="outline">Client</Badge>
+                          )}
+                          {!role.composite && !role.clientRole && (
+                            <Badge variant="outline">Realm</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <RemoveRolesFromGroup
+                          groupId={groupId}
+                          roleNames={[role.name!]}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

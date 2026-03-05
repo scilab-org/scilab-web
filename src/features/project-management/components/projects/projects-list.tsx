@@ -146,28 +146,45 @@ export const ProjectsList = () => {
   }
 
   return (
-    <div>
+    <div className="overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Name
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Code
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Description
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Status
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Start Date
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              End Date
+            </TableHead>
+            <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {projects.map((project) => {
+          {projects.map((project, index) => {
             const statusConfig = getStatusConfig(project.status);
             return (
-              <TableRow key={project.id}>
+              <TableRow
+                key={project.id}
+                className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+              >
                 <TableCell className="font-medium">
                   <Link
                     to={paths.app.projectDetail.getHref(project.id)}
-                    className="text-primary hover:underline"
+                    className="text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                     onMouseEnter={() => {
                       queryClient.prefetchQuery(
                         getProjectQueryOptions(project.id),
@@ -178,9 +195,9 @@ export const ProjectsList = () => {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <code className="text-muted-foreground text-xs">
+                  <Badge variant="secondary" className="font-mono text-xs">
                     {project.code}
-                  </code>
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <p className="line-clamp-2 max-w-md text-sm">
@@ -199,11 +216,6 @@ export const ProjectsList = () => {
                 <TableCell>{formatDate(project.endDate)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="xs" asChild>
-                      <Link to={paths.app.projectDetail.getHref(project.id)}>
-                        View
-                      </Link>
-                    </Button>
                     <Button
                       variant="outline"
                       size="xs"
@@ -228,7 +240,7 @@ export const ProjectsList = () => {
       </Table>
 
       {paging && (
-        <div className="mt-6 grid grid-cols-3 items-center border-t pt-4">
+        <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
           <p className="text-muted-foreground text-sm">
             Page{' '}
             <span className="text-foreground font-medium">

@@ -65,19 +65,30 @@ export const TagsList = () => {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[35%]">Name</TableHead>
-            <TableHead className="w-[20%]">Created</TableHead>
-            <TableHead className="w-[20%]">Last Modified</TableHead>
-            <TableHead className="w-[25%] text-right">Actions</TableHead>
+          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+            <TableHead className="w-[35%] font-semibold text-green-900 dark:text-green-200">
+              Name
+            </TableHead>
+            <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
+              Created
+            </TableHead>
+            <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
+              Last Modified
+            </TableHead>
+            <TableHead className="w-[25%] text-right font-semibold text-green-900 dark:text-green-200">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tags.map((tag) => (
-            <TableRow key={tag.id}>
+          {tags.map((tag, index) => (
+            <TableRow
+              key={tag.id}
+              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+            >
               <TableCell className="font-medium">{tag.name}</TableCell>
               <TableCell>
                 {tag.createdOnUtc

@@ -6,6 +6,8 @@ import {
   Search,
   ShieldCheck,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,7 @@ import { toast } from 'sonner';
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { getUserGroups } from '@/lib/auth';
 
+import { BTN } from '@/lib/button-styles';
 import { useProjectMembers } from '../../api/members/get-project-members';
 import { useUpdateMemberRole } from '../../api/members/update-member-role';
 import { ProjectMember } from '../../types';
@@ -103,11 +106,6 @@ const MemberTableRow = ({
     }
     onUpdateRole(member.memberId, newRole);
     setRoleSheetOpen(false);
-  };
-
-  const handleOpenRoleSheet = () => {
-    setNewRole(member.role);
-    setRoleSheetOpen(true);
   };
 
   return (
@@ -185,7 +183,7 @@ const MemberTableRow = ({
 
       {/* Update Role Sheet */}
       <Sheet open={roleSheetOpen} onOpenChange={setRoleSheetOpen}>
-        <SheetContent className="flex w-full flex-col sm:max-w-md">
+        <SheetContent className="flex w-full flex-col sm:max-w-sm">
           <SheetHeader className="space-y-1">
             <SheetTitle className="flex items-center gap-2">
               <ShieldCheck className="text-primary h-5 w-5" />
@@ -247,12 +245,12 @@ const MemberTableRow = ({
 
           <SheetFooter className="mt-6 flex gap-2 sm:flex-row">
             <SheetClose asChild>
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" className={`flex-1 ${BTN.CANCEL}`}>
                 Cancel
               </Button>
             </SheetClose>
             <Button
-              className="flex-1"
+              className={`flex-1 ${BTN.EDIT}`}
               onClick={handleSaveRole}
               disabled={isUpdatingRole || !newRole || newRole === member.role}
             >
@@ -404,7 +402,7 @@ export const ProjectMembersList = ({
               <Button
                 onClick={onAddMembersClick}
                 size="sm"
-                className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className={`${BTN.CREATE} flex items-center gap-2`}
               >
                 <UserPlus className="h-4 w-4" />
                 Add Members
@@ -440,58 +438,147 @@ export const ProjectMembersList = ({
           </div>
         ) : members && members.length > 0 ? (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedMembers.map((member: ProjectMember) => (
-                  <MemberTableRow
-                    key={member.memberId}
-                    member={member}
-                    availableGroups={availableGroups}
-                    viewerIsSystemAdmin={viewerIsSystemAdmin}
-                    viewerIsProjectManager={viewerIsProjectManager}
-                    onRemove={onRemoveMember ?? (() => {})}
-                    onRemoveManager={onRemoveManager ?? (() => {})}
-                    onUpdateRole={handleUpdateRole}
-                    isRemoving={removingMemberId === member.memberId}
-                    isRemovingManager={removingManagerId === member.memberId}
-                    isUpdatingRole={updatingMemberId === member.memberId}
-                    readOnly={readOnly}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Email
+                    </TableHead>
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Username
+                    </TableHead>
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Role
+                    </TableHead>
+                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                      Joined
+                    </TableHead>
+                    <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedMembers.map((member: ProjectMember) => (
+                    <MemberTableRow
+                      key={member.memberId}
+                      member={member}
+                      availableGroups={availableGroups}
+                      viewerIsSystemAdmin={viewerIsSystemAdmin}
+                      viewerIsProjectManager={viewerIsProjectManager}
+                      onRemove={onRemoveMember ?? (() => {})}
+                      onRemoveManager={onRemoveManager ?? (() => {})}
+                      onUpdateRole={handleUpdateRole}
+                      isRemoving={removingMemberId === member.memberId}
+                      isRemovingManager={removingManagerId === member.memberId}
+                      isUpdatingRole={updatingMemberId === member.memberId}
+                      readOnly={readOnly}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
             {paging && paging.totalPages > 1 && (
-              <div className="border-border mt-4 flex items-center justify-center gap-2 border-t px-6 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((prev) => prev - 1)}
-                  disabled={!paging.hasPreviousPage}
-                >
-                  Previous
-                </Button>
-                <div className="bg-muted text-muted-foreground flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium">
-                  {paging.pageNumber} / {paging.totalPages}
+              <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
+                <p className="text-muted-foreground text-sm">
+                  Page{' '}
+                  <span className="text-foreground font-medium">
+                    {paging.pageNumber}
+                  </span>{' '}
+                  of{' '}
+                  <span className="text-foreground font-medium">
+                    {paging.totalPages}
+                  </span>{' '}
+                  &middot; {paging.totalCount} results
+                </p>
+
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    disabled={!paging.hasPreviousPage}
+                    onClick={() => setPage((prev) => prev - 1)}
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+
+                  {Array.from({ length: paging.totalPages }, (_, i) => i + 1)
+                    .filter((p) => {
+                      if (paging.totalPages <= 7) return true;
+                      if (p === 1 || p === paging.totalPages) return true;
+                      if (Math.abs(p - paging.pageNumber) <= 1) return true;
+                      return false;
+                    })
+                    .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                        acc.push('...');
+                      }
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((item, idx) =>
+                      typeof item === 'string' ? (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="text-muted-foreground px-0.5 text-sm"
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <Button
+                          key={item}
+                          variant={
+                            item === paging.pageNumber ? 'default' : 'outline'
+                          }
+                          size="icon"
+                          className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+                          onClick={() => setPage(item)}
+                        >
+                          {item}
+                        </Button>
+                      ),
+                    )}
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    disabled={!paging.hasNextPage}
+                    onClick={() => setPage((prev) => prev + 1)}
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+
+                  <div className="ml-3 flex items-center gap-1.5 border-l pl-3">
+                    <span className="text-muted-foreground text-sm whitespace-nowrap">
+                      Go to
+                    </span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={paging.totalPages}
+                      defaultValue={paging.pageNumber}
+                      className="h-8 w-14 text-center text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = Number(
+                            (e.target as HTMLInputElement).value,
+                          );
+                          if (val >= 1 && val <= paging.totalPages) {
+                            setPage(val);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((prev) => prev + 1)}
-                  disabled={!paging.hasNextPage}
-                >
-                  Next
-                </Button>
+                <div />
               </div>
             )}
           </>

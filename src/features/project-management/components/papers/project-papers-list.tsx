@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+import { BTN } from '@/lib/button-styles';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { ProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
@@ -84,7 +85,7 @@ export const ProjectPapersList = ({
               <Button
                 onClick={onCreatePaperClick}
                 size="sm"
-                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+                className="btn-create flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 Create Paper
@@ -94,7 +95,7 @@ export const ProjectPapersList = ({
               <Button
                 onClick={onAddPapersClick}
                 size="sm"
-                className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className={`${BTN.VIEW_OUTLINE} flex items-center gap-2`}
               >
                 <Plus className="h-4 w-4" />
                 Add Paper Sample
@@ -130,88 +131,110 @@ export const ProjectPapersList = ({
             <Skeleton className="h-10 w-full" />
           </div>
         ) : papers.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>DOI</TableHead>
-                <TableHead>Journal / Conference</TableHead>
-                <TableHead>Published</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {papers.map((paper) => (
-                <TableRow key={paper.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      to={paths.app.paperManagement.paper.getHref(paper.id)}
-                      className="text-blue-600 hover:underline dark:text-blue-400"
-                    >
-                      {paper.title || '(Untitled)'}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {paper.status ? (
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
-                      >
-                        {paper.status}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {paper.doi || '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
-                    {paper.journalName || paper.conferenceName || '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {paper.publicationDate
-                      ? new Date(paper.publicationDate).toLocaleDateString()
-                      : '—'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {paper.filePath && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a
-                            href={paper.filePath}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                            <span className="ml-1.5">Download</span>
-                          </a>
-                        </Button>
-                      )}
-                      {!readOnly && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() =>
-                            (onRemovePaper ?? (() => {}))(paper.id)
-                          }
-                          disabled={removingPaperId === paper.id}
-                        >
-                          {removingPaperId === paper.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                          <span className="ml-1.5">Remove</span>
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Title
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    DOI
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Journal / Conference
+                  </TableHead>
+                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    Published
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                    Actions
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {papers.map((paper, index) => (
+                  <TableRow
+                    key={paper.id}
+                    className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+                  >
+                    <TableCell className="font-medium">
+                      <Link
+                        to={paths.app.paperManagement.paper.getHref(paper.id)}
+                        className="text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {paper.title || '(Untitled)'}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {paper.status ? (
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
+                        >
+                          {paper.status}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {paper.doi || '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
+                      {paper.journalName || paper.conferenceName || '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {paper.publicationDate
+                        ? new Date(paper.publicationDate).toLocaleDateString()
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {paper.filePath && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className={BTN.VIEW_OUTLINE}
+                          >
+                            <a
+                              href={paper.filePath}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              <span className="ml-1.5">Download</span>
+                            </a>
+                          </Button>
+                        )}
+                        {!readOnly && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() =>
+                              (onRemovePaper ?? (() => {}))(paper.id)
+                            }
+                            disabled={removingPaperId === paper.id}
+                          >
+                            {removingPaperId === paper.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                            <span className="ml-1.5">Remove</span>
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : searchDebounce ? (
           <div className="bg-muted/30 rounded-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">

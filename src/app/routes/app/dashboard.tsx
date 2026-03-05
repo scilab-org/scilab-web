@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
 
 type StatCardProps = {
@@ -154,7 +155,7 @@ const DashboardRoute = () => {
               Prepare the curriculum and student lists for the upcoming term.
             </CardDescription>
           </div>
-          <Button>
+          <Button className={BTN.CREATE}>
             <Plus className="size-4" />
             Create New Course
           </Button>
@@ -165,7 +166,11 @@ const DashboardRoute = () => {
       <Card className="mt-4">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-lg">Recent Activity</CardTitle>
-          <Button variant="link" size="sm" className="text-sm">
+          <Button
+            variant="link"
+            size="sm"
+            className="text-sm text-blue-600 dark:text-blue-400"
+          >
             View All
           </Button>
         </CardHeader>

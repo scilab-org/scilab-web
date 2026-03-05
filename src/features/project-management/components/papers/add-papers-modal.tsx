@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { BTN } from '@/lib/button-styles';
 import { useAvailablePapers } from '../../api/papers/get-available-papers';
 import { useAddProjectPapers } from '../../api/papers/add-project-papers';
 import { ProjectPaper } from '../../types';
@@ -148,7 +149,7 @@ export const AddPapersModal = ({
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col sm:max-w-2xl">
+      <SheetContent className="flex flex-col sm:max-w-sm">
         <SheetHeader>
           <div className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -229,14 +230,18 @@ export const AddPapersModal = ({
 
         <SheetFooter className="mt-6">
           <SheetClose asChild>
-            <Button variant="outline" disabled={addPapersMutation.isPending}>
+            <Button
+              variant="outline"
+              disabled={addPapersMutation.isPending}
+              className={BTN.CANCEL}
+            >
               Cancel
             </Button>
           </SheetClose>
           <Button
             onClick={handleSubmit}
             disabled={selectedPapers.size === 0 || addPapersMutation.isPending}
-            className="gap-2"
+            className={`gap-2 ${BTN.CREATE}`}
           >
             {addPapersMutation.isPending ? (
               <>

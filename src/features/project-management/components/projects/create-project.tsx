@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useCreateProject } from '../../api/projects/create-project';
 import { CreateProjectDto } from '../../types';
 
@@ -112,15 +113,12 @@ export const CreateProject = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          size="sm"
-          className="bg-green-600 text-white hover:bg-green-700"
-        >
+        <Button size="sm" className={BTN.CREATE}>
           <Plus className="size-4" />
           Create Project
         </Button>
       </SheetTrigger>
-      <SheetContent className="overflow-y-auto sm:max-w-150">
+      <SheetContent className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Create New Project</SheetTitle>
           <SheetDescription>
@@ -260,7 +258,7 @@ export const CreateProject = () => {
               type="button"
               variant="outline"
               onClick={resetForm}
-              className="min-w-25"
+              className={`min-w-25 ${BTN.CANCEL}`}
             >
               Cancel
             </Button>
@@ -269,7 +267,7 @@ export const CreateProject = () => {
             type="submit"
             form="create-project-form"
             disabled={createMutation.isPending}
-            className="min-w-25"
+            className={`min-w-25 ${BTN.CREATE}`}
           >
             {createMutation.isPending ? (
               <>

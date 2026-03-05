@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
+import { BTN } from '@/lib/button-styles';
 
 import { useGroups } from '../api/get-groups';
 import { getGroupRolesQueryOptions } from '../api/get-group-roles';
@@ -56,58 +57,76 @@ export const GroupsList = () => {
   const flatGroups = flattenGroups(groups);
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Path</TableHead>
-          <TableHead>Sub Groups</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {flatGroups.map((group) => (
-          <TableRow key={group.id}>
-            <TableCell className="font-medium">
-              <Link
-                to={paths.app.groupRoleManagement.group.getHref(group.id!)}
-                className="text-primary hover:underline"
-                onMouseEnter={() => {
-                  queryClient.prefetchQuery(
-                    getGroupRolesQueryOptions(group.id!),
-                  );
-                }}
-              >
-                {group.name}
-              </Link>
-            </TableCell>
-            <TableCell>
-              <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                {group.path}
-              </code>
-            </TableCell>
-            <TableCell>
-              {group.subGroups && group.subGroups.length > 0 ? (
-                <Badge variant="secondary">
-                  {group.subGroups.length} sub-group
-                  {group.subGroups.length > 1 ? 's' : ''}
-                </Badge>
-              ) : (
-                <span className="text-muted-foreground text-sm">None</span>
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="outline" size="xs" asChild>
+    <div className="overflow-x-auto rounded-xl border shadow-sm">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Name
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Path
+            </TableHead>
+            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+              Sub Groups
+            </TableHead>
+            <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+              Actions
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {flatGroups.map((group, index) => (
+            <TableRow
+              key={group.id}
+              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+            >
+              <TableCell className="font-medium">
                 <Link
                   to={paths.app.groupRoleManagement.group.getHref(group.id!)}
+                  className="text-primary hover:underline"
+                  onMouseEnter={() => {
+                    queryClient.prefetchQuery(
+                      getGroupRolesQueryOptions(group.id!),
+                    );
+                  }}
                 >
-                  Manage Roles
+                  {group.name}
                 </Link>
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+              </TableCell>
+              <TableCell>
+                <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+                  {group.path}
+                </code>
+              </TableCell>
+              <TableCell>
+                {group.subGroups && group.subGroups.length > 0 ? (
+                  <Badge variant="secondary">
+                    {group.subGroups.length} sub-group
+                    {group.subGroups.length > 1 ? 's' : ''}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">None</span>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  asChild
+                  className={BTN.VIEW_OUTLINE}
+                >
+                  <Link
+                    to={paths.app.groupRoleManagement.group.getHref(group.id!)}
+                  >
+                    Manage Roles
+                  </Link>
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

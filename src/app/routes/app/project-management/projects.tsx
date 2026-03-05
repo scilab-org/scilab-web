@@ -49,7 +49,9 @@ const ProjectsRoute = () => {
         <ProjectsFilter />
       </div>
 
-      <ProjectsList />
+      <div className="mt-4">
+        <ProjectsList />
+      </div>
     </ContentLayout>
   );
 };

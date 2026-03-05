@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+import { BTN } from '@/lib/button-styles';
 import { Project } from '../../types';
 
 type ProjectViewProps = {
@@ -79,7 +80,12 @@ export const ProjectView = ({
       {!readOnly && (
         <div className="flex items-center justify-end">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onUpdate}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onUpdate}
+              className={BTN.EDIT_OUTLINE}
+            >
               <Pencil className="size-4" />
               Edit
             </Button>
@@ -88,6 +94,7 @@ export const ProjectView = ({
               size="sm"
               onClick={onDelete}
               disabled={isDeleting}
+              className={BTN.DANGER}
             >
               <Trash2 className="size-4" />
               {isDeleting ? 'Deleting...' : 'Delete'}

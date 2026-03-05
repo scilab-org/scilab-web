@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { BTN } from '@/lib/button-styles';
 import { useRealmRoles } from '../api/get-realm-roles';
 import { useAddRolesToGroup } from '../api/add-roles-to-group';
 
@@ -46,7 +47,7 @@ export const AddRolesToGroup = ({
 
   if (!isOpen) {
     return (
-      <Button size="sm" onClick={() => setIsOpen(true)}>
+      <Button size="sm" onClick={() => setIsOpen(true)} className={BTN.CREATE}>
         <Plus className="size-4" />
         Add Roles
       </Button>
@@ -97,6 +98,7 @@ export const AddRolesToGroup = ({
             setIsOpen(false);
             setSelectedRoles([]);
           }}
+          className={BTN.CANCEL}
         >
           Cancel
         </Button>
@@ -104,6 +106,7 @@ export const AddRolesToGroup = ({
           size="sm"
           disabled={selectedRoles.length === 0 || addRolesMutation.isPending}
           onClick={handleSubmit}
+          className={BTN.CREATE}
         >
           {addRolesMutation.isPending
             ? 'Adding...'

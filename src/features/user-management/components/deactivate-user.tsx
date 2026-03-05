@@ -3,6 +3,8 @@ import { Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
+import { BTN } from '@/lib/button-styles';
+
 import { useDeactivateUser } from '../api/deactivate-user';
 
 type DeactivateUserProps = {
@@ -29,6 +31,7 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
           size="xs"
           disabled={deactivateUserMutation.isPending}
           onClick={() => deactivateUserMutation.mutate({ userId })}
+          className={BTN.DANGER}
         >
           {deactivateUserMutation.isPending ? 'Deactivating...' : 'Confirm'}
         </Button>
@@ -36,6 +39,7 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
           variant="outline"
           size="xs"
           onClick={() => setIsConfirming(false)}
+          className={BTN.CANCEL}
         >
           Cancel
         </Button>
@@ -48,6 +52,7 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
       variant="destructive"
       size="xs"
       onClick={() => setIsConfirming(true)}
+      className={BTN.DANGER}
     >
       <Trash2 className="size-3" />
       Deactivate
