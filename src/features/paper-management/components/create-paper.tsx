@@ -46,7 +46,7 @@ export const CreatePaper = () => {
   const [tagList, setTagList] = React.useState<string[]>([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
   const [showTags, setShowTags] = React.useState(false);
-  
+
   // Auto-tag rate limiting state
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [autoTagCooldown, setAutoTagCooldown] = React.useState(0);
@@ -113,19 +113,27 @@ export const CreatePaper = () => {
       setParsedText(response.parsedText || '');
     } catch (error) {
       console.error('Parse error:', error);
-      
+
       // Check if the error was due to user cancellation
-      if ((error as any)?.name === 'CanceledError' || (error as any)?.code === 'ERR_CANCELED') {
+      if (
+        (error as any)?.name === 'CanceledError' ||
+        (error as any)?.code === 'ERR_CANCELED'
+      ) {
         toast.info('Upload cancelled');
       } else {
         // Reset file and parsing state on error
         setFile(undefined);
         setParsedText('');
         setParseProgress(0);
-        
+
         // Provide specific error message for timeout
-        if ((error as any)?.code === 'ECONNABORTED' || (error as any)?.response?.status === 504) {
-          toast.error('PDF parsing timed out. The file may be too large or complex. Please try a smaller file.');
+        if (
+          (error as any)?.code === 'ECONNABORTED' ||
+          (error as any)?.response?.status === 504
+        ) {
+          toast.error(
+            'PDF parsing timed out. The file may be too large or complex. Please try a smaller file.',
+          );
         } else {
           toast.error('Failed to parse the PDF file');
         }
@@ -193,7 +201,9 @@ export const CreatePaper = () => {
     }
 
     if (autoTagCooldown > 0) {
-      toast.warning(`Please wait ${autoTagCooldown} seconds before trying again`);
+      toast.warning(
+        `Please wait ${autoTagCooldown} seconds before trying again`,
+      );
       return;
     }
 
@@ -287,7 +297,7 @@ export const CreatePaper = () => {
           Create Paper
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Create New Paper</SheetTitle>
           <SheetDescription>
@@ -398,7 +408,12 @@ export const CreatePaper = () => {
                 size="sm"
                 className={`gap-1.5 ${BTN.AUTO_TAG}`}
                 onClick={handleAutoTag}
-                disabled={isAutoTagging || autoTagCooldown > 0 || isParsing || !parsedText}
+                disabled={
+                  isAutoTagging ||
+                  autoTagCooldown > 0 ||
+                  isParsing ||
+                  !parsedText
+                }
               >
                 {isAutoTagging ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -408,8 +423,8 @@ export const CreatePaper = () => {
                 {isAutoTagging
                   ? 'Auto Tagging...'
                   : autoTagCooldown > 0
-                  ? `Wait ${autoTagCooldown}s`
-                  : 'Auto Tag'}
+                    ? `Wait ${autoTagCooldown}s`
+                    : 'Auto Tag'}
               </Button>
             </div>
           )}

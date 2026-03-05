@@ -6,36 +6,27 @@ import {
   PROJECT_MANAGEMENT_API,
   PROJECT_MANAGEMENT_QUERY_KEYS,
 } from '../../constants';
-import { AddManagersRequest } from '../../types';
 
-// Admin: POST /admin/projects/{projectId}/managers with { userId: "..." }
-export const addManagers = async (
-  projectId: string,
-  data: AddManagersRequest,
-) => {
-  return api.post(PROJECT_MANAGEMENT_API.ADD_MANAGERS(projectId), data);
-};
+export const deleteSubProject = (subProjectId: string) =>
+  api.delete(PROJECT_MANAGEMENT_API.DELETE_SUB_PROJECT(subProjectId));
 
-type UseAddManagersOptions = {
+type UseDeleteSubProjectOptions = {
   projectId: string;
   mutationConfig?: any;
 };
 
-export const useAddManagers = ({
+export const useDeleteSubProject = ({
   projectId,
   mutationConfig,
-}: UseAddManagersOptions) => {
+}: UseDeleteSubProjectOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess, onError, ...restConfig } = mutationConfig ?? {};
 
   return useMutation({
-    mutationFn: (data: AddManagersRequest) => addManagers(projectId, data),
+    mutationFn: (subProjectId: string) => deleteSubProject(subProjectId),
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
-        queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.PROJECT_MEMBERS, projectId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.AVAILABLE_USERS, projectId],
+        queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.SUB_PROJECTS, projectId],
       });
       onSuccess?.(...(args as Parameters<typeof onSuccess>));
     },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Users, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import { useSubProjects } from '../../api/papers/get-sub-projects';
+import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
+import { PaperMembersSheet } from './paper-members-sheet';
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
@@ -34,15 +47,24 @@ const getStatusColor = (status: string | null) => {
 
 type ProjectWritingPapersListProps = {
   projectId: string;
+  isManager?: boolean;
+  isAuthor?: boolean;
   onCreatePaperClick?: () => void;
 };
 
 export const ProjectWritingPapersList = ({
   projectId,
+  isManager = false,
+  isAuthor = false,
   onCreatePaperClick,
 }: ProjectWritingPapersListProps) => {
   const [searchText, setSearchText] = useState('');
   const [searchDebounce, setSearchDebounce] = useState('');
+  const [membersSheetPaper, setMembersSheetPaper] =
+    useState<SubProjectPaper | null>(null);
+  const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
+    null,
+  );
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounce(searchText), 350);
@@ -55,6 +77,14 @@ export const ProjectWritingPapersList = ({
       PageNumber: 1,
       PageSize: 100,
       title: searchDebounce || undefined,
+    },
+  });
+
+  const deleteSubProjectMutation = useDeleteSubProject({
+    projectId,
+    mutationConfig: {
+      onSuccess: () => toast.success('Paper removed from project successfully'),
+      onError: () => toast.error('Failed to remove paper. Please try again.'),
     },
   });
 
@@ -76,7 +106,7 @@ export const ProjectWritingPapersList = ({
               </p>
             )}
           </div>
-          {!!onCreatePaperClick && (
+          {isManager && !!onCreatePaperClick && (
             <Button
               onClick={onCreatePaperClick}
               size="sm"
@@ -122,6 +152,7 @@ export const ProjectWritingPapersList = ({
                 <TableHead>Status</TableHead>
                 <TableHead>Journal / Conference</TableHead>
                 <TableHead>Published</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -157,6 +188,32 @@ export const ProjectWritingPapersList = ({
                       ? new Date(paper.publicationDate).toLocaleDateString()
                       : '—'}
                   </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMembersSheetPaper(paper)}
+                        disabled={!paper.subProjectId}
+                        className="flex items-center gap-1.5"
+                      >
+                        <Users className="h-3.5 w-3.5" />
+                        Members
+                      </Button>
+                      {isManager && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPaperToDelete(paper)}
+                          disabled={!paper.subProjectId}
+                          className="text-destructive hover:text-destructive flex items-center gap-1.5"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -170,7 +227,7 @@ export const ProjectWritingPapersList = ({
         ) : (
           <div className="bg-muted/30 rounded-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">No papers yet</p>
-            {!!onCreatePaperClick && (
+            {isManager && !!onCreatePaperClick && (
               <p className="text-muted-foreground mt-1 text-xs">
                 Use the button above to create a paper in this project
               </p>
@@ -178,6 +235,53 @@ export const ProjectWritingPapersList = ({
           </div>
         )}
       </div>
+
+      {membersSheetPaper && membersSheetPaper.subProjectId && (
+        <PaperMembersSheet
+          subProjectId={membersSheetPaper.subProjectId}
+          isManager={isManager}
+          isAuthor={isAuthor}
+          paperTitle={membersSheetPaper.title ?? '(Untitled)'}
+          open={!!membersSheetPaper}
+          onOpenChange={(o) => {
+            if (!o) setMembersSheetPaper(null);
+          }}
+        />
+      )}
+
+      <AlertDialog
+        open={!!paperToDelete}
+        onOpenChange={(o) => {
+          if (!o) setPaperToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove paper from project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove{' '}
+              <span className="text-foreground font-semibold">
+                {paperToDelete?.title ?? '(Untitled)'}
+              </span>{' '}
+              from this project? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (paperToDelete?.subProjectId) {
+                  deleteSubProjectMutation.mutate(paperToDelete.subProjectId);
+                }
+                setPaperToDelete(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -194,7 +194,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           Edit
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Edit Paper</SheetTitle>
           <SheetDescription>

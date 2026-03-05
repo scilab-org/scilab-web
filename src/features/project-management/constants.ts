@@ -44,6 +44,21 @@ export const PROJECT_MANAGEMENT_API = {
   // Sub-projects (papers authored within the project)
   SUB_PROJECTS: (projectId: string) =>
     `${SERVICE_PREFIX}/projects/${projectId}/sub-projects`,
+  // GET members of a specific sub-project
+  PAPER_MEMBERS: (subProjectId: string) =>
+    `${SERVICE_PREFIX}/sub-projects/${subProjectId}/members`,
+  // GET available members that can be added to a sub-project
+  PAPER_MEMBERS_AVAILABLE: (subProjectId: string) =>
+    `${SERVICE_PREFIX}/sub-projects/${subProjectId}/members/available`,
+  // POST remove members from a sub-project
+  REMOVE_PAPER_MEMBERS: (subProjectId: string) =>
+    `${SERVICE_PREFIX}/manager/sub-projects/${subProjectId}/members/remove`,
+  // POST add members to a sub-project
+  ADD_SUB_PROJECT_MEMBERS: (subProjectId: string) =>
+    `${SERVICE_PREFIX}/sub-projects/${subProjectId}/members`,
+  // DELETE a sub-project
+  DELETE_SUB_PROJECT: (subProjectId: string) =>
+    `${SERVICE_PREFIX}/manager/sub-projects/${subProjectId}`,
 } as const;
 
 export const PROJECT_MANAGEMENT_QUERY_KEYS = {
@@ -56,6 +71,8 @@ export const PROJECT_MANAGEMENT_QUERY_KEYS = {
   MY_PROJECTS: 'my-projects',
   MY_ROLE: 'my-role',
   SUB_PROJECTS: 'sub-projects',
+  PAPER_MEMBERS: 'paper-members',
+  PAPER_MEMBERS_AVAILABLE: 'paper-members-available',
 } as const;
 
 export const PROJECT_STATUS_MAP: Record<number, string> = {
