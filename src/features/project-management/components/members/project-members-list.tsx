@@ -4,7 +4,6 @@ import {
   Trash2,
   Loader2,
   Search,
-  Pencil,
   ShieldCheck,
   Check,
 } from 'lucide-react';
@@ -160,37 +159,25 @@ const MemberTableRow = ({
               </Button>
             )}
 
-            {/* Project manager: Update Role + Remove for non-manager members */}
+            {/* Project manager: Remove for non-manager members */}
             {!readOnly &&
               !viewerIsSystemAdmin &&
               viewerIsProjectManager &&
               !isManager && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleOpenRoleSheet}
-                    disabled={isRemoving}
-                    className="flex items-center gap-1.5"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Update Role
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => onRemove(member.memberId)}
-                    disabled={isRemoving}
-                    className="flex items-center gap-1.5"
-                  >
-                    {isRemoving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                    Remove
-                  </Button>
-                </>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onRemove(member.memberId)}
+                  disabled={isRemoving}
+                  className="flex items-center gap-1.5"
+                >
+                  {isRemoving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                  Remove
+                </Button>
               )}
           </div>
         </TableCell>
@@ -339,7 +326,9 @@ export const ProjectMembersList = ({
     queryConfig: { enabled: viewerIsProjectManager && !viewerIsSystemAdmin },
   });
   const availableGroups = (groupsQuery.data?.result || []).filter(
-    (g) => !EXCLUDED_GROUPS.includes(g.name ?? ''),
+    (g) =>
+      !EXCLUDED_GROUPS.includes(g.name ?? '') &&
+      (g.name ?? '').startsWith('project:'),
   );
 
   const updateRoleMutation = useUpdateMemberRole({

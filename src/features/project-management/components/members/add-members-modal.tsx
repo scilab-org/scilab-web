@@ -185,9 +185,9 @@ export const AddMembersModal = ({
   const [searchDebounce, setSearchDebounce] = useState('');
   // Manager mode: userId -> groupName
   const [userGroupMap, setUserGroupMap] = useState<Record<string, string>>({});
-  // Admin mode: just a set of userIds (no group needed)
-  const [selectedAdminUsers, setSelectedAdminUsers] = useState<Set<string>>(
-    new Set(),
+  // Admin mode: only 1 user allowed
+  const [selectedAdminUser, setSelectedAdminUser] = useState<string | null>(
+    null,
   );
 
   const { isAdmin, isManager } = detectRole(currentUserProjectRole);
@@ -197,7 +197,9 @@ export const AddMembersModal = ({
   });
 
   const availableGroups = (groupsQuery.data?.result || []).filter(
-    (g) => !EXCLUDED_GROUPS.includes(g.name ?? ''),
+    (g) =>
+      !EXCLUDED_GROUPS.includes(g.name ?? '') &&
+      (g.name ?? '').startsWith('project:'),
   );
 
   useEffect(() => {
@@ -247,12 +249,7 @@ export const AddMembersModal = ({
 
   const handleToggleUser = (userId: string) => {
     if (isAdmin) {
-      setSelectedAdminUsers((prev) => {
-        const next = new Set(prev);
-        if (next.has(userId)) next.delete(userId);
-        else next.add(userId);
-        return next;
-      });
+      setSelectedAdminUser((prev) => (prev === userId ? null : userId));
     } else {
       setUserGroupMap((prev) => {
         const next = { ...prev };
@@ -272,8 +269,8 @@ export const AddMembersModal = ({
 
   const handleSubmit = () => {
     if (isAdmin) {
-      if (selectedAdminUsers.size === 0) return;
-      addManagersMutation.mutate({ userIds: Array.from(selectedAdminUsers) });
+      if (!selectedAdminUser) return;
+      addManagersMutation.mutate({ userId: selectedAdminUser });
     } else {
       const entries = Object.entries(userGroupMap);
       if (entries.length === 0) return;
@@ -290,16 +287,18 @@ export const AddMembersModal = ({
 
   const handleReset = () => {
     setUserGroupMap({});
-    setSelectedAdminUsers(new Set());
+    setSelectedAdminUser(null);
     setSearchText('');
   };
 
   const users = (usersQuery.data as any)?.result?.items || [];
   const selectedCount = isAdmin
-    ? selectedAdminUsers.size
+    ? selectedAdminUser
+      ? 1
+      : 0
     : Object.keys(userGroupMap).length;
   const canSubmit = isAdmin
-    ? selectedAdminUsers.size > 0
+    ? selectedAdminUser !== null
     : Object.keys(userGroupMap).length > 0;
 
   return (
@@ -352,7 +351,7 @@ export const AddMembersModal = ({
               <button
                 onClick={() => {
                   setUserGroupMap({});
-                  setSelectedAdminUsers(new Set());
+                  setSelectedAdminUser(null);
                 }}
                 className="text-xs text-blue-600 hover:underline dark:text-blue-400"
               >
@@ -376,7 +375,7 @@ export const AddMembersModal = ({
                   user={user}
                   isSelected={
                     isAdmin
-                      ? selectedAdminUsers.has(user.id)
+                      ? selectedAdminUser === user.id
                       : user.id in userGroupMap
                   }
                   assignedGroup={userGroupMap[user.id] ?? ''}

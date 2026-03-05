@@ -23,6 +23,9 @@ export const getProjectMembers = async (
   if (params?.pageSize) {
     searchParams.append('pageSize', params.pageSize.toString());
   }
+  if (params?.projectRole) {
+    searchParams.append('ProjectRole', params.projectRole);
+  }
 
   const query = searchParams.toString();
   const url = `${PROJECT_MANAGEMENT_API.PROJECT_MEMBERS(projectId)}${query ? `?${query}` : ''}`;

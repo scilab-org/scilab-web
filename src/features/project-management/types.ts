@@ -123,7 +123,7 @@ export type AvailableUsersResponse = {
 };
 
 export type AddManagersRequest = {
-  userIds: string[];
+  userId: string;
 };
 
 export type AddProjectMembersRequest = {
@@ -141,6 +141,7 @@ export type GetProjectMembersParams = {
   searchEmail?: string;
   pageNumber?: number;
   pageSize?: number;
+  projectRole?: string;
 };
 
 export type GetAvailableUsersParams = {
@@ -184,6 +185,7 @@ export type RemoveProjectPapersRequest = {
 
 export type SubProjectPaper = {
   id: string;
+  subProjectId: string | null;
   title: string | null;
   abstract: string | null;
   doi: string | null;
@@ -211,4 +213,5 @@ export type GetSubProjectsParams = {
   PageNumber?: number;
   PageSize?: number;
   title?: string;
+  subProjectId?: string;
 };

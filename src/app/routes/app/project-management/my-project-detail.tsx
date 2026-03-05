@@ -400,8 +400,12 @@ const MyProjectDetailRoute = () => {
           {activeTab === 'writing-papers' && (
             <ProjectWritingPapersList
               projectId={projectId}
+              isManager={isManager}
+              isAuthor={isAuthor}
               onCreatePaperClick={
-                isAuthor ? () => setCreatePaperOpen(true) : undefined
+                isManager || isAuthor
+                  ? () => setCreatePaperOpen(true)
+                  : undefined
               }
             />
           )}
@@ -445,7 +449,7 @@ const MyProjectDetailRoute = () => {
         />
       )}
 
-      {isAuthor && (
+      {(isManager || isAuthor) && (
         <CreatePaperInProject
           projectId={projectId}
           open={createPaperOpen}

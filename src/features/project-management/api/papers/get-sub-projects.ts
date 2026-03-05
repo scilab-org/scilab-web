@@ -18,6 +18,8 @@ export const getSubProjects = async (
   if (params?.PageSize != null)
     searchParams.append('PageSize', String(params.PageSize));
   if (params?.title) searchParams.append('title', params.title);
+  if (params?.subProjectId)
+    searchParams.append('subProjectId', params.subProjectId);
   const query = searchParams.toString();
   const url = `${PROJECT_MANAGEMENT_API.SUB_PROJECTS(projectId)}${query ? `?${query}` : ''}`;
   return api.get(url);

@@ -310,7 +310,7 @@ export const CreatePaperInProject = ({
         if (!v) resetForm();
       }}
     >
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Initialize New Paper</SheetTitle>
           <SheetDescription>
