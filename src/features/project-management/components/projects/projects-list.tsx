@@ -167,7 +167,7 @@ export const ProjectsList = () => {
                 <TableCell className="font-medium">
                   <Link
                     to={paths.app.projectDetail.getHref(project.id)}
-                    className="text-primary hover:underline"
+                    className="text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                     onMouseEnter={() => {
                       queryClient.prefetchQuery(
                         getProjectQueryOptions(project.id),
@@ -178,9 +178,9 @@ export const ProjectsList = () => {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <code className="text-muted-foreground text-xs">
+                  <Badge variant="secondary" className="font-mono text-xs">
                     {project.code}
-                  </code>
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <p className="line-clamp-2 max-w-md text-sm">
@@ -199,11 +199,6 @@ export const ProjectsList = () => {
                 <TableCell>{formatDate(project.endDate)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="xs" asChild>
-                      <Link to={paths.app.projectDetail.getHref(project.id)}>
-                        View
-                      </Link>
-                    </Button>
                     <Button
                       variant="outline"
                       size="xs"

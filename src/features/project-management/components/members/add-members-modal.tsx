@@ -309,7 +309,7 @@ export const AddMembersModal = ({
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col sm:max-w-2xl">
+      <SheetContent className="flex flex-col sm:max-w-sm">
         <SheetHeader>
           <div className="flex items-center gap-2">
             {isAdmin ? (

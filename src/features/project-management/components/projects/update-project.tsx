@@ -114,7 +114,7 @@ export const UpdateProject = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-150">
+      <SheetContent className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Update Project</SheetTitle>
           <SheetDescription>

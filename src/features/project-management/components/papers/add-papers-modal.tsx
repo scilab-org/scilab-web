@@ -148,7 +148,7 @@ export const AddPapersModal = ({
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col sm:max-w-2xl">
+      <SheetContent className="flex flex-col sm:max-w-sm">
         <SheetHeader>
           <div className="flex items-center gap-2">
             <Plus className="h-5 w-5" />

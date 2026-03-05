@@ -39,7 +39,7 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Template Detail</SheetTitle>
           <SheetDescription>{name}</SheetDescription>

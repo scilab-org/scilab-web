@@ -74,7 +74,7 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
           Edit
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Edit Tag</SheetTitle>
           <SheetDescription>

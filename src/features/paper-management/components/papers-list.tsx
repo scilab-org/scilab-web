@@ -168,31 +168,31 @@ export const PapersList = () => {
 
   return (
     <div className="overflow-x-auto rounded-xl border shadow-sm">
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow className="bg-linear-to-r from-blue-50 to-indigo-50 hover:from-blue-50 hover:to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-            <TableHead className="w-[25%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[22%] font-semibold text-blue-900 dark:text-blue-200">
               Title
             </TableHead>
-            <TableHead className="w-[12%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
               DOI
             </TableHead>
-            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[9%] font-semibold text-blue-900 dark:text-blue-200">
               Paper Type
             </TableHead>
-            <TableHead className="w-[15%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[14%] font-semibold text-blue-900 dark:text-blue-200">
               Journal / Conference
             </TableHead>
-            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[11%] font-semibold text-blue-900 dark:text-blue-200">
               Publication Date
             </TableHead>
             <TableHead className="w-[8%] font-semibold text-blue-900 dark:text-blue-200">
               Status
             </TableHead>
-            <TableHead className="w-[12%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[10%] font-semibold text-blue-900 dark:text-blue-200">
               Tags
             </TableHead>
-            <TableHead className="w-[15%] text-center font-semibold text-blue-900 dark:text-blue-200">
+            <TableHead className="w-[16%] text-center font-semibold text-blue-900 dark:text-blue-200">
               Actions
             </TableHead>
           </TableRow>
@@ -207,17 +207,17 @@ export const PapersList = () => {
                   : 'bg-slate-50/50 dark:bg-slate-900/20'
               }`}
             >
-              <TableCell className="truncate font-medium">
+              <TableCell className="overflow-hidden font-medium">
                 <Link
                   to={paths.app.paperManagement.paper.getHref(paper.id)}
-                  className="text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                  className="block truncate text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                   onMouseEnter={() => {
                     queryClient.prefetchQuery(getPaperQueryOptions(paper.id));
                   }}
                 >
                   <span className="flex items-center gap-1.5">
                     <BookOpen className="size-3.5 shrink-0 text-blue-400" />
-                    {paper.title || 'N/A'}
+                    <span className="truncate">{paper.title || 'N/A'}</span>
                   </span>
                 </Link>
               </TableCell>

@@ -3,35 +3,44 @@ import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
+import { BTN } from '@/lib/button-styles';
 import { useCreateUser } from '../api/create-user';
 
+const initialFormData = {
+  username: '',
+  email: '',
+  firstName: '',
+  lastName: '',
+  initialPassword: '',
+  temporaryPassword: true,
+};
+
 export const CreateUser = () => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    username: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    initialPassword: '',
-    temporaryPassword: true,
-  });
+  const [open, setOpen] = React.useState(false);
+  const [formData, setFormData] = React.useState(initialFormData);
 
   const createUserMutation = useCreateUser({
     mutationConfig: {
       onSuccess: () => {
-        setIsOpen(false);
-        setFormData({
-          username: '',
-          email: '',
-          firstName: '',
-          lastName: '',
-          initialPassword: '',
-          temporaryPassword: true,
-        });
+        setOpen(false);
+        resetForm();
       },
     },
   });
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,23 +55,40 @@ export const CreateUser = () => {
     });
   };
 
-  if (!isOpen) {
-    return (
-      <Button size="sm" onClick={() => setIsOpen(true)}>
-        <Plus className="size-4" />
-        Create User
-      </Button>
-    );
-  }
-
   return (
-    <div className="bg-card rounded-lg border p-6">
-      <h3 className="mb-4 text-lg font-semibold">Create New User</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Username *</label>
+    <Sheet
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
+      <SheetTrigger asChild>
+        <Button size="sm" className={BTN.CREATE}>
+          <Plus className="size-4" />
+          Create User
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
+        <SheetHeader>
+          <SheetTitle>Create New User</SheetTitle>
+          <SheetDescription>
+            Fill in the details to create a new user. Username, email, and
+            password are required.
+          </SheetDescription>
+        </SheetHeader>
+
+        <form
+          id="create-user-form"
+          onSubmit={handleSubmit}
+          className="space-y-4 overflow-y-auto px-4 py-4"
+        >
+          <div className="space-y-1.5">
+            <label htmlFor="cu-username" className="text-sm font-medium">
+              Username <span className="text-destructive">*</span>
+            </label>
             <Input
+              id="cu-username"
               value={formData.username}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, username: e.target.value }))
@@ -71,9 +97,13 @@ export const CreateUser = () => {
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email *</label>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cu-email" className="text-sm font-medium">
+              Email <span className="text-destructive">*</span>
+            </label>
             <Input
+              id="cu-email"
               type="email"
               value={formData.email}
               onChange={(e) =>
@@ -83,9 +113,13 @@ export const CreateUser = () => {
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">First Name</label>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cu-firstName" className="text-sm font-medium">
+              First Name
+            </label>
             <Input
+              id="cu-firstName"
               value={formData.firstName}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, firstName: e.target.value }))
@@ -93,9 +127,13 @@ export const CreateUser = () => {
               placeholder="Enter first name"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Last Name</label>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cu-lastName" className="text-sm font-medium">
+              Last Name
+            </label>
             <Input
+              id="cu-lastName"
               value={formData.lastName}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, lastName: e.target.value }))
@@ -103,9 +141,13 @@ export const CreateUser = () => {
               placeholder="Enter last name"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Initial Password *</label>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cu-password" className="text-sm font-medium">
+              Initial Password <span className="text-destructive">*</span>
+            </label>
             <Input
+              id="cu-password"
               type="password"
               value={formData.initialPassword}
               onChange={(e) =>
@@ -118,7 +160,8 @@ export const CreateUser = () => {
               required
             />
           </div>
-          <div className="flex items-end space-x-2">
+
+          <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-medium">
               <input
                 type="checkbox"
@@ -134,25 +177,30 @@ export const CreateUser = () => {
               Temporary Password
             </label>
           </div>
-        </div>
-        <div className="flex justify-end gap-2">
+        </form>
+
+        <SheetFooter>
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              resetForm();
+              setOpen(false);
+            }}
+            className={BTN.CANCEL}
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            size="sm"
+            form="create-user-form"
             disabled={createUserMutation.isPending}
+            className={BTN.CREATE}
           >
             {createUserMutation.isPending ? 'Creating...' : 'Create'}
           </Button>
-        </div>
-      </form>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 };

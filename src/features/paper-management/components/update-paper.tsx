@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet';
 
 import { useUpdatePaper } from '../api/update-paper';
+import { autoTagPaper } from '../api/auto-tag-paper';
 import { PaperDto } from '../types';
 import { PAPER_STATUS_OPTIONS } from '../constants';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
@@ -107,40 +108,59 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const handleAutoTag = async () => {
     if (!paper) return;
     const currentParsedText = paper.parsedText || '';
-    if (!currentParsedText) return;
+    if (!currentParsedText) {
+      toast.warning('No parsed text available for auto-tagging');
+      return;
+    }
 
-    // TODO: Replace with real API call when Python service is ready
-    // try {
-    //   setIsAutoTagging(true);
-    //   const response = await autoTagPaper({
-    //     parsedText: currentParsedText,
-    //     tagNames: tagList,
-    //   });
-    //   const newTags = response.tags || [];
-    //   setTagList([...newTags]);
-    //   setIsAutoTagged(true);
-    // } catch {
-    //   // handle error
-    // } finally {
-    //   setIsAutoTagging(false);
-    // }
+    if (cooldownSeconds > 0) {
+      toast.warning(
+        `Please wait ${Math.floor(cooldownSeconds / 60)}:${(cooldownSeconds % 60).toString().padStart(2, '0')} before trying again`,
+      );
+      return;
+    }
 
-    // Fake data for development
     setIsAutoTagging(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const fakeTags = [
-      'machine learning',
-      'deep learning',
-      'natural language processing',
-      'computer science',
-    ];
-    setTagList([...fakeTags]);
-    setIsAutoTagging(false);
-    setIsAutoTagged(true);
-    const now = Date.now();
-    setLastAutoTagTime(now);
-    localStorage.setItem(`autoTagCooldown_${paperId}`, now.toString());
-    setCooldownSeconds(180);
+
+    try {
+      const response = await autoTagPaper({
+        parsedText: currentParsedText,
+        existingTags: tagList,
+      });
+
+      const suggestedTagsList = response.tags || [];
+
+      // Merge suggested tags with existing tags (avoiding duplicates)
+      setTagList((prev) => {
+        const merged = [...prev];
+        suggestedTagsList.forEach((tag) => {
+          const normalizedTag = tag.trim();
+          if (
+            normalizedTag &&
+            !merged.some((t) => t.toLowerCase() === normalizedTag.toLowerCase())
+          ) {
+            merged.push(normalizedTag);
+          }
+        });
+        return merged;
+      });
+
+      setIsAutoTagged(true);
+      const now = Date.now();
+      setLastAutoTagTime(now);
+      localStorage.setItem(`autoTagCooldown_${paperId}`, now.toString());
+      setCooldownSeconds(180);
+      toast.success(`Added ${suggestedTagsList.length} suggested tags`);
+    } catch (error) {
+      console.error('Auto-tag error:', error);
+      const errorMessage =
+        (error as any)?.response?.data?.message ||
+        (error as any)?.message ||
+        'Failed to auto-tag paper';
+      toast.error(errorMessage);
+    } finally {
+      setIsAutoTagging(false);
+    }
   };
 
   const handleAddTag = (value: string) => {
@@ -194,7 +214,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           Edit
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Edit Paper</SheetTitle>
           <SheetDescription>

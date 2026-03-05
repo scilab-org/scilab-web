@@ -204,7 +204,7 @@ export const PaperMembersSheet = ({
         if (!o) handleClose();
       }}
     >
-      <SheetContent className="flex w-full flex-col sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col sm:max-w-sm">
         <SheetHeader>
           <div className="flex items-center gap-2">
             {panel !== 'default' && (

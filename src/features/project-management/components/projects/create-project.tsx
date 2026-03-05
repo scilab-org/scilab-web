@@ -120,7 +120,7 @@ export const CreateProject = () => {
           Create Project
         </Button>
       </SheetTrigger>
-      <SheetContent className="overflow-y-auto sm:max-w-150">
+      <SheetContent className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Create New Project</SheetTitle>
           <SheetDescription>

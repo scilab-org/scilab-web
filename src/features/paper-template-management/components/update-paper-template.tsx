@@ -132,7 +132,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-2xl">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Edit Template</SheetTitle>
           <SheetDescription>

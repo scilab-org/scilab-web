@@ -297,7 +297,7 @@ export const CreatePaper = () => {
           Create Paper
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Create New Paper</SheetTitle>
           <SheetDescription>

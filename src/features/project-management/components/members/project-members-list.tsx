@@ -185,7 +185,7 @@ const MemberTableRow = ({
 
       {/* Update Role Sheet */}
       <Sheet open={roleSheetOpen} onOpenChange={setRoleSheetOpen}>
-        <SheetContent className="flex w-full flex-col sm:max-w-md">
+        <SheetContent className="flex w-full flex-col sm:max-w-sm">
           <SheetHeader className="space-y-1">
             <SheetTitle className="flex items-center gap-2">
               <ShieldCheck className="text-primary h-5 w-5" />

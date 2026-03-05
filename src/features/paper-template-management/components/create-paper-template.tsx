@@ -211,7 +211,7 @@ export const CreatePaperTemplate = () => {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-2xl">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Create Paper Template</SheetTitle>
           <SheetDescription>

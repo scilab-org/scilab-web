@@ -63,7 +63,7 @@ export const CreateTag = () => {
           Create Tag
         </Button>
       </SheetTrigger>
-      <SheetContent side="right">
+      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Create New Tag</SheetTitle>
           <SheetDescription>
