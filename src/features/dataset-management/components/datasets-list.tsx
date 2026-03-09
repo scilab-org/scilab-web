@@ -30,17 +30,6 @@ const canViewChart = (filePath: string) => {
   return extension === 'xlsx' || extension === 'xls' || extension === 'csv';
 };
 
-const getStatusText = (status: number) => {
-  switch (status) {
-    case 1:
-      return 'Active';
-    case 0:
-      return 'Inactive';
-    default:
-      return 'Unknown';
-  }
-};
-
 const getStatusColor = (status: number) => {
   switch (status) {
     case 1:
@@ -138,9 +127,6 @@ export const DatasetsList = ({
                     <TableHead className="font-semibold text-green-900 dark:text-green-200">
                       File
                     </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      Status
-                    </TableHead>
                     <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
                       Actions
                     </TableHead>
@@ -178,17 +164,7 @@ export const DatasetsList = ({
                             <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 font-mono text-xs font-bold">
                               {fileExtension}
                             </span>
-                            <span className="font-mono text-sm">
-                              {fileName}
-                            </span>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${getStatusColor(dataset.status)}`}
-                          >
-                            {getStatusText(dataset.status)}
-                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">

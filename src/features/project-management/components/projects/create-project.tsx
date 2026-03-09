@@ -87,9 +87,7 @@ export const CreateProject = () => {
           : new Date().toISOString(),
         endDate: formData.endDate
           ? new Date(formData.endDate).toISOString()
-          : new Date(
-              new Date().setMonth(new Date().getMonth() + 1),
-            ).toISOString(),
+          : null,
       };
       createMutation.mutate(payload);
     }
@@ -242,7 +240,7 @@ export const CreateProject = () => {
                 id="project-endDate"
                 type="datetime-local"
                 name="endDate"
-                value={formData.endDate}
+                value={formData.endDate ?? ''}
                 onChange={handleChange}
               />
               {errors.endDate && (

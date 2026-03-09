@@ -200,9 +200,13 @@ export const ProjectsList = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <p className="line-clamp-2 max-w-md text-sm">
-                    {project.description || 'No description'}
-                  </p>
+                  {project.description ? (
+                    <p className="line-clamp-2 max-w-md text-sm">
+                      {project.description}
+                    </p>
+                  ) : (
+                    '—'
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -212,8 +216,12 @@ export const ProjectsList = () => {
                     {statusConfig.text}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatDate(project.startDate)}</TableCell>
-                <TableCell>{formatDate(project.endDate)}</TableCell>
+                <TableCell>
+                  {project.startDate ? formatDate(project.startDate) : '—'}
+                </TableCell>
+                <TableCell>
+                  {project.endDate ? formatDate(project.endDate) : '—'}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button

@@ -328,14 +328,14 @@ const MyProjectDetailRoute = () => {
                   <Calendar className="text-muted-foreground h-4 w-4" />
                   <span className="text-muted-foreground">Start:</span>
                   <span className="text-foreground font-medium">
-                    {formatDate(project.startDate)}
+                    {project.startDate ? formatDate(project.startDate) : '—'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="text-muted-foreground h-4 w-4" />
                   <span className="text-muted-foreground">End:</span>
                   <span className="text-foreground font-medium">
-                    {formatDate(project.endDate)}
+                    {project.endDate ? formatDate(project.endDate) : '—'}
                   </span>
                 </div>
               </div>

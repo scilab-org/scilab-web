@@ -123,6 +123,82 @@ export type InitializePaperDto = {
   sections: PaperSection[];
 };
 
+export type AssignedSection = {
+  id: string;
+  paperId: string;
+  markSectionId: string;
+  paperContributorId: string;
+  sectionRole: string;
+  memberId: string;
+  title: string;
+  content: string;
+  sectionSumary: string;
+  displayOrder: number;
+  numbered: boolean;
+  filePath: string | null;
+  parentSectionId: string | null;
+};
+
+export type AssignedSectionsResult = {
+  paperId: string;
+  subProjectId: string;
+  memberId: string;
+  items: AssignedSection[];
+  paging: PagingResult;
+};
+
+export type GetAssignedSectionsParams = {
+  PageNumber?: number;
+  PageSize?: number;
+};
+
+export type GetAssignedSectionsApiResponse = {
+  result: AssignedSectionsResult;
+};
+
+export type AvailableSectionMember = {
+  memberId: string;
+  userId: string;
+  role: string;
+  username: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export type AvailableSectionMembersResult = {
+  sectionId: string;
+  paperId: string;
+  items: AvailableSectionMember[];
+};
+
+export type GetAvailableSectionMembersApiResponse = {
+  result: AvailableSectionMembersResult;
+};
+
+export type SectionMember = {
+  paperContributorId: string;
+  memberId: string;
+  userId: string;
+  sectionRole: string;
+  markSectionId: string;
+  sectionId: string;
+  username: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  id: string;
+};
+
+export type GetSectionMembersResult = {
+  sectionId: string;
+  items: SectionMember[];
+};
+
+export type GetSectionMembersApiResponse = {
+  result: GetSectionMembersResult;
+};
+
 export type StringApiCreatedResponse = {
   value: string | null;
 };

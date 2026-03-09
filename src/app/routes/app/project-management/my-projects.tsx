@@ -277,10 +277,12 @@ const MyProjectsRoute = () => {
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {formatDate(project.startDate)}
+                          {project.startDate
+                            ? formatDate(project.startDate)
+                            : '—'}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {formatDate(project.endDate)}
+                          {project.endDate ? formatDate(project.endDate) : '—'}
                         </TableCell>
                       </TableRow>
                     );
