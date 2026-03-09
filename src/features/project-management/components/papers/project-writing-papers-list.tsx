@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Plus, Search, Users, Trash2 } from 'lucide-react';
+import { Plus, Search, Users, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
 import { PaperMembersSheet } from './paper-members-sheet';
+import { LatexPaperEditor } from './latex-paper-editor';
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
@@ -66,6 +67,7 @@ export const ProjectWritingPapersList = ({
   const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
     null,
   );
+  const [editorPaper, setEditorPaper] = useState<SubProjectPaper | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounce(searchText), 350);
@@ -210,6 +212,15 @@ export const ProjectWritingPapersList = ({
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setEditorPaper(paper)}
+                          className={`flex items-center gap-1.5 ${BTN.EDIT_OUTLINE}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setMembersSheetPaper(paper)}
                           disabled={!paper.subProjectId}
                           className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
@@ -300,6 +311,13 @@ export const ProjectWritingPapersList = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editorPaper && (
+        <LatexPaperEditor
+          paperTitle={editorPaper.title ?? '(Untitled)'}
+          onClose={() => setEditorPaper(null)}
+        />
+      )}
     </div>
   );
 };
