@@ -174,6 +174,7 @@ const AssignPanel = ({
     if (!selectedMember || !selectedRole) return;
     assignMutation.mutate({
       paperId,
+      sectionId: section.id,
       markSectionId: section.id,
       memberId: selectedMember.memberId,
       sectionRole: selectedRole,
@@ -470,7 +471,9 @@ const ViewMembersPanel = ({
               </TableHeader>
               <TableBody>
                 {members.map((m, idx) => {
-                  const isProjectRole = m.sectionRole.startsWith('project:');
+                  const isProjectRole =
+                    m.sectionRole.startsWith('project:') ||
+                    m.sectionRole.startsWith('paper:');
                   const displayRole = m.sectionRole.includes(':')
                     ? m.sectionRole.split(':').pop()
                     : m.sectionRole;
