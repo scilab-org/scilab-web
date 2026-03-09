@@ -10,11 +10,23 @@ export const PAPER_MANAGEMENT_API = {
   ADMIN_PAPERS_INITIALIZE: `${LAB_SERVICE_PREFIX}/admin/papers/initialize`,
   PARSE_PAPER: `${AI_SERVICE_PREFIX}/papers/parse`,
   AUTO_TAG: `${AI_SERVICE_PREFIX}/papers/auto-tag`,
+  ASSIGNED_SECTIONS: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/assigned-sections`,
+  PAPER_CONTRIBUTORS: `${LAB_SERVICE_PREFIX}/author/paper-contributors`,
+  AVAILABLE_SECTION_MEMBERS: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members/available`,
+  SECTION_MEMBERS: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members`,
+  PAPER_CONTRIBUTOR_BY_ID: (id: string) =>
+    `${LAB_SERVICE_PREFIX}/author/paper-contributors/${id}`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPERS: 'papers',
   PAPER: 'paper',
+  ASSIGNED_SECTIONS: 'paper-assigned-sections',
+  AVAILABLE_SECTION_MEMBERS: 'available-section-members',
+  SECTION_MEMBERS: 'section-members',
 } as const;
 
 export const PAPER_STATUS_MAP: Record<number, string> = {

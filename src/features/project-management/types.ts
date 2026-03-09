@@ -30,7 +30,7 @@ export type CreateProjectDto = {
   description: string;
   status: number;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
 };
 
 export type UpdateProjectDto = {
@@ -39,7 +39,7 @@ export type UpdateProjectDto = {
   description: string;
   status: number;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
 };
 
 export type GetProjectsParams = {
