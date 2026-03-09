@@ -69,7 +69,6 @@ export const ProjectWritingPapersList = ({
   const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
     null,
   );
-  const [editorPaper, setEditorPaper] = useState<SubProjectPaper | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounce(searchText), 350);
@@ -326,13 +325,6 @@ export const ProjectWritingPapersList = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {editorPaper && (
-        <LatexPaperEditor
-          paperTitle={editorPaper.title ?? '(Untitled)'}
-          onClose={() => setEditorPaper(null)}
-        />
-      )}
     </div>
   );
 };

@@ -113,6 +113,16 @@ export type PaperSection = {
   parentSectionId?: string;
 };
 
+export type UpdateSectionDto = {
+  sectionId: string;
+  memberId: string;
+  title: string;
+  content: string;
+  numbered: boolean;
+  sectionSumary: string;
+  parentSectionId?: string | null;
+};
+
 export type InitializePaperDto = {
   projectId: string;
   title: string;

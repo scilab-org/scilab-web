@@ -10,10 +10,14 @@ import {
   PanelLeftClose,
   Upload,
   Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { BTN } from '@/lib/button-styles';
+
+import { useUpdateSection } from '@/features/paper-management/api/update-section';
 
 /**
  * Register a custom LaTeX language + theme so that
@@ -219,22 +223,61 @@ const PreviewPanel = React.memo(function PreviewPanel({
   );
 });
 
+type SectionProp = {
+  id: string;
+  title: string;
+  content: string;
+  memberId: string;
+  numbered: boolean;
+  sectionSumary: string;
+  parentSectionId: string | null;
+};
+
 type LatexPaperEditorProps = {
   paperTitle: string;
   initialContent?: string;
+  sections?: SectionProp[];
+  initialSectionId?: string;
   onClose: () => void;
-  onSave?: (content: string) => void;
+  onSave?: (content: string, sectionId?: string) => void;
 };
 
 export const LatexPaperEditor = ({
   paperTitle,
   initialContent,
+  sections,
+  initialSectionId,
   onClose,
   onSave,
 }: LatexPaperEditorProps) => {
   const [content, setContent] = useState(initialContent || DEFAULT_LATEX);
   const [preview, setPreview] = useState(initialContent || DEFAULT_LATEX);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(
+    initialSectionId || (sections?.[0]?.id ?? null),
+  );
+
+  const updateSectionMutation = useUpdateSection({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Section saved successfully');
+      },
+      onError: () => {
+        toast.error('Failed to save section. Please try again.');
+      },
+    },
+  });
+
+  // When sections or activeSectionId changes, load content into editor
+  useEffect(() => {
+    if (sections && activeSectionId) {
+      const activeSection = sections.find((s) => s.id === activeSectionId);
+      if (activeSection) {
+        setContent(activeSection.content || '');
+        setPreview(activeSection.content || '');
+      }
+    }
+  }, [sections, activeSectionId]);
 
   // Manual render
   const handleRender = useCallback(() => {
@@ -275,7 +318,28 @@ export const LatexPaperEditor = ({
   }, []);
 
   const handleSave = () => {
-    onSave?.(content);
+    if (!activeSectionId || !sections) {
+      toast.error('No section selected to save.');
+      return;
+    }
+    const activeSection = sections.find((s) => s.id === activeSectionId);
+    if (!activeSection) {
+      toast.error('Section not found.');
+      return;
+    }
+    updateSectionMutation.mutate({
+      sectionId: activeSectionId,
+      data: {
+        sectionId: activeSectionId,
+        memberId: activeSection.memberId,
+        title: activeSection.title,
+        content: content,
+        numbered: activeSection.numbered,
+        sectionSumary: activeSection.sectionSumary || '',
+        parentSectionId: activeSection.parentSectionId,
+      },
+    });
+    onSave?.(content, activeSectionId);
   };
 
   /**
@@ -387,12 +451,12 @@ export const LatexPaperEditor = ({
             <FileText className="h-4.5 w-4.5 text-white" />
           </div>
           <div>
-            <h2 className="text-foreground text-sm leading-tight font-semibold">
-              LaTeX Editor
+            <h2 className="text-foreground text-lg leading-tight font-semibold">
+              {activeSectionId && sections
+                ? sections.find((s) => s.id === activeSectionId)?.title ||
+                  paperTitle
+                : paperTitle}
             </h2>
-            <p className="max-w-xs truncate text-xs text-slate-400">
-              {paperTitle}
-            </p>
           </div>
         </div>
 
@@ -401,10 +465,15 @@ export const LatexPaperEditor = ({
           <Button
             size="sm"
             onClick={handleSave}
+            disabled={updateSectionMutation.isPending}
             className={`flex items-center gap-1.5 ${BTN.SUCCESS}`}
           >
-            <Save className="h-3.5 w-3.5" />
-            Save Changes
+            {updateSectionMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            {updateSectionMutation.isPending ? 'Saving…' : 'Save Changes'}
           </Button>
           <Button
             variant="outline"
@@ -429,27 +498,76 @@ export const LatexPaperEditor = ({
           }`}
         >
           <div className="absolute inset-0 flex w-72 flex-col gap-4 p-4">
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Project Files
-            </h3>
-            <Button
-              variant="outline"
-              className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <Upload className="h-4 w-4" />
-              Upload Image/File
-            </Button>
+            {sections ? (
+              <>
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  Paper Sections
+                </h3>
+                <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-1 py-1">
+                  {sections.map((sec) => (
+                    <button
+                      key={sec.id}
+                      onClick={() => setActiveSectionId(sec.id)}
+                      className={`truncate rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                        activeSectionId === sec.id
+                          ? 'bg-blue-100 font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
+                          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                      }`}
+                      title={sec.title}
+                    >
+                      {sec.title || '(Untitled)'}
+                    </button>
+                  ))}
+                </div>
 
-            {/* Empty state for now */}
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
-              </div>
-              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                No files uploaded yet. <br />
-                Upload images here to reference them in your document.
-              </p>
-            </div>
+                <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+                  <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    Paper Files
+                  </h3>
+                  <Button
+                    variant="outline"
+                    className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload Image/File
+                  </Button>
+                  {/* Empty state for now */}
+                  <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                      <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      No files uploaded yet. <br />
+                      Upload images here to reference them in your document.
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  Project Files
+                </h3>
+                <Button
+                  variant="outline"
+                  className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Image/File
+                </Button>
+
+                {/* Empty state for now */}
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                    <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                    No files uploaded yet. <br />
+                    Upload images here to reference them in your document.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

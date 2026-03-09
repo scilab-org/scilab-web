@@ -290,8 +290,8 @@ export const CreatePaperInProject = ({
       paperType: formData.paperType,
       sections: sections.map((sec) => ({
         id: sec.id,
-        title: sec.latex || sec.title,
-        content: sec.content || '',
+        title: sec.title || '',
+        content: sec.latex || sec.content || '',
         numbered: sec.numbered,
         displayOrder: sec.displayOrder,
         sectionSumary: sec.sectionSumary || '',

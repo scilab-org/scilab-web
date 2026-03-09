@@ -19,6 +19,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members`,
   PAPER_CONTRIBUTOR_BY_ID: (id: string) =>
     `${LAB_SERVICE_PREFIX}/author/paper-contributors/${id}`,
+  SECTION_BY_ID: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
