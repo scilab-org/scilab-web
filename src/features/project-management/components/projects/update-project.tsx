@@ -89,7 +89,9 @@ export const UpdateProject = ({
         ...formData,
         status: Number(formData.status),
         startDate: new Date(formData.startDate).toISOString(),
-        endDate: new Date(formData.endDate).toISOString(),
+        endDate: formData.endDate
+          ? new Date(formData.endDate).toISOString()
+          : null,
       };
       updateMutation.mutate({
         projectId: project.id,
@@ -260,7 +262,7 @@ export const UpdateProject = ({
                 id="update-endDate"
                 type="datetime-local"
                 name="endDate"
-                value={formData.endDate}
+                value={formData.endDate ?? ''}
                 onChange={handleChange}
               />
               {errors.endDate && (

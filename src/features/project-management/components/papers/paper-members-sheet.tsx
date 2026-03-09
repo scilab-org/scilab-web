@@ -189,12 +189,12 @@ export const PaperMembersSheet = ({
   }[panel];
 
   const addPanelDesc = isManager
-    ? `Select project authors to add to "${paperTitle}"`
-    : `Select project members to add to "${paperTitle}"`;
+    ? 'Select project authors to add'
+    : 'Select project members to add';
 
   const panelDescription = {
-    default: `"${paperTitle}"`,
-    view: `Members assigned to "${paperTitle}"`,
+    default: '',
+    view: 'Members assigned to this paper',
     add: addPanelDesc,
   }[panel];
 

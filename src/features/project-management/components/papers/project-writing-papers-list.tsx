@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Plus, Search, Users, Trash2, Pencil } from 'lucide-react';
+import { Plus, Search, Users, Trash2, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
 import { PaperMembersSheet } from './paper-members-sheet';
-import { LatexPaperEditor } from './latex-paper-editor';
+import { PaperSectionsDialog } from '@/features/paper-management/components/paper-sections-dialog';
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
@@ -63,6 +63,8 @@ export const ProjectWritingPapersList = ({
   const [searchText, setSearchText] = useState('');
   const [searchDebounce, setSearchDebounce] = useState('');
   const [membersSheetPaper, setMembersSheetPaper] =
+    useState<SubProjectPaper | null>(null);
+  const [sectionsSheetPaper, setSectionsSheetPaper] =
     useState<SubProjectPaper | null>(null);
   const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
     null,
@@ -212,11 +214,11 @@ export const ProjectWritingPapersList = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setEditorPaper(paper)}
-                          className={`flex items-center gap-1.5 ${BTN.EDIT_OUTLINE}`}
+                          onClick={() => setSectionsSheetPaper(paper)}
+                          className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Edit
+                          <Layers className="h-3.5 w-3.5" />
+                          Sections
                         </Button>
                         <Button
                           variant="outline"
@@ -264,6 +266,19 @@ export const ProjectWritingPapersList = ({
           </div>
         )}
       </div>
+
+      {sectionsSheetPaper && (
+        <PaperSectionsDialog
+          paperId={sectionsSheetPaper.id}
+          paperTitle={sectionsSheetPaper.title ?? '(Untitled)'}
+          subProjectId={sectionsSheetPaper.subProjectId ?? ''}
+          isAuthor={isAuthor}
+          open={!!sectionsSheetPaper}
+          onOpenChange={(o) => {
+            if (!o) setSectionsSheetPaper(null);
+          }}
+        />
+      )}
 
       {membersSheetPaper && membersSheetPaper.subProjectId && (
         <PaperMembersSheet
