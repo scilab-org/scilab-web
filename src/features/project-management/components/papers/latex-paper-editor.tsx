@@ -1,5 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import Editor, { type Monaco } from '@monaco-editor/react';
+import type { editor as MonacoEditor } from 'monaco-editor';
 import { MathJaxContext, MathJax } from 'better-react-mathjax';
 import {
   X,
@@ -11,10 +18,27 @@ import {
   Upload,
   Image as ImageIcon,
   Loader2,
+  Keyboard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { BTN } from '@/lib/button-styles';
 
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
@@ -256,6 +280,12 @@ export const LatexPaperEditor = ({
   const [activeSectionId, setActiveSectionId] = useState<string | null>(
     initialSectionId || (sections?.[0]?.id ?? null),
   );
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [savedContent, setSavedContent] = useState(
+    initialContent || DEFAULT_LATEX,
+  );
+  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
 
   const updateSectionMutation = useUpdateSection({
     mutationConfig: {
@@ -275,6 +305,7 @@ export const LatexPaperEditor = ({
       if (activeSection) {
         setContent(activeSection.content || '');
         setPreview(activeSection.content || '');
+        setSavedContent(activeSection.content || '');
       }
     }
   }, [sections, activeSectionId]);
@@ -284,40 +315,11 @@ export const LatexPaperEditor = ({
     setPreview(content);
   }, [content]);
 
-  // Auto-render every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPreview((prev) => {
-        // Only update if content actually changed
-        if (prev !== content) return content;
-        return prev;
-      });
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [content]);
-
-  // ESC key to close
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
-
-  // Prevent body scroll while editor is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
-
   const handleEditorChange = useCallback((value: string | undefined) => {
     setContent(value ?? '');
   }, []);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!activeSectionId || !sections) {
       toast.error('No section selected to save.');
       return;
@@ -339,8 +341,72 @@ export const LatexPaperEditor = ({
         parentSectionId: activeSection.parentSectionId,
       },
     });
+    setSavedContent(content);
     onSave?.(content, activeSectionId);
-  };
+  }, [activeSectionId, sections, content, updateSectionMutation, onSave]);
+
+  const handleClose = useCallback(() => {
+    if (content !== savedContent) {
+      setShowCloseConfirm(true);
+    } else {
+      onClose();
+    }
+  }, [content, savedContent, onClose]);
+
+  // Auto-render every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPreview((prev) => {
+        // Only update if content actually changed
+        if (prev !== content) return content;
+        return prev;
+      });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [content]);
+
+  // ESC key to close (with unsaved changes check)
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [handleClose]);
+
+  // Ctrl+S to open save confirm dialog
+  useEffect(() => {
+    const handleCtrlS = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        setShowSaveConfirm(true);
+      }
+    };
+    document.addEventListener('keydown', handleCtrlS);
+    return () => document.removeEventListener('keydown', handleCtrlS);
+  }, []);
+
+  // Ctrl+Enter to render preview
+  useEffect(() => {
+    const handleRenderShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        setPreview(content);
+      }
+    };
+    document.addEventListener('keydown', handleRenderShortcut, true);
+    return () =>
+      document.removeEventListener('keydown', handleRenderShortcut, true);
+  }, [content]);
+
+  // Prevent body scroll while editor is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   /**
    * Convert raw LaTeX source to a simplified HTML-ish string
@@ -462,23 +528,40 @@ export const LatexPaperEditor = ({
 
         {/* Right: Save + Close */}
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={updateSectionMutation.isPending}
-            className={`flex items-center gap-1.5 ${BTN.SUCCESS}`}
-          >
-            {updateSectionMutation.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-            {updateSectionMutation.isPending ? 'Saving…' : 'Save Changes'}
-          </Button>
+          <AlertDialog open={showSaveConfirm} onOpenChange={setShowSaveConfirm}>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                disabled={updateSectionMutation.isPending}
+                className={`flex items-center gap-1.5 ${BTN.SUCCESS}`}
+              >
+                {updateSectionMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                {updateSectionMutation.isPending ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to save the changes to this section?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSave} className={BTN.SUCCESS}>
+                  Save Changes
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button
             variant="outline"
             size="sm"
-            onClick={onClose}
+            onClick={handleClose}
             className="flex items-center gap-1.5 border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <X className="h-3.5 w-3.5" />
@@ -486,6 +569,28 @@ export const LatexPaperEditor = ({
           </Button>
         </div>
       </div>
+
+      {/* Unsaved changes confirmation dialog */}
+      <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes that may be lost. Are you sure you want
+              to close?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onClose}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Close without saving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Main Layout (Sidebar + Content) ─────────────────────────── */}
       <div className="flex min-h-0 flex-1">
@@ -591,6 +696,130 @@ export const LatexPaperEditor = ({
                 onChange={handleEditorChange}
                 theme="latex-light"
                 beforeMount={registerLatexLanguage}
+                onMount={(editor, monaco) => {
+                  editorRef.current = editor;
+
+                  const wrapSelection = (prefix: string, suffix: string) => {
+                    const selection = editor.getSelection();
+                    if (!selection) return;
+                    const selectedText =
+                      editor.getModel()?.getValueInRange(selection) || '';
+                    editor.executeEdits('latex-shortcut', [
+                      {
+                        range: selection,
+                        text: `${prefix}${selectedText}${suffix}`,
+                      },
+                    ]);
+                  };
+
+                  // Ctrl+B → \textbf{}
+                  editor.addAction({
+                    id: 'latex-bold',
+                    label: 'LaTeX Bold',
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
+                    run: () => wrapSelection('\\textbf{', '}'),
+                  });
+
+                  // Ctrl+I → \textit{}
+                  editor.addAction({
+                    id: 'latex-italic',
+                    label: 'LaTeX Italic',
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI],
+                    run: () => wrapSelection('\\textit{', '}'),
+                  });
+
+                  // Ctrl+U → \underline{}
+                  editor.addAction({
+                    id: 'latex-underline',
+                    label: 'LaTeX Underline',
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyU],
+                    run: () => wrapSelection('\\underline{', '}'),
+                  });
+
+                  // Ctrl+Shift+M → inline math $...$
+                  editor.addAction({
+                    id: 'latex-inline-math',
+                    label: 'LaTeX Inline Math',
+                    keybindings: [
+                      monaco.KeyMod.CtrlCmd |
+                        monaco.KeyMod.Shift |
+                        monaco.KeyCode.KeyM,
+                    ],
+                    run: () => wrapSelection('$', '$'),
+                  });
+
+                  // Ctrl+Shift+E → display math $$...$$
+                  editor.addAction({
+                    id: 'latex-display-math',
+                    label: 'LaTeX Display Math',
+                    keybindings: [
+                      monaco.KeyMod.CtrlCmd |
+                        monaco.KeyMod.Shift |
+                        monaco.KeyCode.KeyE,
+                    ],
+                    run: () => wrapSelection('$$\n', '\n$$'),
+                  });
+
+                  // Ctrl+Shift+B → \begin{} ... \end{}
+                  editor.addAction({
+                    id: 'latex-environment',
+                    label: 'LaTeX Environment',
+                    keybindings: [
+                      monaco.KeyMod.CtrlCmd |
+                        monaco.KeyMod.Shift |
+                        monaco.KeyCode.KeyB,
+                    ],
+                    run: () => {
+                      const env = prompt(
+                        'Enter environment name (e.g. equation, align, itemize):',
+                      );
+                      if (!env) return;
+                      wrapSelection(`\\begin{${env}}\n`, `\n\\end{${env}}`);
+                    },
+                  });
+
+                  // Ctrl+/ → Toggle comment (%)
+                  editor.addAction({
+                    id: 'latex-toggle-comment',
+                    label: 'LaTeX Toggle Comment',
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash],
+                    run: () => {
+                      const selection = editor.getSelection();
+                      if (!selection) return;
+                      const model = editor.getModel();
+                      if (!model) return;
+                      const edits: MonacoEditor.IIdentifiedSingleEditOperation[] =
+                        [];
+                      for (
+                        let line = selection.startLineNumber;
+                        line <= selection.endLineNumber;
+                        line++
+                      ) {
+                        const lineContent = model.getLineContent(line);
+                        if (lineContent.trimStart().startsWith('%')) {
+                          const idx = lineContent.indexOf('%');
+                          const removeExtra =
+                            lineContent[idx + 1] === ' ' ? 2 : 1;
+                          edits.push({
+                            range: new monaco.Range(
+                              line,
+                              idx + 1,
+                              line,
+                              idx + 1 + removeExtra,
+                            ),
+                            text: '',
+                          });
+                        } else {
+                          edits.push({
+                            range: new monaco.Range(line, 1, line, 1),
+                            text: '% ',
+                          });
+                        }
+                      }
+                      editor.executeEdits('latex-comment', edits);
+                    },
+                  });
+                }}
                 options={{
                   fontSize: 14,
                   lineHeight: 22,
@@ -648,6 +877,103 @@ export const LatexPaperEditor = ({
           </div>
         </div>
       </div>
+
+      {/* Floating Keyboard Shortcuts Button */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="fixed right-6 bottom-6 z-50 h-10 w-10 rounded-full border-slate-300 bg-white shadow-lg hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
+            title="Keyboard Shortcuts"
+          >
+            <Keyboard className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent side="top" align="end" className="w-72 p-0">
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Keyboard Shortcuts
+            </h4>
+          </div>
+          <div className="space-y-1 px-4 py-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">Save</span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + S
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Render Preview
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + Enter
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">Bold</span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + B
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">Italic</span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + I
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Underline
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + U
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Inline Math
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + Shift + M
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Display Math
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + Shift + E
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Environment
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + Shift + B
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Toggle Comment
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Ctrl + /
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600 dark:text-slate-400">
+                Close Editor
+              </span>
+              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                Esc
+              </kbd>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
