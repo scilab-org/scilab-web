@@ -10,6 +10,7 @@ import {
 export type CreatePaperContributorDto = {
   sectionRole: string;
   paperId: string;
+  sectionId: string;
   memberId: string;
   markSectionId: string;
 };

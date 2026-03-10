@@ -195,22 +195,6 @@ const MyProjectsRoute = () => {
         </div>
       </div>
 
-      {/* Result count */}
-      {!projectsQuery.isLoading && paging && (
-        <p className="text-muted-foreground mb-4 text-sm">
-          Showing{' '}
-          <span className="text-foreground font-semibold">
-            {projects.length}
-          </span>{' '}
-          of{' '}
-          <span className="text-foreground font-semibold">
-            {paging.totalCount}
-          </span>{' '}
-          project
-          {paging.totalCount !== 1 ? 's' : ''}
-        </p>
-      )}
-
       {/* Table */}
       <div className="overflow-hidden rounded-xl border shadow-sm">
         {projectsQuery.isLoading ? (

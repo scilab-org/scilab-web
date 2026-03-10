@@ -20,9 +20,7 @@ export const getMyProjects = (
   return api.get(PROJECT_MANAGEMENT_API.MY_PROJECTS, { params });
 };
 
-export const getMyProjectsQueryOptions = (
-  params: GetMyProjectsParams = {},
-) => {
+export const getMyProjectsQueryOptions = (params: GetMyProjectsParams = {}) => {
   return queryOptions({
     queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.MY_PROJECTS, params],
     queryFn: () => getMyProjects(params),
