@@ -15,10 +15,14 @@ export const clientLoader =
 
     const query = getUsersQueryOptions({ pageNumber: page, searchText });
 
-    return (
-      queryClient.getQueryData(query.queryKey) ??
-      (await queryClient.fetchQuery(query))
-    );
+    try {
+      return (
+        queryClient.getQueryData(query.queryKey) ??
+        (await queryClient.fetchQuery(query))
+      );
+    } catch {
+      return null;
+    }
   };
 
 const UsersRoute = () => {

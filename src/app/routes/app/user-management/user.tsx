@@ -16,10 +16,14 @@ export const clientLoader =
 
     const query = getUserQueryOptions(userId);
 
-    return (
-      queryClient.getQueryData(query.queryKey) ??
-      (await queryClient.fetchQuery(query))
-    );
+    try {
+      return (
+        queryClient.getQueryData(query.queryKey) ??
+        (await queryClient.fetchQuery(query))
+      );
+    } catch {
+      return null;
+    }
   };
 
 const UserRoute = () => {

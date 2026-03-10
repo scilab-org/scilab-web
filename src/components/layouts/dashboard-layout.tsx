@@ -4,8 +4,6 @@ import {
   ChevronRight,
   FileText,
   FolderKanban,
-  GraduationCap,
-  LayoutDashboard,
   LayoutTemplate,
   LogOut,
   Search,
@@ -30,7 +28,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import { paths } from '@/config/paths';
 import { useLogout, useUser } from '@/lib/auth';
@@ -43,21 +40,12 @@ type SideNavigationItem = {
 };
 
 const Logo = () => {
-  const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
-
   return (
-    <div className="flex items-center gap-2">
-      <div className="bg-primary flex size-8 items-center justify-center rounded-lg">
-        <GraduationCap className="text-primary-foreground size-5" />
-      </div>
-      {!isCollapsed && (
-        <div className="flex flex-col">
-          <span className="text-foreground text-base font-bold">
-            Hyper Data Lab
-          </span>
-        </div>
-      )}
+    <div className="flex items-center gap-2 overflow-hidden">
+      <img src="/Logo.svg" alt="Logo" className="size-8 shrink-0" />
+      <span className="text-foreground truncate text-base font-bold transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
+        Hyper Data Lab
+      </span>
     </div>
   );
 };
@@ -125,7 +113,7 @@ const Breadcrumb = () => {
   return (
     <nav className="flex items-center gap-1 text-sm">
       <NavLink
-        to={paths.app.dashboard.getHref()}
+        to={paths.app.assignedProjects.list.getHref()}
         className="text-muted-foreground hover:text-foreground"
       >
         Home
@@ -151,39 +139,17 @@ const Breadcrumb = () => {
 
 const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
   const { data: user } = useUser();
-  const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
-
-  if (isCollapsed) {
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="bg-sidebar-accent mx-auto flex size-8 items-center justify-center rounded-full">
-          <span className="text-sidebar-accent-foreground text-xs font-medium">
-            {user?.firstName?.[0]}
-            {user?.lastName?.[0]}
-          </span>
-        </div>
-        <button
-          onClick={onLogout}
-          className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center justify-center rounded-md p-2"
-          title="Log Out"
-        >
-          <LogOut className="size-5" />
-        </button>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 overflow-hidden">
       <div className="flex items-center gap-3">
-        <div className="bg-sidebar-accent flex size-8 items-center justify-center rounded-full">
+        <div className="bg-sidebar-accent flex size-8 shrink-0 items-center justify-center rounded-full">
           <span className="text-sidebar-accent-foreground text-xs font-medium">
             {user?.firstName?.[0]}
             {user?.lastName?.[0]}
           </span>
         </div>
-        <div className="grid flex-1 text-left text-sm leading-tight">
+        <div className="grid flex-1 text-left text-sm leading-tight transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
           <span className="truncate font-semibold">
             {user?.firstName} {user?.lastName}
           </span>
@@ -194,21 +160,19 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
       </div>
       <button
         onClick={onLogout}
-        className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm"
+        className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md p-2 text-sm"
+        title="Log Out"
       >
-        <LogOut className="size-4" />
-        Log Out
+        <LogOut className="size-4 shrink-0" />
+        <span className="truncate transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
+          Log Out
+        </span>
       </button>
     </div>
   );
 };
 
 const navigation: SideNavigationItem[] = [
-  {
-    name: 'Dashboard',
-    to: paths.app.dashboard.getHref(),
-    icon: LayoutDashboard,
-  },
   {
     name: 'Users',
     to: paths.app.userManagement.users.getHref(),
@@ -263,10 +227,7 @@ function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => {
-                const isActive =
-                  item.name === 'Dashboard'
-                    ? location.pathname === item.to
-                    : location.pathname.startsWith(item.to);
+                const isActive = location.pathname.startsWith(item.to);
 
                 return (
                   <SidebarMenuItem key={item.name}>
