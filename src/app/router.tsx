@@ -27,7 +27,9 @@ export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: paths.home.path,
-      element: <Navigate to={paths.app.root.getHref()} replace />,
+      element: (
+        <Navigate to={paths.app.assignedProjects.list.getHref()} replace />
+      ),
     },
     {
       path: paths.app.root.path,
@@ -40,8 +42,9 @@ export const createAppRouter = (queryClient: QueryClient) =>
       children: [
         {
           path: paths.app.dashboard.path,
-          lazy: () =>
-            import('./routes/app/dashboard').then(convert(queryClient)),
+          element: (
+            <Navigate to={paths.app.assignedProjects.list.getHref()} replace />
+          ),
         },
         {
           path: paths.app.sample.path,
