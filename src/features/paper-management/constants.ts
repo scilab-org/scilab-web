@@ -19,8 +19,12 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members`,
   PAPER_CONTRIBUTOR_BY_ID: (id: string) =>
     `${LAB_SERVICE_PREFIX}/author/paper-contributors/${id}`,
+  PAPER_CONTRIBUTORS_BY_PAPER: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/paper-contributors/papers/${paperId}/contributors`,
   SECTION_BY_ID: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}`,
+  PAPER_SECTIONS_BY_ID: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/sections`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
@@ -29,6 +33,8 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   ASSIGNED_SECTIONS: 'paper-assigned-sections',
   AVAILABLE_SECTION_MEMBERS: 'available-section-members',
   SECTION_MEMBERS: 'section-members',
+  PAPER_CONTRIBUTORS: 'paper-contributors',
+  PAPER_SECTIONS: 'paper-sections',
 } as const;
 
 export const PAPER_STATUS_MAP: Record<number, string> = {

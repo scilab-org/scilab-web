@@ -10,7 +10,6 @@ import {
   Calendar,
   Hash,
   Info,
-  Pencil,
 } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
@@ -310,19 +309,6 @@ const MyProjectDetailRoute = () => {
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
-              {isManager && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setUpdateOpen(true)}
-                    className="flex items-center gap-1.5"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </Button>
-                </div>
-              )}
               <div className="flex flex-col gap-1.5 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="text-muted-foreground h-4 w-4" />

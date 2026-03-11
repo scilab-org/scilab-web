@@ -32,6 +32,7 @@ import { SubProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
 import { PaperMembersSheet } from './paper-members-sheet';
 import { PaperSectionsDialog } from '@/features/paper-management/components/paper-sections-dialog';
+import { PaperSectionsReadOnlyDialog } from '@/features/paper-management/components/paper-sections-readonly-dialog';
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
@@ -266,7 +267,18 @@ export const ProjectWritingPapersList = ({
         )}
       </div>
 
-      {sectionsSheetPaper && (
+      {sectionsSheetPaper && isManager && (
+        <PaperSectionsReadOnlyDialog
+          paperId={sectionsSheetPaper.id}
+          paperTitle={sectionsSheetPaper.title ?? '(Untitled)'}
+          open={!!sectionsSheetPaper}
+          onOpenChange={(o) => {
+            if (!o) setSectionsSheetPaper(null);
+          }}
+        />
+      )}
+
+      {sectionsSheetPaper && !isManager && (
         <PaperSectionsDialog
           paperId={sectionsSheetPaper.id}
           paperTitle={sectionsSheetPaper.title ?? '(Untitled)'}
