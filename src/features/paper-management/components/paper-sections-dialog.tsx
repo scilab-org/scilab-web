@@ -48,10 +48,12 @@ import { useAvailableSectionMembers } from '../api/get-available-section-members
 import { useGetSectionMembers } from '../api/get-section-members';
 import { useDeletePaperContributor } from '../api/delete-paper-contributor';
 import { useUpdatePaperContributor } from '../api/update-paper-contributor';
+import { useGetPaperContributors } from '../api/get-paper-contributors';
 import {
   AssignedSection,
   AvailableSectionMember,
   SectionMember,
+  PaperContributorItem,
 } from '../types';
 
 // ─── LaTeX utility ────────────────────────────────────────────────────────────
@@ -133,7 +135,6 @@ const AssignPanel = ({
   const [selectedMember, setSelectedMember] =
     useState<AvailableSectionMember | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
-  const [roleOpen, setRoleOpen] = useState(false);
 
   const membersQuery = useAvailableSectionMembers({
     sectionId: section.id,
@@ -204,48 +205,49 @@ const AssignPanel = ({
         <div className="space-y-2">
           <p className="text-foreground text-sm font-medium">Section Role</p>
           {groupsQuery.isLoading ? (
-            <Skeleton className="h-10 w-full" />
+            <div className="flex gap-2">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+            </div>
           ) : sectionGroups.length === 0 ? (
             <p className="text-muted-foreground text-sm">
               No section roles available
             </p>
           ) : (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setRoleOpen((p) => !p)}
-                className={cn(
-                  'border-border bg-background text-foreground flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800',
-                  !selectedRole && 'text-muted-foreground',
-                )}
-              >
-                {selectedRole || 'Select a role...'}
-                <ChevronDown className="h-4 w-4 opacity-60" />
-              </button>
-              {roleOpen && (
-                <div className="border-border bg-background absolute z-10 mt-1 w-full rounded-md border shadow-lg">
-                  {sectionGroups.map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedRole(g.name!);
-                        setRoleOpen(false);
-                      }}
-                      className="hover:bg-muted flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
-                    >
-                      {selectedRole === g.name && (
-                        <Check className="h-4 w-4 text-blue-600" />
-                      )}
-                      <span
-                        className={selectedRole === g.name ? 'pl-0' : 'pl-6'}
-                      >
-                        {g.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="flex flex-wrap gap-2">
+              {sectionGroups.map((g) => {
+                const label = g.name?.includes(':')
+                  ? g.name.split(':').pop()!
+                  : g.name!;
+                const isActive = selectedRole === g.name;
+                const isEdit =
+                  label.toLowerCase() === 'edit' ||
+                  label.toLowerCase() === 'author';
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setSelectedRole(isActive ? '' : g.name!)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-all',
+                      isActive
+                        ? isEdit
+                          ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                          : 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                        : 'border-border bg-background text-muted-foreground hover:border-blue-300',
+                    )}
+                  >
+                    {isActive ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : isEdit ? (
+                      <Pencil className="h-3.5 w-3.5" />
+                    ) : (
+                      <Users className="h-3.5 w-3.5" />
+                    )}
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -378,6 +380,7 @@ type ViewMembersPanelProps = {
   paperId: string;
   isAuthor: boolean;
   onBack: () => void;
+  onAssign?: () => void;
 };
 
 const ViewMembersPanel = ({
@@ -385,6 +388,7 @@ const ViewMembersPanel = ({
   paperId,
   isAuthor,
   onBack,
+  onAssign,
 }: ViewMembersPanelProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState('');
@@ -439,6 +443,18 @@ const ViewMembersPanel = ({
       </div>
 
       <div className="flex-1 overflow-auto p-6">
+        {onAssign && (
+          <div className="mb-4 flex justify-end">
+            <Button
+              size="sm"
+              onClick={onAssign}
+              className={cn('flex items-center gap-2', BTN.CREATE)}
+            >
+              <UserPlus className="h-4 w-4" />
+              Assign Member
+            </Button>
+          </div>
+        )}
         {membersQuery.isLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-12 w-full" />
@@ -660,8 +676,6 @@ const ViewMembersPanel = ({
     </div>
   );
 };
-// ─── Top-level Section Group ──────────────────────────────────────────────────
-
 // ─── Main Dialog ──────────────────────────────────────────────────────────────
 
 export const PaperSectionsDialog = ({
@@ -680,6 +694,16 @@ export const PaperSectionsDialog = ({
   const [initialEditSectionId, setInitialEditSectionId] = useState<
     string | null
   >(null);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(),
+  );
+  const toggleExpand = (id: string) =>
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const sectionsQuery = useAssignedSections({
     paperId,
@@ -691,6 +715,21 @@ export const PaperSectionsDialog = ({
   const tree = buildTree(rawSections);
   const totalCount =
     sectionsQuery.data?.result?.paging?.totalCount ?? rawSections.length;
+
+  const contributorsQuery = useGetPaperContributors({
+    paperId,
+    queryConfig: { enabled: open && !!paperId && isAuthor },
+  });
+  const allContributors: PaperContributorItem[] =
+    contributorsQuery.data?.result?.items ?? [];
+  // Group by markSectionId — the section the contributor is assigned to work on
+  const contributorsBySection = new Map<string, PaperContributorItem[]>();
+  allContributors.forEach((c) => {
+    const key = c.markSectionId || c.sectionId;
+    const list = contributorsBySection.get(key) ?? [];
+    list.push(c);
+    contributorsBySection.set(key, list);
+  });
 
   const handleClose = () => {
     setAssignTarget(null);
@@ -725,7 +764,10 @@ export const PaperSectionsDialog = ({
                   paperId={paperId}
                   subProjectId={subProjectId}
                   onBack={() => setAssignTarget(null)}
-                  onAssigned={() => setAssignTarget(null)}
+                  onAssigned={() => {
+                    setAssignTarget(null);
+                    contributorsQuery.refetch();
+                  }}
                 />
               ) : viewTarget ? (
                 <ViewMembersPanel
@@ -733,6 +775,14 @@ export const PaperSectionsDialog = ({
                   paperId={paperId}
                   isAuthor={isAuthor}
                   onBack={() => setViewTarget(null)}
+                  onAssign={
+                    isAuthor
+                      ? () => {
+                          setAssignTarget(viewTarget);
+                          setViewTarget(null);
+                        }
+                      : undefined
+                  }
                 />
               ) : (
                 <>
@@ -775,69 +825,95 @@ export const PaperSectionsDialog = ({
                         </p>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto rounded-xl border shadow-sm">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                              <TableHead className="w-8 text-center font-semibold text-green-900 dark:text-green-200">
-                                #
-                              </TableHead>
-                              <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                                Section Title
-                              </TableHead>
-                              <TableHead className="w-52 text-right font-semibold text-green-900 dark:text-green-200">
-                                Action
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {flattenTree(tree).map(
-                              ({ node, depth, label }, idx) => {
-                                const isParent = depth === 0;
-                                const isLeaf = node.children.length === 0;
-                                return (
-                                  <TableRow
-                                    key={node.id}
-                                    className={cn(
-                                      'transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20',
-                                      idx % 2 === 0
-                                        ? 'bg-white dark:bg-transparent'
-                                        : 'bg-slate-50/50 dark:bg-slate-900/20',
-                                    )}
-                                  >
-                                    <TableCell className="text-muted-foreground text-center text-xs">
-                                      {node.numbered ? label : '—'}
-                                    </TableCell>
-                                    <TableCell>
-                                      <div
-                                        className="flex items-center gap-2"
-                                        style={{
-                                          paddingLeft: `${depth * 20}px`,
-                                        }}
-                                      >
-                                        {depth > 0 && (
-                                          <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                                        )}
-                                        {depth === 0 && (
-                                          <Layers className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                                        )}
-                                        <span
-                                          className={cn(
-                                            'leading-snug',
-                                            isParent
-                                              ? 'text-foreground text-sm font-semibold'
-                                              : 'text-foreground text-xs font-medium',
-                                          )}
+                      <>
+                        <div className="overflow-x-auto rounded-xl border shadow-sm">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                                <TableHead className="w-8 text-center font-semibold text-green-900 dark:text-green-200">
+                                  #
+                                </TableHead>
+                                <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                                  Section Title
+                                </TableHead>
+                                <TableHead className="w-52 text-right font-semibold text-green-900 dark:text-green-200">
+                                  Action
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {flattenTree(tree).flatMap(
+                                ({ node, depth, label }, idx) => {
+                                  const isParent = depth === 0;
+                                  const isLeaf = node.children.length === 0;
+                                  const sectionContributors = isAuthor
+                                    ? (contributorsBySection.get(node.id) ?? [])
+                                    : [];
+                                  const hasContributors =
+                                    sectionContributors.length > 0;
+                                  const isExpanded = expandedSections.has(
+                                    node.id,
+                                  );
+                                  const mainRow = (
+                                    <TableRow
+                                      key={node.id}
+                                      className={cn(
+                                        'transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20',
+                                        idx % 2 === 0
+                                          ? 'bg-white dark:bg-transparent'
+                                          : 'bg-slate-50/50 dark:bg-slate-900/20',
+                                      )}
+                                    >
+                                      <TableCell className="text-muted-foreground text-center text-xs">
+                                        {node.numbered ? label : '—'}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div
+                                          className="flex items-center gap-2"
+                                          style={{
+                                            paddingLeft: `${depth * 20}px`,
+                                          }}
                                         >
-                                          {stripLatex(node.title)}
-                                        </span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {isLeaf && (
-                                        <div className="flex items-center justify-end gap-1">
-                                          {isAuthor && (
-                                            <>
+                                          {depth > 0 && (
+                                            <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+                                          )}
+                                          {depth === 0 && (
+                                            <Layers className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+                                          )}
+                                          <span
+                                            className={cn(
+                                              'leading-snug',
+                                              isParent
+                                                ? 'text-foreground text-sm font-semibold'
+                                                : 'text-foreground text-xs font-medium',
+                                            )}
+                                          >
+                                            {stripLatex(node.title)}
+                                          </span>
+                                          {hasContributors && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                toggleExpand(node.id)
+                                              }
+                                              className="text-muted-foreground hover:text-foreground ml-1 flex items-center gap-1 text-xs transition-colors"
+                                            >
+                                              {isExpanded ? (
+                                                <ChevronDown className="h-3.5 w-3.5" />
+                                              ) : (
+                                                <ChevronRight className="h-3.5 w-3.5" />
+                                              )}
+                                              <span className="text-[10px]">
+                                                {sectionContributors.length}
+                                              </span>
+                                            </button>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {isLeaf && (
+                                          <div className="flex items-center justify-end gap-1">
+                                            {isAuthor && (
                                               <Button
                                                 size="sm"
                                                 variant="outline"
@@ -852,54 +928,97 @@ export const PaperSectionsDialog = ({
                                                 <Users className="h-3 w-3" />
                                                 Members
                                               </Button>
+                                            )}
+                                            {(node.sectionRole ===
+                                              'paper:author' ||
+                                              node.sectionRole ===
+                                                'section:edit') && (
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() =>
-                                                  setAssignTarget(node)
-                                                }
+                                                onClick={() => {
+                                                  setInitialEditSectionId(
+                                                    node.id,
+                                                  );
+                                                  setEditingEditorMode(true);
+                                                }}
                                                 className={cn(
                                                   'flex h-7 items-center gap-1 px-2 text-xs',
                                                   BTN.EDIT_OUTLINE,
                                                 )}
                                               >
-                                                <UserPlus className="h-3 w-3" />
-                                                Assign
+                                                <Pencil className="h-3 w-3" />
+                                                Edit
                                               </Button>
-                                            </>
-                                          )}
-                                          {(node.sectionRole ===
-                                            'paper:author' ||
-                                            node.sectionRole ===
-                                              'section:edit') && (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={() => {
-                                                setInitialEditSectionId(
-                                                  node.id,
+                                            )}
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                  if (!hasContributors || !isExpanded)
+                                    return [mainRow];
+                                  const subRow = (
+                                    <TableRow
+                                      key={`${node.id}-contributors`}
+                                      className="hover:bg-transparent"
+                                    >
+                                      <TableCell
+                                        colSpan={3}
+                                        className="px-4 pt-0 pb-2"
+                                      >
+                                        <div className="ml-6 overflow-hidden rounded-lg border border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
+                                          <table className="w-full">
+                                            <tbody>
+                                              {sectionContributors.map((c) => {
+                                                const displayRole =
+                                                  c.sectionRole.includes(':')
+                                                    ? c.sectionRole
+                                                        .split(':')
+                                                        .pop()
+                                                    : c.sectionRole;
+                                                return (
+                                                  <tr
+                                                    key={c.id}
+                                                    className="border-b border-blue-100 last:border-0 dark:border-blue-900/20"
+                                                  >
+                                                    <td className="px-3 py-1.5">
+                                                      <div className="flex items-center gap-2">
+                                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-700 uppercase dark:bg-blue-800 dark:text-blue-300">
+                                                          {c.firstName?.[0] ??
+                                                            c
+                                                              .contributorName?.[0] ??
+                                                            '?'}
+                                                        </div>
+                                                        <span className="text-foreground text-xs font-medium">
+                                                          {c.contributorName}
+                                                        </span>
+                                                        <span className="text-muted-foreground text-xs">
+                                                          {c.contributorEmail}
+                                                        </span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-3 py-1.5 text-right">
+                                                      <span className="rounded-full border border-blue-200 bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                        {displayRole}
+                                                      </span>
+                                                    </td>
+                                                  </tr>
                                                 );
-                                                setEditingEditorMode(true);
-                                              }}
-                                              className={cn(
-                                                'flex h-7 items-center gap-1 px-2 text-xs',
-                                                BTN.EDIT_OUTLINE,
-                                              )}
-                                            >
-                                              <Pencil className="h-3 w-3" />
-                                              Edit
-                                            </Button>
-                                          )}
+                                              })}
+                                            </tbody>
+                                          </table>
                                         </div>
-                                      )}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              },
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                  return [mainRow, subRow];
+                                },
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </>
                     )}
                   </div>
                 </>
@@ -922,7 +1041,9 @@ export const PaperSectionsDialog = ({
             parentSectionId: node.parentSectionId,
           }))}
           initialSectionId={initialEditSectionId || undefined}
-          onClose={() => setEditingEditorMode(false)}
+          onClose={() => {
+            setEditingEditorMode(false);
+          }}
         />
       )}
     </>

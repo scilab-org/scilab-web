@@ -220,3 +220,24 @@ export type BooleanApiUpdatedResponse = {
 export type BooleanApiDeletedResponse = {
   value: boolean;
 };
+
+export type PaperContributorItem = {
+  id: string;
+  paperId: string;
+  memberId: string;
+  markSectionId: string;
+  sectionId: string;
+  sectionRole: string;
+  userId: string;
+  contributorName: string;
+  contributorEmail: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export type GetPaperContributorsApiResponse = {
+  result: {
+    paperId: string;
+    items: PaperContributorItem[];
+  };
+};

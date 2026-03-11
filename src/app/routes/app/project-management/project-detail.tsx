@@ -381,7 +381,7 @@ const ProjectDetailRoute = () => {
           )}
 
           {activeTab === 'writing-papers' && (
-            <ProjectWritingPapersList projectId={projectId!} />
+            <ProjectWritingPapersList projectId={projectId!} isManager />
           )}
 
           {activeTab === 'datasets' && (
