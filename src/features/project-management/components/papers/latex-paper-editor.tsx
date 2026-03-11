@@ -276,6 +276,7 @@ type LatexPaperEditorProps = {
   initialSectionId?: string;
   onClose: () => void;
   onSave?: (content: string, sectionId?: string) => void;
+  readOnly?: boolean;
 };
 
 export const LatexPaperEditor = ({
@@ -285,6 +286,7 @@ export const LatexPaperEditor = ({
   initialSectionId,
   onClose,
   onSave,
+  readOnly = false,
 }: LatexPaperEditorProps) => {
   const [content, setContent] = useState(initialContent || DEFAULT_LATEX);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -407,12 +409,12 @@ export const LatexPaperEditor = ({
   }, [activeSectionId, sections, content, updateSectionMutation, onSave]);
 
   const handleClose = useCallback(() => {
-    if (content !== savedContent) {
+    if (!readOnly && content !== savedContent) {
       setShowCloseConfirm(true);
     } else {
       onClose();
     }
-  }, [content, savedContent, onClose]);
+  }, [content, savedContent, onClose, readOnly]);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -425,6 +427,7 @@ export const LatexPaperEditor = ({
 
   // Ctrl+S to open save confirm dialog
   useEffect(() => {
+    if (readOnly) return;
     const handleCtrlS = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -433,7 +436,7 @@ export const LatexPaperEditor = ({
     };
     document.addEventListener('keydown', handleCtrlS);
     return () => document.removeEventListener('keydown', handleCtrlS);
-  }, []);
+  }, [readOnly]);
 
   // Ctrl+Enter to render preview
   useEffect(() => {
@@ -491,36 +494,44 @@ export const LatexPaperEditor = ({
 
         {/* Right: Save + Close */}
         <div className="flex items-center gap-2">
-          <AlertDialog open={showSaveConfirm} onOpenChange={setShowSaveConfirm}>
-            <AlertDialogTrigger asChild>
-              <Button
-                size="sm"
-                disabled={updateSectionMutation.isPending}
-                className={`flex items-center gap-1.5 ${BTN.SUCCESS}`}
-              >
-                {updateSectionMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-                {updateSectionMutation.isPending ? 'Saving…' : 'Save Changes'}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Save</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to save the changes to this section?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleSave} className={BTN.SUCCESS}>
-                  Save Changes
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {!readOnly && (
+            <AlertDialog
+              open={showSaveConfirm}
+              onOpenChange={setShowSaveConfirm}
+            >
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  disabled={updateSectionMutation.isPending}
+                  className={`flex items-center gap-1.5 ${BTN.SUCCESS}`}
+                >
+                  {updateSectionMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  {updateSectionMutation.isPending ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to save the changes to this section?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleSave}
+                    className={BTN.SUCCESS}
+                  >
+                    Save Changes
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -641,183 +652,195 @@ export const LatexPaperEditor = ({
 
         {/* ── Editor + Preview ────────────────────────────────────────── */}
         <div className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
-          {/* Monaco Editor — left half */}
-          <div className="flex w-1/2 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            {/* Panel label */}
-            <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 dark:border-slate-800">
-              <div className="h-2 w-2 rounded-full bg-blue-500" />
-              <span className="text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
-                SOURCE — LaTeX
-              </span>
-            </div>
-            {/* Editor container with rounded bottom */}
-            <div className="flex-1 overflow-hidden">
-              <Editor
-                height="100%"
-                defaultLanguage="latex-custom"
-                value={content}
-                onChange={handleEditorChange}
-                theme="latex-light"
-                beforeMount={registerLatexLanguage}
-                onMount={(editor, monaco) => {
-                  editorRef.current = editor;
+          {/* Monaco Editor — left half (hidden in readOnly mode) */}
+          {!readOnly && (
+            <div className="flex w-1/2 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+              {/* Panel label */}
+              <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 dark:border-slate-800">
+                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
+                  SOURCE — LaTeX
+                </span>
+              </div>
+              {/* Editor container with rounded bottom */}
+              <div className="flex-1 overflow-hidden">
+                <Editor
+                  height="100%"
+                  defaultLanguage="latex-custom"
+                  value={content}
+                  onChange={handleEditorChange}
+                  theme="latex-light"
+                  beforeMount={registerLatexLanguage}
+                  onMount={(editor, monaco) => {
+                    editorRef.current = editor;
 
-                  const wrapSelection = (prefix: string, suffix: string) => {
-                    const selection = editor.getSelection();
-                    if (!selection) return;
-                    const selectedText =
-                      editor.getModel()?.getValueInRange(selection) || '';
-                    editor.executeEdits('latex-shortcut', [
-                      {
-                        range: selection,
-                        text: `${prefix}${selectedText}${suffix}`,
-                      },
-                    ]);
-                  };
-
-                  // Ctrl+B → \textbf{}
-                  editor.addAction({
-                    id: 'latex-bold',
-                    label: 'LaTeX Bold',
-                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-                    run: () => wrapSelection('\\textbf{', '}'),
-                  });
-
-                  // Ctrl+I → \textit{}
-                  editor.addAction({
-                    id: 'latex-italic',
-                    label: 'LaTeX Italic',
-                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI],
-                    run: () => wrapSelection('\\textit{', '}'),
-                  });
-
-                  // Ctrl+U → \underline{}
-                  editor.addAction({
-                    id: 'latex-underline',
-                    label: 'LaTeX Underline',
-                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyU],
-                    run: () => wrapSelection('\\underline{', '}'),
-                  });
-
-                  // Ctrl+Shift+M → inline math $...$
-                  editor.addAction({
-                    id: 'latex-inline-math',
-                    label: 'LaTeX Inline Math',
-                    keybindings: [
-                      monaco.KeyMod.CtrlCmd |
-                        monaco.KeyMod.Shift |
-                        monaco.KeyCode.KeyM,
-                    ],
-                    run: () => wrapSelection('$', '$'),
-                  });
-
-                  // Ctrl+Shift+E → display math $$...$$
-                  editor.addAction({
-                    id: 'latex-display-math',
-                    label: 'LaTeX Display Math',
-                    keybindings: [
-                      monaco.KeyMod.CtrlCmd |
-                        monaco.KeyMod.Shift |
-                        monaco.KeyCode.KeyE,
-                    ],
-                    run: () => wrapSelection('$$\n', '\n$$'),
-                  });
-
-                  // Ctrl+Shift+B → \begin{} ... \end{}
-                  editor.addAction({
-                    id: 'latex-environment',
-                    label: 'LaTeX Environment',
-                    keybindings: [
-                      monaco.KeyMod.CtrlCmd |
-                        monaco.KeyMod.Shift |
-                        monaco.KeyCode.KeyB,
-                    ],
-                    run: () => {
-                      const env = prompt(
-                        'Enter environment name (e.g. equation, align, itemize):',
-                      );
-                      if (!env) return;
-                      wrapSelection(`\\begin{${env}}\n`, `\n\\end{${env}}`);
-                    },
-                  });
-
-                  // Ctrl+/ → Toggle comment (%)
-                  editor.addAction({
-                    id: 'latex-toggle-comment',
-                    label: 'LaTeX Toggle Comment',
-                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash],
-                    run: () => {
+                    const wrapSelection = (prefix: string, suffix: string) => {
                       const selection = editor.getSelection();
                       if (!selection) return;
-                      const model = editor.getModel();
-                      if (!model) return;
-                      const edits: MonacoEditor.IIdentifiedSingleEditOperation[] =
-                        [];
-                      for (
-                        let line = selection.startLineNumber;
-                        line <= selection.endLineNumber;
-                        line++
-                      ) {
-                        const lineContent = model.getLineContent(line);
-                        if (lineContent.trimStart().startsWith('%')) {
-                          const idx = lineContent.indexOf('%');
-                          const removeExtra =
-                            lineContent[idx + 1] === ' ' ? 2 : 1;
-                          edits.push({
-                            range: new monaco.Range(
-                              line,
-                              idx + 1,
-                              line,
-                              idx + 1 + removeExtra,
-                            ),
-                            text: '',
-                          });
-                        } else {
-                          edits.push({
-                            range: new monaco.Range(line, 1, line, 1),
-                            text: '% ',
-                          });
-                        }
-                      }
-                      editor.executeEdits('latex-comment', edits);
-                    },
-                  });
-                }}
-                options={{
-                  fontSize: 14,
-                  lineHeight: 22,
-                  minimap: { enabled: false },
-                  wordWrap: 'on',
-                  scrollBeyondLastLine: false,
-                  padding: { top: 16, bottom: 16 },
-                  automaticLayout: true,
-                  tabSize: 2,
-                  renderLineHighlight: 'line',
-                  fontFamily:
-                    "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                  fontLigatures: true,
-                  cursorBlinking: 'smooth',
-                  cursorSmoothCaretAnimation: 'on',
-                  smoothScrolling: true,
-                  bracketPairColorization: { enabled: true },
-                  lineNumbers: 'on',
-                  glyphMargin: false,
-                  folding: true,
-                  lineDecorationsWidth: 8,
-                  overviewRulerBorder: false,
-                  hideCursorInOverviewRuler: true,
-                  scrollbar: {
-                    verticalScrollbarSize: 6,
-                    horizontalScrollbarSize: 6,
-                    useShadows: false,
-                  },
-                }}
-              />
-            </div>
-          </div>
+                      const selectedText =
+                        editor.getModel()?.getValueInRange(selection) || '';
+                      editor.executeEdits('latex-shortcut', [
+                        {
+                          range: selection,
+                          text: `${prefix}${selectedText}${suffix}`,
+                        },
+                      ]);
+                    };
 
-          {/* PDF Preview — right half */}
-          <div className="flex w-1/2 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                    // Ctrl+B → \textbf{}
+                    editor.addAction({
+                      id: 'latex-bold',
+                      label: 'LaTeX Bold',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
+                      ],
+                      run: () => wrapSelection('\\textbf{', '}'),
+                    });
+
+                    // Ctrl+I → \textit{}
+                    editor.addAction({
+                      id: 'latex-italic',
+                      label: 'LaTeX Italic',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI,
+                      ],
+                      run: () => wrapSelection('\\textit{', '}'),
+                    });
+
+                    // Ctrl+U → \underline{}
+                    editor.addAction({
+                      id: 'latex-underline',
+                      label: 'LaTeX Underline',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyU,
+                      ],
+                      run: () => wrapSelection('\\underline{', '}'),
+                    });
+
+                    // Ctrl+Shift+M → inline math $...$
+                    editor.addAction({
+                      id: 'latex-inline-math',
+                      label: 'LaTeX Inline Math',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd |
+                          monaco.KeyMod.Shift |
+                          monaco.KeyCode.KeyM,
+                      ],
+                      run: () => wrapSelection('$', '$'),
+                    });
+
+                    // Ctrl+Shift+E → display math $$...$$
+                    editor.addAction({
+                      id: 'latex-display-math',
+                      label: 'LaTeX Display Math',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd |
+                          monaco.KeyMod.Shift |
+                          monaco.KeyCode.KeyE,
+                      ],
+                      run: () => wrapSelection('$$\n', '\n$$'),
+                    });
+
+                    // Ctrl+Shift+B → \begin{} ... \end{}
+                    editor.addAction({
+                      id: 'latex-environment',
+                      label: 'LaTeX Environment',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd |
+                          monaco.KeyMod.Shift |
+                          monaco.KeyCode.KeyB,
+                      ],
+                      run: () => {
+                        const env = prompt(
+                          'Enter environment name (e.g. equation, align, itemize):',
+                        );
+                        if (!env) return;
+                        wrapSelection(`\\begin{${env}}\n`, `\n\\end{${env}}`);
+                      },
+                    });
+
+                    // Ctrl+/ → Toggle comment (%)
+                    editor.addAction({
+                      id: 'latex-toggle-comment',
+                      label: 'LaTeX Toggle Comment',
+                      keybindings: [
+                        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash,
+                      ],
+                      run: () => {
+                        const selection = editor.getSelection();
+                        if (!selection) return;
+                        const model = editor.getModel();
+                        if (!model) return;
+                        const edits: MonacoEditor.IIdentifiedSingleEditOperation[] =
+                          [];
+                        for (
+                          let line = selection.startLineNumber;
+                          line <= selection.endLineNumber;
+                          line++
+                        ) {
+                          const lineContent = model.getLineContent(line);
+                          if (lineContent.trimStart().startsWith('%')) {
+                            const idx = lineContent.indexOf('%');
+                            const removeExtra =
+                              lineContent[idx + 1] === ' ' ? 2 : 1;
+                            edits.push({
+                              range: new monaco.Range(
+                                line,
+                                idx + 1,
+                                line,
+                                idx + 1 + removeExtra,
+                              ),
+                              text: '',
+                            });
+                          } else {
+                            edits.push({
+                              range: new monaco.Range(line, 1, line, 1),
+                              text: '% ',
+                            });
+                          }
+                        }
+                        editor.executeEdits('latex-comment', edits);
+                      },
+                    });
+                  }}
+                  options={{
+                    fontSize: 14,
+                    lineHeight: 22,
+                    minimap: { enabled: false },
+                    wordWrap: 'on',
+                    scrollBeyondLastLine: false,
+                    padding: { top: 16, bottom: 16 },
+                    automaticLayout: true,
+                    tabSize: 2,
+                    renderLineHighlight: 'line',
+                    fontFamily:
+                      "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                    fontLigatures: true,
+                    cursorBlinking: 'smooth',
+                    cursorSmoothCaretAnimation: 'on',
+                    smoothScrolling: true,
+                    bracketPairColorization: { enabled: true },
+                    lineNumbers: 'on',
+                    glyphMargin: false,
+                    folding: true,
+                    lineDecorationsWidth: 8,
+                    overviewRulerBorder: false,
+                    hideCursorInOverviewRuler: true,
+                    scrollbar: {
+                      verticalScrollbarSize: 6,
+                      horizontalScrollbarSize: 6,
+                      useShadows: false,
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* PDF Preview — right half (full width in readOnly mode) */}
+          <div
+            className={`flex ${readOnly ? 'w-full' : 'w-1/2'} flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900`}
+          >
             {/* Panel label + Render button */}
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -826,19 +849,21 @@ export const LatexPaperEditor = ({
                   PREVIEW
                 </span>
               </div>
-              <Button
-                size="sm"
-                onClick={handleRender}
-                disabled={isCompiling}
-                className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 disabled:opacity-50"
-              >
-                {isCompiling ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Play className="h-3 w-3" />
-                )}
-                {isCompiling ? 'Compiling…' : 'Render'}
-              </Button>
+              {!readOnly && (
+                <Button
+                  size="sm"
+                  onClick={handleRender}
+                  disabled={isCompiling}
+                  className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-medium text-white shadow-sm hover:bg-emerald-600 disabled:opacity-50"
+                >
+                  {isCompiling ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Play className="h-3 w-3" />
+                  )}
+                  {isCompiling ? 'Compiling…' : 'Recompile'}
+                </Button>
+              )}
             </div>
             {/* Preview content */}
             <PreviewPanel
@@ -851,101 +876,105 @@ export const LatexPaperEditor = ({
       </div>
 
       {/* Floating Keyboard Shortcuts Button */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="fixed right-6 bottom-6 z-50 h-10 w-10 rounded-full border-slate-300 bg-white shadow-lg hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
-            title="Keyboard Shortcuts"
-          >
-            <Keyboard className="h-5 w-5 text-slate-600 dark:text-slate-300" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent side="top" align="end" className="w-72 p-0">
-          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Keyboard Shortcuts
-            </h4>
-          </div>
-          <div className="space-y-1 px-4 py-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">Save</span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + S
-              </kbd>
+      {!readOnly && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="fixed right-6 bottom-6 z-50 h-10 w-10 rounded-full border-slate-300 bg-white shadow-lg hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
+              title="Keyboard Shortcuts"
+            >
+              <Keyboard className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="end" className="w-72 p-0">
+            <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Keyboard Shortcuts
+              </h4>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Render Preview
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + Enter
-              </kbd>
+            <div className="space-y-1 px-4 py-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">Save</span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + S
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Render Preview
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + Enter
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">Bold</span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + B
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Italic
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + I
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Underline
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + U
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Inline Math
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + Shift + M
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Display Math
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + Shift + E
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Environment
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + Shift + B
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Toggle Comment
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Ctrl + /
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Close Editor
+                </span>
+                <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  Esc
+                </kbd>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">Bold</span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + B
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">Italic</span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + I
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Underline
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + U
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Inline Math
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + Shift + M
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Display Math
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + Shift + E
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Environment
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + Shift + B
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Toggle Comment
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Ctrl + /
-              </kbd>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">
-                Close Editor
-              </span>
-              <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                Esc
-              </kbd>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 };

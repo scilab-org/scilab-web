@@ -1,13 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
 
+import { api } from '@/lib/api-client';
 import { MutationConfig } from '@/lib/react-query';
 
-const LATEX_COMPILE_URL = 'https://api.hyperdatalab.site/latex-service/compile';
+import { PAPER_MANAGEMENT_API } from '../constants';
 
 const LATEX_DOCUMENT_WRAPPER = (content: string) =>
   `\\documentclass{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[T1]{fontenc}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
 \\usepackage{graphicx}
@@ -32,23 +31,17 @@ export const compileLatex = async ({
     ? content
     : LATEX_DOCUMENT_WRAPPER(content);
 
-  const response = await fetch(LATEX_COMPILE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: latexContent }),
-  });
+  const response = await api.post(
+    PAPER_MANAGEMENT_API.COMPILE_LATEX,
+    { content: latexContent },
+    {
+      responseType: 'arraybuffer',
+      headers: { Accept: 'application/pdf' },
+    },
+  );
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Compilation failed (${response.status})`);
-  }
-
-  const blob = await response.blob();
-  // Ensure the blob has the correct PDF MIME type
-  if (blob.type && blob.type === 'application/pdf') {
-    return blob;
-  }
-  return new Blob([blob], { type: 'application/pdf' });
+  const data = response as unknown as ArrayBuffer;
+  return new Blob([data], { type: 'application/pdf' });
 };
 
 type UseCompileLatexOptions = {
