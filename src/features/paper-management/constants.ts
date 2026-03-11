@@ -1,5 +1,6 @@
 const LAB_SERVICE_PREFIX = '/lab-service';
 const AI_SERVICE_PREFIX = '/ai-service';
+const LATEX_SERVICE_PREFIX = '/latex-service';
 
 export const PAPER_MANAGEMENT_API = {
   PAPERS: `${LAB_SERVICE_PREFIX}/papers`,
@@ -25,6 +26,7 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}`,
   PAPER_SECTIONS_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/sections`,
+  COMPILE_LATEX: `${LATEX_SERVICE_PREFIX}/compile`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {

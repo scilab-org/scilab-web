@@ -12,6 +12,7 @@ import {
   Users,
   Trash2,
   Pencil,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -691,6 +692,8 @@ export const PaperSectionsDialog = ({
   );
   const [viewTarget, setViewTarget] = useState<AssignedSection | null>(null);
   const [editingEditorMode, setEditingEditorMode] = useState<boolean>(false);
+  const [viewingReadOnlyMode, setViewingReadOnlyMode] =
+    useState<boolean>(false);
   const [initialEditSectionId, setInitialEditSectionId] = useState<
     string | null
   >(null);
@@ -735,12 +738,13 @@ export const PaperSectionsDialog = ({
     setAssignTarget(null);
     setViewTarget(null);
     setEditingEditorMode(false);
+    setViewingReadOnlyMode(false);
     onOpenChange(false);
   };
 
   return (
     <>
-      {!editingEditorMode && (
+      {!editingEditorMode && !viewingReadOnlyMode && (
         <Dialog.Root open={open} onOpenChange={(o) => !o && handleClose()}>
           <Dialog.Portal>
             <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
@@ -951,6 +955,28 @@ export const PaperSectionsDialog = ({
                                                 Edit
                                               </Button>
                                             )}
+                                            {(node.sectionRole ===
+                                              'section:read' ||
+                                              node.sectionRole ===
+                                                'project:manager') && (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                  setInitialEditSectionId(
+                                                    node.id,
+                                                  );
+                                                  setViewingReadOnlyMode(true);
+                                                }}
+                                                className={cn(
+                                                  'flex h-7 items-center gap-1 px-2 text-xs',
+                                                  BTN.VIEW_OUTLINE,
+                                                )}
+                                              >
+                                                <Eye className="h-3 w-3" />
+                                                View
+                                              </Button>
+                                            )}
                                           </div>
                                         )}
                                       </TableCell>
@@ -1043,6 +1069,26 @@ export const PaperSectionsDialog = ({
           initialSectionId={initialEditSectionId || undefined}
           onClose={() => {
             setEditingEditorMode(false);
+          }}
+        />
+      )}
+
+      {viewingReadOnlyMode && (
+        <LatexPaperEditor
+          paperTitle={_paperTitle}
+          sections={flattenTree(tree).map(({ node }) => ({
+            id: node.id,
+            title: stripLatex(node.title),
+            content: node.content || '',
+            memberId: node.memberId,
+            numbered: node.numbered,
+            sectionSumary: node.sectionSumary || '',
+            parentSectionId: node.parentSectionId,
+          }))}
+          initialSectionId={initialEditSectionId || undefined}
+          readOnly
+          onClose={() => {
+            setViewingReadOnlyMode(false);
           }}
         />
       )}
