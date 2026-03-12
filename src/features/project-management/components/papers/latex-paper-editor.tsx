@@ -298,6 +298,7 @@ export const LatexPaperEditor = ({
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
   const cursorPositionRef = useRef<CursorPosition | null>(null);
+  const previousActiveSectionIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const sectionFilesQuery = useGetSectionFiles({ sectionId: activeSectionId });
@@ -366,10 +367,19 @@ export const LatexPaperEditor = ({
     if (sections && activeSectionId) {
       const activeSection = sections.find((s) => s.id === activeSectionId);
       if (activeSection) {
+        const isSectionSwitched =
+          previousActiveSectionIdRef.current !== activeSectionId;
+
         setContent(activeSection.content || '');
         setSavedContent(activeSection.content || '');
-        setPdfUrl(null);
-        setCompileError(null);
+
+        // Keep preview while saving current section; clear preview only when switching section.
+        if (isSectionSwitched) {
+          setPdfUrl(null);
+          setCompileError(null);
+        }
+
+        previousActiveSectionIdRef.current = activeSectionId;
       }
     }
   }, [sections, activeSectionId]);
@@ -435,7 +445,7 @@ export const LatexPaperEditor = ({
     if (!cursorPosition) return;
 
     const label = toLatexLabel(fileUrl) || 'image';
-    const latexImageBlock = `\n\\begin{figure}[H]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{${fileUrl}}\n  \\caption{Image}\n  \\label{fig:${label}}\n\\end{figure}\n`;
+    const latexImageBlock = `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{${fileUrl}}\n  \\caption{Image}\n  \\label{fig:${label}}\n\\end{figure}\n`;
 
     const insertRange = {
       startLineNumber: cursorPosition.lineNumber,
