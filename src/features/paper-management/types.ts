@@ -110,7 +110,10 @@ export type PaperSection = {
   numbered: boolean;
   displayOrder: number;
   sectionSumary?: string;
-  parentSectionId?: string;
+  parentSectionId?: string | null;
+  filePath?: string | null;
+  paperId?: string;
+  sectionRole?: string;
 };
 
 export type UpdateSectionDto = {

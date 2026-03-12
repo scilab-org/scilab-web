@@ -181,9 +181,6 @@ export const PaperSectionsReadOnlyDialog = ({
                                   className="flex items-center gap-2"
                                   style={{ paddingLeft: `${depth * 20}px` }}
                                 >
-                                  {depth > 0 && (
-                                    <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                                  )}
                                   {depth === 0 && (
                                     <Layers className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                                   )}
