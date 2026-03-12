@@ -49,12 +49,12 @@ import { useAvailableSectionMembers } from '../api/get-available-section-members
 import { useGetSectionMembers } from '../api/get-section-members';
 import { useDeletePaperContributor } from '../api/delete-paper-contributor';
 import { useUpdatePaperContributor } from '../api/update-paper-contributor';
-import { useGetPaperContributors } from '../api/get-paper-contributors';
+import { useMarkSection } from '../api/get-mark-section';
 import {
   AssignedSection,
   AvailableSectionMember,
   SectionMember,
-  PaperContributorItem,
+  MarkSectionItem,
 } from '../types';
 
 // ─── LaTeX utility ────────────────────────────────────────────────────────────
@@ -374,6 +374,115 @@ const flattenTree = (
     ];
   });
 };
+// ─── Section Expanded View ───────────────────────────────────────────────────
+
+const SectionExpandedView = ({
+  markSectionId,
+  excludeSectionId,
+  isAuthor,
+  onEditSection,
+  onViewSection,
+}: {
+  markSectionId: string;
+  excludeSectionId: string;
+  isAuthor?: boolean;
+  onEditSection?: (item: MarkSectionItem) => void;
+  onViewSection?: (item: MarkSectionItem) => void;
+}) => {
+  const query = useMarkSection({ markSectionId });
+
+  if (query.isLoading) {
+    return (
+      <div className="space-y-1 px-3 py-2">
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+      </div>
+    );
+  }
+
+  const items = query.data?.result?.items ?? [];
+  const sorted = [...items]
+    .filter((item) => item.sectionId !== excludeSectionId)
+    .sort((a, b) =>
+      a.isMainSection === b.isMainSection ? 0 : a.isMainSection ? -1 : 1,
+    );
+
+  if (sorted.length === 0) {
+    return (
+      <div className="text-muted-foreground px-3 py-2 text-center text-xs">
+        No other versions
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-blue-100 dark:divide-blue-900/30">
+      {sorted.map((item, _idx) => {
+        const initials = item.name
+          ? item.name
+              .split(' ')
+              .map((w) => w[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase()
+          : '?';
+        return (
+          <div
+            key={item.sectionId}
+            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-blue-100/40 dark:hover:bg-blue-900/20"
+          >
+            {/* Avatar */}
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-800 dark:bg-blue-800 dark:text-blue-200">
+              {initials}
+            </div>
+
+            {/* Info */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-foreground truncate text-xs font-medium">
+                  {item.name}
+                </span>
+                {item.isMainSection && (
+                  <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    main
+                  </span>
+                )}
+              </div>
+              <p className="text-muted-foreground truncate text-[10px]">
+                {stripLatex(item.title)}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex shrink-0 items-center gap-1">
+              {isAuthor && onEditSection && (
+                <button
+                  type="button"
+                  onClick={() => onEditSection(item)}
+                  className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                  Edit
+                </button>
+              )}
+              {onViewSection && (
+                <button
+                  type="button"
+                  onClick={() => onViewSection(item)}
+                  className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
+                >
+                  <Eye className="h-2.5 w-2.5" />
+                  View
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ─── View Members Panel ───────────────────────────────────────────────────────
 
 type ViewMembersPanelProps = {
@@ -697,6 +806,9 @@ export const PaperSectionsDialog = ({
   const [initialEditSectionId, setInitialEditSectionId] = useState<
     string | null
   >(null);
+  const [editTargetItem, setEditTargetItem] = useState<MarkSectionItem | null>(
+    null,
+  );
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(),
   );
@@ -719,26 +831,12 @@ export const PaperSectionsDialog = ({
   const totalCount =
     sectionsQuery.data?.result?.paging?.totalCount ?? rawSections.length;
 
-  const contributorsQuery = useGetPaperContributors({
-    paperId,
-    queryConfig: { enabled: open && !!paperId && isAuthor },
-  });
-  const allContributors: PaperContributorItem[] =
-    contributorsQuery.data?.result?.items ?? [];
-  // Group by markSectionId — the section the contributor is assigned to work on
-  const contributorsBySection = new Map<string, PaperContributorItem[]>();
-  allContributors.forEach((c) => {
-    const key = c.markSectionId || c.sectionId;
-    const list = contributorsBySection.get(key) ?? [];
-    list.push(c);
-    contributorsBySection.set(key, list);
-  });
-
   const handleClose = () => {
     setAssignTarget(null);
     setViewTarget(null);
     setEditingEditorMode(false);
     setViewingReadOnlyMode(false);
+    setEditTargetItem(null);
     onOpenChange(false);
   };
 
@@ -770,7 +868,6 @@ export const PaperSectionsDialog = ({
                   onBack={() => setAssignTarget(null)}
                   onAssigned={() => {
                     setAssignTarget(null);
-                    contributorsQuery.refetch();
                   }}
                 />
               ) : viewTarget ? (
@@ -830,7 +927,7 @@ export const PaperSectionsDialog = ({
                       </div>
                     ) : (
                       <>
-                        <div className="overflow-x-auto rounded-xl border shadow-sm">
+                        <div className="overflow-x-auto border shadow-sm">
                           <Table>
                             <TableHeader>
                               <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
@@ -850,11 +947,10 @@ export const PaperSectionsDialog = ({
                                 ({ node, depth, label }, idx) => {
                                   const isParent = depth === 0;
                                   const isLeaf = node.children.length === 0;
-                                  const sectionContributors = isAuthor
-                                    ? (contributorsBySection.get(node.id) ?? [])
-                                    : [];
-                                  const hasContributors =
-                                    sectionContributors.length > 0;
+                                  const canExpand =
+                                    node.sectionRole === 'section:edit' ||
+                                    (node.sectionRole === 'paper:author' &&
+                                      !!node.markSectionId);
                                   const isExpanded = expandedSections.has(
                                     node.id,
                                   );
@@ -894,7 +990,7 @@ export const PaperSectionsDialog = ({
                                           >
                                             {stripLatex(node.title)}
                                           </span>
-                                          {hasContributors && (
+                                          {canExpand && (
                                             <button
                                               type="button"
                                               onClick={() =>
@@ -907,9 +1003,6 @@ export const PaperSectionsDialog = ({
                                               ) : (
                                                 <ChevronRight className="h-3.5 w-3.5" />
                                               )}
-                                              <span className="text-[10px]">
-                                                {sectionContributors.length}
-                                              </span>
                                             </button>
                                           )}
                                         </div>
@@ -982,58 +1075,34 @@ export const PaperSectionsDialog = ({
                                       </TableCell>
                                     </TableRow>
                                   );
-                                  if (!hasContributors || !isExpanded)
+                                  if (!canExpand || !isExpanded)
                                     return [mainRow];
                                   const subRow = (
                                     <TableRow
                                       key={`${node.id}-contributors`}
                                       className="hover:bg-transparent"
                                     >
-                                      <TableCell
-                                        colSpan={3}
-                                        className="px-4 pt-0 pb-2"
-                                      >
-                                        <div className="ml-6 overflow-hidden rounded-lg border border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
-                                          <table className="w-full">
-                                            <tbody>
-                                              {sectionContributors.map((c) => {
-                                                const displayRole =
-                                                  c.sectionRole.includes(':')
-                                                    ? c.sectionRole
-                                                        .split(':')
-                                                        .pop()
-                                                    : c.sectionRole;
-                                                return (
-                                                  <tr
-                                                    key={c.id}
-                                                    className="border-b border-blue-100 last:border-0 dark:border-blue-900/20"
-                                                  >
-                                                    <td className="px-3 py-1.5">
-                                                      <div className="flex items-center gap-2">
-                                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-700 uppercase dark:bg-blue-800 dark:text-blue-300">
-                                                          {c.firstName?.[0] ??
-                                                            c
-                                                              .contributorName?.[0] ??
-                                                            '?'}
-                                                        </div>
-                                                        <span className="text-foreground text-xs font-medium">
-                                                          {c.contributorName}
-                                                        </span>
-                                                        <span className="text-muted-foreground text-xs">
-                                                          {c.contributorEmail}
-                                                        </span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-3 py-1.5 text-right">
-                                                      <span className="rounded-full border border-blue-200 bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                                        {displayRole}
-                                                      </span>
-                                                    </td>
-                                                  </tr>
-                                                );
-                                              })}
-                                            </tbody>
-                                          </table>
+                                      <TableCell colSpan={3} className="p-0">
+                                        <div className="border-t border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
+                                          <SectionExpandedView
+                                            markSectionId={
+                                              node.markSectionId || node.id
+                                            }
+                                            excludeSectionId={node.id}
+                                            isAuthor={isAuthor}
+                                            onEditSection={
+                                              isAuthor
+                                                ? (item) => {
+                                                    setEditTargetItem(item);
+                                                    setEditingEditorMode(true);
+                                                  }
+                                                : undefined
+                                            }
+                                            onViewSection={(item) => {
+                                              setEditTargetItem(item);
+                                              setViewingReadOnlyMode(true);
+                                            }}
+                                          />
                                         </div>
                                       </TableCell>
                                     </TableRow>
@@ -1057,18 +1126,37 @@ export const PaperSectionsDialog = ({
       {editingEditorMode && (
         <LatexPaperEditor
           paperTitle={_paperTitle}
-          sections={flattenTree(tree).map(({ node }) => ({
-            id: node.id,
-            title: stripLatex(node.title),
-            content: node.content || '',
-            memberId: node.memberId,
-            numbered: node.numbered,
-            sectionSumary: node.sectionSumary || '',
-            parentSectionId: node.parentSectionId,
-          }))}
-          initialSectionId={initialEditSectionId || undefined}
+          sections={
+            editTargetItem
+              ? [
+                  {
+                    id: editTargetItem.sectionId,
+                    title: stripLatex(editTargetItem.title),
+                    content: editTargetItem.content || '',
+                    memberId: editTargetItem.memberId,
+                    numbered: true,
+                    sectionSumary: '',
+                    parentSectionId: editTargetItem.parentSectionId,
+                  },
+                ]
+              : flattenTree(tree).map(({ node }) => ({
+                  id: node.id,
+                  title: stripLatex(node.title),
+                  content: node.content || '',
+                  memberId: node.memberId,
+                  numbered: node.numbered,
+                  sectionSumary: node.sectionSumary || '',
+                  parentSectionId: node.parentSectionId,
+                }))
+          }
+          initialSectionId={
+            editTargetItem
+              ? editTargetItem.sectionId
+              : initialEditSectionId || undefined
+          }
           onClose={() => {
             setEditingEditorMode(false);
+            setEditTargetItem(null);
           }}
         />
       )}
@@ -1076,19 +1164,38 @@ export const PaperSectionsDialog = ({
       {viewingReadOnlyMode && (
         <LatexPaperEditor
           paperTitle={_paperTitle}
-          sections={flattenTree(tree).map(({ node }) => ({
-            id: node.id,
-            title: stripLatex(node.title),
-            content: node.content || '',
-            memberId: node.memberId,
-            numbered: node.numbered,
-            sectionSumary: node.sectionSumary || '',
-            parentSectionId: node.parentSectionId,
-          }))}
-          initialSectionId={initialEditSectionId || undefined}
+          sections={
+            editTargetItem
+              ? [
+                  {
+                    id: editTargetItem.sectionId,
+                    title: stripLatex(editTargetItem.title),
+                    content: editTargetItem.content || '',
+                    memberId: editTargetItem.memberId,
+                    numbered: true,
+                    sectionSumary: '',
+                    parentSectionId: editTargetItem.parentSectionId,
+                  },
+                ]
+              : flattenTree(tree).map(({ node }) => ({
+                  id: node.id,
+                  title: stripLatex(node.title),
+                  content: node.content || '',
+                  memberId: node.memberId,
+                  numbered: node.numbered,
+                  sectionSumary: node.sectionSumary || '',
+                  parentSectionId: node.parentSectionId,
+                }))
+          }
+          initialSectionId={
+            editTargetItem
+              ? editTargetItem.sectionId
+              : initialEditSectionId || undefined
+          }
           readOnly
           onClose={() => {
             setViewingReadOnlyMode(false);
+            setEditTargetItem(null);
           }}
         />
       )}
