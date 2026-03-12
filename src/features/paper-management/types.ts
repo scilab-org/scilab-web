@@ -241,3 +241,22 @@ export type GetPaperContributorsApiResponse = {
     items: PaperContributorItem[];
   };
 };
+
+export type MarkSectionItem = {
+  memberId: string;
+  sectionRole: string;
+  sectionId: string;
+  markSectionId: string;
+  title: string;
+  isMainSection: boolean;
+  parentSectionId: string | null;
+  previousVersionSectionId: string | null;
+  nextVersionSectionId: string | null;
+  name: string;
+  email: string;
+  content: string;
+};
+
+export type GetMarkSectionApiResponse = {
+  result: { items: MarkSectionItem[] };
+};
