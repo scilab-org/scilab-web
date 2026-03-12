@@ -12,6 +12,8 @@ import {
   Image as ImageIcon,
   Loader2,
   Keyboard,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,6 +38,8 @@ import { BTN } from '@/lib/button-styles';
 
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
+import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
+import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
 
 /**
  * Register a custom LaTeX language + theme so that
@@ -140,55 +144,6 @@ const registerLatexLanguage = (monaco: Monaco) => {
   });
 };
 
-const DEFAULT_LATEX = `\\documentclass{article}
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-
-\\title{Sample Paper}
-\\author{Author Name}
-
-\\begin{document}
-
-\\maketitle
-
-\\section{Introduction}
-
-This is a sample LaTeX document. You can write mathematical expressions inline like $E = mc^2$ or in display mode:
-
-$$\\int_{-\\infty}^{\\infty} e^{-x^2} \\, dx = \\sqrt{\\pi}$$
-
-\\section{Equations}
-
-The quadratic formula is given by:
-
-\\begin{equation}
-x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}
-\\end{equation}
-
-Maxwell's equations in differential form:
-
-\\begin{align}
-\\nabla \\cdot \\mathbf{E} &= \\frac{\\rho}{\\varepsilon_0} \\\\
-\\nabla \\cdot \\mathbf{B} &= 0 \\\\
-\\nabla \\times \\mathbf{E} &= -\\frac{\\partial \\mathbf{B}}{\\partial t} \\\\
-\\nabla \\times \\mathbf{B} &= \\mu_0 \\mathbf{J} + \\mu_0 \\varepsilon_0 \\frac{\\partial \\mathbf{E}}{\\partial t}
-\\end{align}
-
-\\section{Matrices}
-
-A matrix example:
-
-$$
-A = \\begin{pmatrix}
-a_{11} & a_{12} & a_{13} \\\\
-a_{21} & a_{22} & a_{23} \\\\
-a_{31} & a_{32} & a_{33}
-\\end{pmatrix}
-$$
-
-\\end{document}
-`;
-
 /**
  * PDF preview panel that displays the compiled LaTeX output.
  */
@@ -279,6 +234,44 @@ type LatexPaperEditorProps = {
   readOnly?: boolean;
 };
 
+type CursorPosition = {
+  lineNumber: number;
+  column: number;
+};
+
+const getFileNameFromUrl = (fileUrl: string): string => {
+  try {
+    const { pathname } = new URL(fileUrl);
+    const value = pathname.split('/').filter(Boolean).pop();
+    return value ? decodeURIComponent(value) : fileUrl;
+  } catch {
+    const value = fileUrl.split('/').filter(Boolean).pop();
+    return value ? decodeURIComponent(value) : fileUrl;
+  }
+};
+
+const isImageFileUrl = (fileUrl: string): boolean => {
+  const imageExtRegex = /\.(png|jpe?g|gif|webp|svg|bmp|ico|tiff?)$/i;
+
+  try {
+    const { pathname } = new URL(fileUrl);
+    return imageExtRegex.test(pathname);
+  } catch {
+    const normalized = fileUrl.split('?')[0] ?? fileUrl;
+    return imageExtRegex.test(normalized);
+  }
+};
+
+const toLatexLabel = (fileUrl: string): string => {
+  const fileName = getFileNameFromUrl(fileUrl);
+  return fileName
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+};
+
 export const LatexPaperEditor = ({
   paperTitle,
   initialContent,
@@ -288,20 +281,42 @@ export const LatexPaperEditor = ({
   onSave,
   readOnly = false,
 }: LatexPaperEditorProps) => {
-  const [content, setContent] = useState(initialContent || DEFAULT_LATEX);
+  const [content, setContent] = useState(initialContent ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'sections' | 'files'>(
+    sections?.length ? 'sections' : 'files',
+  );
   const [activeSectionId, setActiveSectionId] = useState<string | null>(
     initialSectionId || (sections?.[0]?.id ?? null),
   );
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const [savedContent, setSavedContent] = useState(
-    initialContent || DEFAULT_LATEX,
-  );
+  const [savedContent, setSavedContent] = useState(initialContent ?? '');
+  const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const cursorPositionRef = useRef<CursorPosition | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const sectionFilesQuery = useGetSectionFiles({ sectionId: activeSectionId });
+  const sectionFiles = sectionFilesQuery.data ?? [];
+
+  const uploadSectionFileMutation = useUploadSectionFile({
+    mutationConfig: {
+      onSuccess: (fileId) => {
+        toast.success(
+          fileId
+            ? `File uploaded successfully (id: ${fileId})`
+            : 'File uploaded successfully',
+        );
+      },
+      onError: () => {
+        toast.error('Failed to upload file. Please try again.');
+      },
+    },
+  });
 
   const updateSectionMutation = useUpdateSection({
     mutationConfig: {
@@ -359,6 +374,12 @@ export const LatexPaperEditor = ({
     }
   }, [sections, activeSectionId]);
 
+  useEffect(() => {
+    if (!sections?.length && sidebarTab !== 'files') {
+      setSidebarTab('files');
+    }
+  }, [sections, sidebarTab]);
+
   // Auto-render on first mount with the initial section content
   const hasRenderedOnce = useRef(false);
   useEffect(() => {
@@ -381,6 +402,70 @@ export const LatexPaperEditor = ({
   const handleEditorChange = useCallback((value: string | undefined) => {
     setContent(value ?? '');
   }, []);
+
+  const handleOpenFilePicker = useCallback(() => {
+    if (!activeSectionId) {
+      toast.error('Please select a section before uploading files.');
+      return;
+    }
+    if (readOnly) return;
+    fileInputRef.current?.click();
+  }, [activeSectionId, readOnly]);
+
+  const handleFileSelected = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      event.target.value = '';
+
+      if (!selectedFile || !activeSectionId) return;
+
+      uploadSectionFileMutation.mutate({
+        sectionId: activeSectionId,
+        file: selectedFile,
+      });
+    },
+    [activeSectionId, uploadSectionFileMutation],
+  );
+
+  const handleInsertFileUrl = useCallback((fileUrl: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const cursorPosition = cursorPositionRef.current ?? editor.getPosition();
+    if (!cursorPosition) return;
+
+    const label = toLatexLabel(fileUrl) || 'image';
+    const latexImageBlock = `\n\\begin{figure}[H]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{${fileUrl}}\n  \\caption{Image}\n  \\label{fig:${label}}\n\\end{figure}\n`;
+
+    const insertRange = {
+      startLineNumber: cursorPosition.lineNumber,
+      startColumn: cursorPosition.column,
+      endLineNumber: cursorPosition.lineNumber,
+      endColumn: cursorPosition.column,
+    };
+
+    editor.executeEdits('insert-file-url', [
+      { range: insertRange, text: latexImageBlock },
+    ]);
+    cursorPositionRef.current = editor.getPosition();
+    editor.focus();
+  }, []);
+
+  const handleCopyFileUrl = useCallback(async (fileUrl: string) => {
+    try {
+      await navigator.clipboard.writeText(fileUrl);
+      setCopiedFileUrl(fileUrl);
+      toast.success('File URL copied to clipboard');
+    } catch {
+      toast.error('Failed to copy URL');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!copiedFileUrl) return;
+    const timeoutId = window.setTimeout(() => setCopiedFileUrl(null), 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, [copiedFileUrl]);
 
   const handleSave = useCallback(() => {
     if (!activeSectionId || !sections) {
@@ -577,73 +662,179 @@ export const LatexPaperEditor = ({
           }`}
         >
           <div className="absolute inset-0 flex w-72 flex-col gap-4 p-4">
-            {sections ? (
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800/70">
+              <button
+                type="button"
+                onClick={() => setSidebarTab('sections')}
+                disabled={!sections?.length}
+                className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  sidebarTab === 'sections'
+                    ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                    : 'text-slate-600 hover:bg-white/70 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
+                }`}
+              >
+                Sections
+              </button>
+              <button
+                type="button"
+                onClick={() => setSidebarTab('files')}
+                className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  sidebarTab === 'files'
+                    ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                    : 'text-slate-600 hover:bg-white/70 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
+                }`}
+              >
+                Files
+              </button>
+            </div>
+
+            {sidebarTab === 'sections' ? (
               <>
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Paper Sections
                 </h3>
                 <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-1 py-1">
-                  {sections.map((sec) => (
-                    <button
-                      key={sec.id}
-                      onClick={() => setActiveSectionId(sec.id)}
-                      className={`truncate rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                        activeSectionId === sec.id
-                          ? 'bg-blue-100 font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
-                          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                      }`}
-                      title={sec.title}
-                    >
-                      {sec.title || '(Untitled)'}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    Paper Files
-                  </h3>
-                  <Button
-                    variant="outline"
-                    className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload Image/File
-                  </Button>
-                  {/* Empty state for now */}
-                  <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                      <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+                  {sections?.length ? (
+                    sections.map((sec) => (
+                      <button
+                        key={sec.id}
+                        onClick={() => setActiveSectionId(sec.id)}
+                        className={`truncate rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                          activeSectionId === sec.id
+                            ? 'bg-blue-100 font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
+                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                        }`}
+                        title={sec.title}
+                      >
+                        {sec.title || '(Untitled)'}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                      No section outline available.
                     </div>
-                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      No files uploaded yet. <br />
-                      Upload images here to reference them in your document.
-                    </p>
-                  </div>
+                  )}
                 </div>
               </>
             ) : (
               <>
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  Project Files
+                  Uploaded Files
                 </h3>
+                {activeSectionId && sections?.length ? (
+                  <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Section:{' '}
+                    {sections.find((s) => s.id === activeSectionId)?.title ||
+                      '(Untitled)'}
+                  </p>
+                ) : (
+                  <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Select a section to upload files.
+                  </p>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelected}
+                  className="hidden"
+                />
                 <Button
                   variant="outline"
+                  onClick={handleOpenFilePicker}
+                  disabled={
+                    readOnly ||
+                    !activeSectionId ||
+                    uploadSectionFileMutation.isPending
+                  }
                   className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
-                  <Upload className="h-4 w-4" />
-                  Upload Image/File
+                  {uploadSectionFileMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {uploadSectionFileMutation.isPending
+                    ? 'Uploading...'
+                    : 'Upload Image/File'}
                 </Button>
 
-                {/* Empty state for now */}
-                <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                    <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
-                  </div>
-                  <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                    No files uploaded yet. <br />
-                    Upload images here to reference them in your document.
-                  </p>
+                <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+                  {sectionFilesQuery.isLoading ? (
+                    <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading files...
+                    </div>
+                  ) : sectionFiles.length > 0 ? (
+                    sectionFiles.map((fileUrl) => (
+                      <div
+                        key={fileUrl}
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-900/60"
+                      >
+                        {isImageFileUrl(fileUrl) && (
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={fileUrl}
+                              alt={getFileNameFromUrl(fileUrl)}
+                              className="h-36 w-full rounded-md border border-slate-200 object-cover dark:border-slate-700"
+                            />
+                          </a>
+                        )}
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`${isImageFileUrl(fileUrl) ? 'mt-2' : ''} flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400`}
+                          title={fileUrl}
+                        >
+                          <ImageIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">
+                            {getFileNameFromUrl(fileUrl)}
+                          </span>
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          {!readOnly && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleInsertFileUrl(fileUrl)}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Insert URL
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCopyFileUrl(fileUrl)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            <Copy className="mr-1 h-3 w-3" />
+                            {copiedFileUrl === fileUrl ? 'Copied' : 'Copy URL'}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                        <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        No files uploaded yet. <br />
+                        Upload images/files here to reference them in your
+                        document.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -673,6 +864,11 @@ export const LatexPaperEditor = ({
                   beforeMount={registerLatexLanguage}
                   onMount={(editor, monaco) => {
                     editorRef.current = editor;
+                    cursorPositionRef.current = editor.getPosition();
+
+                    editor.onDidChangeCursorPosition((event) => {
+                      cursorPositionRef.current = event.position;
+                    });
 
                     const wrapSelection = (prefix: string, suffix: string) => {
                       const selection = editor.getSelection();
