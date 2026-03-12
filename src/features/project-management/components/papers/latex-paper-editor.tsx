@@ -222,6 +222,7 @@ type SectionProp = {
   numbered: boolean;
   sectionSumary: string;
   parentSectionId: string | null;
+  sectionRole?: string;
 };
 
 type LatexPaperEditorProps = {
@@ -281,6 +282,8 @@ export const LatexPaperEditor = ({
   onSave,
   readOnly = false,
 }: LatexPaperEditorProps) => {
+  const editableSectionRoles = new Set(['paper:author', 'section:edit']);
+
   const [content, setContent] = useState(initialContent ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
@@ -301,8 +304,21 @@ export const LatexPaperEditor = ({
   const previousActiveSectionIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const sectionFilesQuery = useGetSectionFiles({ sectionId: activeSectionId });
-  const sectionFiles = sectionFilesQuery.data ?? [];
+  const activeSection =
+    sections?.find((section) => section.id === activeSectionId) ?? null;
+  const hasEditPermissionForActiveSection =
+    !activeSection?.sectionRole ||
+    editableSectionRoles.has(activeSection.sectionRole);
+  const isActiveSectionReadOnly =
+    readOnly || !hasEditPermissionForActiveSection;
+
+  const sectionFilesQuery = useGetSectionFiles({
+    sectionId: activeSectionId,
+    enabled: !!activeSectionId && !isActiveSectionReadOnly,
+  });
+  const sectionFiles = isActiveSectionReadOnly
+    ? []
+    : (sectionFilesQuery.data ?? []);
 
   const uploadSectionFileMutation = useUploadSectionFile({
     mutationConfig: {
@@ -352,8 +368,11 @@ export const LatexPaperEditor = ({
 
   // Compile LaTeX to PDF via API
   const handleRender = useCallback(() => {
+    if (isActiveSectionReadOnly) {
+      return;
+    }
     compileAndRender(content);
-  }, [content, compileAndRender]);
+  }, [content, compileAndRender, isActiveSectionReadOnly]);
 
   // Clean up PDF blob URL on unmount
   useEffect(() => {
@@ -373,16 +392,20 @@ export const LatexPaperEditor = ({
         setContent(activeSection.content || '');
         setSavedContent(activeSection.content || '');
 
-        // Keep preview while saving current section; clear preview only when switching section.
+        // Keep preview while saving current section; re-render preview when switching section.
         if (isSectionSwitched) {
-          setPdfUrl(null);
-          setCompileError(null);
+          if (activeSection.content) {
+            compileAndRender(activeSection.content);
+          } else {
+            setPdfUrl(null);
+            setCompileError(null);
+          }
         }
 
         previousActiveSectionIdRef.current = activeSectionId;
       }
     }
-  }, [sections, activeSectionId]);
+  }, [sections, activeSectionId, compileAndRender]);
 
   useEffect(() => {
     if (!sections?.length && sidebarTab !== 'files') {
@@ -395,19 +418,17 @@ export const LatexPaperEditor = ({
   useEffect(() => {
     if (!hasRenderedOnce.current) {
       hasRenderedOnce.current = true;
-      let initialLatex = content;
-      if (sections && activeSectionId) {
-        const activeSection = sections.find((s) => s.id === activeSectionId);
-        if (activeSection?.content) {
-          initialLatex = activeSection.content;
-        }
-      }
+
+      // When section outline is present, preview rendering is handled by section-switch effect.
+      if (sections?.length) return;
+
+      const initialLatex = content;
+
       if (initialLatex) {
         compileAndRender(initialLatex);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [content, sections, compileAndRender]);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     setContent(value ?? '');
@@ -418,9 +439,9 @@ export const LatexPaperEditor = ({
       toast.error('Please select a section before uploading files.');
       return;
     }
-    if (readOnly) return;
+    if (isActiveSectionReadOnly) return;
     fileInputRef.current?.click();
-  }, [activeSectionId, readOnly]);
+  }, [activeSectionId, isActiveSectionReadOnly]);
 
   const handleFileSelected = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -478,6 +499,10 @@ export const LatexPaperEditor = ({
   }, [copiedFileUrl]);
 
   const handleSave = useCallback(() => {
+    if (isActiveSectionReadOnly) {
+      toast.error('You do not have permission to edit this section.');
+      return;
+    }
     if (!activeSectionId || !sections) {
       toast.error('No section selected to save.');
       return;
@@ -501,15 +526,22 @@ export const LatexPaperEditor = ({
     });
     setSavedContent(content);
     onSave?.(content, activeSectionId);
-  }, [activeSectionId, sections, content, updateSectionMutation, onSave]);
+  }, [
+    activeSectionId,
+    sections,
+    content,
+    updateSectionMutation,
+    onSave,
+    isActiveSectionReadOnly,
+  ]);
 
   const handleClose = useCallback(() => {
-    if (!readOnly && content !== savedContent) {
+    if (!isActiveSectionReadOnly && content !== savedContent) {
       setShowCloseConfirm(true);
     } else {
       onClose();
     }
-  }, [content, savedContent, onClose, readOnly]);
+  }, [content, savedContent, onClose, isActiveSectionReadOnly]);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -522,7 +554,7 @@ export const LatexPaperEditor = ({
 
   // Ctrl+S to open save confirm dialog
   useEffect(() => {
-    if (readOnly) return;
+    if (isActiveSectionReadOnly) return;
     const handleCtrlS = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -531,10 +563,11 @@ export const LatexPaperEditor = ({
     };
     document.addEventListener('keydown', handleCtrlS);
     return () => document.removeEventListener('keydown', handleCtrlS);
-  }, [readOnly]);
+  }, [isActiveSectionReadOnly]);
 
   // Ctrl+Enter to render preview
   useEffect(() => {
+    if (isActiveSectionReadOnly) return;
     const handleRenderShortcut = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'Enter') {
         e.preventDefault();
@@ -545,7 +578,7 @@ export const LatexPaperEditor = ({
     document.addEventListener('keydown', handleRenderShortcut, true);
     return () =>
       document.removeEventListener('keydown', handleRenderShortcut, true);
-  }, [handleRender]);
+  }, [handleRender, isActiveSectionReadOnly]);
 
   // Prevent body scroll while editor is open
   useEffect(() => {
@@ -589,7 +622,7 @@ export const LatexPaperEditor = ({
 
         {/* Right: Save + Close */}
         <div className="flex items-center gap-2">
-          {!readOnly && (
+          {!isActiveSectionReadOnly && (
             <AlertDialog
               open={showSaveConfirm}
               onOpenChange={setShowSaveConfirm}
@@ -749,28 +782,38 @@ export const LatexPaperEditor = ({
                   onChange={handleFileSelected}
                   className="hidden"
                 />
-                <Button
-                  variant="outline"
-                  onClick={handleOpenFilePicker}
-                  disabled={
-                    readOnly ||
-                    !activeSectionId ||
-                    uploadSectionFileMutation.isPending
-                  }
-                  className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  {uploadSectionFileMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
-                  {uploadSectionFileMutation.isPending
-                    ? 'Uploading...'
-                    : 'Upload Image/File'}
-                </Button>
+                {!isActiveSectionReadOnly && (
+                  <Button
+                    variant="outline"
+                    onClick={handleOpenFilePicker}
+                    disabled={
+                      !activeSectionId || uploadSectionFileMutation.isPending
+                    }
+                    className="flex w-full items-center justify-center gap-2 border-dashed border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    {uploadSectionFileMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {uploadSectionFileMutation.isPending
+                      ? 'Uploading...'
+                      : 'Upload Image/File'}
+                  </Button>
+                )}
 
                 <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-                  {sectionFilesQuery.isLoading ? (
+                  {isActiveSectionReadOnly ? (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                        <ImageIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        You only have read permission for this section. <br />
+                        Files are hidden and upload is disabled.
+                      </p>
+                    </div>
+                  ) : sectionFilesQuery.isLoading ? (
                     <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Loading files...
@@ -809,7 +852,7 @@ export const LatexPaperEditor = ({
                           <ExternalLink className="h-3 w-3 shrink-0" />
                         </a>
                         <div className="mt-2 flex items-center gap-1.5">
-                          {!readOnly && (
+                          {!isActiveSectionReadOnly && (
                             <Button
                               type="button"
                               size="sm"
@@ -854,7 +897,7 @@ export const LatexPaperEditor = ({
         {/* ── Editor + Preview ────────────────────────────────────────── */}
         <div className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
           {/* Monaco Editor — left half (hidden in readOnly mode) */}
-          {!readOnly && (
+          {!isActiveSectionReadOnly && (
             <div className="flex w-1/2 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
               {/* Panel label */}
               <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 dark:border-slate-800">
@@ -1045,7 +1088,7 @@ export const LatexPaperEditor = ({
 
           {/* PDF Preview — right half (full width in readOnly mode) */}
           <div
-            className={`flex ${readOnly ? 'w-full' : 'w-1/2'} flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900`}
+            className={`flex ${isActiveSectionReadOnly ? 'w-full' : 'w-1/2'} flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900`}
           >
             {/* Panel label + Render button */}
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 dark:border-slate-800">
@@ -1055,7 +1098,7 @@ export const LatexPaperEditor = ({
                   PREVIEW
                 </span>
               </div>
-              {!readOnly && (
+              {!isActiveSectionReadOnly && (
                 <Button
                   size="sm"
                   onClick={handleRender}
@@ -1082,7 +1125,7 @@ export const LatexPaperEditor = ({
       </div>
 
       {/* Floating Keyboard Shortcuts Button */}
-      {!readOnly && (
+      {!isActiveSectionReadOnly && (
         <Popover>
           <PopoverTrigger asChild>
             <Button

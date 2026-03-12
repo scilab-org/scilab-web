@@ -1137,6 +1137,7 @@ export const PaperSectionsDialog = ({
                     numbered: true,
                     sectionSumary: '',
                     parentSectionId: editTargetItem.parentSectionId,
+                    sectionRole: editTargetItem.sectionRole,
                   },
                 ]
               : flattenTree(tree).map(({ node }) => ({
@@ -1147,6 +1148,7 @@ export const PaperSectionsDialog = ({
                   numbered: node.numbered,
                   sectionSumary: node.sectionSumary || '',
                   parentSectionId: node.parentSectionId,
+                  sectionRole: node.sectionRole,
                 }))
           }
           initialSectionId={
@@ -1175,6 +1177,7 @@ export const PaperSectionsDialog = ({
                     numbered: true,
                     sectionSumary: '',
                     parentSectionId: editTargetItem.parentSectionId,
+                    sectionRole: editTargetItem.sectionRole,
                   },
                 ]
               : flattenTree(tree).map(({ node }) => ({
@@ -1185,6 +1188,7 @@ export const PaperSectionsDialog = ({
                   numbered: node.numbered,
                   sectionSumary: node.sectionSumary || '',
                   parentSectionId: node.parentSectionId,
+                  sectionRole: node.sectionRole,
                 }))
           }
           initialSectionId={
@@ -1192,7 +1196,6 @@ export const PaperSectionsDialog = ({
               ? editTargetItem.sectionId
               : initialEditSectionId || undefined
           }
-          readOnly
           onClose={() => {
             setViewingReadOnlyMode(false);
             setEditTargetItem(null);

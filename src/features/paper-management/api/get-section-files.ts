@@ -42,15 +42,17 @@ export const getSectionFiles = async (sectionId: string): Promise<string[]> => {
 
 export const useGetSectionFiles = ({
   sectionId,
+  enabled,
   queryConfig,
 }: {
   sectionId: string | null;
+  enabled?: boolean;
   queryConfig?: QueryConfig<typeof getSectionFiles>;
 }) => {
   return useQuery({
     queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.SECTION_FILES, sectionId],
     queryFn: () => getSectionFiles(sectionId!),
-    enabled: !!sectionId,
+    enabled: enabled ?? !!sectionId,
     ...queryConfig,
   });
 };
