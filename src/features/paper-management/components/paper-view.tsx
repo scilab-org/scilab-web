@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
+import { getUserGroups } from '@/lib/auth';
 import { usePaperDetail } from '../api/get-paper';
 import { UpdatePaper } from './update-paper';
 import { DeletePaper } from './delete-paper';
@@ -94,6 +95,7 @@ const getStatusVariant = (
 
 export const PaperView = ({ paperId }: { paperId: string }) => {
   const paperQuery = usePaperDetail({ paperId });
+  const isAdmin = getUserGroups().includes('system:admin');
 
   if (paperQuery.isLoading) {
     return (
@@ -137,10 +139,12 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
             </Button>
           )}
         </div>
-        <div className="flex gap-2">
-          <UpdatePaper paperId={paperId} paper={paper} />
-          <DeletePaper paperId={paperId} />
-        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <UpdatePaper paperId={paperId} paper={paper} />
+            <DeletePaper paperId={paperId} />
+          </div>
+        )}
       </div>
 
       {/* Paper Info & Publication Details */}

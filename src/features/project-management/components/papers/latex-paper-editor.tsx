@@ -286,6 +286,7 @@ export const LatexPaperEditor = ({
 
   const [content, setContent] = useState(initialContent ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const pdfUrlRef = useRef<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -346,25 +347,24 @@ export const LatexPaperEditor = ({
     },
   });
 
-  const compileAndRender = useCallback(
-    async (latexContent: string) => {
-      setIsCompiling(true);
-      setCompileError(null);
-      try {
-        const blob = await compileLatex({ content: latexContent });
-        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-        setPdfUrl(URL.createObjectURL(blob));
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to compile LaTeX';
-        setCompileError(message);
-        toast.error('LaTeX compilation failed');
-      } finally {
-        setIsCompiling(false);
-      }
-    },
-    [pdfUrl],
-  );
+  const compileAndRender = useCallback(async (latexContent: string) => {
+    setIsCompiling(true);
+    setCompileError(null);
+    try {
+      const blob = await compileLatex({ content: latexContent });
+      if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+      const newUrl = URL.createObjectURL(blob);
+      pdfUrlRef.current = newUrl;
+      setPdfUrl(newUrl);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to compile LaTeX';
+      setCompileError(message);
+      toast.error('LaTeX compilation failed');
+    } finally {
+      setIsCompiling(false);
+    }
+  }, []);
 
   // Compile LaTeX to PDF via API
   const handleRender = useCallback(() => {
@@ -377,9 +377,9 @@ export const LatexPaperEditor = ({
   // Clean up PDF blob URL on unmount
   useEffect(() => {
     return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
     };
-  }, [pdfUrl]);
+  }, []);
 
   // When sections or activeSectionId changes, load content into editor
   useEffect(() => {
