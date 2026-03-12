@@ -965,7 +965,11 @@ export const PaperSectionsDialog = ({
                                       )}
                                     >
                                       <TableCell className="text-muted-foreground text-center text-xs">
-                                        {node.numbered ? label : '—'}
+                                        {node.numbered
+                                          ? label
+                                          : node.children.length === 0
+                                            ? '—'
+                                            : ''}
                                       </TableCell>
                                       <TableCell>
                                         <div
@@ -974,9 +978,6 @@ export const PaperSectionsDialog = ({
                                             paddingLeft: `${depth * 20}px`,
                                           }}
                                         >
-                                          {depth > 0 && (
-                                            <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                                          )}
                                           {depth === 0 && (
                                             <Layers className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                                           )}
