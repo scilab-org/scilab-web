@@ -139,6 +139,10 @@ const Breadcrumb = () => {
 
 const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
   const { data: user } = useUser();
+  const isAdmin = user?.groups?.includes('system:admin') ?? false;
+  const roleLabel = isAdmin
+    ? 'Administrator'
+    : (user?.groups?.[0]?.split(':').pop() ?? 'Member');
 
   return (
     <div className="flex flex-col gap-3 overflow-hidden">
@@ -154,7 +158,7 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
             {user?.firstName} {user?.lastName}
           </span>
           <span className="text-sidebar-foreground/70 truncate text-xs">
-            Administrator
+            {roleLabel}
           </span>
         </div>
       </div>
@@ -208,9 +212,21 @@ const navigation: SideNavigationItem[] = [
   { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
 ];
 
+const adminNavigation = navigation.filter(
+  (item) => item.name !== 'Assigned Projects',
+);
+
+const memberNavigation = navigation.filter((item) =>
+  ['Assigned Projects', 'Settings'].includes(item.name),
+);
+
 function AppSidebar() {
   const logout = useLogout();
   const location = useLocation();
+  const { data: user } = useUser();
+
+  const isAdmin = user?.groups?.includes('system:admin') ?? false;
+  const navItems = isAdmin ? adminNavigation : memberNavigation;
 
   const handleLogout = () => {
     logout.mutate();
@@ -226,7 +242,7 @@ function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map((item) => {
+              {navItems.map((item) => {
                 const isActive = location.pathname.startsWith(item.to);
 
                 return (

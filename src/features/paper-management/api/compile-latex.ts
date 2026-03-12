@@ -7,18 +7,68 @@ import { PAPER_MANAGEMENT_API } from '../constants';
 
 const LATEX_DOCUMENT_WRAPPER = (content: string) =>
   `\\documentclass{article}
+
+% Encoding
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+
+% Math
 \\usepackage{amsmath}
 \\usepackage{amssymb}
+\\usepackage{amsfonts}
+\\usepackage{amsthm}
+\\usepackage{mathtools}
+
+% Figures
 \\usepackage{graphicx}
 \\usepackage{float}
-\\usepackage{capt-of}
-\\usepackage{hyperref}
+\\usepackage{caption}
+\\usepackage{subcaption}
+\\usepackage{wrapfig}
+
+% Tables
 \\usepackage{booktabs}
 \\usepackage{array}
+\\usepackage{multirow}
 \\usepackage{longtable}
+\\usepackage{tabularx}
+\\usepackage{colortbl}
+
+% Algorithms
+\\usepackage{algorithm}
+\\usepackage{algpseudocode}
+
+% Layout
 \\usepackage{geometry}
+\\usepackage{setspace}
+
+% References
+\\usepackage{hyperref}
+\\usepackage{url}
+\\usepackage{cite}
+
+% Lists
+\\usepackage{enumitem}
+
+% Colors
+\\usepackage{xcolor}
+
+% Code
+\\usepackage{listings}
+
+% Symbols
+\\usepackage{textcomp}
+
+% Utilities
+\\usepackage{comment}
+\\usepackage{verbatim}
+
+\\geometry{margin=1in}
+
 \\begin{document}
+
 ${content}
+
 \\end{document}`;
 
 export const compileLatex = async ({

@@ -5,8 +5,27 @@ import { RouterProvider } from 'react-router/dom';
 
 import { Navigate } from 'react-router';
 
-import { ProtectedRoute } from '@/lib/auth';
+import { ProtectedRoute, useUser } from '@/lib/auth';
+import { getUserGroups } from '@/lib/auth';
 import { paths } from '@/config/paths';
+
+const SmartRedirect = () => {
+  const { data: user, isLoading } = useUser();
+  if (isLoading) return null;
+  const isAdmin =
+    user?.groups?.includes('system:admin') ??
+    getUserGroups().includes('system:admin');
+  return (
+    <Navigate
+      to={
+        isAdmin
+          ? paths.app.projects.getHref()
+          : paths.app.assignedProjects.list.getHref()
+      }
+      replace
+    />
+  );
+};
 
 import {
   default as AppRoot,
@@ -27,9 +46,7 @@ export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: paths.home.path,
-      element: (
-        <Navigate to={paths.app.assignedProjects.list.getHref()} replace />
-      ),
+      element: <SmartRedirect />,
     },
     {
       path: paths.app.root.path,
@@ -42,9 +59,7 @@ export const createAppRouter = (queryClient: QueryClient) =>
       children: [
         {
           path: paths.app.dashboard.path,
-          element: (
-            <Navigate to={paths.app.assignedProjects.list.getHref()} replace />
-          ),
+          element: <SmartRedirect />,
         },
         {
           path: paths.app.sample.path,
