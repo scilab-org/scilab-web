@@ -21,6 +21,7 @@ import { autoTagPaper } from '../api/auto-tag-paper';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
+import { ParsedText } from '../types';
 
 const initialFormData = {
   title: '',
@@ -41,7 +42,7 @@ export const CreatePaper = () => {
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
   const [parseProgress, setParseProgress] = React.useState(0);
-  const [parsedText, setParsedText] = React.useState('');
+  const [parsedText, setParsedText] = React.useState<ParsedText | null>(null);
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [tagList, setTagList] = React.useState<string[]>([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
@@ -70,7 +71,7 @@ export const CreatePaper = () => {
   const resetForm = () => {
     setFormData(initialFormData);
     setFile(undefined);
-    setParsedText('');
+    setParsedText(null);
     setParseProgress(0);
     setSuggestedTags([]);
     setTagList([]);
@@ -110,7 +111,7 @@ export const CreatePaper = () => {
       );
       console.log('Parse response:', response);
       setParseProgress(100);
-      setParsedText(response.parsedText || '');
+      setParsedText(response.parsedText || null);
     } catch (error) {
       console.error('Parse error:', error);
 
@@ -123,10 +124,9 @@ export const CreatePaper = () => {
       } else {
         // Reset file and parsing state on error
         setFile(undefined);
-        setParsedText('');
+        setParsedText(null);
         setParseProgress(0);
 
-        // Provide specific error message for timeout
         if (
           (error as any)?.code === 'ECONNABORTED' ||
           (error as any)?.response?.status === 504
@@ -186,7 +186,7 @@ export const CreatePaper = () => {
 
   const handleRemoveFile = () => {
     setFile(undefined);
-    setParsedText('');
+    setParsedText(null);
     setParseProgress(0);
     setSuggestedTags([]);
     setTagList([]);
@@ -281,7 +281,7 @@ export const CreatePaper = () => {
       journalName: formData.journalName,
       conferenceName: formData.conferenceName,
       file,
-      parsedText,
+      parsedText: parsedText || { chunks: [] },
       tagNames: tagList,
       isAutoTagged,
       isIngested: false,

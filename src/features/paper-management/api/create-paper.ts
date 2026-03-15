@@ -23,7 +23,7 @@ export const createPaper = (
   formData.append('journalName', data.journalName);
   formData.append('conferenceName', data.conferenceName);
   formData.append('file', data.file);
-  formData.append('parsedText', data.parsedText);
+  formData.append('parsedText', JSON.stringify(data.parsedText));
   formData.append('isAutoTagged', String(data.isAutoTagged));
   formData.append('isIngested', String(data.isIngested));
   formData.append('status', String(data.status));

@@ -107,7 +107,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
   const handleAutoTag = async () => {
     if (!paper) return;
-    const currentParsedText = paper.parsedText || '';
+    const currentParsedText = paper.parsedText;
     if (!currentParsedText) {
       toast.warning('No parsed text available for auto-tagging');
       return;

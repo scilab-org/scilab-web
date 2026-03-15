@@ -31,8 +31,8 @@ import { PROJECT_MANAGEMENT_QUERY_KEYS } from '@/features/project-management/con
 import { usePaperTemplates } from '@/features/paper-template-management/api/get-paper-templates';
 import { usePaperTemplate } from '@/features/paper-template-management/api/get-paper-template';
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
-import { useInitializePaper } from '../api/initialize-paper';
-import { InitializePaperDto, PaperSection } from '../types';
+import { useCreatePaperInProject } from '../api/initialize-paper';
+import { CreatePaperInProjectDto, PaperSection } from '../types';
 
 const generateGuid = () => {
   return crypto.randomUUID();
@@ -159,8 +159,8 @@ export const CreatePaperInProject = ({
     );
   }, [templateDetailQuery.data]);
 
-  // Mutation using initialize endpoint
-  const initializeMutation = useInitializePaper({
+  // Mutation using create paper endpoint
+  const createMutation = useCreatePaperInProject({
     mutationConfig: {
       onSuccess: () => {
         queryClient.invalidateQueries({
@@ -171,10 +171,10 @@ export const CreatePaperInProject = ({
         });
         onOpenChange(false);
         resetForm();
-        toast.success('Paper initialized successfully');
+        toast.success('Paper created successfully');
       },
       onError: () => {
-        toast.error('Failed to initialize paper');
+        toast.error('Failed to create paper');
       },
     },
   });
@@ -281,13 +281,14 @@ export const CreatePaperInProject = ({
     e.preventDefault();
     if (!formData.title.trim()) return;
 
-    const payload: InitializePaperDto = {
+    const payload: CreatePaperInProjectDto = {
       projectId: _projectId,
       title: formData.title,
       abstract: formData.abstract,
       doi: formData.doi,
       status: formData.status,
       paperType: formData.paperType,
+      ...(selectedTemplate?.code && { template: selectedTemplate.code }),
       sections: sections.map((sec) => ({
         id: sec.id,
         title: sec.title || '',
@@ -299,7 +300,7 @@ export const CreatePaperInProject = ({
       })),
     };
 
-    initializeMutation.mutate(payload);
+    createMutation.mutate(payload);
   };
 
   return (
@@ -312,7 +313,7 @@ export const CreatePaperInProject = ({
     >
       <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
         <SheetHeader>
-          <SheetTitle>Initialize New Paper</SheetTitle>
+          <SheetTitle>Create New Paper</SheetTitle>
           <SheetDescription>
             Select a template, fill in the details, and customize sections.
             Title is required.
@@ -732,10 +733,10 @@ export const CreatePaperInProject = ({
           <Button
             type="submit"
             form="create-paper-in-project-form"
-            disabled={initializeMutation.isPending || !formData.title.trim()}
+            disabled={createMutation.isPending || !formData.title.trim()}
             className={BTN.CREATE}
           >
-            {initializeMutation.isPending ? 'Initializing...' : 'Initialize'}
+            {createMutation.isPending ? 'Creating...' : 'Create'}
           </Button>
         </SheetFooter>
       </SheetContent>

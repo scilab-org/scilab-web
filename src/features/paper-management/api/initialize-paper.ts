@@ -7,27 +7,27 @@ import {
   PAPER_MANAGEMENT_API,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '../constants';
-import { InitializePaperDto, StringApiCreatedResponse } from '../types';
+import { CreatePaperInProjectDto, StringApiCreatedResponse } from '../types';
 
-export const initializePaper = (
-  data: InitializePaperDto,
+export const createPaperInProject = (
+  data: CreatePaperInProjectDto,
 ): Promise<StringApiCreatedResponse> => {
   return api.post(PAPER_MANAGEMENT_API.ADMIN_PAPERS_INITIALIZE, data);
 };
 
-type UseInitializePaperOptions = {
-  mutationConfig?: MutationConfig<typeof initializePaper>;
+type UseCreatePaperInProjectOptions = {
+  mutationConfig?: MutationConfig<typeof createPaperInProject>;
 };
 
-export const useInitializePaper = ({
+export const useCreatePaperInProject = ({
   mutationConfig,
-}: UseInitializePaperOptions = {}) => {
+}: UseCreatePaperInProjectOptions = {}) => {
   const queryClient = useQueryClient();
 
   const { onSuccess, ...restConfig } = mutationConfig || {};
 
   return useMutation({
-    mutationFn: initializePaper,
+    mutationFn: createPaperInProject,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPERS],
