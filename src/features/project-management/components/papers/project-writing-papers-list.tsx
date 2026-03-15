@@ -33,15 +33,19 @@ import { paths } from '@/config/paths';
 import { PaperMembersSheet } from './paper-members-sheet';
 import { PaperSectionsDialog } from '@/features/paper-management/components/paper-sections-dialog';
 import { PaperSectionsReadOnlyDialog } from '@/features/paper-management/components/paper-sections-readonly-dialog';
+import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 
-const getStatusColor = (status: string | null) => {
-  switch (status?.toLowerCase()) {
-    case 'released':
-      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    case 'submited':
-    case 'submitted':
+const getStatusColor = (status: number | null) => {
+  switch (status) {
+    case 1: // Draft
+      return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+    case 2: // Processing
+      return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+    case 3: // Submitted
       return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
-    case 'sampled':
+    case 4: // Released
+      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+    case 5: // Sampled
       return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
     default:
       return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
@@ -166,7 +170,7 @@ export const ProjectWritingPapersList = ({
                     Journal / Conference
                   </TableHead>
                   <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                    Published
+                    Template
                   </TableHead>
                   <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
                     Actions
@@ -181,7 +185,9 @@ export const ProjectWritingPapersList = ({
                   >
                     <TableCell className="font-medium">
                       <Link
-                        to={paths.app.paperManagement.paper.getHref(paper.id)}
+                        to={paths.app.paperManagement.writingPaper.getHref(
+                          paper.id,
+                        )}
                         className="text-blue-600 hover:underline dark:text-blue-400"
                       >
                         {paper.title || '(Untitled)'}
@@ -191,11 +197,11 @@ export const ProjectWritingPapersList = ({
                       {paper.paperType || '—'}
                     </TableCell>
                     <TableCell>
-                      {paper.status ? (
+                      {paper.status != null ? (
                         <span
                           className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
                         >
-                          {paper.status}
+                          {PAPER_STATUS_MAP[paper.status] ?? 'Unknown'}
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-sm">—</span>
@@ -205,9 +211,7 @@ export const ProjectWritingPapersList = ({
                       {paper.journalName || paper.conferenceName || '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {paper.publicationDate
-                        ? new Date(paper.publicationDate).toLocaleDateString()
-                        : '—'}
+                      {paper.template || '—'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

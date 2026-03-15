@@ -6,11 +6,8 @@ import {
   Globe,
   Building2,
   Presentation,
-  Clock,
-  RefreshCw,
-  Database,
   Tags,
-  Sparkles,
+  LayoutTemplate,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +21,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-import { getUserGroups } from '@/lib/auth';
-import { usePaperDetail } from '../api/get-paper';
-import { UpdatePaper } from './update-paper';
-import { DeletePaper } from './delete-paper';
+import { useWritingPaperDetail } from '../api/get-writing-paper';
 import { PAPER_STATUS_MAP } from '../constants';
 
 const TAG_COLORS = [
@@ -93,9 +87,8 @@ const getStatusVariant = (
   }
 };
 
-export const PaperView = ({ paperId }: { paperId: string }) => {
-  const paperQuery = usePaperDetail({ paperId });
-  const isAdmin = getUserGroups().includes('system:admin');
+export const WritingPaperView = ({ paperId }: { paperId: string }) => {
+  const paperQuery = useWritingPaperDetail({ paperId });
 
   if (paperQuery.isLoading) {
     return (
@@ -106,7 +99,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
     );
   }
 
-  const paper = paperQuery.data?.result?.paperBank;
+  const paper = paperQuery.data?.result?.paper;
 
   if (!paper) return null;
 
@@ -121,6 +114,15 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           >
             {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
           </Badge>
+          {paper.template && (
+            <Badge
+              variant="outline"
+              className="gap-1.5 border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+            >
+              <LayoutTemplate className="size-3" />
+              {paper.template}
+            </Badge>
+          )}
           {paper.filePath && (
             <Button
               variant="outline"
@@ -139,12 +141,6 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
             </Button>
           )}
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <UpdatePaper paperId={paperId} paper={paper} />
-            <DeletePaper paperId={paperId} />
-          </div>
-        )}
       </div>
 
       {/* Paper Info & Publication Details */}
@@ -208,48 +204,6 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4 pt-1">
-              <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-teal-100 p-2 dark:bg-teal-900/40">
-                  <Database className="size-4 text-teal-600 dark:text-teal-400" />
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                    Ingest
-                  </p>
-                  <Badge
-                    variant={paper.isIngested ? 'default' : 'outline'}
-                    className={
-                      paper.isIngested
-                        ? 'bg-teal-500 text-white'
-                        : 'border-slate-300 text-slate-500'
-                    }
-                  >
-                    {paper.isIngested ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/40">
-                  <Sparkles className="size-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                    Auto Tag
-                  </p>
-                  <Badge
-                    variant={paper.isAutoTagged ? 'default' : 'outline'}
-                    className={
-                      paper.isAutoTagged
-                        ? 'bg-amber-500 text-white'
-                        : 'border-slate-300 text-slate-500'
-                    }
-                  >
-                    {paper.isAutoTagged ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -284,36 +238,6 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                   Conference Name
                 </p>
                 <p className="font-medium">{paper.conferenceName || 'N/A'}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/40">
-                <Clock className="size-4 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                  Created
-                </p>
-                <p className="font-medium">
-                  {paper.createdOnUtc
-                    ? new Date(paper.createdOnUtc).toLocaleString()
-                    : 'N/A'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg bg-sky-100 p-2 dark:bg-sky-900/40">
-                <RefreshCw className="size-4 text-sky-600 dark:text-sky-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                  Last Modified
-                </p>
-                <p className="font-medium">
-                  {paper.lastModifiedOnUtc
-                    ? new Date(paper.lastModifiedOnUtc).toLocaleString()
-                    : 'N/A'}
-                </p>
               </div>
             </div>
           </CardContent>

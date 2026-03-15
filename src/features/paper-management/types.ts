@@ -49,7 +49,29 @@ export type GetPapersResultApiResponse = {
 
 export type GetPaperByIdResultApiResponse = {
   result: {
-    paper: PaperDto;
+    paperBank: PaperDto;
+  };
+};
+
+export type WritingPaperDto = {
+  id: string;
+  subProjectId: string | null;
+  template: string | null;
+  title: string | null;
+  abstract: string | null;
+  doi: string | null;
+  filePath: string | null;
+  status: number;
+  publicationDate: string | null;
+  paperType: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+  tagNames: string[];
+};
+
+export type GetWritingPaperByIdResultApiResponse = {
+  result: {
+    paper: WritingPaperDto;
   };
 };
 

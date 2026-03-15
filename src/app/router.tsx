@@ -141,6 +141,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.paperManagement.writingPaper.path,
+          lazy: () =>
+            import('./routes/app/paper-management/writing-paper').then(
+              convert(queryClient),
+            ),
+        },
+        {
           path: paths.app.tagManagement.tags.path,
           lazy: () =>
             import('./routes/app/tag-management/tags').then(

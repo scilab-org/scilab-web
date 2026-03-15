@@ -4,17 +4,17 @@ import { useParams } from 'react-router';
 import { ContentLayout } from '@/components/layouts';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  usePaperDetail,
-  getPaperQueryOptions,
-} from '@/features/paper-management/api/get-paper';
-import { PaperView } from '@/features/paper-management/components/paper-view';
+  useWritingPaperDetail,
+  getWritingPaperQueryOptions,
+} from '@/features/paper-management/api/get-writing-paper';
+import { WritingPaperView } from '@/features/paper-management/components/writing-paper-view';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
   async ({ params }: { params: Record<string, string | undefined> }) => {
     const paperId = params.paperId as string;
 
-    const query = getPaperQueryOptions(paperId);
+    const query = getWritingPaperQueryOptions(paperId);
 
     try {
       return (
@@ -26,10 +26,10 @@ export const clientLoader =
     }
   };
 
-const PaperRoute = () => {
+const WritingPaperRoute = () => {
   const params = useParams();
   const paperId = params.paperId as string;
-  const paperQuery = usePaperDetail({ paperId });
+  const paperQuery = useWritingPaperDetail({ paperId });
 
   if (paperQuery.isLoading) {
     return (
@@ -42,7 +42,7 @@ const PaperRoute = () => {
     );
   }
 
-  const paper = paperQuery.data?.result?.paperBank;
+  const paper = paperQuery.data?.result?.paper;
 
   if (!paper) {
     return (
@@ -56,9 +56,9 @@ const PaperRoute = () => {
 
   return (
     <ContentLayout title={paper.title || 'Paper Details'}>
-      <PaperView paperId={paperId} />
+      <WritingPaperView paperId={paperId} />
     </ContentLayout>
   );
 };
 
-export default PaperRoute;
+export default WritingPaperRoute;

@@ -153,15 +153,17 @@ export type GetAvailableUsersParams = {
 
 export type ProjectPaper = {
   id: string;
+  subProjectId: string | null;
   title: string | null;
   abstract: string | null;
   doi: string | null;
   filePath: string | null;
-  status: string | null;
+  status: number | null;
   publicationDate: string | null;
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  tagNames: string[];
 };
 
 export type GetProjectPapersResult = {
@@ -170,7 +172,10 @@ export type GetProjectPapersResult = {
 };
 
 export type GetProjectPapersParams = {
-  searchText?: string;
+  Title?: string;
+  Tag?: string[];
+  PageNumber?: number;
+  PageSize?: number;
 };
 
 export type AddProjectPapersRequest = {
@@ -186,15 +191,18 @@ export type RemoveProjectPapersRequest = {
 export type SubProjectPaper = {
   id: string;
   subProjectId: string | null;
+  template: string | null;
+  parsedText: string | null;
   title: string | null;
   abstract: string | null;
   doi: string | null;
   filePath: string | null;
-  status: string | null;
+  status: number | null;
   publicationDate: string | null;
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  tagNames: string[];
 };
 
 export type GetSubProjectsResult = {
