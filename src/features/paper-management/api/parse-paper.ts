@@ -1,59 +1,45 @@
 import { AxiosProgressEvent } from 'axios';
 
+import { api } from '@/lib/api-client';
+
+import { PAPER_MANAGEMENT_API } from '../constants';
 import { ParsePaperResponse } from '../types';
 
-// TODO: Replace with real API call when backend parse endpoint is updated
+const normalizeParseResponse = (response: unknown): ParsePaperResponse => {
+  if (!response || typeof response !== 'object') {
+    return { parsedText: '' };
+  }
+
+  const payload = response as Record<string, unknown>;
+  const result =
+    payload.result && typeof payload.result === 'object'
+      ? (payload.result as Record<string, unknown>)
+      : payload;
+
+  const parsedTextValue =
+    result.parsedText ??
+    result.parsedtext ??
+    payload.parsedText ??
+    payload.parsedtext;
+
+  return {
+    parsedText: String(parsedTextValue ?? ''),
+  };
+};
+
 export const parsePaperFile = (
-  _file: File,
+  file: File,
   onUploadProgress?: (progressEvent: AxiosProgressEvent) => void,
   signal?: AbortSignal,
 ): Promise<ParsePaperResponse> => {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new DOMException('Aborted', 'AbortError'));
-      return;
-    }
+  const formData = new FormData();
+  formData.append('file', file);
 
-    const abortHandler = () => {
-      reject(new DOMException('Aborted', 'AbortError'));
-    };
-    signal?.addEventListener('abort', abortHandler);
-
-    // Simulate upload progress
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress += 20;
-      if (progress > 100) progress = 100;
-      onUploadProgress?.({
-        loaded: progress,
-        total: 100,
-        bytes: progress,
-        progress: progress / 100,
-        estimated: 0,
-        rate: 0,
-        upload: true,
-        download: false,
-        event: {} as ProgressEvent,
-        lengthComputable: true,
-      } as AxiosProgressEvent);
-      if (progress >= 100) clearInterval(progressInterval);
-    }, 200);
-
-    // Simulate parse delay then return mock response
-    setTimeout(() => {
-      clearInterval(progressInterval);
-      signal?.removeEventListener('abort', abortHandler);
-
-      resolve({
-        parsedText:
-          'Abstract: This is the abstract section of the mock parsed paper. It contains a brief overview of the research.\n\n' +
-          '1. Introduction: This section introduces the research problem and provides background context for the study.\n\n' +
-          '2. Methodology: The methodology section describes the research methods, data collection, and analysis techniques used.\n\n' +
-          '3. Results: Results and findings from the research are presented in this section with supporting data.\n\n' +
-          '4. Discussion: This section discusses the implications of the findings and compares them with previous work.\n\n' +
-          '5. Conclusion: The conclusion summarizes the key findings and suggests directions for future research.',
-        tags: ['research', 'methodology', 'analysis'],
-      });
-    }, 1500);
-  });
+  return api
+    .post(PAPER_MANAGEMENT_API.PARSE_PAPER, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
+      signal,
+    })
+    .then((response) => normalizeParseResponse(response));
 };

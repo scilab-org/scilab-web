@@ -101,7 +101,6 @@ export type CreatePaperDto = {
 
 export type ParsePaperResponse = {
   parsedText: string;
-  tags: string[];
 };
 
 export type AutoTagRequest = {

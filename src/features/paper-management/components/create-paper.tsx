@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import {
   Sheet,
   SheetContent,
@@ -40,7 +39,6 @@ export const CreatePaper = () => {
 
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
-  const [parseProgress, setParseProgress] = React.useState(0);
   const [parsedText, setParsedText] = React.useState<string | null>(null);
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [tagList, setTagList] = React.useState<string[]>([]);
@@ -71,7 +69,6 @@ export const CreatePaper = () => {
     setFormData(initialFormData);
     setFile(undefined);
     setParsedText(null);
-    setParseProgress(0);
     setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
@@ -91,25 +88,15 @@ export const CreatePaper = () => {
     setTagList([]);
     setIsAutoTagged(false);
     setShowTags(false);
-    setParseProgress(0);
     setIsParsing(true);
 
     try {
       const response = await parsePaperFile(
         selectedFile,
-        (progressEvent) => {
-          if (!progressEvent.total) return;
-          const uploadPercent =
-            (progressEvent.loaded * 100) / progressEvent.total;
-          // only push forward, never backward
-          setParseProgress((prev) =>
-            Math.max(prev, Math.floor(uploadPercent * 0.1)),
-          );
-        },
+        undefined,
         abortControllerRef.current.signal,
       );
       console.log('Parse response:', response);
-      setParseProgress(100);
       setParsedText(response.parsedText || null);
     } catch (error) {
       console.error('Parse error:', error);
@@ -124,7 +111,6 @@ export const CreatePaper = () => {
         // Reset file and parsing state on error
         setFile(undefined);
         setParsedText(null);
-        setParseProgress(0);
 
         if (
           (error as any)?.code === 'ECONNABORTED' ||
@@ -142,27 +128,6 @@ export const CreatePaper = () => {
       abortControllerRef.current = null;
     }
   };
-
-  React.useEffect(() => {
-    if (!isParsing) return;
-
-    let current = Math.max(parseProgress || 1, 1);
-
-    const timer = setInterval(() => {
-      const remaining = 99 - current;
-      if (remaining <= 0) {
-        clearInterval(timer);
-        return;
-      }
-      // ease out: slower as we approach 99
-      current += Math.max(remaining * 0.01, Math.random());
-
-      if (current > 99) current = 99;
-      setParseProgress(Math.floor(current));
-    }, 300);
-
-    return () => clearInterval(timer);
-  }, [isParsing, parseProgress]);
 
   // Auto-tag cooldown timer
   React.useEffect(() => {
@@ -186,7 +151,6 @@ export const CreatePaper = () => {
   const handleRemoveFile = () => {
     setFile(undefined);
     setParsedText(null);
-    setParseProgress(0);
     setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
@@ -337,19 +301,20 @@ export const CreatePaper = () => {
                     <X className="size-4" />
                   </Button>
                 </div>
-                {/* Parsing progress bar */}
+                {/* Parsing loading state */}
                 {isParsing && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
+                  <div className="bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs">
                       <span className="text-muted-foreground flex items-center gap-1.5">
                         <Loader2 className="size-3 animate-spin" />
                         Parsing PDF...
                       </span>
-                      <span className="text-muted-foreground font-medium">
-                        {parseProgress}%
-                      </span>
                     </div>
-                    <Progress value={parseProgress} />
+                    <div className="flex items-center gap-1" aria-hidden="true">
+                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.3s]" />
+                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.15s]" />
+                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full" />
+                    </div>
                   </div>
                 )}
                 {!isParsing && parsedText && (
