@@ -57,6 +57,10 @@ export const paths = {
         path: 'papers/:paperId',
         getHref: (paperId: string) => `/app/papers/${paperId}`,
       },
+      writingPaper: {
+        path: 'writing-papers/:paperId',
+        getHref: (paperId: string) => `/app/writing-papers/${paperId}`,
+      },
     },
     tagManagement: {
       tags: {

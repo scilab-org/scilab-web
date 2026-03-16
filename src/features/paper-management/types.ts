@@ -40,7 +40,30 @@ export type GetPapersResultApiResponse = {
 
 export type GetPaperByIdResultApiResponse = {
   result: {
-    paper: PaperDto;
+    paperBank: PaperDto;
+  };
+};
+
+export type WritingPaperDto = {
+  id: string;
+  subProjectId: string | null;
+  template: string | null;
+  context: string | null;
+  title: string | null;
+  abstract: string | null;
+  doi: string | null;
+  filePath: string | null;
+  status: number;
+  publicationDate: string | null;
+  paperType: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+  tagNames: string[];
+};
+
+export type GetWritingPaperByIdResultApiResponse = {
+  result: {
+    paper: WritingPaperDto;
   };
 };
 
@@ -78,7 +101,6 @@ export type CreatePaperDto = {
 
 export type ParsePaperResponse = {
   parsedText: string;
-  tags: string[];
 };
 
 export type AutoTagRequest = {
@@ -126,14 +148,24 @@ export type UpdateSectionDto = {
   parentSectionId?: string | null;
 };
 
-export type InitializePaperDto = {
+export type CreateSectionDto = {
+  id: string;
+  title: string;
+  content?: string;
+  numbered: boolean;
+  displayOrder: number;
+  sectionSumary?: string;
+  parentSectionId?: string | null;
+};
+
+export type CreatePaperInProjectDto = {
   projectId: string;
   title: string;
-  abstract: string;
-  doi: string;
-  status: number;
-  paperType: string;
-  sections: PaperSection[];
+  context: string;
+  template?: string;
+  status?: number;
+  paperType?: string;
+  sections?: CreateSectionDto[];
 };
 
 export type AssignedSection = {

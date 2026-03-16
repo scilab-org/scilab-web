@@ -7,12 +7,19 @@ import {
   PROJECT_MANAGEMENT_QUERY_KEYS,
 } from '../../constants';
 
+type GetAvailablePapersParams = {
+  searchText?: string;
+  Tag?: string[];
+};
+
 export const getAvailablePapers = async (
   projectId: string,
-  searchText?: string,
+  params?: GetAvailablePapersParams,
 ) => {
   const searchParams = new URLSearchParams();
-  if (searchText) searchParams.append('searchText', searchText);
+  if (params?.searchText) searchParams.append('searchText', params.searchText);
+  if (params?.Tag?.length)
+    params.Tag.forEach((t) => searchParams.append('Tag', t));
   const query = searchParams.toString();
   const url = `${PROJECT_MANAGEMENT_API.PROJECT_PAPERS_AVAILABLE(projectId)}${query ? `?${query}` : ''}`;
   return api.get(url);
@@ -20,22 +27,22 @@ export const getAvailablePapers = async (
 
 type UseAvailablePapersOptions = {
   projectId: string;
-  searchText?: string;
+  params?: GetAvailablePapersParams;
   queryConfig?: any;
 };
 
 export const useAvailablePapers = ({
   projectId,
-  searchText,
+  params,
   queryConfig,
 }: UseAvailablePapersOptions) => {
   return useQuery({
     queryKey: [
       PROJECT_MANAGEMENT_QUERY_KEYS.AVAILABLE_PAPERS,
       projectId,
-      searchText,
+      params,
     ],
-    queryFn: () => getAvailablePapers(projectId, searchText),
+    queryFn: () => getAvailablePapers(projectId, params),
     ...queryConfig,
   });
 };

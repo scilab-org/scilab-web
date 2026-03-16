@@ -3,12 +3,15 @@ const AI_SERVICE_PREFIX = '/ai-service';
 const LATEX_SERVICE_PREFIX = '/latex-service';
 
 export const PAPER_MANAGEMENT_API = {
-  PAPERS: `${LAB_SERVICE_PREFIX}/papers`,
-  PAPER_BY_ID: (paperId: string) => `${LAB_SERVICE_PREFIX}/papers/${paperId}`,
-  ADMIN_PAPERS: `${LAB_SERVICE_PREFIX}/admin/papers`,
+  PAPERS: `${LAB_SERVICE_PREFIX}/paper-bank`,
+  PAPER_BY_ID: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/paper-bank/${paperId}`,
+  ADMIN_PAPERS: `${LAB_SERVICE_PREFIX}/admin/paper-bank`,
   ADMIN_PAPER_BY_ID: (paperId: string) =>
-    `${LAB_SERVICE_PREFIX}/admin/papers/${paperId}`,
-  ADMIN_PAPERS_INITIALIZE: `${LAB_SERVICE_PREFIX}/admin/papers/initialize`,
+    `${LAB_SERVICE_PREFIX}/admin/paper-bank/${paperId}`,
+  ADMIN_PAPERS_INITIALIZE: `${LAB_SERVICE_PREFIX}/papers`,
+  WRITING_PAPER_BY_ID: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}`,
   PARSE_PAPER: `${AI_SERVICE_PREFIX}/papers/parse`,
   AUTO_TAG: `${AI_SERVICE_PREFIX}/papers/auto-tag`,
   ASSIGNED_SECTIONS: (paperId: string) =>
@@ -38,6 +41,7 @@ export const PAPER_MANAGEMENT_API = {
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPERS: 'papers',
   PAPER: 'paper',
+  WRITING_PAPER: 'writing-paper',
   ASSIGNED_SECTIONS: 'paper-assigned-sections',
   AVAILABLE_SECTION_MEMBERS: 'available-section-members',
   SECTION_MEMBERS: 'section-members',

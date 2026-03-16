@@ -13,7 +13,13 @@ export const getProjectPapers = async (
   params?: GetProjectPapersParams,
 ) => {
   const searchParams = new URLSearchParams();
-  if (params?.searchText) searchParams.append('searchText', params.searchText);
+  if (params?.Title) searchParams.append('Title', params.Title);
+  if (params?.Tag?.length)
+    params.Tag.forEach((t) => searchParams.append('Tag', t));
+  if (params?.PageNumber)
+    searchParams.append('PageNumber', String(params.PageNumber));
+  if (params?.PageSize)
+    searchParams.append('PageSize', String(params.PageSize));
   const query = searchParams.toString();
   const url = `${PROJECT_MANAGEMENT_API.PROJECT_PAPERS(projectId)}${query ? `?${query}` : ''}`;
   return api.get(url);
