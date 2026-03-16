@@ -20,6 +20,16 @@ import { getUserGroups } from '@/lib/auth';
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { paths } from '@/config/paths';
 
 import {
@@ -109,6 +119,7 @@ const ProjectDetailRoute = () => {
     string | undefined
   >();
   const [addManagersOpen, setAddManagersOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const viewerIsSystemAdmin = getUserGroups().includes('system:admin');
 
@@ -166,35 +177,17 @@ const ProjectDetailRoute = () => {
   });
 
   const handleRemoveManager = (memberId: string) => {
-    if (
-      confirm(
-        'Are you sure you want to remove this manager from the project? This action cannot be undone.',
-      )
-    ) {
-      setRemovingManagerId(memberId);
-      removeManagerMutation.mutate({ memberIds: [memberId] });
-    }
+    setRemovingManagerId(memberId);
+    removeManagerMutation.mutate({ memberIds: [memberId] });
   };
 
   const handleRemoveMember = (memberId: string) => {
-    if (
-      confirm(
-        'Are you sure you want to remove this member from the project? This action cannot be undone.',
-      )
-    ) {
-      setRemovingMemberId(memberId);
-      removeMemberMutation.mutate({ memberIds: [memberId] });
-    }
+    setRemovingMemberId(memberId);
+    removeMemberMutation.mutate({ memberIds: [memberId] });
   };
 
   const handleDelete = () => {
-    if (
-      confirm(
-        'Are you sure you want to delete this project? This action cannot be undone.',
-      )
-    ) {
-      deleteMutation.mutate(projectId!);
-    }
+    setDeleteConfirmOpen(true);
   };
 
   const handleViewChart = (dataset: Dataset) => {
@@ -381,7 +374,11 @@ const ProjectDetailRoute = () => {
           )}
 
           {activeTab === 'writing-papers' && (
-            <ProjectWritingPapersList projectId={projectId!} isManager />
+            <ProjectWritingPapersList
+              projectId={projectId!}
+              isManager
+              readOnly
+            />
           )}
 
           {activeTab === 'datasets' && (
@@ -409,6 +406,27 @@ const ProjectDetailRoute = () => {
           onClose={handleCloseChartViewer}
         />
       )}
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this project? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteMutation.mutate(projectId!)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ContentLayout>
   );
 };

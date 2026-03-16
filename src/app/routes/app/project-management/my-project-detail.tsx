@@ -178,14 +178,8 @@ const MyProjectDetailRoute = () => {
   });
 
   const handleRemoveMember = (memberId: string) => {
-    if (
-      confirm(
-        'Are you sure you want to remove this member from the project? This action cannot be undone.',
-      )
-    ) {
-      setRemovingMemberId(memberId);
-      removeMemberMutation.mutate({ memberIds: [memberId] });
-    }
+    setRemovingMemberId(memberId);
+    removeMemberMutation.mutate({ memberIds: [memberId] });
   };
 
   const handleRemovePaper = (paperId: string) => {
@@ -199,13 +193,7 @@ const MyProjectDetailRoute = () => {
   };
 
   const handleDeleteDataset = (datasetId: string) => {
-    if (
-      confirm(
-        'Are you sure you want to delete this dataset? This action cannot be undone.',
-      )
-    ) {
-      deleteDatasetMutation.mutate(datasetId);
-    }
+    deleteDatasetMutation.mutate(datasetId);
   };
 
   const handleViewChart = (dataset: Dataset) => {

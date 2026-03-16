@@ -8,6 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -35,6 +45,8 @@ export const ProjectsList = () => {
   const queryClient = useQueryClient();
   const [updateOpen, setUpdateOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [pendingDeleteProject, setPendingDeleteProject] =
+    useState<Project | null>(null);
 
   const page = +(searchParams.get('page') || 1);
   const name = searchParams.get('name') || undefined;
@@ -67,13 +79,7 @@ export const ProjectsList = () => {
   };
 
   const handleDelete = (project: Project) => {
-    if (
-      confirm(
-        `Are you sure you want to delete project "${project.name}"? This action cannot be undone.`,
-      )
-    ) {
-      deleteMutation.mutate(project.id);
-    }
+    setPendingDeleteProject(project);
   };
 
   const formatDate = (date: string) => {
@@ -367,6 +373,38 @@ export const ProjectsList = () => {
         open={updateOpen}
         onOpenChange={setUpdateOpen}
       />
+
+      <AlertDialog
+        open={!!pendingDeleteProject}
+        onOpenChange={(open) => !open && setPendingDeleteProject(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete project{' '}
+              <span className="text-foreground font-semibold">
+                &ldquo;{pendingDeleteProject?.name}&rdquo;
+              </span>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDeleteProject) {
+                  deleteMutation.mutate(pendingDeleteProject.id);
+                  setPendingDeleteProject(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

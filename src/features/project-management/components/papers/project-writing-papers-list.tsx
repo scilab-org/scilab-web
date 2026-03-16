@@ -56,6 +56,7 @@ type ProjectWritingPapersListProps = {
   projectId: string;
   isManager?: boolean;
   isAuthor?: boolean;
+  readOnly?: boolean;
   onCreatePaperClick?: () => void;
 };
 
@@ -63,6 +64,7 @@ export const ProjectWritingPapersList = ({
   projectId,
   isManager = false,
   isAuthor = false,
+  readOnly = false,
   onCreatePaperClick,
 }: ProjectWritingPapersListProps) => {
   const [searchText, setSearchText] = useState('');
@@ -234,7 +236,7 @@ export const ProjectWritingPapersList = ({
                           <Users className="h-3.5 w-3.5" />
                           Members
                         </Button>
-                        {isManager && (
+                        {isManager && !readOnly && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -298,7 +300,7 @@ export const ProjectWritingPapersList = ({
       {membersSheetPaper && membersSheetPaper.subProjectId && (
         <PaperMembersSheet
           subProjectId={membersSheetPaper.subProjectId}
-          isManager={isManager}
+          isManager={readOnly ? false : isManager}
           isAuthor={isAuthor}
           paperTitle={membersSheetPaper.title ?? '(Untitled)'}
           open={!!membersSheetPaper}

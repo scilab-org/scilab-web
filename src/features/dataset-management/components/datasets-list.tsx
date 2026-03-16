@@ -13,6 +13,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -59,6 +69,9 @@ export const DatasetsList = ({
   readOnly = false,
 }: DatasetsListProps) => {
   const [page, setPage] = useState(1);
+  const [pendingDeleteDatasetId, setPendingDeleteDatasetId] = useState<
+    string | null
+  >(null);
   const pageSize = 5;
 
   const datasetsQuery = useDatasets({
@@ -206,7 +219,7 @@ export const DatasetsList = ({
                                   variant="destructive"
                                   size="sm"
                                   onClick={() =>
-                                    (onDeleteClick ?? (() => {}))(dataset.id)
+                                    setPendingDeleteDatasetId(dataset.id)
                                   }
                                   className={`flex items-center gap-1.5 ${BTN.DANGER}`}
                                 >
@@ -334,6 +347,35 @@ export const DatasetsList = ({
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!pendingDeleteDatasetId}
+        onOpenChange={(open) => !open && setPendingDeleteDatasetId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Dataset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this dataset? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDeleteDatasetId) {
+                  (onDeleteClick ?? (() => {}))(pendingDeleteDatasetId);
+                  setPendingDeleteDatasetId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

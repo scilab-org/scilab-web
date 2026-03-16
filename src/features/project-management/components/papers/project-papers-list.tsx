@@ -7,6 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -81,6 +91,9 @@ export const ProjectPapersList = ({
   const [titleText, setTitleText] = useState('');
   const [titleDebounce, setTitleDebounce] = useState('');
   const [tagList, setTagList] = useState<string[]>([]);
+  const [pendingRemovePaperId, setPendingRemovePaperId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => setTitleDebounce(titleText), 300);
@@ -300,9 +313,7 @@ export const ProjectPapersList = ({
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() =>
-                              (onRemovePaper ?? (() => {}))(paper.id)
-                            }
+                            onClick={() => setPendingRemovePaperId(paper.id)}
                             disabled={removingPaperId === paper.id}
                           >
                             {removingPaperId === paper.id ? (
@@ -335,6 +346,35 @@ export const ProjectPapersList = ({
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!pendingRemovePaperId}
+        onOpenChange={(open) => !open && setPendingRemovePaperId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Paper</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this paper from the project? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingRemovePaperId) {
+                  (onRemovePaper ?? (() => {}))(pendingRemovePaperId);
+                  setPendingRemovePaperId(null);
+                }
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

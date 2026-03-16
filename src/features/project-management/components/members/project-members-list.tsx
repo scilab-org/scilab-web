@@ -14,6 +14,16 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -305,6 +315,12 @@ export const ProjectMembersList = ({
   const [updatingMemberId, setUpdatingMemberId] = useState<
     string | undefined
   >();
+  const [pendingRemoveMemberId, setPendingRemoveMemberId] = useState<
+    string | null
+  >(null);
+  const [pendingRemoveType, setPendingRemoveType] = useState<
+    'member' | 'manager' | null
+  >(null);
   const pageSize = 20;
 
   useEffect(() => {
@@ -474,8 +490,14 @@ export const ProjectMembersList = ({
                       availableGroups={availableGroups}
                       viewerIsSystemAdmin={viewerIsSystemAdmin}
                       viewerIsProjectManager={viewerIsProjectManager}
-                      onRemove={onRemoveMember ?? (() => {})}
-                      onRemoveManager={onRemoveManager ?? (() => {})}
+                      onRemove={(id) => {
+                        setPendingRemoveMemberId(id);
+                        setPendingRemoveType('member');
+                      }}
+                      onRemoveManager={(id) => {
+                        setPendingRemoveMemberId(id);
+                        setPendingRemoveType('manager');
+                      }}
                       onUpdateRole={handleUpdateRole}
                       isRemoving={removingMemberId === member.memberId}
                       isRemovingManager={removingManagerId === member.memberId}
@@ -603,6 +625,48 @@ export const ProjectMembersList = ({
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!pendingRemoveMemberId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingRemoveMemberId(null);
+            setPendingRemoveType(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove {pendingRemoveType === 'manager' ? 'Manager' : 'Member'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this{' '}
+              {pendingRemoveType === 'manager' ? 'manager' : 'member'} from the
+              project? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingRemoveMemberId) {
+                  if (pendingRemoveType === 'manager') {
+                    (onRemoveManager ?? (() => {}))(pendingRemoveMemberId);
+                  } else {
+                    (onRemoveMember ?? (() => {}))(pendingRemoveMemberId);
+                  }
+                  setPendingRemoveMemberId(null);
+                  setPendingRemoveType(null);
+                }
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
