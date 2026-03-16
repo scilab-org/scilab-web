@@ -21,7 +21,6 @@ import { autoTagPaper } from '../api/auto-tag-paper';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
-import { ParsedText } from '../types';
 
 const initialFormData = {
   title: '',
@@ -42,7 +41,7 @@ export const CreatePaper = () => {
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
   const [parseProgress, setParseProgress] = React.useState(0);
-  const [parsedText, setParsedText] = React.useState<ParsedText | null>(null);
+  const [parsedText, setParsedText] = React.useState<string | null>(null);
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [tagList, setTagList] = React.useState<string[]>([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
@@ -281,7 +280,7 @@ export const CreatePaper = () => {
       journalName: formData.journalName,
       conferenceName: formData.conferenceName,
       file,
-      parsedText: parsedText || { chunks: [] },
+      parsedText: parsedText || '',
       tagNames: tagList,
       isAutoTagged,
       isIngested: false,

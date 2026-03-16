@@ -1,12 +1,3 @@
-export type ParsedTextChunk = {
-  text: string;
-  headings: string[];
-};
-
-export type ParsedText = {
-  chunks: ParsedTextChunk[];
-};
-
 export type PaperDto = {
   id: string;
   title: string | null;
@@ -16,7 +7,7 @@ export type PaperDto = {
   status: number;
   isIngested: boolean;
   isAutoTagged: boolean;
-  parsedText: ParsedText | null;
+  parsedText: string | null;
   publicationDate: string | null;
   paperType: string | null;
   journalName: string | null;
@@ -57,6 +48,7 @@ export type WritingPaperDto = {
   id: string;
   subProjectId: string | null;
   template: string | null;
+  context: string | null;
   title: string | null;
   abstract: string | null;
   doi: string | null;
@@ -100,7 +92,7 @@ export type CreatePaperDto = {
   journalName: string;
   conferenceName: string;
   file: File;
-  parsedText: ParsedText;
+  parsedText: string;
   tagNames: string[];
   isAutoTagged: boolean;
   isIngested: boolean;
@@ -108,12 +100,12 @@ export type CreatePaperDto = {
 };
 
 export type ParsePaperResponse = {
-  parsedText: ParsedText;
+  parsedText: string;
   tags: string[];
 };
 
 export type AutoTagRequest = {
-  parsedText: ParsedText;
+  parsedText: string;
   existingTags: string[];
 };
 
@@ -157,15 +149,24 @@ export type UpdateSectionDto = {
   parentSectionId?: string | null;
 };
 
+export type CreateSectionDto = {
+  id: string;
+  title: string;
+  content?: string;
+  numbered: boolean;
+  displayOrder: number;
+  sectionSumary?: string;
+  parentSectionId?: string | null;
+};
+
 export type CreatePaperInProjectDto = {
   projectId: string;
   title: string;
-  abstract: string;
-  doi: string;
-  status: number;
-  paperType: string;
+  context: string;
   template?: string;
-  sections: PaperSection[];
+  status?: number;
+  paperType?: string;
+  sections?: CreateSectionDto[];
 };
 
 export type AssignedSection = {

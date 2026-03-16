@@ -192,6 +192,7 @@ export type SubProjectPaper = {
   id: string;
   subProjectId: string | null;
   template: string | null;
+  context: string | null;
   parsedText: string | null;
   title: string | null;
   abstract: string | null;

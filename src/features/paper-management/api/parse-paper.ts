@@ -45,34 +45,13 @@ export const parsePaperFile = (
       signal?.removeEventListener('abort', abortHandler);
 
       resolve({
-        parsedText: {
-          chunks: [
-            {
-              text: 'This is the abstract section of the mock parsed paper. It contains a brief overview of the research.',
-              headings: ['Abstract'],
-            },
-            {
-              text: 'This section introduces the research problem and provides background context for the study.',
-              headings: ['1. Introduction'],
-            },
-            {
-              text: 'The methodology section describes the research methods, data collection, and analysis techniques used.',
-              headings: ['2. Methodology'],
-            },
-            {
-              text: 'Results and findings from the research are presented in this section with supporting data.',
-              headings: ['3. Results'],
-            },
-            {
-              text: 'This section discusses the implications of the findings and compares them with previous work.',
-              headings: ['4. Discussion'],
-            },
-            {
-              text: 'The conclusion summarizes the key findings and suggests directions for future research.',
-              headings: ['5. Conclusion'],
-            },
-          ],
-        },
+        parsedText:
+          'Abstract: This is the abstract section of the mock parsed paper. It contains a brief overview of the research.\n\n' +
+          '1. Introduction: This section introduces the research problem and provides background context for the study.\n\n' +
+          '2. Methodology: The methodology section describes the research methods, data collection, and analysis techniques used.\n\n' +
+          '3. Results: Results and findings from the research are presented in this section with supporting data.\n\n' +
+          '4. Discussion: This section discusses the implications of the findings and compares them with previous work.\n\n' +
+          '5. Conclusion: The conclusion summarizes the key findings and suggests directions for future research.',
         tags: ['research', 'methodology', 'analysis'],
       });
     }, 1500);

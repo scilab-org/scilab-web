@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
 import { Plus, Search, Users, Trash2, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,11 +28,11 @@ import { BTN } from '@/lib/button-styles';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
-import { paths } from '@/config/paths';
 import { PaperMembersSheet } from './paper-members-sheet';
 import { PaperSectionsDialog } from '@/features/paper-management/components/paper-sections-dialog';
 import { PaperSectionsReadOnlyDialog } from '@/features/paper-management/components/paper-sections-readonly-dialog';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { PaperInProjectDetailDialog } from './paper-in-project-detail-dialog';
 
 const getStatusColor = (status: number | null) => {
   switch (status) {
@@ -76,6 +75,7 @@ export const ProjectWritingPapersList = ({
   const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
     null,
   );
+  const [detailPaper, setDetailPaper] = useState<SubProjectPaper | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounce(searchText), 350);
@@ -117,7 +117,7 @@ export const ProjectWritingPapersList = ({
               </p>
             )}
           </div>
-          {isManager && !!onCreatePaperClick && (
+          {(isManager || isAuthor) && !!onCreatePaperClick && (
             <Button
               onClick={onCreatePaperClick}
               size="sm"
@@ -169,9 +169,6 @@ export const ProjectWritingPapersList = ({
                     Status
                   </TableHead>
                   <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                    Journal / Conference
-                  </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
                     Template
                   </TableHead>
                   <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
@@ -186,14 +183,13 @@ export const ProjectWritingPapersList = ({
                     className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
                   >
                     <TableCell className="font-medium">
-                      <Link
-                        to={paths.app.paperManagement.writingPaper.getHref(
-                          paper.id,
-                        )}
-                        className="text-blue-600 hover:underline dark:text-blue-400"
+                      <button
+                        type="button"
+                        onClick={() => setDetailPaper(paper)}
+                        className="text-left text-blue-600 hover:underline dark:text-blue-400"
                       >
                         {paper.title || '(Untitled)'}
-                      </Link>
+                      </button>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {paper.paperType || '—'}
@@ -208,9 +204,6 @@ export const ProjectWritingPapersList = ({
                       ) : (
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
-                      {paper.journalName || paper.conferenceName || '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {paper.template || '—'}
@@ -264,7 +257,7 @@ export const ProjectWritingPapersList = ({
         ) : (
           <div className="bg-muted/30 rounded-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">No papers yet</p>
-            {isManager && !!onCreatePaperClick && (
+            {(isManager || isAuthor) && !!onCreatePaperClick && (
               <p className="text-muted-foreground mt-1 text-xs">
                 Use the button above to create a paper in this project
               </p>
@@ -343,6 +336,14 @@ export const ProjectWritingPapersList = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PaperInProjectDetailDialog
+        open={!!detailPaper}
+        paper={detailPaper}
+        onOpenChange={(o) => {
+          if (!o) setDetailPaper(null);
+        }}
+      />
     </div>
   );
 };

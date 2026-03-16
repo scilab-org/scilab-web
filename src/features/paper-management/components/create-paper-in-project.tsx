@@ -61,8 +61,7 @@ type CreatePaperInProjectProps = {
 
 const initialFormData = {
   title: '',
-  abstract: '',
-  doi: '',
+  context: '',
   paperType: '',
   status: 1,
 };
@@ -280,12 +279,12 @@ export const CreatePaperInProject = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return;
+    if (!formData.context.trim()) return;
 
     const payload: CreatePaperInProjectDto = {
       projectId: _projectId,
       title: formData.title,
-      abstract: formData.abstract,
-      doi: formData.doi,
+      context: formData.context,
       status: formData.status,
       paperType: formData.paperType,
       ...(selectedTemplate?.code && { template: selectedTemplate.code }),
@@ -316,7 +315,7 @@ export const CreatePaperInProject = ({
           <SheetTitle>Create New Paper</SheetTitle>
           <SheetDescription>
             Select a template, fill in the details, and customize sections.
-            Title is required.
+            Title and context are required.
           </SheetDescription>
         </SheetHeader>
 
@@ -337,6 +336,22 @@ export const CreatePaperInProject = ({
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
               placeholder="Enter paper title"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cpp-context" className="text-sm font-medium">
+              Context <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              id="cpp-context"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData.context}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, context: e.target.value }))
+              }
+              placeholder="Enter paper context"
               required
             />
           </div>
@@ -647,37 +662,6 @@ export const CreatePaperInProject = ({
             </div>
           )}
 
-          {/* ── DOI ── */}
-          <div className="space-y-1.5">
-            <label htmlFor="cpp-doi" className="text-sm font-medium">
-              DOI
-            </label>
-            <Input
-              id="cpp-doi"
-              value={formData.doi}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, doi: e.target.value }))
-              }
-              placeholder="e.g. 10.1000/xyz123"
-            />
-          </div>
-
-          {/* ── Abstract ── */}
-          <div className="space-y-1.5">
-            <label htmlFor="cpp-abstract" className="text-sm font-medium">
-              Abstract
-            </label>
-            <textarea
-              id="cpp-abstract"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              value={formData.abstract}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, abstract: e.target.value }))
-              }
-              placeholder="Enter abstract"
-            />
-          </div>
-
           {/* ── Paper Type ── */}
           <div className="space-y-1.5">
             <label htmlFor="cpp-type" className="text-sm font-medium">
@@ -733,7 +717,11 @@ export const CreatePaperInProject = ({
           <Button
             type="submit"
             form="create-paper-in-project-form"
-            disabled={createMutation.isPending || !formData.title.trim()}
+            disabled={
+              createMutation.isPending ||
+              !formData.title.trim() ||
+              !formData.context.trim()
+            }
             className={BTN.CREATE}
           >
             {createMutation.isPending ? 'Creating...' : 'Create'}
