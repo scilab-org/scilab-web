@@ -27,6 +27,9 @@ export const CreateProject = () => {
     status: 1,
     startDate: '',
     endDate: '',
+    context: '',
+    domain: '',
+    keypoint: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -47,6 +50,9 @@ export const CreateProject = () => {
       status: 1,
       startDate: '',
       endDate: '',
+      context: '',
+      domain: '',
+      keypoint: '',
     });
     setErrors({});
   };
@@ -246,6 +252,58 @@ export const CreateProject = () => {
               {errors.endDate && (
                 <p className="text-destructive text-xs">{errors.endDate}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="project-domain"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Domain
+              </label>
+              <Input
+                id="project-domain"
+                name="domain"
+                value={formData.domain}
+                onChange={handleChange}
+                placeholder="Enter project domain"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="project-context"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Context
+              </label>
+              <textarea
+                id="project-context"
+                name="context"
+                value={formData.context}
+                onChange={handleChange}
+                placeholder="Enter project context"
+                rows={3}
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="project-keypoint"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Keypoint
+              </label>
+              <textarea
+                id="project-keypoint"
+                name="keypoint"
+                value={formData.keypoint}
+                onChange={handleChange}
+                placeholder="Enter project keypoint"
+                rows={2}
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              />
             </div>
           </div>
         </form>

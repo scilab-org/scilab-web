@@ -111,6 +111,7 @@ type SectionRow = CreateTemplateSectionDto & { _id: string };
 
 const makeSectionRow = (s: CreateTemplateSectionDto): SectionRow => ({
   ...s,
+  description: s.description || '',
   _id: crypto.randomUUID(),
 });
 
@@ -174,6 +175,7 @@ export const CreatePaperTemplate = () => {
         numbered: false,
         allowSubsections: true,
         required: false,
+        description: '',
       }),
     ]);
   };
@@ -195,7 +197,19 @@ export const CreatePaperTemplate = () => {
       description: formData.description.trim(),
       templateStructure: {
         templateCode: formData.code.trim(),
-        sections: sections.map(({ _id, ...s }) => s),
+        sections: sections.map(({ _id, ...s }) => {
+          let rule = s.rule || '';
+          if (s.description && !s.rule) {
+            const bulletPoints = s.description
+              .split('\n')
+              .map((line) => line.trim())
+              .filter((line) => line.length > 0)
+              .map((line) => (line.startsWith('-') ? line : `- ${line}`))
+              .join('\n');
+            rule = `## ${s.title}\n${bulletPoints}`;
+          }
+          return { ...s, rule };
+        }),
       },
     });
   };
@@ -366,6 +380,18 @@ export const CreatePaperTemplate = () => {
                         />
                         Allow Sub-sections
                       </label>
+                    </div>
+                    {/* Row 3: description */}
+                    <div className="pl-8 pt-1">
+                      <textarea
+                        value={section.description || ''}
+                        onChange={(e) =>
+                          updateSection(section._id, 'description', e.target.value)
+                        }
+                        placeholder="Section description (optional)..."
+                        rows={2}
+                        className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-1.5 text-xs shadow-xs outline-none focus-visible:ring-[2px]"
+                      />
                     </div>
                   </div>
                 ))}

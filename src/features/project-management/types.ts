@@ -18,6 +18,9 @@ export type Project = {
   status: number;
   startDate: string;
   endDate: string;
+  context: string;
+  domain: string;
+  keypoint: string;
   createdBy: string;
   createdAt: string;
   modifiedAt: string;
@@ -31,6 +34,9 @@ export type CreateProjectDto = {
   status: number;
   startDate: string;
   endDate: string | null;
+  context: string;
+  domain: string;
+  keypoint: string;
 };
 
 export type UpdateProjectDto = {
@@ -40,6 +46,9 @@ export type UpdateProjectDto = {
   status: number;
   startDate: string;
   endDate: string | null;
+  context: string;
+  domain: string;
+  keypoint: string;
 };
 
 export type GetProjectsParams = {

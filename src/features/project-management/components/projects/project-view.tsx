@@ -116,10 +116,6 @@ export const ProjectView = ({
               <p className="text-muted-foreground bg-background/60 rounded-md px-3 py-1.5 font-mono text-sm">
                 {project.code}
               </p>
-              <span className="text-muted-foreground text-sm">
-                Created {formatDate(project.createdOnUtc)} by{' '}
-                {project.createdBy || 'System'}
-              </span>
             </div>
           </div>
         </div>
@@ -140,6 +136,35 @@ export const ProjectView = ({
               </dt>
               <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
                 {project.description || 'No description provided'}
+              </dd>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-3">
+              <div className="space-y-2">
+                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Domain
+                </dt>
+                <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
+                  {project.domain || 'No domain specified'}
+                </dd>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Context
+                </dt>
+                <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
+                  {project.context || 'No context provided'}
+                </dd>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Keypoint
+              </dt>
+              <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
+                {project.keypoint || 'No keypoint provided'}
               </dd>
             </div>
 

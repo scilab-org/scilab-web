@@ -35,6 +35,9 @@ export const UpdateProject = ({
     status: 1,
     startDate: '',
     endDate: '',
+    context: '',
+    domain: '',
+    keypoint: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -59,6 +62,9 @@ export const UpdateProject = ({
         status: project.status,
         startDate: startDate.toISOString().slice(0, 16),
         endDate: endDate.toISOString().slice(0, 16),
+        context: project.context || '',
+        domain: project.domain || '',
+        keypoint: project.keypoint || '',
       });
     }
   }, [project, open]);
@@ -268,6 +274,58 @@ export const UpdateProject = ({
               {errors.endDate && (
                 <p className="text-destructive text-sm">{errors.endDate}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="update-domain"
+                className="text-foreground text-sm font-medium"
+              >
+                Domain
+              </label>
+              <Input
+                id="update-domain"
+                name="domain"
+                value={formData.domain}
+                onChange={handleChange}
+                placeholder="Enter project domain"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="update-context"
+                className="text-foreground text-sm font-medium"
+              >
+                Context
+              </label>
+              <textarea
+                id="update-context"
+                name="context"
+                value={formData.context}
+                onChange={handleChange}
+                placeholder="Enter project context"
+                rows={3}
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="update-keypoint"
+                className="text-foreground text-sm font-medium"
+              >
+                Keypoint
+              </label>
+              <textarea
+                id="update-keypoint"
+                name="keypoint"
+                value={formData.keypoint}
+                onChange={handleChange}
+                placeholder="Enter project keypoint"
+                rows={2}
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              />
             </div>
           </div>
         </form>
