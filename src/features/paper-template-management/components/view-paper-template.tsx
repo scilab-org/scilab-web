@@ -118,7 +118,14 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
                               <span className="text-muted-foreground font-mono text-xs">
                                 {displayPrefix || '—'}
                               </span>
-                              <span>{section.title}</span>
+                              <div className="flex flex-col gap-0.5 py-1">
+                                <span>{section.title}</span>
+                                {section.description && (
+                                  <span className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
+                                    {section.description}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-1">
                                 {section.required && (
                                   <Badge

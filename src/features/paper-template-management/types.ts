@@ -17,6 +17,8 @@ export type TemplateSectionDto = {
   numbered?: boolean;
   allowSubsections?: boolean;
   required?: boolean;
+  description?: string;
+  rule?: string;
 };
 
 export type TemplateStructureDto = {
@@ -59,6 +61,8 @@ export type CreateTemplateSectionDto = {
   numbered?: boolean;
   allowSubsections?: boolean;
   required?: boolean;
+  description?: string;
+  rule?: string;
 };
 
 export type CreateTemplateStructureDto = {
