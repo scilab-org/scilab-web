@@ -52,16 +52,15 @@ export const UpdateProject = ({
   // Update form data when project changes
   useEffect(() => {
     if (project && open) {
-      const startDate = new Date(project.startDate);
-      const endDate = new Date(project.endDate);
+
 
       setFormData({
         name: project.name,
         code: project.code,
         description: project.description,
         status: project.status,
-        startDate: startDate.toISOString().slice(0, 16),
-        endDate: endDate.toISOString().slice(0, 16),
+        startDate: project.startDate ? new Date(project.startDate).toISOString().slice(0, 16) : '',
+        endDate: project.endDate ? new Date(project.endDate).toISOString().slice(0, 16) : '',
         context: project.context || '',
         domain: project.domain || '',
         keypoint: project.keypoint || '',

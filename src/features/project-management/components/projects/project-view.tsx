@@ -21,8 +21,11 @@ export const ProjectView = ({
   isDeleting = false,
   readOnly = false,
 }: ProjectViewProps) => {
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (date: string | null | undefined) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime()) || d.getFullYear() <= 1970) return '—';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -134,8 +137,8 @@ export const ProjectView = ({
               <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 Description
               </dt>
-              <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                {project.description || 'No description provided'}
+              <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap">
+                {project.description || '—'}
               </dd>
             </div>
 
@@ -145,7 +148,7 @@ export const ProjectView = ({
                   Domain
                 </dt>
                 <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                  {project.domain || 'No domain specified'}
+                  {project.domain || '—'}
                 </dd>
               </div>
 
@@ -154,7 +157,7 @@ export const ProjectView = ({
                   Context
                 </dt>
                 <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                  {project.context || 'No context provided'}
+                  {project.context || '—'}
                 </dd>
               </div>
             </div>
@@ -164,7 +167,7 @@ export const ProjectView = ({
                 Keypoint
               </dt>
               <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                {project.keypoint || 'No keypoint provided'}
+                {project.keypoint || '—'}
               </dd>
             </div>
 

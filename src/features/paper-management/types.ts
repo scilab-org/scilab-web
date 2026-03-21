@@ -295,3 +295,25 @@ export type MarkSectionItem = {
 export type GetMarkSectionApiResponse = {
   result: { items: MarkSectionItem[] };
 };
+
+export type CommentDto = {
+  id: string;
+  sectionId: string;
+  content: string;
+  userName: string;
+  createdOnUtc: string | null;
+  createdBy: string | null;
+  lastModifiedOnUtc: string | null;
+  lastModifiedBy: string | null;
+};
+
+export type GetSectionCommentsApiResponse = {
+  result: {
+    items: CommentDto[];
+  };
+};
+
+export type CreateCommentDto = {
+  sectionId: string;
+  content: string;
+};

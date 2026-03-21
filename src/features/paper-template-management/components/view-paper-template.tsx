@@ -121,7 +121,7 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
                               <div className="flex flex-col gap-0.5 py-1">
                                 <span>{section.title}</span>
                                 {section.description && (
-                                  <span className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
+                                  <span className="text-muted-foreground text-xs leading-relaxed whitespace-pre-wrap">
                                     {section.description}
                                   </span>
                                 )}
