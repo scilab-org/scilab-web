@@ -115,6 +115,11 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.aiResearch.path,
+          lazy: () =>
+            import('./routes/app/ai-research').then(convert(queryClient)),
+        },
+        {
           path: paths.app.settings.path,
           lazy: () =>
             import('./routes/app/settings').then(convert(queryClient)),
