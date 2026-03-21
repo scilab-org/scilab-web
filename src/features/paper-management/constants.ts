@@ -69,3 +69,13 @@ export const PAPER_INITIALIZE_STATUS_OPTIONS = [
   { value: 1, label: 'Draft' },
   { value: 2, label: 'Processing' },
 ];
+
+export const COMMENT_API = {
+  SECTION_COMMENTS: (sectionId: string) => `${LAB_SERVICE_PREFIX}/comments/section/${sectionId}`,
+  COMMENTS: `${LAB_SERVICE_PREFIX}/comments`,
+  COMMENT_BY_ID: (id: string) => `${LAB_SERVICE_PREFIX}/comments/${id}`,
+} as const;
+
+export const COMMENT_QUERY_KEYS = {
+  SECTION_COMMENTS: 'section-comments',
+} as const;

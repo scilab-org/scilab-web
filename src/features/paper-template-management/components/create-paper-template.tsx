@@ -382,11 +382,15 @@ export const CreatePaperTemplate = () => {
                       </label>
                     </div>
                     {/* Row 3: description */}
-                    <div className="pl-8 pt-1">
+                    <div className="pt-1 pl-8">
                       <textarea
                         value={section.description || ''}
                         onChange={(e) =>
-                          updateSection(section._id, 'description', e.target.value)
+                          updateSection(
+                            section._id,
+                            'description',
+                            e.target.value,
+                          )
                         }
                         placeholder="Section description (optional)..."
                         rows={2}

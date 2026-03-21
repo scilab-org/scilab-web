@@ -206,10 +206,10 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project ID is required</p>
           <Button
-            onClick={() => navigate(paths.app.projects.getHref())}
+            onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
             className="mt-4"
           >
-            Back to Projects
+            {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
           </Button>
         </div>
       </ContentLayout>
@@ -235,10 +235,10 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project not found</p>
           <Button
-            onClick={() => navigate(paths.app.projects.getHref())}
+            onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
             className="mt-4"
           >
-            Back to Projects
+            {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
           </Button>
         </div>
       </ContentLayout>
@@ -255,11 +255,11 @@ const ProjectDetailRoute = () => {
       <div className="space-y-5">
         {/* Back navigation */}
         <button
-          onClick={() => navigate(paths.app.projects.getHref())}
+          onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
           className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Projects
+          {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
         </button>
 
         {/* Project banner */}
