@@ -31,6 +31,8 @@ import { PROJECT_MANAGEMENT_QUERY_KEYS } from '@/features/project-management/con
 import { usePaperTemplates } from '@/features/paper-template-management/api/get-paper-templates';
 import { usePaperTemplate } from '@/features/paper-template-management/api/get-paper-template';
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
+import { useJournals } from '@/features/journal-management/api/get-journals';
+import { JournalDto, JournalStyle } from '@/features/journal-management/types';
 import { useCreatePaperInProject } from '../api/initialize-paper';
 import { CreatePaperInProjectDto, PaperSection } from '../types';
 
@@ -50,6 +52,8 @@ const toLatex = (title: string, isSubSection = false): string => {
 type SectionRow = PaperSection & {
   _id: string;
   latex: string;
+  description?: string;
+  rule?: string;
   allowSubsections?: boolean;
 };
 
@@ -62,7 +66,12 @@ type CreatePaperInProjectProps = {
 const initialFormData = {
   title: '',
   context: '',
-  paperType: '',
+  abstract: '',
+  researchGap: '',
+  gapType: '',
+  mainContribution: '',
+  selectedJournalId: '',
+  selectedStyleName: '',
   status: 1,
 };
 
@@ -127,6 +136,36 @@ export const CreatePaperInProject = ({
   const templateResults: PaperTemplateDto[] =
     (templatesQuery.data as any)?.result?.items ?? [];
 
+  const journalsQuery = useJournals({
+    params: { PageNumber: 1, PageSize: 200 },
+    queryConfig: { enabled: open },
+  });
+  const journalResults: JournalDto[] = journalsQuery.data?.result?.items ?? [];
+
+  const selectedJournal = React.useMemo(
+    () =>
+      journalResults.find((j) => j.id === formData.selectedJournalId) ?? null,
+    [journalResults, formData.selectedJournalId],
+  );
+
+  const selectedStyle = React.useMemo<JournalStyle | null>(
+    () =>
+      selectedJournal?.styles?.find(
+        (s) => s.name === formData.selectedStyleName,
+      ) ?? null,
+    [selectedJournal, formData.selectedStyleName],
+  );
+
+  React.useEffect(() => {
+    if (!selectedJournal) return;
+    const hasStyle = selectedJournal.styles?.some(
+      (s) => s.name === formData.selectedStyleName,
+    );
+    if (!hasStyle) {
+      setFormData((prev) => ({ ...prev, selectedStyleName: '' }));
+    }
+  }, [selectedJournal, formData.selectedStyleName]);
+
   // Fetch template detail when one is selected
   const templateDetailQuery = usePaperTemplate({
     id: selectedTemplate?.id ?? '',
@@ -152,6 +191,8 @@ export const CreatePaperInProject = ({
           numbered: s.numbered ?? true,
           displayOrder: s.displayOrder ?? s.order ?? i,
           sectionSumary: '',
+          description: s.description ?? '',
+          rule: s.rule ?? '',
           allowSubsections: s.allowSubsections,
         };
       }),
@@ -229,6 +270,8 @@ export const CreatePaperInProject = ({
         numbered: true,
         displayOrder: maxOrder + 1,
         sectionSumary: '',
+        description: '',
+        rule: '',
       },
     ]);
     setNewSectionTitle('');
@@ -270,6 +313,8 @@ export const CreatePaperInProject = ({
           numbered: true,
           displayOrder: subSectionDisplayOrder,
           sectionSumary: '',
+          description: '',
+          rule: '',
           parentSectionId: parentSection.id,
         },
       ];
@@ -285,8 +330,20 @@ export const CreatePaperInProject = ({
       projectId: _projectId,
       title: formData.title,
       context: formData.context,
+      abstract: formData.abstract || undefined,
+      researchGap: formData.researchGap || undefined,
+      gapType: formData.gapType || undefined,
+      mainContribution: formData.mainContribution || undefined,
       status: formData.status,
-      paperType: formData.paperType,
+      journal:
+        selectedJournal && selectedStyle
+          ? {
+              name: selectedJournal.name,
+              styleName: selectedStyle.name,
+              styleDescription: selectedStyle.description || undefined,
+              styleRule: selectedStyle.rule || undefined,
+            }
+          : undefined,
       ...(selectedTemplate?.code && { template: selectedTemplate.code }),
       sections: sections.map((sec) => ({
         id: sec.id,
@@ -295,6 +352,8 @@ export const CreatePaperInProject = ({
         numbered: sec.numbered,
         displayOrder: sec.displayOrder,
         sectionSumary: sec.sectionSumary || '',
+        description: sec.description || '',
+        rule: sec.rule || '',
         ...(sec.parentSectionId && { parentSectionId: sec.parentSectionId }),
       })),
     };
@@ -354,6 +413,132 @@ export const CreatePaperInProject = ({
               placeholder="Enter paper context"
               required
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cpp-abstract" className="text-sm font-medium">
+              Abstract
+            </label>
+            <textarea
+              id="cpp-abstract"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData.abstract}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, abstract: e.target.value }))
+              }
+              placeholder="Enter abstract"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cpp-research-gap" className="text-sm font-medium">
+              Research Gap
+            </label>
+            <textarea
+              id="cpp-research-gap"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData.researchGap}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  researchGap: e.target.value,
+                }))
+              }
+              placeholder="Enter research gap"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cpp-gap-type" className="text-sm font-medium">
+              Gap Type
+            </label>
+            <Input
+              id="cpp-gap-type"
+              value={formData.gapType}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, gapType: e.target.value }))
+              }
+              placeholder="e.g. Methodological, Empirical"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="cpp-main-contribution"
+              className="text-sm font-medium"
+            >
+              Main Contribution
+            </label>
+            <textarea
+              id="cpp-main-contribution"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              value={formData.mainContribution}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  mainContribution: e.target.value,
+                }))
+              }
+              placeholder="Enter main contribution"
+            />
+          </div>
+
+          <div className="space-y-2 rounded-lg border p-3">
+            <p className="text-sm font-medium">Journal</p>
+            <div className="space-y-1.5">
+              <label htmlFor="cpp-journal-id" className="text-sm font-medium">
+                Select Journal
+              </label>
+              <select
+                id="cpp-journal-id"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={formData.selectedJournalId}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    selectedJournalId: e.target.value,
+                    selectedStyleName: '',
+                  }))
+                }
+              >
+                <option value="">No journal</option>
+                {journalResults.map((journal) => (
+                  <option key={journal.id} value={journal.id}>
+                    {journal.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cpp-style-name" className="text-sm font-medium">
+                Select Style
+              </label>
+              <select
+                id="cpp-style-name"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={formData.selectedStyleName}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    selectedStyleName: e.target.value,
+                  }))
+                }
+                disabled={!selectedJournal}
+              >
+                <option value="">No style</option>
+                {(selectedJournal?.styles ?? []).map((style) => (
+                  <option key={style.name} value={style.name}>
+                    {style.name}
+                  </option>
+                ))}
+              </select>
+              {selectedJournal &&
+                (selectedJournal.styles?.length ?? 0) === 0 && (
+                  <p className="text-muted-foreground text-xs">
+                    This journal has no styles.
+                  </p>
+                )}
+            </div>
           </div>
 
           {/* ── Template selector ── */}
@@ -513,26 +698,28 @@ export const CreatePaperInProject = ({
                                 {mainIndex + 1}
                               </TableCell>
                               <TableCell className="align-top">
-                                <Input
-                                  value={mainSection.title}
-                                  onChange={(e) =>
-                                    setSections((prev) =>
-                                      prev.map((section) =>
-                                        section._id === mainSection._id
-                                          ? {
-                                              ...section,
-                                              title: e.target.value,
-                                              latex: toLatex(
-                                                e.target.value,
-                                                false,
-                                              ),
-                                            }
-                                          : section,
-                                      ),
-                                    )
-                                  }
-                                  className="h-8 text-sm"
-                                />
+                                <div>
+                                  <Input
+                                    value={mainSection.title}
+                                    onChange={(e) =>
+                                      setSections((prev) =>
+                                        prev.map((section) =>
+                                          section._id === mainSection._id
+                                            ? {
+                                                ...section,
+                                                title: e.target.value,
+                                                latex: toLatex(
+                                                  e.target.value,
+                                                  false,
+                                                ),
+                                              }
+                                            : section,
+                                        ),
+                                      )
+                                    }
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center justify-end gap-0.5">
@@ -581,7 +768,7 @@ export const CreatePaperInProject = ({
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="pl-3">
+                                  <div className="space-y-2 pl-3">
                                     <Input
                                       value={subSection.title}
                                       onChange={(e) =>
@@ -661,24 +848,6 @@ export const CreatePaperInProject = ({
               </div>
             </div>
           )}
-
-          {/* ── Paper Type ── */}
-          <div className="space-y-1.5">
-            <label htmlFor="cpp-type" className="text-sm font-medium">
-              Paper Type
-            </label>
-            <Input
-              id="cpp-type"
-              value={formData.paperType}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  paperType: e.target.value,
-                }))
-              }
-              placeholder="e.g. Research, Review"
-            />
-          </div>
 
           {/* ── Status ── */}
           <div className="space-y-1.5">

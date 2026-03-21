@@ -13,13 +13,17 @@ export const createPaperInProject = (
   data: CreatePaperInProjectDto,
 ): Promise<StringApiCreatedResponse> => {
   return api.post(PAPER_MANAGEMENT_API.ADMIN_PAPERS_INITIALIZE, {
-    ProjectId: data.projectId,
-    Title: data.title,
-    Context: data.context,
-    Template: data.template,
-    Status: data.status,
-    PaperType: data.paperType,
-    Sections: data.sections,
+    projectId: data.projectId,
+    title: data.title,
+    template: data.template,
+    context: data.context,
+    abstract: data.abstract,
+    researchGap: data.researchGap,
+    gapType: data.gapType,
+    mainContribution: data.mainContribution,
+    status: data.status,
+    journal: data.journal,
+    sections: data.sections,
   });
 };
 

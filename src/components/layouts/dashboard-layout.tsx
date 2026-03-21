@@ -1,6 +1,7 @@
 import {
   Bell,
   Bookmark,
+  BookOpen,
   ChevronRight,
   FileText,
   FolderKanban,
@@ -203,6 +204,11 @@ const navigation: SideNavigationItem[] = [
     name: 'Tags',
     to: paths.app.tagManagement.tags.getHref(),
     icon: Tag,
+  },
+  {
+    name: 'Journals',
+    to: paths.app.journalManagement.journals.getHref(),
+    icon: BookOpen,
   },
   {
     name: 'Paper Templates',
