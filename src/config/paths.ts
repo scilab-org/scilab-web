@@ -68,6 +68,16 @@ export const paths = {
         getHref: () => '/app/tags',
       },
     },
+    journalManagement: {
+      journals: {
+        path: 'journals',
+        getHref: () => '/app/journals',
+      },
+      journal: {
+        path: 'journals/:journalId',
+        getHref: (journalId: string) => `/app/journals/${journalId}`,
+      },
+    },
     paperTemplateManagement: {
       paperTemplates: {
         path: 'paper-templates',

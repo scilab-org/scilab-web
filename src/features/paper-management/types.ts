@@ -155,16 +155,29 @@ export type CreateSectionDto = {
   numbered: boolean;
   displayOrder: number;
   sectionSumary?: string;
+  description?: string;
+  rule?: string;
   parentSectionId?: string | null;
+};
+
+export type CreatePaperJournalDto = {
+  name: string;
+  styleName: string;
+  styleDescription?: string;
+  styleRule?: string;
 };
 
 export type CreatePaperInProjectDto = {
   projectId: string;
   title: string;
-  context: string;
   template?: string;
+  context: string;
+  abstract?: string;
+  researchGap?: string;
+  gapType?: string;
+  mainContribution?: string;
   status?: number;
-  paperType?: string;
+  journal?: CreatePaperJournalDto;
   sections?: CreateSectionDto[];
 };
 

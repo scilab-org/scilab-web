@@ -155,6 +155,20 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.journalManagement.journals.path,
+          lazy: () =>
+            import('./routes/app/journal-management/journals').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.journalManagement.journal.path,
+          lazy: () =>
+            import('./routes/app/journal-management/journal').then(
+              convert(queryClient),
+            ),
+        },
+        {
           path: paths.app.paperTemplateManagement.paperTemplates.path,
           lazy: () =>
             import('./routes/app/paper-template-management/paper-templates').then(
