@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, Navigate } from 'react-router';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -11,10 +11,12 @@ import {
   Info,
   Trash2,
   Users,
+  Pencil,
 } from 'lucide-react';
 import { useRemoveMembers } from '@/features/project-management/api/members/remove-members';
 import { useRemoveProjectManagers } from '@/features/project-management/api/members/remove-project-managers';
 import { AddMembersModal } from '@/features/project-management/components/members/add-members-modal';
+import { UpdateProject } from '@/features/project-management/components/projects/update-project';
 import { getUserGroups } from '@/lib/auth';
 
 import { ContentLayout } from '@/components/layouts';
@@ -47,20 +49,20 @@ import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
-  async ({ params }: { params: Record<string, string | undefined> }) => {
-    const projectId = params.projectId as string;
+    async ({ params }: { params: Record<string, string | undefined> }) => {
+      const projectId = params.projectId as string;
 
-    const query = getProjectQueryOptions(projectId);
+      const query = getProjectQueryOptions(projectId);
 
-    try {
-      return (
-        queryClient.getQueryData(query.queryKey) ??
-        (await queryClient.fetchQuery(query))
-      );
-    } catch {
-      return null;
-    }
-  };
+      try {
+        return (
+          queryClient.getQueryData(query.queryKey) ??
+          (await queryClient.fetchQuery(query))
+        );
+      } catch {
+        return null;
+      }
+    };
 
 type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
@@ -119,9 +121,14 @@ const ProjectDetailRoute = () => {
     string | undefined
   >();
   const [addManagersOpen, setAddManagersOpen] = useState(false);
+  const [updateProjectOpen, setUpdateProjectOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const viewerIsSystemAdmin = getUserGroups().includes('system:admin');
+
+  if (!viewerIsSystemAdmin) {
+    return <Navigate to={paths.app.assignedProjects.detail.getHref(projectId!)} replace />;
+  }
 
   const projectQuery = useProjectDetail({
     projectId: projectId!,
@@ -206,10 +213,10 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project ID is required</p>
           <Button
-            onClick={() => navigate(paths.app.projects.getHref())}
+            onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
             className="mt-4"
           >
-            Back to Projects
+            {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
           </Button>
         </div>
       </ContentLayout>
@@ -235,10 +242,10 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project not found</p>
           <Button
-            onClick={() => navigate(paths.app.projects.getHref())}
+            onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
             className="mt-4"
           >
-            Back to Projects
+            {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
           </Button>
         </div>
       </ContentLayout>
@@ -253,14 +260,7 @@ const ProjectDetailRoute = () => {
   return (
     <ContentLayout title="" description="">
       <div className="space-y-5">
-        {/* Back navigation */}
-        <button
-          onClick={() => navigate(paths.app.projects.getHref())}
-          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Projects
-        </button>
+
 
         {/* Project banner */}
         <div
@@ -295,6 +295,17 @@ const ProjectDetailRoute = () => {
             {/* Right: actions + dates */}
             <div className="flex flex-col items-end gap-3">
               <div className="flex items-center gap-2">
+                {viewerIsSystemAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUpdateProjectOpen(true)}
+                    className="h-8 gap-1.5 px-3 text-xs"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                )}
                 <Button
                   variant="destructive"
                   size="sm"
@@ -336,11 +347,10 @@ const ProjectDetailRoute = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
+                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${isActive
                       ? 'border-primary text-primary'
                       : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
@@ -396,6 +406,14 @@ const ProjectDetailRoute = () => {
           projectId={projectId!}
           open={addManagersOpen}
           onOpenChange={setAddManagersOpen}
+        />
+      )}
+
+      {viewerIsSystemAdmin && (
+        <UpdateProject
+          project={projectQuery.data?.result?.project ?? null}
+          open={updateProjectOpen}
+          onOpenChange={setUpdateProjectOpen}
         />
       )}
 

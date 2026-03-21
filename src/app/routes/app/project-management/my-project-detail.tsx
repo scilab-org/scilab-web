@@ -259,14 +259,7 @@ const MyProjectDetailRoute = () => {
   return (
     <ContentLayout title="" description="">
       <div className="space-y-5">
-        {/* Back navigation */}
-        <button
-          onClick={() => navigate(paths.app.assignedProjects.list.getHref())}
-          className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Assigned Projects
-        </button>
+
 
         {/* Project banner */}
         <div

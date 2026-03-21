@@ -36,10 +36,14 @@ import {
 } from '@/components/ui/popover';
 import { BTN } from '@/lib/button-styles';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
+import { SectionComments } from '@/features/paper-management/components/section-comments';
+import { COMMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 
 /**
  * Register a custom LaTeX language + theme so that
@@ -284,15 +288,17 @@ export const LatexPaperEditor = ({
 }: LatexPaperEditorProps) => {
   const editableSectionRoles = new Set(['paper:author', 'section:edit']);
 
+  const queryClient = useQueryClient();
+
   const [content, setContent] = useState(initialContent ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const pdfUrlRef = useRef<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'sections' | 'files'>(
-    sections?.length ? 'sections' : 'files',
-  );
+  const [sidebarTab, setSidebarTab] = useState<
+    'sections' | 'files' | 'comments'
+  >(sections?.length ? 'sections' : 'files');
   const [activeSectionId, setActiveSectionId] = useState<string | null>(
     initialSectionId || (sections?.[0]?.id ?? null),
   );
@@ -705,7 +711,7 @@ export const LatexPaperEditor = ({
           }`}
         >
           <div className="absolute inset-0 flex w-72 flex-col gap-4 p-4">
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800/70">
+            <div className="grid grid-cols-3 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800/70">
               <button
                 type="button"
                 onClick={() => setSidebarTab('sections')}
@@ -728,6 +734,28 @@ export const LatexPaperEditor = ({
                 }`}
               >
                 Files
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarTab('comments');
+                  if (activeSectionId) {
+                    queryClient.invalidateQueries({
+                      queryKey: [
+                        COMMENT_QUERY_KEYS.SECTION_COMMENTS,
+                        activeSectionId,
+                      ],
+                    });
+                  }
+                }}
+                disabled={!activeSectionId}
+                className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  sidebarTab === 'comments'
+                    ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
+                    : 'text-slate-600 hover:bg-white/70 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
+                }`}
+              >
+                Comments
               </button>
             </div>
 
@@ -759,7 +787,7 @@ export const LatexPaperEditor = ({
                   )}
                 </div>
               </>
-            ) : (
+            ) : sidebarTab === 'files' ? (
               <>
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Uploaded Files
@@ -890,7 +918,21 @@ export const LatexPaperEditor = ({
                   )}
                 </div>
               </>
-            )}
+            ) : sidebarTab === 'comments' ? (
+              <div className="flex flex-1 flex-col overflow-hidden">
+                {activeSectionId ? (
+                  <SectionComments
+                    sectionId={activeSectionId}
+                    isReadOnly={isActiveSectionReadOnly}
+                    className="flex-1 overflow-hidden"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                    Select a section to view comments.
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
 

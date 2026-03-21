@@ -1,4 +1,7 @@
-import { Layers, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Layers, Loader2, MessageSquare } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -11,6 +14,7 @@ import {
 
 import { useAssignedSections } from '../api/get-assigned-sections';
 import { AssignedSection } from '../types';
+import { SectionComments } from './section-comments';
 
 type PaperSectionsSheetProps = {
   paperId: string;
@@ -34,42 +38,67 @@ const SectionItem = ({
 }: {
   section: AssignedSection;
   index: number;
-}) => (
-  <div className="border-border rounded-lg border p-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground w-6 shrink-0 text-right text-sm font-medium">
-            {index + 1}.
-          </span>
-          <p className="text-foreground text-sm leading-snug font-medium wrap-break-word">
-            {section.title || '(Untitled)'}
-          </p>
+}) => {
+  const [showComments, setShowComments] = useState(false);
+
+  return (
+    <div className="border-border rounded-lg border p-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground w-6 shrink-0 text-right text-sm font-medium">
+              {index + 1}.
+            </span>
+            <p className="text-foreground text-sm leading-snug font-medium wrap-break-word">
+              {section.title || '(Untitled)'}
+            </p>
+          </div>
+          {section.sectionSumary && (
+            <p className="text-muted-foreground pl-8 text-xs leading-relaxed">
+              {section.sectionSumary}
+            </p>
+          )}
+          {section.content && (
+            <p className="text-muted-foreground line-clamp-2 pl-8 text-xs leading-relaxed">
+              {section.content}
+            </p>
+          )}
         </div>
-        {section.sectionSumary && (
-          <p className="text-muted-foreground pl-8 text-xs leading-relaxed">
-            {section.sectionSumary}
-          </p>
-        )}
-        {section.content && (
-          <p className="text-muted-foreground line-clamp-2 pl-8 text-xs leading-relaxed">
-            {section.content}
-          </p>
-        )}
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getSectionRoleColor(section.sectionRole)}`}
+          >
+            {section.sectionRole.replace('section:', '')}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            Order: {section.displayOrder}
+          </span>
+        </div>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <span
-          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getSectionRoleColor(section.sectionRole)}`}
+
+      <div className="mt-3 flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground h-7 text-xs"
+          onClick={() => setShowComments(!showComments)}
         >
-          {section.sectionRole.replace('section:', '')}
-        </span>
-        <span className="text-muted-foreground text-xs">
-          Order: {section.displayOrder}
-        </span>
+          <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+          {showComments ? 'Hide Comments' : 'View Comments'}
+        </Button>
       </div>
+
+      {showComments && (
+        <SectionComments
+          sectionId={section.id}
+          isReadOnly={
+            !['paper:author', 'section:edit'].includes(section.sectionRole)
+          }
+        />
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export const PaperSectionsSheet = ({
   paperId,
