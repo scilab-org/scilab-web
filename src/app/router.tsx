@@ -80,6 +80,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.projectPaperDetail.path,
+          lazy: () =>
+            import('./routes/app/project-management/project-paper-detail').then(
+              convert(queryClient),
+            ),
+        },
+        {
           path: paths.app.assignedProjects.list.path,
           lazy: () =>
             import('./routes/app/project-management/my-projects').then(
@@ -90,6 +97,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
           path: paths.app.assignedProjects.detail.path,
           lazy: () =>
             import('./routes/app/project-management/my-project-detail').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.assignedProjects.paperDetail.path,
+          lazy: () =>
+            import('./routes/app/project-management/my-project-paper-detail').then(
               convert(queryClient),
             ),
         },

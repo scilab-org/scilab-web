@@ -259,8 +259,6 @@ const MyProjectDetailRoute = () => {
   return (
     <ContentLayout title="" description="">
       <div className="space-y-5">
-
-
         {/* Project banner */}
         <div
           className={`border-border bg-card rounded-xl border border-l-4 px-6 py-5 shadow-sm ${borderClass}`}
@@ -370,9 +368,7 @@ const MyProjectDetailRoute = () => {
               isManager={isManager}
               isAuthor={isAuthor}
               onCreatePaperClick={
-                isManager || isAuthor
-                  ? () => setCreatePaperOpen(true)
-                  : undefined
+                isAuthor ? () => setCreatePaperOpen(true) : undefined
               }
             />
           )}

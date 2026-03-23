@@ -828,6 +828,11 @@ export const PaperSectionsDialog = ({
 
   const rawSections = sectionsQuery.data?.result?.items ?? [];
   const tree = buildTree(rawSections);
+
+  console.log('DEBUG: rawSections', rawSections);
+  console.log('DEBUG: tree', tree);
+  console.log('DEBUG: flattened', flattenTree(tree));
+  
   const totalCount =
     sectionsQuery.data?.result?.paging?.totalCount ?? rawSections.length;
 
@@ -880,7 +885,6 @@ export const PaperSectionsDialog = ({
                     isAuthor
                       ? () => {
                           setAssignTarget(viewTarget);
-                          setViewTarget(null);
                         }
                       : undefined
                   }
@@ -1139,6 +1143,10 @@ export const PaperSectionsDialog = ({
                     sectionSumary: '',
                     parentSectionId: editTargetItem.parentSectionId,
                     sectionRole: editTargetItem.sectionRole,
+                    description:
+                      editTargetItem.description ||
+                      (editTargetItem as any).Description ||
+                      '',
                   },
                 ]
               : flattenTree(tree).map(({ node }) => ({
@@ -1150,6 +1158,13 @@ export const PaperSectionsDialog = ({
                   sectionSumary: node.sectionSumary || '',
                   parentSectionId: node.parentSectionId,
                   sectionRole: node.sectionRole,
+                  description:
+                    node.description ||
+                    (node as any).Description ||
+                    node.sectionSumary ||
+                    (node as any).sectionSummary ||
+                    (node as any).SectionSummary ||
+                    '',
                 }))
           }
           initialSectionId={
@@ -1179,6 +1194,10 @@ export const PaperSectionsDialog = ({
                     sectionSumary: '',
                     parentSectionId: editTargetItem.parentSectionId,
                     sectionRole: editTargetItem.sectionRole,
+                    description:
+                      editTargetItem.description ||
+                      (editTargetItem as any).Description ||
+                      '',
                   },
                 ]
               : flattenTree(tree).map(({ node }) => ({
@@ -1190,6 +1209,13 @@ export const PaperSectionsDialog = ({
                   sectionSumary: node.sectionSumary || '',
                   parentSectionId: node.parentSectionId,
                   sectionRole: node.sectionRole,
+                  description:
+                    node.description ||
+                    (node as any).Description ||
+                    node.sectionSumary ||
+                    (node as any).sectionSummary ||
+                    (node as any).SectionSummary ||
+                    '',
                 }))
           }
           initialSectionId={

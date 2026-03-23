@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Send, Trash2, Edit2, X, Check, MessageSquare, RefreshCw } from 'lucide-react';
+import {
+  Send,
+  Trash2,
+  Edit2,
+  X,
+  Check,
+  MessageSquare,
+  RefreshCw,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +37,7 @@ const CommentItem = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
-  
+
   const isOwner = currentUser === comment.userName;
 
   const updateMutation = useUpdateSectionComment({ sectionId });
@@ -153,8 +161,8 @@ const CommentItem = ({
           </div>
         </div>
       ) : (
-        <div className="mt-1 pl-9 pr-2 pb-1 text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
-          <p className="whitespace-pre-wrap break-words">{comment.content}</p>
+        <div className="mt-1 pr-2 pb-1 pl-9 text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
+          <p className="break-words whitespace-pre-wrap">{comment.content}</p>
         </div>
       )}
     </div>
@@ -181,19 +189,26 @@ export const SectionComments = ({
       {
         onSuccess: () => {
           setNewComment('');
-          document.getElementById(`comment-top-${sectionId}`)?.scrollIntoView({ behavior: 'smooth' });
+          document
+            .getElementById(`comment-top-${sectionId}`)
+            ?.scrollIntoView({ behavior: 'smooth' });
         },
       },
     );
   };
 
   return (
-    <div className={`mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4 dark:border-slate-800 relative ${className || ''}`}>
+    <div
+      className={`relative mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4 dark:border-slate-800 ${className || ''}`}
+    >
       <div id={`comment-top-${sectionId}`} className="absolute -top-4" />
       <div className="flex items-center justify-between text-sm font-semibold text-slate-800 dark:text-slate-200">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-emerald-500" />
-          Feedback {comments.length > 0 && <span className="text-slate-500">({comments.length})</span>}
+          Feedback{' '}
+          {comments.length > 0 && (
+            <span className="text-slate-500">({comments.length})</span>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -202,7 +217,9 @@ export const SectionComments = ({
           onClick={() => commentsQuery.refetch()}
           disabled={commentsQuery.isFetching}
         >
-          <RefreshCw className={`h-3 w-3 ${commentsQuery.isFetching ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`h-3 w-3 ${commentsQuery.isFetching ? 'animate-spin' : ''}`}
+          />
           Refresh
         </Button>
       </div>
@@ -214,10 +231,12 @@ export const SectionComments = ({
         </div>
       ) : commentsQuery.isError ? (
         <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-center dark:border-red-900/30 dark:bg-red-900/10">
-          <p className="text-xs text-red-600 dark:text-red-400">Failed to load feedback.</p>
+          <p className="text-xs text-red-600 dark:text-red-400">
+            Failed to load feedback.
+          </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 py-1 flex-1 overflow-y-auto pr-1">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto py-1 pr-1">
           {comments.map((comment) => (
             <CommentItem
               key={comment.id}
@@ -244,7 +263,7 @@ export const SectionComments = ({
 
       {/* Composer Input */}
       {!isReadOnly && (
-        <div className="shrink-0 mt-2 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="mt-2 flex shrink-0 flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
           <Input
             placeholder="Leave specific, actionable feedback..."
             value={newComment}

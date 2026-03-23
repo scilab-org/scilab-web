@@ -213,6 +213,17 @@ export type SubProjectPaper = {
   journalName: string | null;
   conferenceName: string | null;
   tagNames: string[];
+  createdBy: string | null;
+  createdOnUtc?: string;
+  lastModifiedOnUtc?: string;
+  lastModifiedBy?: string | null;
+  researchGap?: string;
+  mainContribution?: string;
+  rule?: string;
+  gapType?: string;
+  styleName?: string;
+  styleDescription?: string;
+  styleRule?: string;
 };
 
 export type GetSubProjectsResult = {

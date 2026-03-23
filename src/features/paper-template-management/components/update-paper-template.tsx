@@ -85,7 +85,10 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
       prev.map((s) => {
         if (s._id !== id) return s;
         const updated = { ...s, [field]: value };
-        if (field === 'title') updated.key = titleToKey(value as string);
+        if (field === 'title') {
+          updated.key = titleToKey(value as string);
+          updated.latex = `\\section{\\textbf{${value}}}`;
+        }
         return updated;
       }),
     );

@@ -8,12 +8,15 @@ import {
   Play,
   PanelLeftOpen,
   PanelLeftClose,
+  ChevronDown,
+  ChevronRight,
   Upload,
   Image as ImageIcon,
   Loader2,
   Keyboard,
   Copy,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -227,6 +230,7 @@ type SectionProp = {
   sectionSumary: string;
   parentSectionId: string | null;
   sectionRole?: string;
+  description?: string;
 };
 
 type LatexPaperEditorProps = {
@@ -300,10 +304,11 @@ export const LatexPaperEditor = ({
     'sections' | 'files' | 'comments'
   >(sections?.length ? 'sections' : 'files');
   const [activeSectionId, setActiveSectionId] = useState<string | null>(
-    initialSectionId || (sections?.[0]?.id ?? null),
+    () => initialSectionId || (sections?.[0]?.id ?? null),
   );
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isGuidelinesOpen, setIsGuidelinesOpen] = useState(false);
   const [savedContent, setSavedContent] = useState(initialContent ?? '');
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
@@ -764,6 +769,38 @@ export const LatexPaperEditor = ({
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Paper Sections
                 </h3>
+                {activeSectionId && sections?.length ? (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsGuidelinesOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-2.5 text-left transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+                      aria-expanded={isGuidelinesOpen}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-blue-500" />
+                        <span className="text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
+                          Writing Guidelines
+                        </span>
+                      </div>
+                      {isGuidelinesOpen ? (
+                        <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                      )}
+                    </button>
+                    {isGuidelinesOpen && (
+                      <div className="px-4 py-2 text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-400">
+                        {sections.find((s) => s.id === activeSectionId)
+                          ?.description || (
+                          <span className="text-slate-400 italic dark:text-slate-600">
+                            No description provided for this section.
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
                 <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-1 py-1">
                   {sections?.length ? (
                     sections.map((sec) => (
