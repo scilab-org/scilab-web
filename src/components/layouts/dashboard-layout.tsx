@@ -95,27 +95,47 @@ const Breadcrumb = () => {
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
   const breadcrumbItems = pathSegments
-    .map((segment, index) => {
-      // Skip UUID-like segments (long alphanumeric strings)
+    .map((segment, index, arr) => {
+      // Handle UUID-like segments
       if (
         segment.length > 30 ||
         /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
           segment,
         )
       ) {
+        const prev = arr[index - 1];
+        if (prev === 'my-projects' || prev === 'assigned-projects') {
+          return {
+            label: 'Project Detail',
+            path: '/' + arr.slice(0, index + 1).join('/'),
+          };
+        }
+        // Don't show "Paper Detail" for paper ID segment, stop at "Papers"
+        if (prev === 'papers') {
+          return null;
+        }
         return null;
       }
 
-      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
-      return { label, path: '/' + pathSegments.slice(0, index + 1).join('/') };
+      // Rename "my-projects" to "My projects"
+      let label = segment.charAt(0).toUpperCase() + segment.slice(1);
+      if (segment === 'my-projects') label = 'My Projects';
+
+      return { label, path: '/' + arr.slice(0, index + 1).join('/') };
     })
     .filter(Boolean);
+
+  // If we are in "app/my-projects/...", we want to skip "app" in breadcrumbs if displayed
+  // But generally, let's keep it simple or customize further if needed.
+  // The user asked for "Home > App > My-projects > Papers".
+  // Currently: Home (link to assigned projects) > App > My-projects > ...
+  // Let's just render what we have but style it.
 
   return (
     <nav className="flex items-center gap-1 text-sm">
       <NavLink
         to={paths.app.assignedProjects.list.getHref()}
-        className="text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground hidden md:block"
       >
         Home
       </NavLink>

@@ -59,6 +59,18 @@ export type WritingPaperDto = {
   journalName: string | null;
   conferenceName: string | null;
   tagNames: string[];
+  createdOnUtc?: string | null;
+  createdBy?: string | null;
+  lastModifiedOnUtc?: string | null;
+  lastModifiedBy?: string | null;
+  researchGap?: string | null;
+  mainContribution?: string | null;
+  rule?: string | null;
+  gapType?: string | null;
+  journal?: string | null;
+  styleName?: string | null;
+  styleDescription?: string | null;
+  styleRule?: string | null;
 };
 
 export type GetWritingPaperByIdResultApiResponse = {
@@ -146,6 +158,7 @@ export type UpdateSectionDto = {
   numbered: boolean;
   sectionSumary: string;
   parentSectionId?: string | null;
+  description?: string;
 };
 
 export type CreateSectionDto = {
@@ -191,6 +204,7 @@ export type AssignedSection = {
   title: string;
   content: string;
   sectionSumary: string;
+  description?: string;
   displayOrder: number;
   numbered: boolean;
   filePath: string | null;
@@ -303,6 +317,7 @@ export type MarkSectionItem = {
   name: string;
   email: string;
   content: string;
+  description?: string;
 };
 
 export type GetMarkSectionApiResponse = {

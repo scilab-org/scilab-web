@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Users, Trash2, Layers } from 'lucide-react';
+import { Plus, Search, Users, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,10 +30,9 @@ import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
 import { PaperMembersSheet } from './paper-members-sheet';
-import { PaperSectionsDialog } from '@/features/paper-management/components/paper-sections-dialog';
-import { PaperSectionsReadOnlyDialog } from '@/features/paper-management/components/paper-sections-readonly-dialog';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
-import { PaperInProjectDetailDialog } from './paper-in-project-detail-dialog';
+import { useUser } from '@/lib/auth';
+import { paths } from '@/config/paths';
 
 const getStatusColor = (status: number | null) => {
   switch (status) {
@@ -70,12 +70,12 @@ export const ProjectWritingPapersList = ({
   const [searchDebounce, setSearchDebounce] = useState('');
   const [membersSheetPaper, setMembersSheetPaper] =
     useState<SubProjectPaper | null>(null);
-  const [sectionsSheetPaper, setSectionsSheetPaper] =
-    useState<SubProjectPaper | null>(null);
   const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
     null,
   );
-  const [detailPaper, setDetailPaper] = useState<SubProjectPaper | null>(null);
+
+  const { data: user } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounce(searchText), 350);
@@ -185,7 +185,18 @@ export const ProjectWritingPapersList = ({
                     <TableCell className="font-medium">
                       <button
                         type="button"
-                        onClick={() => setDetailPaper(paper)}
+                        onClick={() => {
+                          const href = readOnly
+                            ? paths.app.projectPaperDetail.getHref(
+                                projectId,
+                                paper.id,
+                              )
+                            : paths.app.assignedProjects.paperDetail.getHref(
+                                projectId,
+                                paper.id,
+                              );
+                          navigate(href);
+                        }}
                         className="text-left text-blue-600 hover:underline dark:text-blue-400"
                       >
                         {paper.title || '(Untitled)'}
@@ -213,15 +224,6 @@ export const ProjectWritingPapersList = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSectionsSheetPaper(paper)}
-                          className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
-                        >
-                          <Layers className="h-3.5 w-3.5" />
-                          Sections
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => setMembersSheetPaper(paper)}
                           disabled={!paper.subProjectId}
                           className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
@@ -229,18 +231,20 @@ export const ProjectWritingPapersList = ({
                           <Users className="h-3.5 w-3.5" />
                           Members
                         </Button>
-                        {isManager && !readOnly && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPaperToDelete(paper)}
-                            disabled={!paper.subProjectId}
-                            className={`flex items-center gap-1.5 ${BTN.DANGER_OUTLINE}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </Button>
-                        )}
+                        {(user?.preferredUsername === paper.createdBy ||
+                          isManager) &&
+                          !readOnly && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPaperToDelete(paper)}
+                              disabled={!paper.subProjectId}
+                              className={`flex items-center gap-1.5 ${BTN.DANGER_OUTLINE}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Delete
+                            </Button>
+                          )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -265,30 +269,6 @@ export const ProjectWritingPapersList = ({
           </div>
         )}
       </div>
-
-      {sectionsSheetPaper && isManager && (
-        <PaperSectionsReadOnlyDialog
-          paperId={sectionsSheetPaper.id}
-          paperTitle={sectionsSheetPaper.title ?? '(Untitled)'}
-          open={!!sectionsSheetPaper}
-          onOpenChange={(o) => {
-            if (!o) setSectionsSheetPaper(null);
-          }}
-        />
-      )}
-
-      {sectionsSheetPaper && !isManager && (
-        <PaperSectionsDialog
-          paperId={sectionsSheetPaper.id}
-          paperTitle={sectionsSheetPaper.title ?? '(Untitled)'}
-          subProjectId={sectionsSheetPaper.subProjectId ?? ''}
-          isAuthor={isAuthor}
-          open={!!sectionsSheetPaper}
-          onOpenChange={(o) => {
-            if (!o) setSectionsSheetPaper(null);
-          }}
-        />
-      )}
 
       {membersSheetPaper && membersSheetPaper.subProjectId && (
         <PaperMembersSheet
@@ -336,14 +316,6 @@ export const ProjectWritingPapersList = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <PaperInProjectDetailDialog
-        open={!!detailPaper}
-        paper={detailPaper}
-        onOpenChange={(o) => {
-          if (!o) setDetailPaper(null);
-        }}
-      />
     </div>
   );
 };

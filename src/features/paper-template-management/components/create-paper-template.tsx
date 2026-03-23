@@ -158,8 +158,11 @@ export const CreatePaperTemplate = () => {
       prev.map((s) => {
         if (s._id !== id) return s;
         const updated = { ...s, [field]: value };
-        // auto-regenerate key when title changes
-        if (field === 'title') updated.key = titleToKey(value as string);
+        // auto-regenerate key and latex when title changes
+        if (field === 'title') {
+          updated.key = titleToKey(value as string);
+          updated.latex = `\\section{\\textbf{${value}}}`;
+        }
         return updated;
       }),
     );

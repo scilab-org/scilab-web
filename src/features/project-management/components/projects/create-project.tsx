@@ -214,8 +214,6 @@ export const CreateProject = () => {
               >
                 <option value="1">Draft</option>
                 <option value="2">Active</option>
-                <option value="3">Completed</option>
-                <option value="4">Archived</option>
               </select>
             </div>
 

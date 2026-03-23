@@ -185,7 +185,7 @@ export const PaperMembersSheet = ({
   const panelTitle = {
     default: 'Paper Members',
     view: 'View Members',
-    add: 'Add Authors to Paper',
+    add: isManager ? 'Add Authors to Paper' : 'Add Member to Paper',
   }[panel];
 
   const addPanelDesc = isManager
@@ -418,8 +418,8 @@ export const PaperMembersSheet = ({
                   <div className="bg-muted/30 rounded-lg py-8 text-center">
                     <p className="text-muted-foreground text-sm">
                       {searchText
-                        ? `No authors found for "${searchText}"`
-                        : 'No available authors in this project'}
+                        ? `No ${isManager ? 'authors' : 'members'} found for "${searchText}"`
+                        : `No available ${isManager ? 'authors' : 'members'} in this project`}
                     </p>
                   </div>
                 )}

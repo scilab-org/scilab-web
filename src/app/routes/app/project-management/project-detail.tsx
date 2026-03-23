@@ -49,20 +49,20 @@ import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
-    async ({ params }: { params: Record<string, string | undefined> }) => {
-      const projectId = params.projectId as string;
+  async ({ params }: { params: Record<string, string | undefined> }) => {
+    const projectId = params.projectId as string;
 
-      const query = getProjectQueryOptions(projectId);
+    const query = getProjectQueryOptions(projectId);
 
-      try {
-        return (
-          queryClient.getQueryData(query.queryKey) ??
-          (await queryClient.fetchQuery(query))
-        );
-      } catch {
-        return null;
-      }
-    };
+    try {
+      return (
+        queryClient.getQueryData(query.queryKey) ??
+        (await queryClient.fetchQuery(query))
+      );
+    } catch {
+      return null;
+    }
+  };
 
 type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
@@ -127,7 +127,12 @@ const ProjectDetailRoute = () => {
   const viewerIsSystemAdmin = getUserGroups().includes('system:admin');
 
   if (!viewerIsSystemAdmin) {
-    return <Navigate to={paths.app.assignedProjects.detail.getHref(projectId!)} replace />;
+    return (
+      <Navigate
+        to={paths.app.assignedProjects.detail.getHref(projectId!)}
+        replace
+      />
+    );
   }
 
   const projectQuery = useProjectDetail({
@@ -213,10 +218,18 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project ID is required</p>
           <Button
-            onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
+            onClick={() =>
+              navigate(
+                viewerIsSystemAdmin
+                  ? paths.app.projects.getHref()
+                  : paths.app.assignedProjects.list.getHref(),
+              )
+            }
             className="mt-4"
           >
-            {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
+            {viewerIsSystemAdmin
+              ? 'Back to Projects'
+              : 'Back to Assigned Projects'}
           </Button>
         </div>
       </ContentLayout>
@@ -242,10 +255,18 @@ const ProjectDetailRoute = () => {
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Project not found</p>
           <Button
-            onClick={() => navigate(viewerIsSystemAdmin ? paths.app.projects.getHref() : paths.app.assignedProjects.list.getHref())}
+            onClick={() =>
+              navigate(
+                viewerIsSystemAdmin
+                  ? paths.app.projects.getHref()
+                  : paths.app.assignedProjects.list.getHref(),
+              )
+            }
             className="mt-4"
           >
-            {viewerIsSystemAdmin ? 'Back to Projects' : 'Back to Assigned Projects'}
+            {viewerIsSystemAdmin
+              ? 'Back to Projects'
+              : 'Back to Assigned Projects'}
           </Button>
         </div>
       </ContentLayout>
@@ -260,8 +281,6 @@ const ProjectDetailRoute = () => {
   return (
     <ContentLayout title="" description="">
       <div className="space-y-5">
-
-
         {/* Project banner */}
         <div
           className={`border-border bg-card rounded-xl border border-l-4 px-6 py-5 shadow-sm ${borderClass}`}
@@ -347,10 +366,11 @@ const ProjectDetailRoute = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${isActive
+                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
                       ? 'border-primary text-primary'
                       : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                    }`}
+                  }`}
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
