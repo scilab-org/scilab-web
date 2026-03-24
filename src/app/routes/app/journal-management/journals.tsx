@@ -35,8 +35,20 @@ export const clientLoader =
 
 const JournalsRoute = () => {
   return (
-    <ContentLayout title="Journals">
-      <JournalsList />
+    <ContentLayout
+      title="Journals"
+      description="Manage and organize journal templates and writing styles"
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-end">
+          <CreateJournal />
+        </div>
+        <JournalsFilter />
+      </div>
+
+      <div className="mt-4">
+        <JournalsList />
+      </div>
     </ContentLayout>
   );
 };

@@ -51,6 +51,7 @@ export const ProjectPaperDetailPage = ({
   }
 
   const paper = paperQuery.data?.result?.paper;
+  const paperType = paper?.paperType?.trim();
 
   if (!paper) {
     return (
@@ -77,9 +78,7 @@ export const ProjectPaperDetailPage = ({
                 {paper.title}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                <Badge variant="outline">
-                  {paper.paperType || 'Unknown Type'}
-                </Badge>
+                {paperType && <Badge variant="outline">{paperType}</Badge>}
                 <Badge
                   className={
                     paper.status === 1

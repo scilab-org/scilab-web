@@ -17,10 +17,8 @@ import {
 
 import { paths } from '@/config/paths';
 import { useJournals } from '../api/get-journals';
-import { CreateJournal } from './create-journal';
 import { DeleteJournal } from './delete-journal';
 import { UpdateJournal } from './update-journal';
-import { JournalsFilter } from './journals-filter';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);
@@ -61,27 +59,18 @@ export const JournalsList = () => {
 
   if (!journals || journals.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Journals</h2>
-          <CreateJournal />
-        </div>
-        <JournalsFilter />
-        <div className="flex h-48 w-full items-center justify-center">
-          <p className="text-muted-foreground">No journals found.</p>
-        </div>
+      <div className="flex h-48 w-full items-center justify-center">
+        <p className="text-muted-foreground">
+          {name
+            ? 'No journals match your search criteria'
+            : 'No journals found.'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Journals</h2>
-        <CreateJournal />
-      </div>
-      <JournalsFilter />
-
+    <div>
       <div className="overflow-x-auto rounded-xl border shadow-sm">
         <Table>
           <TableHeader>

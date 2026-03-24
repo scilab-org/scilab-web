@@ -22,6 +22,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         defaultOptions: queryConfig,
       }),
   );
+  const shouldShowQueryDevtools =
+    import.meta.env.DEV &&
+    import.meta.env.VITE_SHOW_REACT_QUERY_DEVTOOLS === 'true';
 
   return (
     <React.Suspense
@@ -43,7 +46,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         >
           <QueryClientProvider client={queryClient}>
             <Toaster position="top-right" richColors />
-            {import.meta.env.DEV && <ReactQueryDevtools />}
+            {shouldShowQueryDevtools && <ReactQueryDevtools />}
             {children}
           </QueryClientProvider>
         </ReactKeycloakProvider>
