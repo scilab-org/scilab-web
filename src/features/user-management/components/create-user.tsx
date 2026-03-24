@@ -23,6 +23,7 @@ const initialFormData = {
   lastName: '',
   initialPassword: '',
   temporaryPassword: true,
+  avatarImage: null as File | null,
 };
 
 export const CreateUser = () => {
@@ -52,6 +53,7 @@ export const CreateUser = () => {
       initialPassword: formData.initialPassword,
       temporaryPassword: formData.temporaryPassword,
       groupNames: null,
+      avatarImage: formData.avatarImage,
     });
   };
 
@@ -176,6 +178,26 @@ export const CreateUser = () => {
               />
               Temporary Password
             </label>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cu-avatar" className="text-sm font-medium">
+              Avatar Image
+            </label>
+            <Input
+              id="cu-avatar"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setFormData((prev) => ({ ...prev, avatarImage: file }));
+              }}
+            />
+            {formData.avatarImage && (
+              <p className="text-muted-foreground text-xs">
+                {formData.avatarImage.name}
+              </p>
+            )}
           </div>
         </form>
 

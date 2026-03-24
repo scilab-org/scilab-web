@@ -15,7 +15,18 @@ export const updateUser = ({
   userId,
   data,
 }: UpdateUserPayload): Promise<BooleanApiUpdatedResponse> => {
-  return api.put(USER_MANAGEMENT_API.USER_BY_ID(userId), data);
+  const formData = new FormData();
+  if (data.firstName) formData.append('firstName', data.firstName);
+  if (data.lastName) formData.append('lastName', data.lastName);
+  formData.append('enabled', String(data.enabled));
+  if (data.groupNames) {
+    data.groupNames.forEach((name) => formData.append('groupNames', name));
+  }
+  if (data.avatarImage) formData.append('avatarImage', data.avatarImage);
+
+  return api.put(USER_MANAGEMENT_API.USER_BY_ID(userId), formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
 type UseUpdateUserOptions = {

@@ -5,6 +5,8 @@ export const USER_MANAGEMENT_API = {
   USER_BY_ID: (userId: string) => `${SERVICE_PREFIX}/users/${userId}`,
   DEACTIVATE_USER: (userId: string) =>
     `${SERVICE_PREFIX}/users/${userId}/deactivate`,
+  ACTIVATE_USER: (userId: string) =>
+    `${SERVICE_PREFIX}/users/${userId}/activate`,
 } as const;
 
 export const USER_MANAGEMENT_QUERY_KEYS = {

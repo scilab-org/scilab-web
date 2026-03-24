@@ -47,24 +47,7 @@ const GroupRoute = () => {
     );
   }
 
-  // Find group name from the groups list
-  const findGroup = (
-    groups: any[],
-    id: string,
-  ): { name: string } | undefined => {
-    for (const g of groups) {
-      if (g.id === id) return g;
-      if (g.subGroups) {
-        const found = findGroup(g.subGroups, id);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  };
-
-  const group = groupsQuery.data?.result
-    ? findGroup(groupsQuery.data.result, groupId)
-    : undefined;
+  const group = groupsQuery.data?.result?.find((g) => g.id === groupId);
 
   return (
     <ContentLayout

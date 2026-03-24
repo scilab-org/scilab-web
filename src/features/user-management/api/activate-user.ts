@@ -4,29 +4,29 @@ import { api } from '@/lib/api-client';
 import { MutationConfig } from '@/lib/react-query';
 
 import { USER_MANAGEMENT_API, USER_MANAGEMENT_QUERY_KEYS } from '../constants';
-import { BooleanApiDeletedResponse } from '../types';
+import { BooleanApiUpdatedResponse } from '../types';
 
-export const deactivateUser = ({
+export const activateUser = ({
   userId,
 }: {
   userId: string;
-}): Promise<BooleanApiDeletedResponse> => {
-  return api.delete(USER_MANAGEMENT_API.DEACTIVATE_USER(userId));
+}): Promise<BooleanApiUpdatedResponse> => {
+  return api.put(USER_MANAGEMENT_API.ACTIVATE_USER(userId));
 };
 
-type UseDeactivateUserOptions = {
-  mutationConfig?: MutationConfig<typeof deactivateUser>;
+type UseActivateUserOptions = {
+  mutationConfig?: MutationConfig<typeof activateUser>;
 };
 
-export const useDeactivateUser = ({
+export const useActivateUser = ({
   mutationConfig,
-}: UseDeactivateUserOptions = {}) => {
+}: UseActivateUserOptions = {}) => {
   const queryClient = useQueryClient();
 
   const { onSuccess, ...restConfig } = mutationConfig || {};
 
   return useMutation({
-    mutationFn: deactivateUser,
+    mutationFn: activateUser,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
         queryKey: [USER_MANAGEMENT_QUERY_KEYS.USERS],

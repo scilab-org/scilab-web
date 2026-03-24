@@ -4,7 +4,6 @@ export type GroupDto = {
   id: string | null;
   name: string | null;
   path: string | null;
-  subGroups: GroupDto[] | null;
 };
 
 export type RoleDto = {

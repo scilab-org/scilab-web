@@ -11,6 +11,7 @@ import {
 import { useUserDetail } from '../api/get-user';
 import { UpdateUser } from './update-user';
 import { DeactivateUser } from './deactivate-user';
+import { ActivateUser } from './activate-user';
 
 export const UserView = ({ userId }: { userId: string }) => {
   const userQuery = useUserDetail({ userId });
@@ -31,17 +32,42 @@ export const UserView = ({ userId }: { userId: string }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Badge variant={user.enabled ? 'default' : 'destructive'}>
-            {user.enabled ? 'Active' : 'Disabled'}
-          </Badge>
-          {user.emailVerified && (
-            <Badge variant="outline">Email Verified</Badge>
-          )}
+        <div className="flex items-center gap-4">
+          {/* Avatar */}
+          <span className="border-border relative inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-slate-200 dark:bg-slate-700">
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.username ?? ''}
+                className="size-full object-cover"
+              />
+            ) : (
+              <span className="text-xl font-semibold text-slate-600 select-none dark:text-slate-300">
+                {(
+                  user.firstName?.[0] ??
+                  user.username?.[0] ??
+                  '?'
+                ).toUpperCase()}
+              </span>
+            )}
+          </span>
+
+          <div className="flex flex-col gap-1.5">
+            <Badge variant={user.enabled ? 'default' : 'destructive'}>
+              {user.enabled ? 'Active' : 'Disabled'}
+            </Badge>
+            {user.emailVerified && (
+              <Badge variant="outline">Email Verified</Badge>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <UpdateUser userId={userId} user={user} />
-          {user.enabled && <DeactivateUser userId={userId} />}
+          {user.enabled ? (
+            <DeactivateUser userId={userId} />
+          ) : (
+            <ActivateUser userId={userId} />
+          )}
         </div>
       </div>
 

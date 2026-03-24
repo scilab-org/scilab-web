@@ -14,22 +14,10 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useGroups } from '@/features/group-role-management/api/get-groups';
-import { GroupDto } from '@/features/group-role-management/types';
 
 import { BTN } from '@/lib/button-styles';
 import { useUpdateUser } from '../api/update-user';
 import { UserDto } from '../types';
-
-const flattenGroups = (groups: GroupDto[]): GroupDto[] => {
-  const result: GroupDto[] = [];
-  for (const group of groups) {
-    result.push(group);
-    if (group.subGroups && group.subGroups.length > 0) {
-      result.push(...flattenGroups(group.subGroups));
-    }
-  }
-  return result;
-};
 
 type UpdateUserProps = {
   userId: string;
@@ -43,12 +31,12 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
     lastName: user.lastName || '',
     enabled: user.enabled,
     groupNames: user.groups?.map((g) => g.name!).filter(Boolean) || [],
+    avatarImage: null as File | null,
   });
+  const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
 
   const groupsQuery = useGroups();
-  const allGroups = groupsQuery.data?.result
-    ? flattenGroups(groupsQuery.data.result)
-    : [];
+  const allGroups = groupsQuery.data?.result || [];
 
   const updateUserMutation = useUpdateUser({
     mutationConfig: {
@@ -66,7 +54,9 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
         lastName: user.lastName || '',
         enabled: user.enabled,
         groupNames: user.groups?.map((g) => g.name!).filter(Boolean) || [],
+        avatarImage: null,
       });
+      setAvatarPreview(null);
     }
   }, [open, user]);
 
@@ -88,6 +78,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
         lastName: formData.lastName,
         enabled: formData.enabled,
         groupNames: formData.groupNames,
+        avatarImage: formData.avatarImage,
       },
     });
   };
@@ -95,8 +86,8 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-4" />
+        <Button variant="outline" size="xs" className={BTN.EDIT_OUTLINE}>
+          <Pencil className="size-3" />
           Edit
         </Button>
       </SheetTrigger>
@@ -190,6 +181,53 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="uu-avatar" className="text-sm font-medium">
+              Avatar Image
+            </label>
+            {/* Current / preview */}
+            <div className="flex items-center gap-4">
+              <span className="border-border relative inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-slate-200 dark:bg-slate-700">
+                {avatarPreview || user.avatarUrl ? (
+                  <img
+                    src={avatarPreview ?? user.avatarUrl!}
+                    alt={user.username ?? ''}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xl font-semibold text-slate-600 select-none dark:text-slate-300">
+                    {(
+                      user.firstName?.[0] ??
+                      user.username?.[0] ??
+                      '?'
+                    ).toUpperCase()}
+                  </span>
+                )}
+              </span>
+              <div className="flex-1 space-y-1">
+                <Input
+                  id="uu-avatar"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setFormData((prev) => ({ ...prev, avatarImage: file }));
+                    if (file) {
+                      setAvatarPreview(URL.createObjectURL(file));
+                    } else {
+                      setAvatarPreview(null);
+                    }
+                  }}
+                />
+                {avatarPreview && (
+                  <p className="text-muted-foreground text-xs">
+                    {formData.avatarImage?.name}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </form>
 

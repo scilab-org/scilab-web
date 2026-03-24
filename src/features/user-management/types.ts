@@ -19,6 +19,7 @@ export type UserDto = {
   enabled: boolean;
   emailVerified: boolean;
   createdTimestamp: number;
+  avatarUrl: string | null;
   groups: GroupDto[] | null;
 };
 
@@ -37,6 +38,7 @@ export type CreateUserDto = {
   initialPassword: string | null;
   temporaryPassword: boolean;
   groupNames: string[] | null;
+  avatarImage: File | null;
 };
 
 export type UpdateUserDto = {
@@ -44,6 +46,7 @@ export type UpdateUserDto = {
   lastName: string | null;
   enabled: boolean;
   groupNames: string[] | null;
+  avatarImage: File | null;
 };
 
 export type GetUsersResult = {
@@ -78,6 +81,7 @@ export type BooleanApiDeletedResponse = {
 export type GetUsersParams = {
   searchText?: string;
   groupName?: string;
+  enabled?: string;
   pageNumber?: number;
   pageSize?: number;
 };

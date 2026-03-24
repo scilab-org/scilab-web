@@ -9,7 +9,22 @@ import { CreateUserDto, StringApiCreatedResponse } from '../types';
 export const createUser = (
   data: CreateUserDto,
 ): Promise<StringApiCreatedResponse> => {
-  return api.post(USER_MANAGEMENT_API.USERS, data);
+  const formData = new FormData();
+  if (data.username) formData.append('username', data.username);
+  if (data.email) formData.append('email', data.email);
+  if (data.firstName) formData.append('firstName', data.firstName);
+  if (data.lastName) formData.append('lastName', data.lastName);
+  if (data.initialPassword)
+    formData.append('initialPassword', data.initialPassword);
+  formData.append('temporaryPassword', String(data.temporaryPassword));
+  if (data.groupNames) {
+    data.groupNames.forEach((name) => formData.append('groupNames', name));
+  }
+  if (data.avatarImage) formData.append('avatarImage', data.avatarImage);
+
+  return api.post(USER_MANAGEMENT_API.USERS, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
 type UseCreateUserOptions = {

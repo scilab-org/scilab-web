@@ -20,7 +20,6 @@ import { BTN } from '@/lib/button-styles';
 
 import { useUsers } from '../api/get-users';
 import { getUserQueryOptions } from '../api/get-user';
-import { DeactivateUser } from './deactivate-user';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);
@@ -35,9 +34,11 @@ export const UsersList = () => {
 
   const page = +(searchParams.get('page') || 1);
   const searchText = searchParams.get('search') || undefined;
+  const groupName = searchParams.get('groupName') || undefined;
+  const enabled = searchParams.get('enabled') || undefined;
 
   const usersQuery = useUsers({
-    params: { pageNumber: page, searchText },
+    params: { pageNumber: page, pageSize: 10, searchText, groupName, enabled },
   });
 
   if (usersQuery.isLoading) {
@@ -57,7 +58,11 @@ export const UsersList = () => {
   if (!users || users.length === 0) {
     return (
       <div className="flex h-48 w-full items-center justify-center">
-        <p className="text-muted-foreground">No users found.</p>
+        <p className="text-muted-foreground">
+          {searchText || groupName || enabled
+            ? 'No users match your search criteria.'
+            : 'No users found.'}
+        </p>
       </div>
     );
   }
@@ -96,12 +101,29 @@ export const UsersList = () => {
               <TableCell className="font-medium">
                 <Link
                   to={paths.app.userManagement.user.getHref(user.id!)}
-                  className="text-primary hover:underline"
+                  className="flex items-center gap-2.5 hover:underline"
                   onMouseEnter={() => {
                     queryClient.prefetchQuery(getUserQueryOptions(user.id!));
                   }}
                 >
-                  {user.username}
+                  <span className="relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.username ?? ''}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-600 select-none dark:text-slate-300">
+                        {(
+                          user.firstName?.[0] ??
+                          user.username?.[0] ??
+                          '?'
+                        ).toUpperCase()}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-primary">{user.username}</span>
                 </Link>
               </TableCell>
               <TableCell>{user.email}</TableCell>
@@ -134,7 +156,6 @@ export const UsersList = () => {
                       View
                     </Link>
                   </Button>
-                  {user.enabled && <DeactivateUser userId={user.id!} />}
                 </div>
               </TableCell>
             </TableRow>
