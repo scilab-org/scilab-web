@@ -30,10 +30,12 @@ const CommentItem = ({
   comment,
   sectionId,
   currentUser,
+  isReadOnly,
 }: {
   comment: CommentDto;
   sectionId: string;
   currentUser?: string;
+  isReadOnly?: boolean;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
@@ -107,15 +109,17 @@ const CommentItem = ({
             >
               <Edit2 className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-              onClick={handleDelete}
-              title="Delete Feedback"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            {!isReadOnly && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                onClick={handleDelete}
+                title="Delete Feedback"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -243,6 +247,7 @@ export const SectionComments = ({
               comment={comment}
               sectionId={sectionId}
               currentUser={user?.preferredUsername}
+              isReadOnly={isReadOnly}
             />
           ))}
           {comments.length === 0 && (

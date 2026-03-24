@@ -16,7 +16,6 @@ import {
   Keyboard,
   Copy,
   ExternalLink,
-  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,14 +38,13 @@ import {
 } from '@/components/ui/popover';
 import { BTN } from '@/lib/button-styles';
 
-import { useQueryClient } from '@tanstack/react-query';
-
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
+import { getMarkSection } from '@/features/paper-management/api/get-mark-section';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
+import { useSectionComments } from '@/features/paper-management/api/get-section-comments';
 import { SectionComments } from '@/features/paper-management/components/section-comments';
-import { COMMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 
 /**
  * Register a custom LaTeX language + theme so that
@@ -223,6 +221,8 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
 type SectionProp = {
   id: string;
+  markSectionId?: string;
+  paperId?: string;
   title: string;
   content: string;
   memberId: string;
@@ -292,14 +292,15 @@ export const LatexPaperEditor = ({
 }: LatexPaperEditorProps) => {
   const editableSectionRoles = new Set(['paper:author', 'section:edit']);
 
-  const queryClient = useQueryClient();
-
   const [content, setContent] = useState(initialContent ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const pdfUrlRef = useRef<string | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [editorSections, setEditorSections] = useState<
+    SectionProp[] | undefined
+  >(sections);
   const [sidebarTab, setSidebarTab] = useState<
     'sections' | 'files' | 'comments'
   >(sections?.length ? 'sections' : 'files');
@@ -316,8 +317,18 @@ export const LatexPaperEditor = ({
   const previousActiveSectionIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => {
+    setEditorSections(sections);
+  }, [sections]);
+
   const activeSection =
-    sections?.find((section) => section.id === activeSectionId) ?? null;
+    editorSections?.find((section) => section.id === activeSectionId) ?? null;
+  const activeSectionTitle =
+    editorSections?.find((section) => section.id === activeSectionId)?.title ??
+    null;
+  const activeSectionGuidelines = activeSection?.description
+    ? activeSection.description.replace(/\\n/g, '\n')
+    : '';
   const hasEditPermissionForActiveSection =
     !activeSection?.sectionRole ||
     editableSectionRoles.has(activeSection.sectionRole);
@@ -332,14 +343,17 @@ export const LatexPaperEditor = ({
     ? []
     : (sectionFilesQuery.data ?? []);
 
+  useSectionComments({
+    sectionId: activeSectionId ?? '',
+    queryConfig: {
+      enabled: !!activeSectionId,
+    },
+  });
+
   const uploadSectionFileMutation = useUploadSectionFile({
     mutationConfig: {
-      onSuccess: (fileId) => {
-        toast.success(
-          fileId
-            ? `File uploaded successfully (id: ${fileId})`
-            : 'File uploaded successfully',
-        );
+      onSuccess: () => {
+        toast.success('File uploaded successfully');
       },
       onError: () => {
         toast.error('Failed to upload file. Please try again.');
@@ -394,8 +408,10 @@ export const LatexPaperEditor = ({
 
   // When sections or activeSectionId changes, load content into editor
   useEffect(() => {
-    if (sections && activeSectionId) {
-      const activeSection = sections.find((s) => s.id === activeSectionId);
+    if (editorSections && activeSectionId) {
+      const activeSection = editorSections.find(
+        (s) => s.id === activeSectionId,
+      );
       if (activeSection) {
         const isSectionSwitched =
           previousActiveSectionIdRef.current !== activeSectionId;
@@ -416,13 +432,13 @@ export const LatexPaperEditor = ({
         previousActiveSectionIdRef.current = activeSectionId;
       }
     }
-  }, [sections, activeSectionId, compileAndRender]);
+  }, [editorSections, activeSectionId, compileAndRender]);
 
   useEffect(() => {
-    if (!sections?.length && sidebarTab !== 'files') {
+    if (!editorSections?.length && sidebarTab !== 'files') {
       setSidebarTab('files');
     }
-  }, [sections, sidebarTab]);
+  }, [editorSections, sidebarTab]);
 
   // Auto-render on first mount with the initial section content
   const hasRenderedOnce = useRef(false);
@@ -431,7 +447,7 @@ export const LatexPaperEditor = ({
       hasRenderedOnce.current = true;
 
       // When section outline is present, preview rendering is handled by section-switch effect.
-      if (sections?.length) return;
+      if (editorSections?.length) return;
 
       const initialLatex = content;
 
@@ -439,7 +455,7 @@ export const LatexPaperEditor = ({
         compileAndRender(initialLatex);
       }
     }
-  }, [content, sections, compileAndRender]);
+  }, [content, editorSections, compileAndRender]);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     setContent(value ?? '');
@@ -509,41 +525,96 @@ export const LatexPaperEditor = ({
     return () => window.clearTimeout(timeoutId);
   }, [copiedFileUrl]);
 
-  const handleSave = useCallback(() => {
+  const resolveLatestSectionId = useCallback(async (section: SectionProp) => {
+    const markSectionId = section.markSectionId || section.id;
+
+    try {
+      const response = await getMarkSection(markSectionId);
+      const items = response.result?.items ?? [];
+
+      const sameMemberItems = items.filter(
+        (item) => item.memberId === section.memberId,
+      );
+      const sameRoleItems = sameMemberItems.filter(
+        (item) => item.sectionRole === section.sectionRole,
+      );
+      const candidates = sameRoleItems.length ? sameRoleItems : sameMemberItems;
+
+      if (!candidates.length) return section.id;
+
+      const latest =
+        candidates.find((item) => !item.nextVersionSectionId) ?? candidates[0];
+
+      return latest.sectionId || section.id;
+    } catch {
+      return section.id;
+    }
+  }, []);
+
+  const handleSave = useCallback(async () => {
     if (isActiveSectionReadOnly) {
       toast.error('You do not have permission to edit this section.');
       return;
     }
-    if (!activeSectionId || !sections) {
+    if (!activeSectionId || !editorSections) {
       toast.error('No section selected to save.');
       return;
     }
-    const activeSection = sections.find((s) => s.id === activeSectionId);
-    if (!activeSection) {
+    const currentSection = editorSections.find((s) => s.id === activeSectionId);
+    if (!currentSection) {
       toast.error('Section not found.');
       return;
     }
-    updateSectionMutation.mutate({
-      sectionId: activeSectionId,
-      data: {
+    try {
+      await updateSectionMutation.mutateAsync({
         sectionId: activeSectionId,
-        memberId: activeSection.memberId,
-        title: activeSection.title,
-        content: content,
-        numbered: activeSection.numbered,
-        sectionSumary: activeSection.sectionSumary || '',
-        parentSectionId: activeSection.parentSectionId,
-      },
-    });
-    setSavedContent(content);
-    onSave?.(content, activeSectionId);
+        data: {
+          sectionId: activeSectionId,
+          memberId: currentSection.memberId,
+          title: currentSection.title,
+          content: content,
+          numbered: currentSection.numbered,
+          sectionSumary: currentSection.sectionSumary || '',
+          parentSectionId: currentSection.parentSectionId,
+        },
+      });
+
+      const latestSectionId = await resolveLatestSectionId(currentSection);
+      const nextSection: SectionProp = {
+        ...currentSection,
+        id: latestSectionId,
+        content,
+      };
+
+      setEditorSections((prev) => {
+        if (!prev?.length) return [nextSection];
+
+        const next = [...prev];
+        const currentIndex = next.findIndex((s) => s.id === activeSectionId);
+
+        if (currentIndex >= 0) {
+          next[currentIndex] = nextSection;
+        } else {
+          next.unshift(nextSection);
+        }
+
+        return next;
+      });
+
+      setActiveSectionId(latestSectionId);
+      setSavedContent(content);
+      onSave?.(content, latestSectionId);
+    } catch {
+      // Mutation error is already handled by mutationConfig onError
+    }
   }, [
     activeSectionId,
-    sections,
+    editorSections,
     content,
     updateSectionMutation,
     onSave,
     isActiveSectionReadOnly,
+    resolveLatestSectionId,
   ]);
 
   const handleClose = useCallback(() => {
@@ -623,9 +694,8 @@ export const LatexPaperEditor = ({
           </div>
           <div>
             <h2 className="text-foreground text-lg leading-tight font-semibold">
-              {activeSectionId && sections
-                ? sections.find((s) => s.id === activeSectionId)?.title ||
-                  paperTitle
+              {activeSectionId && editorSections
+                ? activeSectionTitle || paperTitle
                 : paperTitle}
             </h2>
           </div>
@@ -720,7 +790,7 @@ export const LatexPaperEditor = ({
               <button
                 type="button"
                 onClick={() => setSidebarTab('sections')}
-                disabled={!sections?.length}
+                disabled={!editorSections?.length}
                 className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
                   sidebarTab === 'sections'
                     ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
@@ -742,17 +812,7 @@ export const LatexPaperEditor = ({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setSidebarTab('comments');
-                  if (activeSectionId) {
-                    queryClient.invalidateQueries({
-                      queryKey: [
-                        COMMENT_QUERY_KEYS.SECTION_COMMENTS,
-                        activeSectionId,
-                      ],
-                    });
-                  }
-                }}
+                onClick={() => setSidebarTab('comments')}
                 disabled={!activeSectionId}
                 className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
                   sidebarTab === 'comments'
@@ -769,8 +829,8 @@ export const LatexPaperEditor = ({
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Paper Sections
                 </h3>
-                {activeSectionId && sections?.length ? (
-                  <div className="mb-4">
+                {activeSectionId && editorSections?.length ? (
+                  <div className="mb-1">
                     <button
                       type="button"
                       onClick={() => setIsGuidelinesOpen((prev) => !prev)}
@@ -790,24 +850,25 @@ export const LatexPaperEditor = ({
                       )}
                     </button>
                     {isGuidelinesOpen && (
-                      <div className="px-4 py-2 text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:text-slate-400">
-                        {sections.find((s) => s.id === activeSectionId)
-                          ?.description || (
-                          <span className="text-slate-400 italic dark:text-slate-600">
-                            No description provided for this section.
-                          </span>
-                        )}
+                      <div className="px-1">
+                        <div className="max-h-52 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs leading-relaxed whitespace-pre-wrap text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+                          {activeSectionGuidelines || (
+                            <span className="text-slate-400 italic dark:text-slate-600">
+                              No description provided for this section.
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : null}
-                <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-1 py-1">
-                  {sections?.length ? (
-                    sections.map((sec) => (
+                <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-1 py-1">
+                  {editorSections?.length ? (
+                    editorSections.map((sec) => (
                       <button
                         key={sec.id}
                         onClick={() => setActiveSectionId(sec.id)}
-                        className={`truncate rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                        className={`shrink-0 truncate rounded-md px-3 py-2 text-left text-sm transition-colors ${
                           activeSectionId === sec.id
                             ? 'bg-blue-100 font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
@@ -829,11 +890,9 @@ export const LatexPaperEditor = ({
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Uploaded Files
                 </h3>
-                {activeSectionId && sections?.length ? (
+                {activeSectionId && editorSections?.length ? (
                   <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Section:{' '}
-                    {sections.find((s) => s.id === activeSectionId)?.title ||
-                      '(Untitled)'}
+                    Section: {activeSectionTitle || '(Untitled)'}
                   </p>
                 ) : (
                   <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">

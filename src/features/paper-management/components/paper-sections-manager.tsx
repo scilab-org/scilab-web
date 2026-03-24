@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Layers,
   UserPlus,
@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/table';
 import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
@@ -59,7 +60,8 @@ import { useAvailableSectionMembers } from '../api/get-available-section-members
 import { useGetSectionMembers } from '../api/get-section-members';
 import { useDeletePaperContributor } from '../api/delete-paper-contributor';
 import { useUpdatePaperContributor } from '../api/update-paper-contributor';
-import { useMarkSection } from '../api/get-mark-section';
+import { getMarkSection, useMarkSection } from '../api/get-mark-section';
+import { PAPER_MANAGEMENT_QUERY_KEYS } from '../constants';
 import {
   AssignedSection,
   AvailableSectionMember,
@@ -471,11 +473,10 @@ const SectionExpandedView = ({
   }
 
   const items = query.data?.result?.items ?? [];
-  const sorted = [...items]
-    .filter((item) => item.sectionId !== excludeSectionId)
-    .sort((a, b) =>
-      a.isMainSection === b.isMainSection ? 0 : a.isMainSection ? -1 : 1,
-    );
+  const sorted = [...items].filter(
+    (item) =>
+      item.sectionId !== excludeSectionId && (isAuthor || item.isMainSection),
+  );
 
   if (sorted.length === 0) {
     return (
@@ -526,26 +527,24 @@ const SectionExpandedView = ({
             {/* Actions */}
             <div className="flex shrink-0 items-center gap-1">
               {isAuthor && onEditSection && (
-                <Button
-                  size="sm"
-                  variant="outline"
+                <button
+                  type="button"
                   onClick={() => onEditSection(item)}
-                  className="h-6 w-6 rounded-full p-0"
-                  title="Edit"
+                  className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
                 >
-                  <Pencil className="h-3 w-3" />
-                </Button>
+                  <Pencil className="h-2.5 w-2.5" />
+                  Edit
+                </button>
               )}
-              {onViewSection && (
-                <Button
-                  size="sm"
-                  variant="outline"
+              {onViewSection && item.isMainSection && (
+                <button
+                  type="button"
                   onClick={() => onViewSection(item)}
-                  className="h-6 w-6 rounded-full p-0"
-                  title="View"
+                  className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
                 >
-                  <Eye className="h-3 w-3" />
-                </Button>
+                  <Eye className="h-2.5 w-2.5" />
+                  View
+                </button>
               )}
             </div>
           </div>
@@ -882,6 +881,7 @@ export const PaperSectionsManager = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(),
   );
+  const queryClient = useQueryClient();
   const toggleExpand = (id: string) =>
     setExpandedSections((prev) => {
       const next = new Set(prev);
@@ -937,6 +937,33 @@ export const PaperSectionsManager = ({
     : assignedSectionsQuery.isError;
 
   const tree = buildTree(rawSections);
+  const markSectionIdsToPrefetch = useMemo(() => {
+    if (!isAuthor) return [];
+
+    const ids = new Set<string>();
+    rawSections.forEach((section) => {
+      const canExpand =
+        section.sectionRole === 'section:edit' ||
+        (section.sectionRole === 'paper:author' && !!section.markSectionId);
+
+      if (!canExpand) return;
+      ids.add(section.markSectionId || section.id);
+    });
+
+    return Array.from(ids);
+  }, [rawSections, isAuthor]);
+
+  useEffect(() => {
+    if (!isAuthor || markSectionIdsToPrefetch.length === 0) return;
+
+    markSectionIdsToPrefetch.forEach((markSectionId) => {
+      void queryClient.prefetchQuery({
+        queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION, markSectionId],
+        queryFn: () => getMarkSection(markSectionId),
+      });
+    });
+  }, [isAuthor, markSectionIdsToPrefetch, queryClient]);
+
   const totalCount =
     (isManager
       ? rawSections.length
@@ -1222,6 +1249,8 @@ export const PaperSectionsManager = ({
               ? [
                   {
                     id: editTargetItem.sectionId,
+                    markSectionId: editTargetItem.markSectionId,
+                    paperId,
                     title: stripLatex(editTargetItem.title),
                     content: editTargetItem.content || '',
                     memberId: editTargetItem.memberId,
@@ -1237,6 +1266,8 @@ export const PaperSectionsManager = ({
                 ]
               : flattenTree(tree).map(({ node }) => ({
                   id: node.id,
+                  markSectionId: node.markSectionId,
+                  paperId: node.paperId,
                   title: stripLatex(node.title),
                   content: node.content || '',
                   memberId: node.memberId,
@@ -1261,6 +1292,8 @@ export const PaperSectionsManager = ({
           onClose={() => {
             setEditingEditorMode(false);
             setEditTargetItem(null);
+            void assignedSectionsQuery.refetch();
+            void allSectionsQuery.refetch();
           }}
         />
       )}
@@ -1274,6 +1307,8 @@ export const PaperSectionsManager = ({
               ? [
                   {
                     id: editTargetItem.sectionId,
+                    markSectionId: editTargetItem.markSectionId,
+                    paperId,
                     title: stripLatex(editTargetItem.title),
                     content: editTargetItem.content || '',
                     memberId: editTargetItem.memberId,
@@ -1289,6 +1324,8 @@ export const PaperSectionsManager = ({
                 ]
               : flattenTree(tree).map(({ node }) => ({
                   id: node.id,
+                  markSectionId: node.markSectionId,
+                  paperId: node.paperId,
                   title: stripLatex(node.title),
                   content: node.content || '',
                   memberId: node.memberId,
@@ -1313,6 +1350,8 @@ export const PaperSectionsManager = ({
           onClose={() => {
             setViewingReadOnlyMode(false);
             setEditTargetItem(null);
+            void assignedSectionsQuery.refetch();
+            void allSectionsQuery.refetch();
           }}
         />
       )}
