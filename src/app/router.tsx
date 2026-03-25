@@ -108,6 +108,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.myTasks.path,
+          lazy: () =>
+            import('./routes/app/task-management/my-tasks').then(
+              convert(queryClient),
+            ),
+        },
+        {
           path: paths.app.settings.path,
           lazy: () =>
             import('./routes/app/settings').then(convert(queryClient)),

@@ -104,5 +104,9 @@ export const paths = {
           `/app/my-projects/${projectId}/papers/${paperId}`,
       },
     },
+    myTasks: {
+      path: 'my-tasks',
+      getHref: () => '/app/my-tasks',
+    },
   },
 } as const;
