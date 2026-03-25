@@ -2,6 +2,7 @@ import {
   Bell,
   Bookmark,
   BookOpen,
+  ClipboardList,
   ChevronRight,
   FileText,
   FolderKanban,
@@ -216,6 +217,11 @@ const navigation: SideNavigationItem[] = [
     icon: Bookmark,
   },
   {
+    name: 'My Task',
+    to: paths.app.myTasks.getHref(),
+    icon: ClipboardList,
+  },
+  {
     name: 'Papers',
     to: paths.app.paperManagement.papers.getHref(),
     icon: FileText,
@@ -239,11 +245,11 @@ const navigation: SideNavigationItem[] = [
 ];
 
 const adminNavigation = navigation.filter(
-  (item) => item.name !== 'Assigned Projects',
+  (item) => item.name !== 'Assigned Projects' && item.name !== 'My Task',
 );
 
 const memberNavigation = navigation.filter((item) =>
-  ['Assigned Projects', 'Settings'].includes(item.name),
+  ['Assigned Projects', 'My Task', 'Settings'].includes(item.name),
 );
 
 function AppSidebar() {
@@ -353,3 +359,4 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+

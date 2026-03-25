@@ -55,6 +55,20 @@ const isManagerRole = (role: string) =>
   role.toLowerCase().includes('manager') ||
   role.toLowerCase().includes('project:project-manager');
 
+const getRolePriority = (role: string) => {
+  const normalizedRole = role.toLowerCase();
+  if (
+    normalizedRole.includes('manager') ||
+    normalizedRole.includes('project:project-manager')
+  )
+    return 0;
+  if (normalizedRole.includes('author') || normalizedRole.includes('project:author'))
+    return 1;
+  if (normalizedRole.includes('member') || normalizedRole.includes('project:member'))
+    return 2;
+  return 3;
+};
+
 type Group = { id?: string | null; name?: string | null };
 
 type MemberTableRowProps = {
@@ -381,14 +395,10 @@ export const ProjectMembersList = ({
   const members = (membersQuery.data as any)?.result?.items;
   const paging = (membersQuery.data as any)?.result?.paging;
 
-  // Sort: managers appear first
+  // Sort by role: manager -> author -> member
   const sortedMembers: ProjectMember[] = members
     ? [...members].sort((a: ProjectMember, b: ProjectMember) => {
-        const aIsManager = isManagerRole(a.role);
-        const bIsManager = isManagerRole(b.role);
-        if (aIsManager && !bIsManager) return -1;
-        if (!aIsManager && bIsManager) return 1;
-        return 0;
+        return getRolePriority(a.role) - getRolePriority(b.role);
       })
     : [];
 

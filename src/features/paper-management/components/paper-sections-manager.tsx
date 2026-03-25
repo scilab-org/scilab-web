@@ -577,6 +577,18 @@ const ViewMembersPanel = ({
 
   const membersQuery = useGetSectionMembers({ sectionId: section.id, paperId });
   const members: SectionMember[] = membersQuery.data?.result?.items ?? [];
+  const getSectionRolePriority = (role: string) => {
+    const normalized = role.toLowerCase();
+    if (normalized.includes('author')) return 0;
+    if (normalized.includes('edit')) return 1;
+    if (normalized.includes('read')) return 2;
+    return 3;
+  };
+  const sortedMembers = [...members].sort(
+    (a, b) =>
+      getSectionRolePriority(a.sectionRole) -
+      getSectionRolePriority(b.sectionRole),
+  );
 
   const groupsQuery = useGroups();
   const sectionGroups = (groupsQuery.data?.result ?? []).filter((g) =>
@@ -668,7 +680,7 @@ const ViewMembersPanel = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {members.map((m, idx) => {
+                  {sortedMembers.map((m, idx) => {
                     const isProjectRole =
                       m.sectionRole.startsWith('project:') ||
                       m.sectionRole.startsWith('paper:');
