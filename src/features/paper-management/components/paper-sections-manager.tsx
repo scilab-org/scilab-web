@@ -929,6 +929,7 @@ const ViewMembersPanel = ({
 export type PaperSectionsManagerProps = {
   paperId: string;
   paperTitle: string;
+  projectId?: string;
   subProjectId: string;
   isAuthor?: boolean;
   isManager?: boolean;
@@ -937,6 +938,7 @@ export type PaperSectionsManagerProps = {
 export const PaperSectionsManager = ({
   paperId,
   paperTitle: _paperTitle,
+  projectId,
   subProjectId,
   isAuthor = false,
   isManager = false,
@@ -1341,6 +1343,7 @@ export const PaperSectionsManager = ({
       {editingEditorMode && (
         <LatexPaperEditor
           paperTitle={_paperTitle}
+          projectId={projectId}
           sections={
             editTargetItem
               ? [
@@ -1399,6 +1402,7 @@ export const PaperSectionsManager = ({
         <LatexPaperEditor
           readOnly={true}
           paperTitle={_paperTitle}
+          projectId={projectId}
           sections={
             editTargetItem
               ? [

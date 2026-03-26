@@ -143,6 +143,7 @@ type PaperSectionsDialogProps = {
   paperId: string;
   paperTitle: string;
   subProjectId: string;
+  projectId?: string;
   isAuthor?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -849,6 +850,7 @@ export const PaperSectionsDialog = ({
   paperId,
   paperTitle: _paperTitle,
   subProjectId,
+  projectId,
   isAuthor = false,
   open,
   onOpenChange,
@@ -1225,6 +1227,7 @@ export const PaperSectionsDialog = ({
       {editingEditorMode && (
         <LatexPaperEditor
           paperTitle={_paperTitle}
+          projectId={projectId}
           sections={
             editTargetItem
               ? [
@@ -1281,6 +1284,7 @@ export const PaperSectionsDialog = ({
       {viewingReadOnlyMode && (
         <LatexPaperEditor
           paperTitle={_paperTitle}
+          projectId={projectId}
           sections={
             editTargetItem
               ? [

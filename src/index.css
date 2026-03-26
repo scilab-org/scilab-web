@@ -329,3 +329,20 @@ code {
 .btn-auto-tag {
   @apply border border-[oklch(0.85_0.05_264.1)] bg-[oklch(0.944_0.022_264.1)] text-[oklch(0.318_0.148_264.1)] hover:bg-[oklch(0.9_0.035_264.1)] dark:border-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/60;
 }
+
+.dark ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45);
+}
