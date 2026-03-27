@@ -16,6 +16,8 @@ export const PAPER_MANAGEMENT_API = {
   AUTO_TAG: `${AI_SERVICE_PREFIX}/papers/auto-tag`,
   ASSIGNED_SECTIONS: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/assigned-sections`,
+  ASSIGNED_SECTIONS_HISTORY: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/assigned-sections/history`,
   PAPER_CONTRIBUTORS: `${LAB_SERVICE_PREFIX}/author/paper-contributors`,
   AVAILABLE_SECTION_MEMBERS: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members/available`,
@@ -34,8 +36,8 @@ export const PAPER_MANAGEMENT_API = {
   PAPER_SECTIONS_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/sections`,
   COMPILE_LATEX: `${LATEX_SERVICE_PREFIX}/compile`,
-  MARK_SECTION: (markSectionId: string) =>
-    `${LAB_SERVICE_PREFIX}/sections/mark-section/${markSectionId}`,
+  MARK_SECTION: (id: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
@@ -43,6 +45,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPER: 'paper',
   WRITING_PAPER: 'writing-paper',
   ASSIGNED_SECTIONS: 'paper-assigned-sections',
+  ASSIGNED_SECTIONS_HISTORY: 'paper-assigned-sections-history',
   AVAILABLE_SECTION_MEMBERS: 'available-section-members',
   SECTION_MEMBERS: 'section-members',
   PAPER_CONTRIBUTORS: 'paper-contributors',

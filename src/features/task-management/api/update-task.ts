@@ -20,7 +20,9 @@ type UseUpdateTaskOptions = {
   mutationConfig?: MutationConfig<typeof updateTask>;
 };
 
-export const useUpdateTask = ({ mutationConfig }: UseUpdateTaskOptions = {}) => {
+export const useUpdateTask = ({
+  mutationConfig,
+}: UseUpdateTaskOptions = {}) => {
   const queryClient = useQueryClient();
   const { onSuccess, ...restConfig } = mutationConfig || {};
 

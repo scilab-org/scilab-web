@@ -14,7 +14,9 @@ type UseCreateTaskOptions = {
   mutationConfig?: MutationConfig<typeof createTask>;
 };
 
-export const useCreateTask = ({ mutationConfig }: UseCreateTaskOptions = {}) => {
+export const useCreateTask = ({
+  mutationConfig,
+}: UseCreateTaskOptions = {}) => {
   const queryClient = useQueryClient();
   const { onSuccess, ...restConfig } = mutationConfig || {};
 

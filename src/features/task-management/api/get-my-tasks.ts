@@ -24,7 +24,10 @@ type UseMyTasksOptions = {
   queryConfig?: QueryConfig<typeof getMyTasksQueryOptions>;
 };
 
-export const useMyTasks = ({ params = {}, queryConfig }: UseMyTasksOptions = {}) =>
+export const useMyTasks = ({
+  params = {},
+  queryConfig,
+}: UseMyTasksOptions = {}) =>
   useQuery({
     ...getMyTasksQueryOptions(params),
     ...queryConfig,

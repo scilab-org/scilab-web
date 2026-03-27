@@ -12,9 +12,7 @@ import { GetMarkSectionApiResponse } from '../types';
 export const getMarkSection = (
   markSectionId: string,
 ): Promise<GetMarkSectionApiResponse> =>
-  api.get(PAPER_MANAGEMENT_API.MARK_SECTION(markSectionId), {
-    params: { markSectionId },
-  });
+  api.get(PAPER_MANAGEMENT_API.MARK_SECTION(markSectionId));
 
 export const useMarkSection = ({
   markSectionId,

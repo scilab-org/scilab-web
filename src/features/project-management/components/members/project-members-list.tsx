@@ -62,9 +62,15 @@ const getRolePriority = (role: string) => {
     normalizedRole.includes('project:project-manager')
   )
     return 0;
-  if (normalizedRole.includes('author') || normalizedRole.includes('project:author'))
+  if (
+    normalizedRole.includes('author') ||
+    normalizedRole.includes('project:author')
+  )
     return 1;
-  if (normalizedRole.includes('member') || normalizedRole.includes('project:member'))
+  if (
+    normalizedRole.includes('member') ||
+    normalizedRole.includes('project:member')
+  )
     return 2;
   return 3;
 };

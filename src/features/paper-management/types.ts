@@ -224,8 +224,45 @@ export type GetAssignedSectionsParams = {
   PageSize?: number;
 };
 
+export type GetAssignedSectionsHistoryParams = {
+  PageNumber?: number;
+  PageSize?: number;
+  SectionRole?: 'section:read' | 'section:edit';
+  FromDate?: string;
+  ToDate?: string;
+};
+
 export type GetAssignedSectionsApiResponse = {
   result: AssignedSectionsResult;
+};
+
+export type AssignedSectionHistoryItem = {
+  id: string;
+  paperId: string;
+  markSectionId: string;
+  paperContributorId: string;
+  sectionRole: string;
+  memberId: string;
+  title: string;
+  content: string;
+  sectionSumary: string;
+  description?: string;
+  displayOrder: number;
+  numbered: boolean;
+  filePath: string | null;
+  parentSectionId: string | null;
+  version: number;
+  createdOnUtc: string;
+  lastModifiedOnUtc: string;
+};
+
+export type AssignedSectionsHistoryResult = {
+  items: AssignedSectionHistoryItem[];
+  paging: PagingResult;
+};
+
+export type GetAssignedSectionsHistoryApiResponse = {
+  result: AssignedSectionsHistoryResult;
 };
 
 export type AvailableSectionMember = {
@@ -318,6 +355,8 @@ export type MarkSectionItem = {
   email: string;
   content: string;
   description?: string;
+  createdOnUtc?: string | null;
+  lastModifiedOnUtc?: string | null;
 };
 
 export type GetMarkSectionApiResponse = {

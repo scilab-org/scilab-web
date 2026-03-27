@@ -35,7 +35,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -83,7 +87,8 @@ export const clientLoader =
     const query = getMyTasksQueryOptions({
       PageNumber: Number(url.searchParams.get('page') || 1),
       PageSize: Number(url.searchParams.get('pageSize') || 10),
-      AssignedToUserName: url.searchParams.get('AssignedToUserName') || undefined,
+      AssignedToUserName:
+        url.searchParams.get('AssignedToUserName') || undefined,
       Status: url.searchParams.get('Status') || undefined,
       PaperId: url.searchParams.get('PaperId') || undefined,
       DateField:
@@ -129,7 +134,8 @@ const statusBadgeClass = (status: number) => {
 };
 
 const getStatusLabel = (status: number) =>
-  TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? `Status ${status}`;
+  TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
+  `Status ${status}`;
 
 type TaskFormState = {
   paperId: string;
@@ -160,8 +166,12 @@ const MyTasksRoute = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskItem | null>(null);
-  const [createForm, setCreateForm] = useState<TaskFormState>(createInitialTaskForm);
-  const [updateForm, setUpdateForm] = useState<TaskFormState>(createInitialTaskForm);
+  const [createForm, setCreateForm] = useState<TaskFormState>(
+    createInitialTaskForm,
+  );
+  const [updateForm, setUpdateForm] = useState<TaskFormState>(
+    createInitialTaskForm,
+  );
   const [paperFilterSearch, setPaperFilterSearch] = useState('');
   const [paperFilterOpen, setPaperFilterOpen] = useState(false);
   const { data: user } = useUser();
@@ -180,7 +190,8 @@ const MyTasksRoute = () => {
   const [localFilters, setLocalFilters] = useState({
     Status: searchParams.get('Status') || '',
     PaperId: searchParams.get('PaperId') || '',
-    DateField: (searchParams.get('DateField') as DateTaskFilterField | null) || '',
+    DateField:
+      (searchParams.get('DateField') as DateTaskFilterField | null) || '',
     FromDate: searchParams.get('FromDate') || '',
     ToDate: searchParams.get('ToDate') || '',
   });
@@ -193,8 +204,8 @@ const MyTasksRoute = () => {
   const selectedPaperLabel = useMemo(() => {
     if (!localFilters.PaperId) return 'All Papers';
     return (
-      assignedPapers.find((paper) => paper.id === localFilters.PaperId)?.title ||
-      'All Papers'
+      assignedPapers.find((paper) => paper.id === localFilters.PaperId)
+        ?.title || 'All Papers'
     );
   }, [assignedPapers, localFilters.PaperId]);
   const filteredPaperOptions = useMemo(() => {
@@ -211,7 +222,9 @@ const MyTasksRoute = () => {
     AssignedToUserName: undefined, // Removed from filter as requested
     Status: searchParams.get('Status') || undefined,
     PaperId: searchParams.get('PaperId') || undefined,
-    DateField: (searchParams.get('DateField') || undefined) as DateTaskFilterField | undefined,
+    DateField: (searchParams.get('DateField') || undefined) as
+      | DateTaskFilterField
+      | undefined,
     FromDate: searchParams.get('FromDate') || undefined,
     ToDate: searchParams.get('ToDate') || undefined,
   };
@@ -303,7 +316,11 @@ const MyTasksRoute = () => {
 
   const handleCreate = (e: FormEvent) => {
     e.preventDefault();
-    if (!createForm.paperId || !createForm.name || !createForm.assignedToUserName) {
+    if (
+      !createForm.paperId ||
+      !createForm.name ||
+      !createForm.assignedToUserName
+    ) {
       toast.error('Paper name, task name and assignee are required');
       return;
     }
@@ -376,75 +393,83 @@ const MyTasksRoute = () => {
       title="My Task"
       description="Track, filter and manage your paper tasks"
     >
-      <div className="flex items-center justify-end mb-4">
+      <div className="mb-4 flex items-center justify-end">
         <Button className={BTN.CREATE} onClick={() => setIsCreateOpen(true)}>
           <Plus className="size-4" />
           Create Task
         </Button>
       </div>
 
-      <form onSubmit={applyFilters} className="bg-muted/40 rounded-xl border p-6 mb-6">
+      <form
+        onSubmit={applyFilters}
+        className="bg-muted/40 mb-6 rounded-xl border p-6"
+      >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12">
-              <div className="space-y-1.5 xl:col-span-4">
-                <label className="text-muted-foreground text-xs font-medium">
-                  Paper Name
-                </label>
-                <Popover open={paperFilterOpen} onOpenChange={setPaperFilterOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-9 w-full justify-between px-3 py-1 text-sm font-normal"
-                    >
-                      <span className="truncate">{selectedPaperLabel}</span>
-                      <ChevronDown className="size-4 opacity-60" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-2">
-                    <Input
-                      placeholder="Type to filter paper..."
-                      value={paperFilterSearch}
-                      onChange={(e) => setPaperFilterSearch(e.target.value)}
-                      className="mb-2 h-8"
-                    />
-                    <div className="max-h-56 overflow-y-auto">
+          <div className="space-y-1.5 xl:col-span-4">
+            <label className="text-muted-foreground text-xs font-medium">
+              Paper Name
+            </label>
+            <Popover open={paperFilterOpen} onOpenChange={setPaperFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 w-full justify-between px-3 py-1 text-sm font-normal"
+                >
+                  <span className="truncate">{selectedPaperLabel}</span>
+                  <ChevronDown className="size-4 opacity-60" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-[var(--radix-popover-trigger-width)] p-2"
+              >
+                <Input
+                  placeholder="Type to filter paper..."
+                  value={paperFilterSearch}
+                  onChange={(e) => setPaperFilterSearch(e.target.value)}
+                  className="mb-2 h-8"
+                />
+                <div className="max-h-56 overflow-y-auto">
+                  <button
+                    type="button"
+                    className={`hover:bg-accent flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${localFilters.PaperId === '' ? 'bg-accent' : ''}`}
+                    onClick={() => {
+                      handleFilterChange('PaperId', '');
+                      setPaperFilterOpen(false);
+                    }}
+                  >
+                    <span>All Papers</span>
+                    {localFilters.PaperId === '' && (
+                      <Check className="size-4" />
+                    )}
+                  </button>
+                  {filteredPaperOptions.length > 0 ? (
+                    filteredPaperOptions.map((paper) => (
                       <button
+                        key={paper.id}
                         type="button"
-                        className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent ${localFilters.PaperId === '' ? 'bg-accent' : ''}`}
+                        className={`hover:bg-accent flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${localFilters.PaperId === paper.id ? 'bg-accent' : ''}`}
                         onClick={() => {
-                          handleFilterChange('PaperId', '');
+                          handleFilterChange('PaperId', paper.id);
                           setPaperFilterOpen(false);
                         }}
                       >
-                        <span>All Papers</span>
-                        {localFilters.PaperId === '' && <Check className="size-4" />}
+                        <span className="truncate">{paper.title}</span>
+                        {localFilters.PaperId === paper.id && (
+                          <Check className="size-4 shrink-0" />
+                        )}
                       </button>
-                      {filteredPaperOptions.length > 0 ? (
-                        filteredPaperOptions.map((paper) => (
-                          <button
-                            key={paper.id}
-                            type="button"
-                            className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent ${localFilters.PaperId === paper.id ? 'bg-accent' : ''}`}
-                            onClick={() => {
-                              handleFilterChange('PaperId', paper.id);
-                              setPaperFilterOpen(false);
-                            }}
-                          >
-                            <span className="truncate">{paper.title}</span>
-                            {localFilters.PaperId === paper.id && (
-                              <Check className="size-4 shrink-0" />
-                            )}
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground px-2 py-1.5 text-sm">
-                          No papers found
-                        </p>
-                      )}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground px-2 py-1.5 text-sm">
+                      No papers found
+                    </p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="space-y-1.5 xl:col-span-2">
             <label className="text-muted-foreground text-xs font-medium">
               Status
@@ -559,8 +584,6 @@ const MyTasksRoute = () => {
         </Card>
       </div>
 
-
-
       <div className="mt-4 overflow-hidden rounded-xl border">
         {tasksQuery.isLoading ? (
           <div className="space-y-2 p-4">
@@ -600,69 +623,74 @@ const MyTasksRoute = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((task) => (
+                {items.map((task) =>
                   (() => {
                     const canDeleteTask =
                       !!currentUsername &&
-                      (task.createdBy || '').trim().toLowerCase() === currentUsername;
+                      (task.createdBy || '').trim().toLowerCase() ===
+                        currentUsername;
                     return (
-                  <TableRow
-                    key={task.id}
-                    className="transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20"
-                  >
-                    <TableCell className="max-w-[260px]">
-                      <div className="font-medium">{task.name}</div>
-                      <div className="text-muted-foreground truncate text-xs">
-                        {task.description || 'No description'}
-                      </div>
-                    </TableCell>
-                    <TableCell>{task.assignedToUserName}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={statusBadgeClass(task.status)}
+                      <TableRow
+                        key={task.id}
+                        className="transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20"
                       >
-                        {getStatusLabel(task.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-[260px] truncate text-sm text-muted-foreground">
-                      {task.paperTitle || task.paperId}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {task.startDate ? formatDate(task.startDate) : '—'}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {task.nextReviewDate ? formatDate(task.nextReviewDate) : '—'}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {task.completeDate ? formatDate(task.completeDate) : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          onClick={() => openEdit(task)}
-                          title="Edit task"
-                        >
-                          <Pencil className="size-4 text-blue-600" />
-                        </Button>
-                        {canDeleteTask && (
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            onClick={() => setDeletingTask(task)}
-                            title="Delete task"
+                        <TableCell className="max-w-[260px]">
+                          <div className="font-medium">{task.name}</div>
+                          <div className="text-muted-foreground truncate text-xs">
+                            {task.description || 'No description'}
+                          </div>
+                        </TableCell>
+                        <TableCell>{task.assignedToUserName}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={statusBadgeClass(task.status)}
                           >
-                            <Trash2 className="size-4 text-red-600" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                            {getStatusLabel(task.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-[260px] truncate text-sm">
+                          {task.paperTitle || task.paperId}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {task.startDate ? formatDate(task.startDate) : '—'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {task.nextReviewDate
+                            ? formatDate(task.nextReviewDate)
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {task.completeDate
+                            ? formatDate(task.completeDate)
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              onClick={() => openEdit(task)}
+                              title="Edit task"
+                            >
+                              <Pencil className="size-4 text-blue-600" />
+                            </Button>
+                            {canDeleteTask && (
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                onClick={() => setDeletingTask(task)}
+                                title="Delete task"
+                              >
+                                <Trash2 className="size-4 text-red-600" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     );
-                  })()
-                ))}
+                  })(),
+                )}
               </TableBody>
             </Table>
 
@@ -792,7 +820,7 @@ const MyTasksRoute = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-16">
+          <div className="py-16 text-center">
             <ClipboardList className="text-muted-foreground/40 mx-auto mb-3 size-10" />
             <p className="font-medium">No tasks found</p>
             <p className="text-muted-foreground text-sm">
@@ -820,7 +848,7 @@ const MyTasksRoute = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="create-paper-id"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Paper Name *
                 </label>
@@ -829,7 +857,10 @@ const MyTasksRoute = () => {
                   className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
                   value={createForm.paperId}
                   onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, paperId: e.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      paperId: e.target.value,
+                    }))
                   }
                 >
                   <option value="">Select paper</option>
@@ -844,7 +875,7 @@ const MyTasksRoute = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="create-assignee"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Assigned To
                 </label>
@@ -860,7 +891,7 @@ const MyTasksRoute = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="create-name"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Task Name *
                 </label>
@@ -877,7 +908,7 @@ const MyTasksRoute = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="create-desc"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Description
                 </label>
@@ -898,7 +929,7 @@ const MyTasksRoute = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="create-status"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Status
                 </label>
@@ -907,7 +938,10 @@ const MyTasksRoute = () => {
                   className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
                   value={createForm.status}
                   onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, status: e.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      status: e.target.value,
+                    }))
                   }
                 >
                   {TASK_STATUS_OPTIONS.map((s) => (
@@ -922,7 +956,7 @@ const MyTasksRoute = () => {
                 <div className="space-y-2">
                   <label
                     htmlFor="create-start"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     Start Date
                   </label>
@@ -931,14 +965,17 @@ const MyTasksRoute = () => {
                     type="datetime-local"
                     value={createForm.startDate}
                     onChange={(e) =>
-                      setCreateForm((prev) => ({ ...prev, startDate: e.target.value }))
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        startDate: e.target.value,
+                      }))
                     }
                   />
                 </div>
                 <div className="space-y-2">
                   <label
                     htmlFor="create-review"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     Next Review
                   </label>
@@ -959,7 +996,7 @@ const MyTasksRoute = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="create-complete"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Complete Date
                 </label>
@@ -1000,7 +1037,10 @@ const MyTasksRoute = () => {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
+      <Sheet
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+      >
         <SheetContent className="overflow-y-auto sm:max-w-sm">
           <SheetHeader>
             <SheetTitle>Edit Task</SheetTitle>
@@ -1020,130 +1060,135 @@ const MyTasksRoute = () => {
                 (editingTask.createdBy || '').trim().toLowerCase() ===
                   currentUsername;
               return (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-assignee"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Assigned To
-                </label>
-                <Input
-                  id="edit-assignee"
-                  placeholder="Assigned to"
-                  value={updateForm.assignedToUserName}
-                  readOnly
-                  className="bg-muted text-muted-foreground cursor-not-allowed"
-                />
-              </div>
-
-              {isOwnedTask ? (
-                <>
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <label
-                      htmlFor="edit-name"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      htmlFor="edit-assignee"
+                      className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      Task Name *
+                      Assigned To
                     </label>
                     <Input
-                      id="edit-name"
-                      placeholder="Task name *"
-                      value={updateForm.name}
-                      onChange={(e) =>
-                        setUpdateForm((prev) => ({ ...prev, name: e.target.value }))
-                      }
+                      id="edit-assignee"
+                      placeholder="Assigned to"
+                      value={updateForm.assignedToUserName}
+                      readOnly
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
                     />
                   </div>
 
+                  {isOwnedTask ? (
+                    <>
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="edit-name"
+                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Task Name *
+                        </label>
+                        <Input
+                          id="edit-name"
+                          placeholder="Task name *"
+                          value={updateForm.name}
+                          onChange={(e) =>
+                            setUpdateForm((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="edit-desc"
+                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Description
+                        </label>
+                        <textarea
+                          id="edit-desc"
+                          className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                          placeholder="Description"
+                          value={updateForm.description}
+                          onChange={(e) =>
+                            setUpdateForm((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : null}
+
                   <div className="space-y-2">
                     <label
-                      htmlFor="edit-desc"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      htmlFor="edit-status"
+                      className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      Description
+                      Status
                     </label>
-                    <textarea
-                      id="edit-desc"
-                      className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                      placeholder="Description"
-                      value={updateForm.description}
+                    <select
+                      id="edit-status"
+                      className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                      value={updateForm.status}
                       onChange={(e) =>
                         setUpdateForm((prev) => ({
                           ...prev,
-                          description: e.target.value,
+                          status: e.target.value,
                         }))
                       }
-                    />
+                    >
+                      {TASK_STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={String(s.value)}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </>
-              ) : null}
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-status"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Status
-                </label>
-                <select
-                  id="edit-status"
-                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  value={updateForm.status}
-                  onChange={(e) =>
-                    setUpdateForm((prev) => ({ ...prev, status: e.target.value }))
-                  }
-                >
-                  {TASK_STATUS_OPTIONS.map((s) => (
-                    <option key={s.value} value={String(s.value)}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-start"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Start Date
-                  </label>
-                  <Input
-                    id="edit-start"
-                    type="datetime-local"
-                    value={updateForm.startDate}
-                    onChange={(e) =>
-                      setUpdateForm((prev) => ({
-                        ...prev,
-                        startDate: e.target.value,
-                      }))
-                    }
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="edit-start"
+                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Start Date
+                      </label>
+                      <Input
+                        id="edit-start"
+                        type="datetime-local"
+                        value={updateForm.startDate}
+                        onChange={(e) =>
+                          setUpdateForm((prev) => ({
+                            ...prev,
+                            startDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="edit-review"
+                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Next Review
+                      </label>
+                      <Input
+                        id="edit-review"
+                        type="datetime-local"
+                        value={updateForm.nextReviewDate}
+                        onChange={(e) =>
+                          setUpdateForm((prev) => ({
+                            ...prev,
+                            nextReviewDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-review"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Next Review
-                  </label>
-                  <Input
-                    id="edit-review"
-                    type="datetime-local"
-                    value={updateForm.nextReviewDate}
-                    onChange={(e) =>
-                      setUpdateForm((prev) => ({
-                        ...prev,
-                        nextReviewDate: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-            </div>
               );
             })()}
           </form>
@@ -1170,7 +1215,10 @@ const MyTasksRoute = () => {
         </SheetContent>
       </Sheet>
 
-      <AlertDialog open={!!deletingTask} onOpenChange={(open) => !open && setDeletingTask(null)}>
+      <AlertDialog
+        open={!!deletingTask}
+        onOpenChange={(open) => !open && setDeletingTask(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task</AlertDialogTitle>
