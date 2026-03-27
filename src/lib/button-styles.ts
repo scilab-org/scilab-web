@@ -37,6 +37,9 @@ const SUCCESS = 'btn-success';
 /** Amber / warning outline */
 const WARNING_OUTLINE = 'btn-warning-outline';
 
+/** Amber / warning filled */
+const WARNING = 'btn-warning';
+
 export const BTN = {
   CREATE,
   EDIT,
@@ -48,4 +51,5 @@ export const BTN = {
   VIEW_OUTLINE,
   SUCCESS,
   WARNING_OUTLINE,
+  WARNING,
 } as const;

@@ -38,6 +38,8 @@ export const PAPER_MANAGEMENT_API = {
   COMPILE_LATEX: `${LATEX_SERVICE_PREFIX}/compile`,
   MARK_SECTION: (id: string) =>
     `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}`,
+  MARK_MAIN_SECTION: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/mark-main-section`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {

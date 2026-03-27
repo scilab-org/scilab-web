@@ -2,15 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import {
-  ArrowLeft,
-  Users,
-  FileText,
-  Database,
-  Calendar,
-  Hash,
-  Info,
-} from 'lucide-react';
+import { Users, FileText, Database, Calendar, Hash, Info } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';

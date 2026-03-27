@@ -293,6 +293,10 @@ code {
   @apply bg-background border border-indigo-300 text-indigo-600 shadow-xs hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30;
 }
 
+.btn-warning {
+  @apply bg-amber-600 text-white shadow-sm shadow-amber-200 hover:bg-amber-700 dark:bg-amber-700 dark:shadow-amber-900/30 dark:hover:bg-amber-600;
+}
+
 .btn-warning-outline {
   @apply bg-background border border-amber-300 text-amber-600 shadow-xs hover:bg-amber-50 hover:text-amber-700 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/30;
 }

@@ -40,6 +40,7 @@ import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { PaperSectionsManager } from '@/features/paper-management/components/paper-sections-manager';
 import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
+import { MarkMainSectionDialog } from '@/features/paper-management/components/mark-main-section-dialog';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { ProjectMember } from '@/features/project-management/types';
@@ -110,7 +111,9 @@ export const ProjectPaperDetailPage = ({
   const [activeTab, setActiveTab] = useState<
     'sections' | 'old-sections' | 'tasks'
   >('sections');
-  const [isPaperInfoExpanded, setIsPaperInfoExpanded] = useState(true);
+  const [isMarkMainSectionDialogOpen, setIsMarkMainSectionDialogOpen] =
+    useState(false);
+  const [isPaperInfoExpanded, setIsPaperInfoExpanded] = useState(false);
   const [taskPage, setTaskPage] = useState(1);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
@@ -521,7 +524,24 @@ export const ProjectPaperDetailPage = ({
             >
               Old Section
             </Button>
+            {isAuthor && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setIsMarkMainSectionDialogOpen(true)}
+                className={`ml-auto ${BTN.WARNING}`}
+              >
+                Mark Main Section
+              </Button>
+            )}
           </div>
+
+          <MarkMainSectionDialog
+            isOpen={isMarkMainSectionDialogOpen}
+            onOpenChange={setIsMarkMainSectionDialogOpen}
+            paperId={paperId}
+            subProjectId={subProjectId}
+          />
 
           {activeTab === 'sections' ? (
             <PaperSectionsManager
@@ -544,10 +564,14 @@ export const ProjectPaperDetailPage = ({
               >
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                   <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-xs font-medium">
+                    <label
+                      htmlFor="filterAssignee"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
                       Assignee
                     </label>
                     <select
+                      id="filterAssignee"
                       className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={localFilters.AssignedToUserName}
                       onChange={(e) =>
@@ -564,10 +588,14 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-xs font-medium">
+                    <label
+                      htmlFor="filterStatus"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
                       Status
                     </label>
                     <select
+                      id="filterStatus"
                       className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={localFilters.Status}
                       onChange={(e) =>
@@ -584,10 +612,14 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-xs font-medium">
+                    <label
+                      htmlFor="filterDateField"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
                       Date Field
                     </label>
                     <select
+                      id="filterDateField"
                       className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={localFilters.DateField}
                       onChange={(e) =>
@@ -604,10 +636,14 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-xs font-medium">
+                    <label
+                      htmlFor="filterFromDate"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
                       From Date
                     </label>
                     <Input
+                      id="filterFromDate"
                       type="date"
                       value={localFilters.FromDate}
                       disabled={!isDateFieldSelected}
@@ -618,10 +654,14 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-xs font-medium">
+                    <label
+                      htmlFor="filterToDate"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
                       To Date
                     </label>
                     <Input
+                      id="filterToDate"
                       type="date"
                       value={localFilters.ToDate}
                       disabled={!isDateFieldSelected}
@@ -830,10 +870,14 @@ export const ProjectPaperDetailPage = ({
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskName"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Task Name
                 </label>
                 <Input
+                  id="createTaskName"
                   value={createForm.name}
                   onChange={(e) =>
                     setCreateForm((prev) => ({ ...prev, name: e.target.value }))
@@ -843,10 +887,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskDesc"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Description
                 </label>
                 <textarea
+                  id="createTaskDesc"
                   className="border-input bg-background focus-visible:ring-ring min-h-[90px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.description}
                   onChange={(e) =>
@@ -859,10 +907,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskAssignee"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Assign Username
                 </label>
                 <select
+                  id="createTaskAssignee"
                   className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.assignedToUserName}
                   onChange={(e) =>
@@ -883,10 +935,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskStatus"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Status
                 </label>
                 <select
+                  id="createTaskStatus"
                   className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.status}
                   onChange={(e) =>
@@ -905,10 +961,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskStart"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Start Date
                 </label>
                 <Input
+                  id="createTaskStart"
                   type="datetime-local"
                   value={createForm.startDate}
                   onChange={(e) =>
@@ -921,10 +981,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskNextReview"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Next Review Date
                 </label>
                 <Input
+                  id="createTaskNextReview"
                   type="datetime-local"
                   value={createForm.nextReviewDate}
                   onChange={(e) =>
@@ -937,10 +1001,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="createTaskComplete"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Complete Date
                 </label>
                 <Input
+                  id="createTaskComplete"
                   type="datetime-local"
                   value={createForm.completeDate}
                   onChange={(e) =>
@@ -986,10 +1054,14 @@ export const ProjectPaperDetailPage = ({
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="updateTaskStatus"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Status
                 </label>
                 <select
+                  id="updateTaskStatus"
                   className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={updateForm.status}
                   onChange={(e) =>
@@ -1008,10 +1080,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="updateTaskStart"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Start Date
                 </label>
                 <Input
+                  id="updateTaskStart"
                   type="datetime-local"
                   value={updateForm.startDate}
                   onChange={(e) =>
@@ -1024,10 +1100,14 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">
+                <label
+                  htmlFor="updateTaskNextReview"
+                  className="text-muted-foreground text-xs font-medium"
+                >
                   Next Review Date
                 </label>
                 <Input
+                  id="updateTaskNextReview"
                   type="datetime-local"
                   value={updateForm.nextReviewDate}
                   onChange={(e) =>

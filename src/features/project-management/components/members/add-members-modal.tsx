@@ -141,12 +141,18 @@ const UserCard = ({
         <div
           className="border-t border-blue-200 px-4 pb-3 dark:border-blue-800/50"
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="presentation"
         >
-          <label className="text-muted-foreground mb-1 block text-xs font-medium">
+          <label
+            htmlFor={`role-select-${user.id}`}
+            className="text-muted-foreground mb-1 block text-xs font-medium"
+          >
             Assign role
           </label>
           <div className="relative">
             <select
+              id={`role-select-${user.id}`}
               value={assignedGroup}
               onChange={(e) => onChangeGroup(user.id, e.target.value)}
               className="border-input bg-background text-foreground focus:ring-ring w-full appearance-none rounded-md border px-3 py-1.5 pr-8 text-sm shadow-sm focus:ring-2 focus:outline-none"

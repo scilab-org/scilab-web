@@ -156,7 +156,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Groups</label>
+            <div className="text-sm font-medium">Groups</div>
             {groupsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">Loading groups...</p>
             ) : allGroups.length === 0 ? (

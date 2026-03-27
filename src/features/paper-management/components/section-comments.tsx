@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Send,
-  Trash2,
-  Edit2,
-  X,
-  Check,
-  MessageSquare,
-  RefreshCw,
-} from 'lucide-react';
+import { Send, Trash2, Edit2, MessageSquare, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,7 +123,6 @@ const CommentItem = ({
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
             className="h-8 border-slate-200 bg-white px-2 text-sm shadow-sm focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleUpdate();
               if (e.key === 'Escape') {
@@ -166,7 +157,9 @@ const CommentItem = ({
         </div>
       ) : (
         <div className="mt-1 pr-2 pb-1 pl-9 text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
-          <p className="break-words whitespace-pre-wrap">{comment.content}</p>
+          <p className="wrap-break-word whitespace-pre-wrap">
+            {comment.content}
+          </p>
         </div>
       )}
     </div>
