@@ -14,7 +14,9 @@ type UseDeleteTaskOptions = {
   mutationConfig?: MutationConfig<typeof deleteTask>;
 };
 
-export const useDeleteTask = ({ mutationConfig }: UseDeleteTaskOptions = {}) => {
+export const useDeleteTask = ({
+  mutationConfig,
+}: UseDeleteTaskOptions = {}) => {
   const queryClient = useQueryClient();
   const { onSuccess, ...restConfig } = mutationConfig || {};
 

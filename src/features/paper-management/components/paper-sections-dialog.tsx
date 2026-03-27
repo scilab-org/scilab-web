@@ -43,6 +43,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
+import { useUser } from '@/lib/auth';
 
 import { useAssignedSections } from '../api/get-assigned-sections';
 import { useCreatePaperContributor } from '../api/create-paper-contributor';
@@ -106,6 +107,36 @@ const buildTree = (sections: AssignedSection[]): SectionNode[] => {
   sortByOrder(roots);
   roots.forEach((r) => sortByOrder(r.children));
   return roots;
+};
+
+const getSectionPriority = (section: AssignedSection): number => {
+  if (section.id === section.markSectionId) return 0;
+  if (section.sectionRole === 'paper:author') return 1;
+  if (section.sectionRole === 'section:edit') return 2;
+  return 3;
+};
+
+const dedupeSectionsForList = (
+  sections: AssignedSection[],
+): AssignedSection[] => {
+  const grouped = new Map<string, AssignedSection>();
+
+  sections.forEach((section) => {
+    const groupKey = section.markSectionId || section.id;
+    const current = grouped.get(groupKey);
+    if (!current) {
+      grouped.set(groupKey, section);
+      return;
+    }
+
+    const currentPriority = getSectionPriority(current);
+    const nextPriority = getSectionPriority(section);
+    if (nextPriority < currentPriority) {
+      grouped.set(groupKey, section);
+    }
+  });
+
+  return Array.from(grouped.values());
 };
 
 type PaperSectionsDialogProps = {
@@ -382,12 +413,14 @@ const SectionExpandedView = ({
   markSectionId,
   excludeSectionId,
   isAuthor,
+  currentUserEmail,
   onEditSection,
   onViewSection,
 }: {
   markSectionId: string;
   excludeSectionId: string;
   isAuthor?: boolean;
+  currentUserEmail?: string;
   onEditSection?: (item: MarkSectionItem) => void;
   onViewSection?: (item: MarkSectionItem) => void;
 }) => {
@@ -403,10 +436,32 @@ const SectionExpandedView = ({
   }
 
   const items = query.data?.result?.items ?? [];
-  const sorted = [...items].filter(
-    (item) =>
-      item.sectionId !== excludeSectionId && (isAuthor || item.isMainSection),
-  );
+  const normalizedCurrentEmail = (currentUserEmail || '').trim().toLowerCase();
+  const sorted = [...items]
+    .filter((item) => {
+      const normalizedItemEmail = (item.email || '').trim().toLowerCase();
+
+      if (
+        normalizedCurrentEmail &&
+        normalizedItemEmail === normalizedCurrentEmail
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const getPriority = (item: MarkSectionItem) => {
+        const isMain =
+          item.isMainSection || item.sectionId === item.markSectionId;
+        if (isMain && item.sectionRole === 'paper:author') return 0;
+        if (isMain) return 1;
+        if (item.sectionRole === 'paper:author') return 2;
+        return 3;
+      };
+
+      return getPriority(a) - getPriority(b);
+    });
 
   if (sorted.length === 0) {
     return (
@@ -443,7 +498,8 @@ const SectionExpandedView = ({
                 <span className="text-foreground truncate text-xs font-medium">
                   {item.name}
                 </span>
-                {item.isMainSection && (
+                {(item.isMainSection ||
+                  item.sectionId === item.markSectionId) && (
                   <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
                     main
                   </span>
@@ -466,7 +522,7 @@ const SectionExpandedView = ({
                   Edit
                 </button>
               )}
-              {onViewSection && item.isMainSection && (
+              {onViewSection && (
                 <button
                   type="button"
                   onClick={() => onViewSection(item)}
@@ -797,6 +853,8 @@ export const PaperSectionsDialog = ({
   open,
   onOpenChange,
 }: PaperSectionsDialogProps) => {
+  const { data: user } = useUser();
+  const currentUserEmail = (user?.email || '').trim().toLowerCase();
   const [assignTarget, setAssignTarget] = useState<AssignedSection | null>(
     null,
   );
@@ -814,13 +872,19 @@ export const PaperSectionsDialog = ({
     new Set(),
   );
   const queryClient = useQueryClient();
-  const toggleExpand = (id: string) =>
+  const toggleExpand = (id: string, markSectionId: string) => {
+    void queryClient.fetchQuery({
+      queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION, markSectionId],
+      queryFn: () => getMarkSection(markSectionId),
+    });
+
     setExpandedSections((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
 
   const sectionsQuery = useAssignedSections({
     paperId,
@@ -829,25 +893,24 @@ export const PaperSectionsDialog = ({
   });
 
   const rawSections = sectionsQuery.data?.result?.items ?? [];
-  const tree = buildTree(rawSections);
+  const displaySections = useMemo(
+    () => dedupeSectionsForList(rawSections),
+    [rawSections],
+  );
+  const tree = buildTree(displaySections);
   const markSectionIdsToPrefetch = useMemo(() => {
-    if (!isAuthor || !open) return [];
+    if (!open) return [];
 
     const ids = new Set<string>();
-    rawSections.forEach((section) => {
-      const canExpand =
-        section.sectionRole === 'section:edit' ||
-        (section.sectionRole === 'paper:author' && !!section.markSectionId);
-
-      if (!canExpand) return;
+    displaySections.forEach((section) => {
       ids.add(section.markSectionId || section.id);
     });
 
     return Array.from(ids);
-  }, [rawSections, isAuthor, open]);
+  }, [displaySections, open]);
 
   useEffect(() => {
-    if (!isAuthor || !open || markSectionIdsToPrefetch.length === 0) return;
+    if (!open || markSectionIdsToPrefetch.length === 0) return;
 
     markSectionIdsToPrefetch.forEach((markSectionId) => {
       void queryClient.prefetchQuery({
@@ -855,14 +918,13 @@ export const PaperSectionsDialog = ({
         queryFn: () => getMarkSection(markSectionId),
       });
     });
-  }, [isAuthor, open, markSectionIdsToPrefetch, queryClient]);
+  }, [open, markSectionIdsToPrefetch, queryClient]);
 
   console.log('DEBUG: rawSections', rawSections);
   console.log('DEBUG: tree', tree);
   console.log('DEBUG: flattened', flattenTree(tree));
 
-  const totalCount =
-    sectionsQuery.data?.result?.paging?.totalCount ?? rawSections.length;
+  const totalCount = displaySections.length;
 
   const handleClose = () => {
     setAssignTarget(null);
@@ -1027,7 +1089,10 @@ export const PaperSectionsDialog = ({
                                             <button
                                               type="button"
                                               onClick={() =>
-                                                toggleExpand(node.id)
+                                                toggleExpand(
+                                                  node.id,
+                                                  node.markSectionId || node.id,
+                                                )
                                               }
                                               className="text-muted-foreground hover:text-foreground ml-1 flex items-center gap-1 text-xs transition-colors"
                                             >
@@ -1123,6 +1188,7 @@ export const PaperSectionsDialog = ({
                                             }
                                             excludeSectionId={node.id}
                                             isAuthor={isAuthor}
+                                            currentUserEmail={currentUserEmail}
                                             onEditSection={
                                               isAuthor
                                                 ? (item) => {

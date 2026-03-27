@@ -38,4 +38,3 @@ export const usePaperTasks = ({
     ...getPaperTasksQueryOptions(paperId, params),
     ...queryConfig,
   });
-

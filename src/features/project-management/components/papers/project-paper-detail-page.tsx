@@ -1,6 +1,15 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, Pencil, Plus, Search, User, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Search,
+  User,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -30,16 +39,24 @@ import { BTN } from '@/lib/button-styles';
 import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { PaperSectionsManager } from '@/features/paper-management/components/paper-sections-manager';
+import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { ProjectMember } from '@/features/project-management/types';
-import { useCreateTask, usePaperTasks, useUpdateTask } from '@/features/task-management/api';
+import {
+  useCreateTask,
+  usePaperTasks,
+  useUpdateTask,
+} from '@/features/task-management/api';
 import {
   DATE_TASK_FILTER_OPTIONS,
   TASK_MANAGEMENT_QUERY_KEYS,
   TASK_STATUS_OPTIONS,
 } from '@/features/task-management/constants';
-import { DateTaskFilterField, TaskItem } from '@/features/task-management/types';
+import {
+  DateTaskFilterField,
+  TaskItem,
+} from '@/features/task-management/types';
 
 // Helper to format date
 const formatDate = (dateString: string | null | undefined) => {
@@ -62,7 +79,8 @@ const statusBadgeClass = (status: number) => {
 };
 
 const getStatusLabel = (status: number) =>
-  TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? `Status ${status}`;
+  TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
+  `Status ${status}`;
 
 const toDateTimeLocalValue = (value?: string | null) => {
   if (!value) return '';
@@ -89,7 +107,10 @@ export const ProjectPaperDetailPage = ({
   const queryClient = useQueryClient();
   const { data: user } = useUser();
   const paperQuery = useWritingPaperDetail({ paperId });
-  const [activeTab, setActiveTab] = useState<'sections' | 'tasks'>('sections');
+  const [activeTab, setActiveTab] = useState<
+    'sections' | 'old-sections' | 'tasks'
+  >('sections');
+  const [isPaperInfoExpanded, setIsPaperInfoExpanded] = useState(true);
   const [taskPage, setTaskPage] = useState(1);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
@@ -154,7 +175,8 @@ export const ProjectPaperDetailPage = ({
   const currentUsername = (user?.preferredUsername || '').trim().toLowerCase();
 
   const memberOptions = useMemo(() => {
-    const members: ProjectMember[] = (paperMembersQuery.data as any)?.result?.items ?? [];
+    const members: ProjectMember[] =
+      (paperMembersQuery.data as any)?.result?.items ?? [];
     const seen = new Set<string>();
     const options = members
       .filter((m) => !(m.role || '').toLowerCase().includes('manager'))
@@ -330,108 +352,135 @@ export const ProjectPaperDetailPage = ({
     <ContentLayout title={paper.title || 'Untitled Paper'}>
       <div className="space-y-6">
         {/* Paper Info Card */}
-        <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
-          {/* Header: Title, Status, Type */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
+          <button
+            type="button"
+            onClick={() => setIsPaperInfoExpanded((prev) => !prev)}
+            className="hover:bg-muted/40 flex w-full items-center justify-between border-b px-6 py-4 text-left transition-colors"
+          >
             <div>
-              <h1 className="text-foreground text-2xl font-bold">
-                {paper.title}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                {paperType && <Badge variant="outline">{paperType}</Badge>}
-                <Badge
-                  className={
-                    paper.status === 1
-                      ? 'bg-gray-100 text-gray-800 hover:bg-gray-100'
-                      : paper.status === 2
-                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
-                        : paper.status === 3
-                          ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                          : 'bg-amber-100 text-amber-800 hover:bg-amber-100'
-                  }
-                >
-                  {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
-                </Badge>
-                {paper.template && (
-                  <Badge variant="secondary">{paper.template}</Badge>
+              <p className="text-foreground text-base font-semibold">
+                Paper Information
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Click to {isPaperInfoExpanded ? 'collapse' : 'expand'} details
+              </p>
+            </div>
+            <div className="text-muted-foreground flex items-center gap-1 text-sm font-medium">
+              {isPaperInfoExpanded ? 'Hide details' : 'Show details'}
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${isPaperInfoExpanded ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </button>
+          <div className="p-6">
+            {/* Header: Title, Status, Type */}
+            <div className="mb-4 flex items-start gap-4">
+              <div>
+                <h1 className="text-foreground text-2xl font-bold">
+                  {paper.title}
+                </h1>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {paperType && <Badge variant="outline">{paperType}</Badge>}
+                  <Badge
+                    className={
+                      paper.status === 1
+                        ? 'bg-gray-100 text-gray-800 hover:bg-gray-100'
+                        : paper.status === 2
+                          ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
+                          : paper.status === 3
+                            ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                            : 'bg-amber-100 text-amber-800 hover:bg-amber-100'
+                    }
+                  >
+                    {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
+                  </Badge>
+                  {paper.template && (
+                    <Badge variant="secondary">{paper.template}</Badge>
+                  )}
+                </div>
+              </div>
+              <div className="text-muted-foreground space-y-1 text-right text-sm">
+                {paper.createdBy && (
+                  <div className="flex items-center justify-end gap-2">
+                    <User className="h-3.5 w-3.5" />
+                    <span>Created by {paper.createdBy}</span>
+                  </div>
                 )}
               </div>
             </div>
-            <div className="text-muted-foreground space-y-1 text-right text-sm">
-              {paper.createdBy && (
-                <div className="flex items-center justify-end gap-2">
-                  <User className="h-3.5 w-3.5" />
-                  <span>Created by {paper.createdBy}</span>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Details Grid */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-foreground font-semibold">Abstract</h3>
-                <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                  {paper.abstract || 'No abstract'}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-foreground font-semibold">Context</h3>
-                <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                  {paper.context || 'No context'}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-foreground font-semibold">Research Gap</h3>
-                <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                  {paper.researchGap || 'No research gap'}
-                </p>
-                {paper.gapType && (
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Type: {paper.gapType}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-foreground font-semibold">
-                  Main Contribution
-                </h3>
-                <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                  {paper.mainContribution || 'No contribution listed'}
-                </p>
-              </div>
-              {(paper.journalName || paper.journal) && (
-                <div>
-                  <h3 className="text-foreground font-semibold">Journal</h3>
-                  {paper.journalName && (
-                    <p className="text-muted-foreground bg-muted/30 mt-1 mb-2 rounded-md p-3 text-sm whitespace-pre-wrap">
-                      {paper.journalName}
-                    </p>
-                  )}
-                  {paper.journal && paper.journal !== paper.journalName && (
+            {isPaperInfoExpanded && (
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-foreground font-semibold">Abstract</h3>
                     <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                      {paper.journal}
+                      {paper.abstract || 'No abstract'}
                     </p>
-                  )}
-                </div>
-              )}
-              {(paper.styleName || paper.styleDescription) && (
-                <div>
-                  <h3 className="text-foreground font-semibold">
-                    Style Guidelines
-                  </h3>
-                  <div className="text-muted-foreground bg-muted/30 mt-1 space-y-2 rounded-md p-3 text-sm">
-                    {paper.styleName && (
-                      <p className="font-medium">{paper.styleName}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-foreground font-semibold">Context</h3>
+                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
+                      {paper.context || 'No context'}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-foreground font-semibold">
+                      Research Gap
+                    </h3>
+                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
+                      {paper.researchGap || 'No research gap'}
+                    </p>
+                    {paper.gapType && (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Type: {paper.gapType}
+                      </p>
                     )}
-                    {paper.styleDescription && <p>{paper.styleDescription}</p>}
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-foreground font-semibold">
+                      Main Contribution
+                    </h3>
+                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
+                      {paper.mainContribution || 'No contribution listed'}
+                    </p>
+                  </div>
+                  {(paper.journalName || paper.journal) && (
+                    <div>
+                      <h3 className="text-foreground font-semibold">Journal</h3>
+                      {paper.journalName && (
+                        <p className="text-muted-foreground bg-muted/30 mt-1 mb-2 rounded-md p-3 text-sm whitespace-pre-wrap">
+                          {paper.journalName}
+                        </p>
+                      )}
+                      {paper.journal && paper.journal !== paper.journalName && (
+                        <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
+                          {paper.journal}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {(paper.styleName || paper.styleDescription) && (
+                    <div>
+                      <h3 className="text-foreground font-semibold">
+                        Style Guidelines
+                      </h3>
+                      <div className="text-muted-foreground bg-muted/30 mt-1 space-y-2 rounded-md p-3 text-sm">
+                        {paper.styleName && (
+                          <p className="font-medium">{paper.styleName}</p>
+                        )}
+                        {paper.styleDescription && (
+                          <p>{paper.styleDescription}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -442,7 +491,9 @@ export const ProjectPaperDetailPage = ({
               variant={activeTab === 'sections' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('sections')}
-              className={activeTab === 'sections' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              className={
+                activeTab === 'sections' ? 'bg-blue-600 hover:bg-blue-700' : ''
+              }
             >
               Sections
             </Button>
@@ -451,9 +502,24 @@ export const ProjectPaperDetailPage = ({
               variant={activeTab === 'tasks' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('tasks')}
-              className={activeTab === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              className={
+                activeTab === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''
+              }
             >
               Tasks
+            </Button>
+            <Button
+              type="button"
+              variant={activeTab === 'old-sections' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('old-sections')}
+              className={
+                activeTab === 'old-sections'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : ''
+              }
+            >
+              Old Section
             </Button>
           </div>
 
@@ -464,6 +530,11 @@ export const ProjectPaperDetailPage = ({
               subProjectId={subProjectId}
               isAuthor={isAuthor}
               isManager={isManager}
+            />
+          ) : activeTab === 'old-sections' ? (
+            <PaperOldSectionsManager
+              paperId={paperId}
+              paperTitle={paper.title || 'Untitled'}
             />
           ) : (
             <div>
@@ -499,7 +570,9 @@ export const ProjectPaperDetailPage = ({
                     <select
                       className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={localFilters.Status}
-                      onChange={(e) => handleFilterChange('Status', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange('Status', e.target.value)
+                      }
                     >
                       <option value="">All Status</option>
                       {TASK_STATUS_OPTIONS.map((status) => (
@@ -517,7 +590,9 @@ export const ProjectPaperDetailPage = ({
                     <select
                       className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={localFilters.DateField}
-                      onChange={(e) => handleFilterChange('DateField', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange('DateField', e.target.value)
+                      }
                     >
                       <option value="">Select Date Field</option>
                       {DATE_TASK_FILTER_OPTIONS.map((f) => (
@@ -536,7 +611,9 @@ export const ProjectPaperDetailPage = ({
                       type="date"
                       value={localFilters.FromDate}
                       disabled={!isDateFieldSelected}
-                      onChange={(e) => handleFilterChange('FromDate', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange('FromDate', e.target.value)
+                      }
                     />
                   </div>
 
@@ -548,7 +625,9 @@ export const ProjectPaperDetailPage = ({
                       type="date"
                       value={localFilters.ToDate}
                       disabled={!isDateFieldSelected}
-                      onChange={(e) => handleFilterChange('ToDate', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange('ToDate', e.target.value)
+                      }
                     />
                   </div>
                 </div>
@@ -584,7 +663,10 @@ export const ProjectPaperDetailPage = ({
 
               <div className="mb-4 flex items-center justify-end">
                 {isAuthor && (
-                  <Button className={BTN.CREATE} onClick={() => setIsCreateTaskOpen(true)}>
+                  <Button
+                    className={BTN.CREATE}
+                    onClick={() => setIsCreateTaskOpen(true)}
+                  >
                     <Plus className="size-4" />
                     Create Task
                   </Button>
@@ -603,59 +685,81 @@ export const ProjectPaperDetailPage = ({
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                          <TableHead className="font-semibold text-green-900 dark:text-green-200">Name</TableHead>
-                          <TableHead className="font-semibold text-green-900 dark:text-green-200">Assignee</TableHead>
-                          <TableHead className="font-semibold text-green-900 dark:text-green-200">Status</TableHead>
-                          <TableHead className="font-semibold text-green-900 dark:text-green-200">Start</TableHead>
-                          <TableHead className="font-semibold text-green-900 dark:text-green-200">Next Review</TableHead>
-                          <TableHead className="font-semibold text-green-900 dark:text-green-200">Complete</TableHead>
-                          <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">Actions</TableHead>
+                          <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                            Name
+                          </TableHead>
+                          <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                            Assignee
+                          </TableHead>
+                          <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                            Status
+                          </TableHead>
+                          <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                            Start
+                          </TableHead>
+                          <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                            Next Review
+                          </TableHead>
+                          <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                            Complete
+                          </TableHead>
+                          <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                            Actions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {(paperTasksQuery.data?.result?.items ?? []).map((task) => (
-                          <TableRow
-                            key={task.id}
-                            className="transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20"
-                          >
-                            <TableCell className="max-w-[320px]">
-                              <p className="font-medium">{task.name}</p>
-                              <p className="text-muted-foreground truncate text-xs">
-                                {task.description || 'No description'}
-                              </p>
-                            </TableCell>
-                            <TableCell>{task.assignedToUserName}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={statusBadgeClass(task.status)}>
-                                {getStatusLabel(task.status)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDate(task.startDate)}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDate(task.nextReviewDate)}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDate(task.completeDate)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {currentUsername &&
-                              task.assignedToUserName.toLowerCase() === currentUsername ? (
-                                <Button
-                                  size="icon-sm"
-                                  variant="ghost"
-                                  onClick={() => openUpdateTask(task)}
-                                  title="Update status and dates"
+                        {(paperTasksQuery.data?.result?.items ?? []).map(
+                          (task) => (
+                            <TableRow
+                              key={task.id}
+                              className="transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20"
+                            >
+                              <TableCell className="max-w-[320px]">
+                                <p className="font-medium">{task.name}</p>
+                                <p className="text-muted-foreground truncate text-xs">
+                                  {task.description || 'No description'}
+                                </p>
+                              </TableCell>
+                              <TableCell>{task.assignedToUserName}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={statusBadgeClass(task.status)}
                                 >
-                                  <Pencil className="size-4 text-blue-600" />
-                                </Button>
-                              ) : (
-                                <span className="text-muted-foreground text-xs">—</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                  {getStatusLabel(task.status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {formatDate(task.startDate)}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {formatDate(task.nextReviewDate)}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {formatDate(task.completeDate)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {currentUsername &&
+                                task.assignedToUserName.toLowerCase() ===
+                                  currentUsername ? (
+                                  <Button
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    onClick={() => openUpdateTask(task)}
+                                    title="Update status and dates"
+                                  >
+                                    <Pencil className="size-4 text-blue-600" />
+                                  </Button>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">
+                                    —
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )}
                       </TableBody>
                     </Table>
 
@@ -670,7 +774,9 @@ export const ProjectPaperDetailPage = ({
                           <span className="text-foreground font-medium">
                             {paperTasksQuery.data.result.paging.totalPages}
                           </span>{' '}
-                          &middot; {paperTasksQuery.data.result.paging.totalCount} results
+                          &middot;{' '}
+                          {paperTasksQuery.data.result.paging.totalCount}{' '}
+                          results
                         </p>
 
                         <div className="col-start-3 flex items-center justify-end gap-2">
@@ -678,8 +784,13 @@ export const ProjectPaperDetailPage = ({
                             variant="outline"
                             size="icon"
                             className="size-8"
-                            disabled={!paperTasksQuery.data.result.paging.hasPreviousPage}
-                            onClick={() => setTaskPage((prev) => Math.max(prev - 1, 1))}
+                            disabled={
+                              !paperTasksQuery.data.result.paging
+                                .hasPreviousPage
+                            }
+                            onClick={() =>
+                              setTaskPage((prev) => Math.max(prev - 1, 1))
+                            }
                           >
                             <ChevronLeft className="size-4" />
                           </Button>
@@ -687,7 +798,9 @@ export const ProjectPaperDetailPage = ({
                             variant="outline"
                             size="icon"
                             className="size-8"
-                            disabled={!paperTasksQuery.data.result.paging.hasNextPage}
+                            disabled={
+                              !paperTasksQuery.data.result.paging.hasNextPage
+                            }
                             onClick={() => setTaskPage((prev) => prev + 1)}
                           >
                             <ChevronRight className="size-4" />
@@ -717,10 +830,14 @@ export const ProjectPaperDetailPage = ({
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">Task Name</label>
+                <label className="text-muted-foreground text-xs font-medium">
+                  Task Name
+                </label>
                 <Input
                   value={createForm.name}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   required
                 />
               </div>
@@ -733,13 +850,18 @@ export const ProjectPaperDetailPage = ({
                   className="border-input bg-background focus-visible:ring-ring min-h-[90px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.description}
                   onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, description: e.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">Assign Username</label>
+                <label className="text-muted-foreground text-xs font-medium">
+                  Assign Username
+                </label>
                 <select
                   className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.assignedToUserName}
@@ -761,11 +883,18 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">Status</label>
+                <label className="text-muted-foreground text-xs font-medium">
+                  Status
+                </label>
                 <select
                   className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.status}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      status: e.target.value,
+                    }))
+                  }
                 >
                   {TASK_STATUS_OPTIONS.map((status) => (
                     <option key={status.value} value={String(status.value)}>
@@ -776,12 +905,17 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">Start Date</label>
+                <label className="text-muted-foreground text-xs font-medium">
+                  Start Date
+                </label>
                 <Input
                   type="datetime-local"
                   value={createForm.startDate}
                   onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, startDate: e.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -794,7 +928,10 @@ export const ProjectPaperDetailPage = ({
                   type="datetime-local"
                   value={createForm.nextReviewDate}
                   onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, nextReviewDate: e.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      nextReviewDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -807,7 +944,10 @@ export const ProjectPaperDetailPage = ({
                   type="datetime-local"
                   value={createForm.completeDate}
                   onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, completeDate: e.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      completeDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -819,7 +959,11 @@ export const ProjectPaperDetailPage = ({
                   Cancel
                 </Button>
               </SheetClose>
-              <Button type="submit" className={BTN.CREATE} disabled={createTaskMutation.isPending}>
+              <Button
+                type="submit"
+                className={BTN.CREATE}
+                disabled={createTaskMutation.isPending}
+              >
                 {createTaskMutation.isPending ? 'Creating...' : 'Create'}
               </Button>
             </SheetFooter>
@@ -827,21 +971,33 @@ export const ProjectPaperDetailPage = ({
         </SheetContent>
       </Sheet>
 
-      <Sheet open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
+      <Sheet
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+      >
         <SheetContent className="flex w-full flex-col sm:max-w-sm">
           <form onSubmit={handleUpdateTask} className="flex h-full flex-col">
             <SheetHeader>
               <SheetTitle>Update Task</SheetTitle>
-              <SheetDescription>Only status and your date fields can be updated</SheetDescription>
+              <SheetDescription>
+                Only status and your date fields can be updated
+              </SheetDescription>
             </SheetHeader>
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">Status</label>
+                <label className="text-muted-foreground text-xs font-medium">
+                  Status
+                </label>
                 <select
                   className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={updateForm.status}
-                  onChange={(e) => setUpdateForm((prev) => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) =>
+                    setUpdateForm((prev) => ({
+                      ...prev,
+                      status: e.target.value,
+                    }))
+                  }
                 >
                   {TASK_STATUS_OPTIONS.map((status) => (
                     <option key={status.value} value={String(status.value)}>
@@ -852,12 +1008,17 @@ export const ProjectPaperDetailPage = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-muted-foreground text-xs font-medium">Start Date</label>
+                <label className="text-muted-foreground text-xs font-medium">
+                  Start Date
+                </label>
                 <Input
                   type="datetime-local"
                   value={updateForm.startDate}
                   onChange={(e) =>
-                    setUpdateForm((prev) => ({ ...prev, startDate: e.target.value }))
+                    setUpdateForm((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -870,7 +1031,10 @@ export const ProjectPaperDetailPage = ({
                   type="datetime-local"
                   value={updateForm.nextReviewDate}
                   onChange={(e) =>
-                    setUpdateForm((prev) => ({ ...prev, nextReviewDate: e.target.value }))
+                    setUpdateForm((prev) => ({
+                      ...prev,
+                      nextReviewDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -882,7 +1046,11 @@ export const ProjectPaperDetailPage = ({
                   Cancel
                 </Button>
               </SheetClose>
-              <Button type="submit" className={BTN.EDIT} disabled={updateTaskMutation.isPending}>
+              <Button
+                type="submit"
+                className={BTN.EDIT}
+                disabled={updateTaskMutation.isPending}
+              >
                 {updateTaskMutation.isPending ? 'Updating...' : 'Update'}
               </Button>
             </SheetFooter>

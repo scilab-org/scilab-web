@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Users,
   UserPlus,
@@ -42,7 +42,9 @@ import { useRemovePaperMembers } from '../../api/papers/remove-paper-members';
 import { ProjectMember } from '../../types';
 
 const AUTHOR_ROLE = 'project:author';
-const MEMBER_ROLE = 'project:member';
+const PROJECT_MEMBER_ROLE = 'project:member';
+const PAPER_AUTHOR_GROUP = 'paper:author';
+const PAPER_MEMBER_GROUP = 'paper:member';
 
 type Panel = 'default' | 'view' | 'add';
 
@@ -55,6 +57,11 @@ const getRoleColor = (role: string) => {
   if (r.includes('member'))
     return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
   return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
+};
+
+const canManagerRemoveRole = (role?: string) => {
+  const normalized = (role || '').trim().toLowerCase();
+  return normalized === AUTHOR_ROLE || normalized === PAPER_AUTHOR_GROUP;
 };
 
 type PaperMembersSheetProps = {
@@ -71,14 +78,14 @@ export const PaperMembersSheet = ({
   subProjectId,
   isManager,
   isAuthor,
-  paperTitle,
+  paperTitle: _paperTitle,
   open,
   onOpenChange,
 }: PaperMembersSheetProps) => {
   // Manager adds authors; author adds members
   const canAddMembers = isManager || isAuthor;
-  const addRoleFilter = isManager ? AUTHOR_ROLE : MEMBER_ROLE;
-  const addGroupName = isManager ? AUTHOR_ROLE : MEMBER_ROLE;
+  const addRoleFilter = isManager ? AUTHOR_ROLE : PROJECT_MEMBER_ROLE;
+  const addGroupName = isManager ? PAPER_AUTHOR_GROUP : PAPER_MEMBER_GROUP;
   const [panel, setPanel] = useState<Panel>('default');
   const [searchText, setSearchText] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
@@ -95,8 +102,27 @@ export const PaperMembersSheet = ({
     params: { pageSize: 200 },
     queryConfig: { enabled: open && panel === 'view' },
   });
-  const members: ProjectMember[] =
-    (membersQuery.data as any)?.result?.items ?? [];
+  const members = useMemo(
+    () => ((membersQuery.data as any)?.result?.items ?? []) as ProjectMember[],
+    [membersQuery.data],
+  );
+  const sortedMembers = useMemo(() => {
+    const getRolePriority = (role: string) => {
+      const normalized = (role || '').toLowerCase();
+      if (normalized.includes('author')) return 0;
+      if (normalized.includes('member')) return 1;
+      return 2;
+    };
+
+    return [...members].sort((a, b) => {
+      const roleDiff = getRolePriority(a.role) - getRolePriority(b.role);
+      if (roleDiff !== 0) return roleDiff;
+
+      const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+      const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+      return nameA.localeCompare(nameB);
+    });
+  }, [members]);
 
   // ── GET /sub-projects/{subProjectId}/members/available ───────────────────
   // Manager → shows project:author; Author → shows project:member
@@ -180,6 +206,17 @@ export const PaperMembersSheet = ({
     onOpenChange(false);
   };
 
+  const handleOpenViewPanel = () => {
+    setPanel('view');
+    void membersQuery.refetch();
+  };
+
+  const handleOpenAddPanel = () => {
+    setPanel('add');
+    void parentAuthorsQuery.refetch();
+    void membersQuery.refetch();
+  };
+
   const selectedCount = selectedUserIds.size;
 
   const panelTitle = {
@@ -229,7 +266,7 @@ export const PaperMembersSheet = ({
           {panel === 'default' && (
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => setPanel('view')}
+                onClick={handleOpenViewPanel}
                 className="border-border hover:border-primary/50 hover:bg-muted/40 flex items-center gap-4 rounded-lg border px-5 py-4 text-left transition-all"
               >
                 <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
@@ -247,7 +284,7 @@ export const PaperMembersSheet = ({
 
               {canAddMembers && (
                 <button
-                  onClick={() => setPanel('add')}
+                  onClick={handleOpenAddPanel}
                   className="border-border hover:border-primary/50 hover:bg-muted/40 flex items-center gap-4 rounded-lg border px-5 py-4 text-left transition-all"
                 >
                   <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
@@ -277,9 +314,9 @@ export const PaperMembersSheet = ({
                   <Skeleton className="h-14 w-full" />
                   <Skeleton className="h-14 w-full" />
                 </div>
-              ) : members.length > 0 ? (
+              ) : sortedMembers.length > 0 ? (
                 <ul className="space-y-2">
-                  {members.map((m) => (
+                  {sortedMembers.map((m) => (
                     <li
                       key={m.memberId}
                       className="border-border flex items-center gap-3 rounded-lg border px-4 py-3"
@@ -301,8 +338,8 @@ export const PaperMembersSheet = ({
                       >
                         {m.role}
                       </span>
-                      {((isManager && m.role === AUTHOR_ROLE) ||
-                        (isAuthor && m.role === MEMBER_ROLE)) && (
+                      {((isManager && canManagerRemoveRole(m.role)) ||
+                        (isAuthor && m.role === PAPER_MEMBER_GROUP)) && (
                         <button
                           onClick={() => setMemberToRemove(m)}
                           disabled={removeMemberMutation.isPending}
