@@ -113,11 +113,11 @@ const SectionExpandedView = ({
       {sorted.map((item) => {
         const initials = item.name
           ? item.name
-              .split(' ')
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase()
+            .split(' ')
+            .map((w) => w[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase()
           : '?';
 
         return (
@@ -137,10 +137,10 @@ const SectionExpandedView = ({
                   </span>
                   {(item.email || '').trim().toLowerCase() ===
                     normalizedCurrentEmail && (
-                    <span className="shrink-0 rounded-full border border-blue-200 bg-blue-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-blue-700 uppercase dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                      me
-                    </span>
-                  )}
+                      <span className="shrink-0 rounded-full border border-blue-200 bg-blue-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-blue-700 uppercase dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        me
+                      </span>
+                    )}
                   {item === preferredMainItem && (
                     <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
                       main
@@ -261,9 +261,9 @@ export const PaperOldSectionsManager = ({
           new Date(
             section.lastModifiedOnUtc || section.createdOnUtc,
           ).getTime() >
-            new Date(
-              current.latest.lastModifiedOnUtc || current.latest.createdOnUtc,
-            ).getTime())
+          new Date(
+            current.latest.lastModifiedOnUtc || current.latest.createdOnUtc,
+          ).getTime())
       ) {
         current.latest = section;
       }
@@ -360,20 +360,20 @@ export const PaperOldSectionsManager = ({
         sections={
           viewTargetItem
             ? [
-                {
-                  id: viewTargetItem.sectionId,
-                  markSectionId: viewTargetItem.markSectionId,
-                  paperId,
-                  title: stripLatex(viewTargetItem.title),
-                  content: viewTargetItem.content || '',
-                  memberId: viewTargetItem.memberId,
-                  numbered: true,
-                  sectionSumary: '',
-                  parentSectionId: viewTargetItem.parentSectionId,
-                  sectionRole: viewTargetItem.sectionRole,
-                  description: viewTargetItem.description || '',
-                },
-              ]
+              {
+                id: viewTargetItem.sectionId,
+                markSectionId: viewTargetItem.markSectionId,
+                paperId,
+                title: stripLatex(viewTargetItem.title),
+                content: viewTargetItem.content || '',
+                memberId: viewTargetItem.memberId,
+                numbered: true,
+                sectionSumary: '',
+                parentSectionId: viewTargetItem.parentSectionId,
+                sectionRole: viewTargetItem.sectionRole,
+                description: viewTargetItem.description || '',
+              },
+            ]
             : editorSections
         }
         initialSectionId={

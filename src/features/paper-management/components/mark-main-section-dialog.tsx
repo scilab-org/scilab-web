@@ -113,9 +113,9 @@ export const MarkMainSectionDialog = ({
     );
   });
 
-  const latestVersions = sortedVersions.filter(
-    (v, i, self) => self.findIndex((x) => x.memberId === v.memberId) === i,
-  );
+  const latestVersions = sortedVersions
+    .filter((v, i, self) => self.findIndex((x) => x.memberId === v.memberId) === i)
+    .filter((v) => !v.isMainSection && v.sectionId !== v.markSectionId);
 
   const handleConfirm = () => {
     if (!selectedSectionId || !selectedVersionId) return;
