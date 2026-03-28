@@ -254,6 +254,8 @@ export type AssignedSectionHistoryItem = {
   version: number;
   createdOnUtc: string;
   lastModifiedOnUtc: string;
+  isOldMainSection: boolean;
+  isMainSection: boolean;
 };
 
 export type AssignedSectionsHistoryResult = {

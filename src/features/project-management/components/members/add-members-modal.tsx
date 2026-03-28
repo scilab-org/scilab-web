@@ -5,7 +5,6 @@ import {
   UserPlus,
   Users,
   Check,
-  ChevronDown,
   ShieldCheck,
   UserCog,
 } from 'lucide-react';
@@ -61,6 +60,31 @@ const detectRole = (currentUserProjectRole?: string) => {
   return { isAdmin, isManager: isManager || !isAdmin };
 };
 
+const formatGroupLabel = (name: string) => {
+  const stripped = name.replace(/^project:/i, '');
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+};
+
+const getRoleColor = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('author'))
+    return {
+      active:
+        'border-blue-500 bg-blue-500 text-white shadow-sm',
+      idle: 'border-border bg-background text-muted-foreground hover:border-blue-300 hover:text-blue-600',
+    };
+  if (n.includes('member'))
+    return {
+      active:
+        'border-green-500 bg-green-500 text-white shadow-sm',
+      idle: 'border-border bg-background text-muted-foreground hover:border-green-300 hover:text-green-600',
+    };
+  return {
+    active: 'border-primary bg-primary text-primary-foreground shadow-sm',
+    idle: 'border-border bg-background text-muted-foreground hover:border-primary/50',
+  };
+};
+
 type Group = { id?: string | null; name?: string | null };
 
 type UserCardProps = {
@@ -84,15 +108,15 @@ const UserCard = ({
 }: UserCardProps) => {
   return (
     <div
-      className={`border-border rounded-lg border transition-all duration-200 hover:shadow-md ${
+      className={`rounded-xl border transition-all duration-200 ${
         isSelected
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-          : 'hover:border-blue-300'
+          ? 'border-blue-400 bg-blue-50 shadow-sm dark:bg-blue-950/30'
+          : 'border-border hover:border-blue-300 hover:shadow-sm'
       }`}
     >
       {/* User row */}
       <div
-        className="flex cursor-pointer items-center gap-3 p-4"
+        className="flex cursor-pointer items-center gap-3 px-4 py-3"
         onClick={() => onToggleSelect(user.id)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -104,7 +128,7 @@ const UserCard = ({
         tabIndex={0}
       >
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
             isSelected
               ? 'bg-blue-500 text-white'
               : 'bg-muted text-muted-foreground'
@@ -136,37 +160,37 @@ const UserCard = ({
         </div>
       </div>
 
-      {/* Per-user group selector — only shown when selected in manager mode */}
+      {/* Per-user role pill selector — shown when selected in manager mode */}
       {isSelected && isManagerMode && (
         <div
-          className="border-t border-blue-200 px-4 pb-3 dark:border-blue-800/50"
+          className="border-t border-blue-200 px-4 pt-2 pb-3 dark:border-blue-800/50"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           role="presentation"
         >
-          <label
-            htmlFor={`role-select-${user.id}`}
-            className="text-muted-foreground mb-1 block text-xs font-medium"
-          >
+          <p className="text-muted-foreground mb-2 text-xs font-medium">
             Assign role
-          </label>
-          <div className="relative">
-            <select
-              id={`role-select-${user.id}`}
-              value={assignedGroup}
-              onChange={(e) => onChangeGroup(user.id, e.target.value)}
-              className="border-input bg-background text-foreground focus:ring-ring w-full appearance-none rounded-md border px-3 py-1.5 pr-8 text-sm shadow-sm focus:ring-2 focus:outline-none"
-            >
-              <option value="" disabled>
-                Select a role...
-              </option>
-              {availableGroups.map((group) => (
-                <option key={group.id ?? group.name} value={group.name ?? ''}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 h-3.5 w-3.5 -translate-y-1/2" />
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {availableGroups.map((group) => {
+              const rawName = group.name ?? '';
+              const label = formatGroupLabel(rawName);
+              const isActive = assignedGroup === rawName;
+              const colors = getRoleColor(rawName);
+              return (
+                <button
+                  key={group.id ?? rawName}
+                  type="button"
+                  onClick={() => onChangeGroup(user.id, rawName)}
+                  className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 ${
+                    isActive ? colors.active : colors.idle
+                  }`}
+                >
+                  {isActive && <Check className="h-3 w-3 shrink-0" />}
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -316,8 +340,8 @@ export const AddMembersModal = ({
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col sm:max-w-sm">
-        <SheetHeader>
+      <SheetContent className="flex flex-col gap-0 sm:max-w-sm">
+        <SheetHeader className="px-1 pb-2">
           <div className="flex items-center gap-2">
             {isAdmin ? (
               <ShieldCheck className="h-5 w-5" />
@@ -333,7 +357,7 @@ export const AddMembersModal = ({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 flex-1 space-y-4 overflow-y-auto">
+        <div className="mt-4 flex flex-1 flex-col gap-3 overflow-hidden px-1">
           {/* Search bar */}
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -351,7 +375,7 @@ export const AddMembersModal = ({
 
           {/* Selection summary */}
           {selectedCount > 0 && (
-            <div className="flex items-center justify-between rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2 dark:bg-blue-950/30">
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 {selectedCount} user{selectedCount !== 1 ? 's' : ''} selected
               </p>
@@ -368,12 +392,12 @@ export const AddMembersModal = ({
           )}
 
           {/* Users list */}
-          <div className="max-h-95 space-y-2 overflow-y-auto pr-1">
+          <div className="flex-1 space-y-2 overflow-y-auto pr-1">
             {usersQuery.isLoading ? (
               <>
-                <Skeleton className="h-15 w-full" />
-                <Skeleton className="h-15 w-full" />
-                <Skeleton className="h-15 w-full" />
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-16 w-full rounded-xl" />
               </>
             ) : users.length > 0 ? (
               users.map((user: AvailableUser) => (
@@ -393,13 +417,13 @@ export const AddMembersModal = ({
                 />
               ))
             ) : searchDebounce ? (
-              <div className="bg-muted/30 rounded-lg py-8 text-center">
+              <div className="bg-muted/30 rounded-xl py-10 text-center">
                 <p className="text-muted-foreground text-sm">
                   No users found for &ldquo;{searchDebounce}&rdquo;
                 </p>
               </div>
             ) : (
-              <div className="bg-muted/30 rounded-lg py-8 text-center">
+              <div className="bg-muted/30 rounded-xl py-10 text-center">
                 <p className="text-muted-foreground text-sm">
                   Start typing to search for available users
                 </p>
@@ -411,7 +435,7 @@ export const AddMembersModal = ({
           </div>
         </div>
 
-        <SheetFooter className="mt-6">
+        <SheetFooter className="mt-4 px-1">
           <SheetClose asChild>
             <Button
               variant="outline"

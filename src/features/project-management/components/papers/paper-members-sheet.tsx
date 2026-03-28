@@ -59,6 +59,16 @@ const getRoleColor = (role: string) => {
   return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
 };
 
+const formatRole = (role: string): string => {
+  const r = (role || '').toLowerCase();
+  if (r.includes('author')) return 'Author';
+  if (r.includes('member')) return 'Member';
+  if (r.includes('manager')) return 'Manager';
+  if (r.includes('admin')) return 'Admin';
+  const stripped = role.replace(/^(?:paper:|project:)/i, '');
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+};
+
 const canManagerRemoveRole = (role?: string) => {
   const normalized = (role || '').trim().toLowerCase();
   return normalized === AUTHOR_ROLE || normalized === PAPER_AUTHOR_GROUP;
@@ -242,13 +252,13 @@ export const PaperMembersSheet = ({
         if (!o) handleClose();
       }}
     >
-      <SheetContent className="flex w-full flex-col sm:max-w-sm">
-        <SheetHeader>
+      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm">
+        <SheetHeader className="px-1 pb-2">
           <div className="flex items-center gap-2">
             {panel !== 'default' && (
               <button
                 onClick={goBack}
-                className="text-muted-foreground hover:text-foreground mr-1"
+                className="text-muted-foreground hover:text-foreground mr-1 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
@@ -261,7 +271,7 @@ export const PaperMembersSheet = ({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 flex-1 space-y-4 overflow-y-auto">
+        <div className="mt-4 flex flex-1 flex-col gap-3 overflow-hidden px-1">
           {/* ── Default panel: action buttons ──────────────────────────── */}
           {panel === 'default' && (
             <div className="flex flex-col gap-3">
@@ -307,21 +317,21 @@ export const PaperMembersSheet = ({
 
           {/* ── View panel: GET /projects/{id}/papers/{paperId}/members ── */}
           {panel === 'view' && (
-            <>
+            <div className="flex-1 overflow-y-auto pr-1">
               {membersQuery.isLoading ? (
                 <div className="space-y-2">
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
                 </div>
               ) : sortedMembers.length > 0 ? (
                 <ul className="space-y-2">
                   {sortedMembers.map((m) => (
                     <li
                       key={m.memberId}
-                      className="border-border flex items-center gap-3 rounded-lg border px-4 py-3"
+                      className="border-border flex items-center gap-3 rounded-xl border px-4 py-3 transition-shadow hover:shadow-sm"
                     >
-                      <div className="bg-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase">
+                      <div className="bg-muted text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase">
                         {m.firstName?.[0] ?? m.username?.[0] ?? '?'}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -334,9 +344,9 @@ export const PaperMembersSheet = ({
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${getRoleColor(m.role)}`}
+                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleColor(m.role)}`}
                       >
-                        {m.role}
+                        {formatRole(m.role)}
                       </span>
                       {((isManager && canManagerRemoveRole(m.role)) ||
                         (isAuthor && m.role === PAPER_MEMBER_GROUP)) && (
@@ -357,20 +367,20 @@ export const PaperMembersSheet = ({
                   ))}
                 </ul>
               ) : (
-                <div className="bg-muted/30 rounded-lg py-12 text-center">
+                <div className="bg-muted/30 rounded-xl py-12 text-center">
                   <Users className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
                   <p className="text-muted-foreground text-sm">
                     No members assigned to this paper yet
                   </p>
                 </div>
               )}
-            </>
+            </div>
           )}
 
-          {/* ── Add panel: GET /projects/{id}/members (old API) ─────────── */}
+          {/* ── Add panel ─────────────────────────────────────────────── */}
           {panel === 'add' && (
             <>
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="Search by name, email, or username..."
@@ -384,7 +394,7 @@ export const PaperMembersSheet = ({
               </div>
 
               {selectedCount > 0 && (
-                <div className="flex items-center justify-between rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+                <div className="flex shrink-0 items-center justify-between rounded-lg bg-blue-50 px-4 py-2 dark:bg-blue-950/30">
                   <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                     {selectedCount} user{selectedCount !== 1 ? 's' : ''}{' '}
                     selected
@@ -398,12 +408,12 @@ export const PaperMembersSheet = ({
                 </div>
               )}
 
-              <div className="max-h-100 space-y-2 overflow-y-auto pr-1">
+              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                 {parentAuthorsQuery.isLoading ? (
                   <>
-                    <Skeleton className="h-14 w-full" />
-                    <Skeleton className="h-14 w-full" />
-                    <Skeleton className="h-14 w-full" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
                   </>
                 ) : availableAuthors.length > 0 ? (
                   availableAuthors.map((author) => {
@@ -420,14 +430,14 @@ export const PaperMembersSheet = ({
                             handleToggleUser(author.userId);
                           }
                         }}
-                        className={`border-border flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-all hover:shadow-sm ${
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-all ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                            : 'hover:border-blue-300'
+                            ? 'border-blue-400 bg-blue-50 shadow-sm dark:bg-blue-950/30'
+                            : 'border-border hover:border-blue-300 hover:shadow-sm'
                         }`}
                       >
                         <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
                             isSelected
                               ? 'bg-blue-500 text-white'
                               : 'bg-muted text-muted-foreground'
@@ -452,7 +462,7 @@ export const PaperMembersSheet = ({
                     );
                   })
                 ) : (
-                  <div className="bg-muted/30 rounded-lg py-8 text-center">
+                  <div className="bg-muted/30 rounded-xl py-10 text-center">
                     <p className="text-muted-foreground text-sm">
                       {searchText
                         ? `No ${isManager ? 'authors' : 'members'} found for "${searchText}"`
@@ -465,7 +475,7 @@ export const PaperMembersSheet = ({
           )}
         </div>
 
-        <SheetFooter className="mt-6 flex-col gap-2 sm:flex-col">
+        <SheetFooter className="mt-4 flex-col gap-2 px-1 sm:flex-col">
           {panel === 'default' && (
             <SheetClose asChild>
               <Button variant="outline" className={`w-full ${BTN.CANCEL}`}>

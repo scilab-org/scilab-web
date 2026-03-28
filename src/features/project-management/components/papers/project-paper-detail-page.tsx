@@ -36,6 +36,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { BTN } from '@/lib/button-styles';
+import { cn } from '@/utils/cn';
 import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { PaperSectionsManager } from '@/features/paper-management/components/paper-sections-manager';
@@ -492,35 +493,37 @@ export const ProjectPaperDetailPage = ({
             <Button
               type="button"
               variant={activeTab === 'sections' ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setActiveTab('sections')}
-              className={
-                activeTab === 'sections' ? 'bg-blue-600 hover:bg-blue-700' : ''
-              }
+              className={cn(
+                'h-9 px-4 text-sm font-medium',
+                activeTab === 'sections' ? 'bg-blue-600 hover:bg-blue-700' : '',
+              )}
             >
               Sections
             </Button>
             <Button
               type="button"
               variant={activeTab === 'tasks' ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setActiveTab('tasks')}
-              className={
-                activeTab === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''
-              }
+              className={cn(
+                'h-9 px-4 text-sm font-medium',
+                activeTab === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : '',
+              )}
             >
               Tasks
             </Button>
             <Button
               type="button"
               variant={activeTab === 'old-sections' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('old-sections')}
-              className={
+              onClick={() => {
+                setActiveTab('old-sections');
+              }}
+              className={cn(
+                'h-9 px-4 text-sm font-medium',
                 activeTab === 'old-sections'
                   ? 'bg-blue-600 hover:bg-blue-700'
-                  : ''
-              }
+                  : '',
+              )}
             >
               Old Section
             </Button>
