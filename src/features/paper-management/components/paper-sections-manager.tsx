@@ -11,6 +11,7 @@ import {
   Trash2,
   Pencil,
   Eye,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -92,6 +93,13 @@ const stripLatex = (input: string): string => {
     .replace(/\\-/g, '-')
     .replace(/\\\\/g, '');
   return s.replace(/[{}]/g, '').trim() || '(Untitled)';
+};
+
+const formatDisplayDate = (value?: string | null) => {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleDateString('vi-VN');
 };
 
 // ─── Tree builder ─────────────────────────────────────────────────────────────
@@ -528,10 +536,14 @@ const SectionExpandedView = ({
 
   if (query.isLoading) {
     return (
-      <div className="space-y-3 p-4">
-        <Skeleton className="h-12 w-full rounded-lg" />
-        <Skeleton className="h-12 w-full rounded-lg" />
-      </div>
+      <TableRow className="bg-blue-50/20 hover:bg-transparent">
+        <TableCell colSpan={5} className="border-t border-blue-100 p-4 dark:border-blue-900/30">
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        </TableCell>
+      </TableRow>
     );
   }
 
@@ -575,14 +587,16 @@ const SectionExpandedView = ({
 
   if (sorted.length === 0) {
     return (
-      <div className="text-muted-foreground px-3 py-2 text-center text-xs">
-        No other versions
-      </div>
+      <TableRow className="bg-blue-50/20 hover:bg-transparent">
+        <TableCell colSpan={5} className="border-t border-blue-100 px-3 py-4 text-center text-xs text-muted-foreground dark:border-blue-900/30">
+          No other versions
+        </TableCell>
+      </TableRow>
     );
   }
 
   return (
-    <div className="divide-y divide-blue-100 dark:divide-blue-900/30">
+    <>
       {sorted.map((item) => {
         const initials = item.name
           ? item.name
@@ -592,60 +606,101 @@ const SectionExpandedView = ({
               .join('')
               .toUpperCase()
           : '?';
-        return (
-          <div
-            key={item.sectionId}
-            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-blue-100/40 dark:hover:bg-blue-900/20"
-          >
-            {/* Avatar */}
-            <div className="bg-primary/10 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
-              {initials}
-            </div>
+        const isMe =
+          normalizedCurrentEmail &&
+          (item.email || '').trim().toLowerCase() === normalizedCurrentEmail;
 
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-foreground truncate text-xs font-medium">
-                  {item.name}
-                </span>
-                {item === preferredMainItem && (
-                  <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    main
-                  </span>
+        const isMain = item.isMainSection || item.sectionId === item.markSectionId;
+        const showEdit = isAuthor && onEditSection && !isMain;
+
+        return (
+          <TableRow
+            key={item.sectionId}
+            className="bg-blue-50/40 transition-colors hover:bg-blue-100/40 dark:bg-blue-950/15 dark:hover:bg-blue-950/25 border-t border-blue-100 dark:border-blue-900/30"
+          >
+            {/* Empty # column */}
+            <TableCell className="w-8 border-none" />
+
+            {/* Section — member info */}
+            <TableCell className="py-3 pl-8 border-none">
+              <div className="flex items-center gap-2.5">
+                {item.name ? (
+                  <div className="bg-primary/10 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+                    {initials}
+                  </div>
+                ) : (
+                  <div className="bg-emerald-100 text-emerald-700 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold dark:bg-emerald-900/30 dark:text-emerald-300">
+                    M
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-foreground text-xs font-medium">
+                      {item.name || 'Origin section'}
+                    </span>
+                    {item === preferredMainItem && (
+                      <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        main
+                      </span>
+                    )}
+                    {isMe && (
+                      <span className="rounded-full border border-blue-200 bg-blue-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-blue-700 uppercase dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        me
+                      </span>
+                    )}
+                  </div>
+                  {item.email && (
+                    <p className="text-muted-foreground truncate text-[10px]">
+                      {item.email}
+                    </p>
+                  )}
+                </div>
               </div>
-              <p className="text-muted-foreground truncate text-[10px]">
-                {stripLatex(item.title)}
-              </p>
-            </div>
+            </TableCell>
+
+            {/* Created At */}
+            <TableCell className="w-40 py-3 border-none">
+              <span className="text-muted-foreground text-sm font-medium">
+                {formatDisplayDate(item.createdOnUtc)}
+              </span>
+            </TableCell>
+
+            {/* Last Modified */}
+            <TableCell className="w-40 py-3 border-none">
+              <span className="text-muted-foreground text-sm font-medium">
+                {formatDisplayDate(item.lastModifiedOnUtc)}
+              </span>
+            </TableCell>
 
             {/* Actions */}
-            <div className="flex shrink-0 items-center gap-1">
-              {isAuthor && onEditSection && (
-                <button
-                  type="button"
-                  onClick={() => onEditSection(item)}
-                  className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
-                >
-                  <Pencil className="h-2.5 w-2.5" />
-                  Edit
-                </button>
-              )}
-              {onViewSection && (
-                <button
-                  type="button"
-                  onClick={() => onViewSection(item)}
-                  className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
-                >
-                  <Eye className="h-2.5 w-2.5" />
-                  View
-                </button>
-              )}
-            </div>
-          </div>
+            <TableCell className="w-52 py-3 text-right border-none">
+              <div className="flex items-center justify-end gap-1 ml-auto">
+                {showEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEditSection(item)}
+                    className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
+                  >
+                    <Pencil className="h-2.5 w-2.5" />
+                    Edit
+                  </button>
+                )}
+                {onViewSection && (
+                  <button
+                    type="button"
+                    onClick={() => onViewSection(item)}
+                    className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
+                  >
+                    <Eye className="h-2.5 w-2.5" />
+                    View
+                  </button>
+                )}
+              </div>
+            </TableCell>
+          </TableRow>
         );
       })}
-    </div>
+    </>
   );
 };
 
@@ -1135,6 +1190,12 @@ export const PaperSectionsManager = ({
                       <TableHead className="font-semibold text-green-900 dark:text-green-200">
                         Section Title
                       </TableHead>
+                      <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
+                        Created At
+                      </TableHead>
+                      <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
+                        Last Modified
+                      </TableHead>
                       <TableHead className="w-52 text-right font-semibold text-green-900 dark:text-green-200">
                         Action
                       </TableHead>
@@ -1217,6 +1278,12 @@ export const PaperSectionsManager = ({
                                 )}
                               </div>
                             </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {formatDisplayDate(node.createdOnUtc)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {formatDisplayDate(node.lastModifiedOnUtc)}
+                            </TableCell>
                             <TableCell className="text-right">
                               {isLeaf && (
                                 <div className="flex items-center justify-end gap-1">
@@ -1285,33 +1352,25 @@ export const PaperSectionsManager = ({
                         );
                         if (!canExpand || !isExpanded) return [mainRow];
                         const subRow = (
-                          <TableRow
+                          <SectionExpandedView
                             key={`${node.id}-contributors`}
-                            className="hover:bg-transparent"
-                          >
-                            <TableCell colSpan={3} className="p-0">
-                              <div className="border-t border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
-                                <SectionExpandedView
-                                  markSectionId={node.markSectionId || node.id}
-                                  excludeSectionId={node.id}
-                                  isAuthor={isAuthor}
-                                  currentUserEmail={currentUserEmail}
-                                  onEditSection={
-                                    isAuthor
-                                      ? (item) => {
-                                          setEditTargetItem(item);
-                                          setEditingEditorMode(true);
-                                        }
-                                      : undefined
-                                  }
-                                  onViewSection={(item) => {
+                            markSectionId={node.markSectionId || node.id}
+                            excludeSectionId={node.id}
+                            isAuthor={isAuthor}
+                            currentUserEmail={currentUserEmail}
+                            onEditSection={
+                              isAuthor
+                                ? (item) => {
                                     setEditTargetItem(item);
-                                    setViewingReadOnlyMode(true);
-                                  }}
-                                />
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                                    setEditingEditorMode(true);
+                                  }
+                                : undefined
+                            }
+                            onViewSection={(item) => {
+                              setEditTargetItem(item);
+                              setViewingReadOnlyMode(true);
+                            }}
+                          />
                         );
                         return [mainRow, subRow];
                       },

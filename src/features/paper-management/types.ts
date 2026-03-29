@@ -209,6 +209,8 @@ export type AssignedSection = {
   numbered: boolean;
   filePath: string | null;
   parentSectionId: string | null;
+  createdOnUtc?: string;
+  lastModifiedOnUtc?: string;
 };
 
 export type AssignedSectionsResult = {
