@@ -363,36 +363,6 @@ export const CreatePaper = () => {
             />
           </div>
 
-          {/* Auto Tag button */}
-          {file && (
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={`gap-1.5 ${BTN.AUTO_TAG}`}
-                onClick={handleAutoTag}
-                disabled={
-                  isAutoTagging ||
-                  autoTagCooldown > 0 ||
-                  isParsing ||
-                  !parsedText
-                }
-              >
-                {isAutoTagging ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Tags className="size-4" />
-                )}
-                {isAutoTagging
-                  ? 'Auto Tagging...'
-                  : autoTagCooldown > 0
-                    ? `Wait ${autoTagCooldown}s`
-                    : 'Auto Tag'}
-              </Button>
-            </div>
-          )}
-
           {/* Tags editor - always visible */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">
@@ -404,6 +374,35 @@ export const CreatePaper = () => {
               onRemoveTag={handleRemoveTag}
               placeholder="Type a tag and press Enter..."
             />
+            {/* Auto Tag button */}
+            {file && (
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={`gap-1.5 ${BTN.AUTO_TAG}`}
+                  onClick={handleAutoTag}
+                  disabled={
+                    isAutoTagging ||
+                    autoTagCooldown > 0 ||
+                    isParsing ||
+                    !parsedText
+                  }
+                >
+                  {isAutoTagging ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Tags className="size-4" />
+                  )}
+                  {isAutoTagging
+                    ? 'Auto Tagging...'
+                    : autoTagCooldown > 0
+                      ? `Wait ${autoTagCooldown}s`
+                      : 'Auto Tag'}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

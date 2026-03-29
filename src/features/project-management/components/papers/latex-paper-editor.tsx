@@ -16,6 +16,7 @@ import {
   Keyboard,
   Copy,
   ExternalLink,
+  MessageSquareText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,6 +46,8 @@ import { useGetSectionFiles } from '@/features/paper-management/api/get-section-
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
 import { useSectionComments } from '@/features/paper-management/api/get-section-comments';
 import { SectionComments } from '@/features/paper-management/components/section-comments';
+
+import { EditorChatPanel } from './editor-chat-panel';
 
 /**
  * Register a custom LaTeX language + theme so that
@@ -235,6 +238,7 @@ type SectionProp = {
 
 type LatexPaperEditorProps = {
   paperTitle: string;
+  projectId?: string;
   initialContent?: string;
   sections?: SectionProp[];
   initialSectionId?: string;
@@ -283,6 +287,7 @@ const toLatexLabel = (fileUrl: string): string => {
 
 export const LatexPaperEditor = ({
   paperTitle,
+  projectId,
   initialContent,
   sections,
   initialSectionId,
@@ -310,6 +315,9 @@ export const LatexPaperEditor = ({
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [isGuidelinesOpen, setIsGuidelinesOpen] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'preview' | 'chat'>(
+    'preview',
+  );
   const [savedContent, setSavedContent] = useState(initialContent ?? '');
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
@@ -1224,19 +1232,50 @@ export const LatexPaperEditor = ({
             </div>
           )}
 
-          {/* PDF Preview — right half (full width in readOnly mode) */}
+          {/* Right Panel — Preview / AI Chat (full width in readOnly mode) */}
           <div
             className={`flex ${isActiveSectionReadOnly ? 'w-full' : 'w-1/2'} flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900`}
           >
-            {/* Panel label + Render button */}
+            {/* Panel header with tab switcher */}
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1">
+                {/* Preview tab */}
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab('preview')}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    rightPanelTab === 'preview'
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`h-1.5 w-1.5 rounded-full ${rightPanelTab === 'preview' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                  />
                   PREVIEW
-                </span>
+                </button>
+
+                {/* AI Chat tab — only shown when projectId is available & not readOnly */}
+                {projectId && !isActiveSectionReadOnly && (
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab('chat')}
+                    className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                      rightPanelTab === 'chat'
+                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    <MessageSquareText
+                      className={`h-3 w-3 ${rightPanelTab === 'chat' ? 'text-blue-500' : ''}`}
+                    />
+                    AI CHAT
+                  </button>
+                )}
               </div>
-              {!isActiveSectionReadOnly && (
+
+              {/* Recompile button — only shown on Preview tab & edit mode */}
+              {rightPanelTab === 'preview' && !isActiveSectionReadOnly && (
                 <Button
                   size="sm"
                   onClick={handleRender}
@@ -1252,12 +1291,20 @@ export const LatexPaperEditor = ({
                 </Button>
               )}
             </div>
-            {/* Preview content */}
-            <PreviewPanel
-              pdfUrl={pdfUrl}
-              isCompiling={isCompiling}
-              error={compileError}
-            />
+
+            {/* Panel content */}
+            {rightPanelTab === 'preview' ? (
+              <PreviewPanel
+                pdfUrl={pdfUrl}
+                isCompiling={isCompiling}
+                error={compileError}
+              />
+            ) : projectId ? (
+              <EditorChatPanel
+                projectId={projectId}
+                sectionTitle={activeSection?.title || paperTitle}
+              />
+            ) : null}
           </div>
         </div>
       </div>
@@ -1269,7 +1316,7 @@ export const LatexPaperEditor = ({
             <Button
               variant="outline"
               size="icon"
-              className="fixed right-6 bottom-6 z-50 h-10 w-10 rounded-full border-slate-300 bg-white shadow-lg hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
+              className="fixed bottom-6 left-6 z-50 h-10 w-10 rounded-full border-slate-300 bg-white shadow-lg hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
               title="Keyboard Shortcuts"
             >
               <Keyboard className="h-5 w-5 text-slate-600 dark:text-slate-300" />

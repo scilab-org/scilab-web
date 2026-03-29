@@ -550,6 +550,7 @@ export const ProjectPaperDetailPage = ({
             <PaperSectionsManager
               paperId={paperId}
               paperTitle={paper.title || 'Untitled'}
+              projectId={projectId}
               subProjectId={subProjectId}
               isAuthor={isAuthor}
               isManager={isManager}

@@ -2,7 +2,16 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { Users, FileText, Database, Calendar, Hash, Info } from 'lucide-react';
+import {
+  ArrowLeft,
+  Users,
+  FileText,
+  Database,
+  Calendar,
+  Hash,
+  Info,
+  Bot,
+} from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
@@ -33,19 +42,19 @@ import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
-  async ({ params }: { params: Record<string, string | undefined> }) => {
-    const projectId = params.projectId as string;
-    const query = getProjectQueryOptions(projectId);
+    async ({ params }: { params: Record<string, string | undefined> }) => {
+      const projectId = params.projectId as string;
+      const query = getProjectQueryOptions(projectId);
 
-    try {
-      return (
-        queryClient.getQueryData(query.queryKey) ??
-        (await queryClient.fetchQuery(query))
-      );
-    } catch {
-      return null;
-    }
-  };
+      try {
+        return (
+          queryClient.getQueryData(query.queryKey) ??
+          (await queryClient.fetchQuery(query))
+        );
+      } catch {
+        return null;
+      }
+    };
 
 type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
@@ -280,6 +289,15 @@ const MyProjectDetailRoute = () => {
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
+              <Button
+                className="btn-auto-tag"
+                onClick={() =>
+                  navigate(paths.app.aiResearch.getHref(projectId!))
+                }
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                AI Research
+              </Button>
               <div className="flex flex-col gap-1.5 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="text-muted-foreground h-4 w-4" />
@@ -310,11 +328,10 @@ const MyProjectDetailRoute = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
+                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${isActive
                       ? 'border-primary text-primary'
                       : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
