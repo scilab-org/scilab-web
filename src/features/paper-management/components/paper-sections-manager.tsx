@@ -11,6 +11,7 @@ import {
   Trash2,
   Pencil,
   Eye,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -92,6 +93,13 @@ const stripLatex = (input: string): string => {
     .replace(/\\-/g, '-')
     .replace(/\\\\/g, '');
   return s.replace(/[{}]/g, '').trim() || '(Untitled)';
+};
+
+const formatDisplayDate = (value?: string | null) => {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleDateString('vi-VN');
 };
 
 // ─── Tree builder ─────────────────────────────────────────────────────────────
@@ -306,56 +314,6 @@ const AssignPanel = ({
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
         <div className="space-y-2">
-          <p className="text-foreground text-sm font-medium">Section Role</p>
-          {groupsQuery.isLoading ? (
-            <div className="flex gap-2">
-              <Skeleton className="h-10 flex-1" />
-              <Skeleton className="h-10 flex-1" />
-            </div>
-          ) : sectionGroups.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No section roles available
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {sectionGroups.map((g) => {
-                const label = g.name?.includes(':')
-                  ? g.name.split(':').pop()!
-                  : g.name!;
-                const isActive = selectedRole === g.name;
-                const isEdit =
-                  label.toLowerCase() === 'edit' ||
-                  label.toLowerCase() === 'author';
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setSelectedRole(isActive ? '' : g.name!)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-all',
-                      isActive
-                        ? isEdit
-                          ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                          : 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
-                        : 'border-border bg-background text-muted-foreground hover:border-blue-300',
-                    )}
-                  >
-                    {isActive ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : isEdit ? (
-                      <Pencil className="h-3.5 w-3.5" />
-                    ) : (
-                      <Users className="h-3.5 w-3.5" />
-                    )}
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
           <p className="text-foreground text-sm font-medium">Select Member</p>
           <Input
             placeholder="Search by name or email..."
@@ -370,12 +328,12 @@ const AssignPanel = ({
         <div className="flex-1 space-y-2">
           {membersQuery.isLoading ? (
             <>
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
             </>
           ) : filtered.length === 0 ? (
-            <div className="py-8 text-center">
+            <div className="bg-muted/30 rounded-xl py-10 text-center">
               <p className="text-muted-foreground text-sm">No members found</p>
             </div>
           ) : (
@@ -384,45 +342,125 @@ const AssignPanel = ({
               return (
                 <div
                   key={m.memberId}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedMember(isSelected ? null : m)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedMember(isSelected ? null : m);
-                    }
-                  }}
                   className={cn(
-                    'border-border flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-all',
+                    'rounded-xl border transition-all duration-200',
                     isSelected
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                      : 'hover:border-blue-300 hover:shadow-sm',
+                      ? 'border-blue-400 bg-blue-50 shadow-sm dark:bg-blue-950/30'
+                      : 'border-border hover:border-blue-300 hover:shadow-sm',
                   )}
                 >
+                  {/* Member row */}
                   <div
-                    className={cn(
-                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase',
-                      isSelected
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-muted text-muted-foreground',
-                    )}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedMember(null);
+                        setSelectedRole('');
+                      } else {
+                        setSelectedMember(m);
+                        setSelectedRole('');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (isSelected) {
+                          setSelectedMember(null);
+                          setSelectedRole('');
+                        } else {
+                          setSelectedMember(m);
+                          setSelectedRole('');
+                        }
+                      }
+                    }}
+                    className="flex cursor-pointer items-center gap-3 px-4 py-3"
                   >
-                    {isSelected ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      (m.firstName?.[0] ?? m.username?.[0] ?? '?')
-                    )}
+                    <div
+                      className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase transition-colors',
+                        isSelected
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {isSelected ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        (m.firstName?.[0] ?? m.username?.[0] ?? '?')
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-foreground truncate text-sm font-medium">
+                        {m.firstName} {m.lastName}
+                      </p>
+                      <p className="text-muted-foreground truncate text-xs">
+                        {m.email}
+                        {m.username && ` · @${m.username}`}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-foreground truncate text-sm font-medium">
-                      {m.firstName} {m.lastName}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {m.email}
-                      {m.username && ` · @${m.username}`}
-                    </p>
-                  </div>
+
+                  {/* Role pill selector — shown inline when member is selected */}
+                  {isSelected && (
+                    <div
+                      className="border-t border-blue-200 px-4 pt-2 pb-3 dark:border-blue-800/50"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      role="presentation"
+                    >
+                      <p className="text-muted-foreground mb-2 text-xs font-medium">
+                        Assign role
+                      </p>
+                      {groupsQuery.isLoading ? (
+                        <div className="flex gap-2">
+                          <Skeleton className="h-7 w-16 rounded-full" />
+                          <Skeleton className="h-7 w-16 rounded-full" />
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {sectionGroups.map((g) => {
+                            const rawLabel = g.name?.includes(':')
+                              ? g.name.split(':').pop()!
+                              : g.name!;
+                            const label =
+                              rawLabel.charAt(0).toUpperCase() +
+                              rawLabel.slice(1);
+                            const isActive = selectedRole === g.name;
+                            const isEdit =
+                              rawLabel.toLowerCase() === 'edit' ||
+                              rawLabel.toLowerCase() === 'author';
+                            return (
+                              <button
+                                key={g.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedRole(
+                                    isActive ? '' : g.name!,
+                                  )
+                                }
+                                className={cn(
+                                  'flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150',
+                                  isActive
+                                    ? isEdit
+                                      ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                                      : 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                                    : isEdit
+                                      ? 'border-border bg-background text-muted-foreground hover:border-blue-300 hover:text-blue-600'
+                                      : 'border-border bg-background text-muted-foreground hover:border-emerald-300 hover:text-emerald-600',
+                                )}
+                              >
+                                {isActive && (
+                                  <Check className="h-3 w-3 shrink-0" />
+                                )}
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -498,10 +536,14 @@ const SectionExpandedView = ({
 
   if (query.isLoading) {
     return (
-      <div className="space-y-3 p-4">
-        <Skeleton className="h-12 w-full rounded-lg" />
-        <Skeleton className="h-12 w-full rounded-lg" />
-      </div>
+      <TableRow className="bg-blue-50/20 hover:bg-transparent">
+        <TableCell colSpan={5} className="border-t border-blue-100 p-4 dark:border-blue-900/30">
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        </TableCell>
+      </TableRow>
     );
   }
 
@@ -545,14 +587,16 @@ const SectionExpandedView = ({
 
   if (sorted.length === 0) {
     return (
-      <div className="text-muted-foreground px-3 py-2 text-center text-xs">
-        No other versions
-      </div>
+      <TableRow className="bg-blue-50/20 hover:bg-transparent">
+        <TableCell colSpan={5} className="border-t border-blue-100 px-3 py-4 text-center text-xs text-muted-foreground dark:border-blue-900/30">
+          No other versions
+        </TableCell>
+      </TableRow>
     );
   }
 
   return (
-    <div className="divide-y divide-blue-100 dark:divide-blue-900/30">
+    <>
       {sorted.map((item) => {
         const initials = item.name
           ? item.name
@@ -562,60 +606,101 @@ const SectionExpandedView = ({
               .join('')
               .toUpperCase()
           : '?';
-        return (
-          <div
-            key={item.sectionId}
-            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-blue-100/40 dark:hover:bg-blue-900/20"
-          >
-            {/* Avatar */}
-            <div className="bg-primary/10 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
-              {initials}
-            </div>
+        const isMe =
+          normalizedCurrentEmail &&
+          (item.email || '').trim().toLowerCase() === normalizedCurrentEmail;
 
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-foreground truncate text-xs font-medium">
-                  {item.name}
-                </span>
-                {item === preferredMainItem && (
-                  <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    main
-                  </span>
+        const isMain = item.isMainSection || item.sectionId === item.markSectionId;
+        const showEdit = isAuthor && onEditSection && !isMain;
+
+        return (
+          <TableRow
+            key={item.sectionId}
+            className="bg-blue-50/40 transition-colors hover:bg-blue-100/40 dark:bg-blue-950/15 dark:hover:bg-blue-950/25 border-t border-blue-100 dark:border-blue-900/30"
+          >
+            {/* Empty # column */}
+            <TableCell className="w-8 border-none" />
+
+            {/* Section — member info */}
+            <TableCell className="py-3 pl-8 border-none">
+              <div className="flex items-center gap-2.5">
+                {item.name ? (
+                  <div className="bg-primary/10 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+                    {initials}
+                  </div>
+                ) : (
+                  <div className="bg-emerald-100 text-emerald-700 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold dark:bg-emerald-900/30 dark:text-emerald-300">
+                    M
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-foreground text-xs font-medium">
+                      {item.name || 'Origin section'}
+                    </span>
+                    {item === preferredMainItem && (
+                      <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        main
+                      </span>
+                    )}
+                    {isMe && (
+                      <span className="rounded-full border border-blue-200 bg-blue-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-blue-700 uppercase dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        me
+                      </span>
+                    )}
+                  </div>
+                  {item.email && (
+                    <p className="text-muted-foreground truncate text-[10px]">
+                      {item.email}
+                    </p>
+                  )}
+                </div>
               </div>
-              <p className="text-muted-foreground truncate text-[10px]">
-                {stripLatex(item.title)}
-              </p>
-            </div>
+            </TableCell>
+
+            {/* Created At */}
+            <TableCell className="w-40 py-3 border-none">
+              <span className="text-muted-foreground text-sm font-medium">
+                {formatDisplayDate(item.createdOnUtc)}
+              </span>
+            </TableCell>
+
+            {/* Last Modified */}
+            <TableCell className="w-40 py-3 border-none">
+              <span className="text-muted-foreground text-sm font-medium">
+                {formatDisplayDate(item.lastModifiedOnUtc)}
+              </span>
+            </TableCell>
 
             {/* Actions */}
-            <div className="flex shrink-0 items-center gap-1">
-              {isAuthor && onEditSection && (
-                <button
-                  type="button"
-                  onClick={() => onEditSection(item)}
-                  className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
-                >
-                  <Pencil className="h-2.5 w-2.5" />
-                  Edit
-                </button>
-              )}
-              {onViewSection && (
-                <button
-                  type="button"
-                  onClick={() => onViewSection(item)}
-                  className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
-                >
-                  <Eye className="h-2.5 w-2.5" />
-                  View
-                </button>
-              )}
-            </div>
-          </div>
+            <TableCell className="w-52 py-3 text-right border-none">
+              <div className="flex items-center justify-end gap-1 ml-auto">
+                {showEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEditSection(item)}
+                    className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
+                  >
+                    <Pencil className="h-2.5 w-2.5" />
+                    Edit
+                  </button>
+                )}
+                {onViewSection && (
+                  <button
+                    type="button"
+                    onClick={() => onViewSection(item)}
+                    className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
+                  >
+                    <Eye className="h-2.5 w-2.5" />
+                    View
+                  </button>
+                )}
+              </div>
+            </TableCell>
+          </TableRow>
         );
       })}
-    </div>
+    </>
   );
 };
 
@@ -1107,6 +1192,12 @@ export const PaperSectionsManager = ({
                       <TableHead className="font-semibold text-green-900 dark:text-green-200">
                         Section Title
                       </TableHead>
+                      <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
+                        Created At
+                      </TableHead>
+                      <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
+                        Last Modified
+                      </TableHead>
                       <TableHead className="w-52 text-right font-semibold text-green-900 dark:text-green-200">
                         Action
                       </TableHead>
@@ -1189,6 +1280,12 @@ export const PaperSectionsManager = ({
                                 )}
                               </div>
                             </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {formatDisplayDate(node.createdOnUtc)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {formatDisplayDate(node.lastModifiedOnUtc)}
+                            </TableCell>
                             <TableCell className="text-right">
                               {isLeaf && (
                                 <div className="flex items-center justify-end gap-1">
@@ -1257,33 +1354,25 @@ export const PaperSectionsManager = ({
                         );
                         if (!canExpand || !isExpanded) return [mainRow];
                         const subRow = (
-                          <TableRow
+                          <SectionExpandedView
                             key={`${node.id}-contributors`}
-                            className="hover:bg-transparent"
-                          >
-                            <TableCell colSpan={3} className="p-0">
-                              <div className="border-t border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
-                                <SectionExpandedView
-                                  markSectionId={node.markSectionId || node.id}
-                                  excludeSectionId={node.id}
-                                  isAuthor={isAuthor}
-                                  currentUserEmail={currentUserEmail}
-                                  onEditSection={
-                                    isAuthor
-                                      ? (item) => {
-                                          setEditTargetItem(item);
-                                          setEditingEditorMode(true);
-                                        }
-                                      : undefined
-                                  }
-                                  onViewSection={(item) => {
+                            markSectionId={node.markSectionId || node.id}
+                            excludeSectionId={node.id}
+                            isAuthor={isAuthor}
+                            currentUserEmail={currentUserEmail}
+                            onEditSection={
+                              isAuthor
+                                ? (item) => {
                                     setEditTargetItem(item);
-                                    setViewingReadOnlyMode(true);
-                                  }}
-                                />
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                                    setEditingEditorMode(true);
+                                  }
+                                : undefined
+                            }
+                            onViewSection={(item) => {
+                              setEditTargetItem(item);
+                              setViewingReadOnlyMode(true);
+                            }}
+                          />
                         );
                         return [mainRow, subRow];
                       },

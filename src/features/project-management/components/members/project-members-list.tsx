@@ -75,6 +75,17 @@ const getRolePriority = (role: string) => {
   return 3;
 };
 
+const formatRole = (role: string): string => {
+  const r = role.toLowerCase();
+  if (r.includes('manager')) return 'Manager';
+  if (r.includes('author')) return 'Author';
+  if (r.includes('member')) return 'Member';
+  if (r.includes('admin')) return 'Admin';
+  // Fallback: strip "project:" prefix and capitalise
+  const stripped = role.replace(/^project:/i, '');
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+};
+
 type Group = { id?: string | null; name?: string | null };
 
 type MemberTableRowProps = {
@@ -163,7 +174,7 @@ const MemberTableRow = ({
           <span
             className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getRoleColor(member.role)}`}
           >
-            {member.role}
+            {formatRole(member.role)}
           </span>
         </TableCell>
         <TableCell className="text-muted-foreground text-sm">
@@ -239,7 +250,7 @@ const MemberTableRow = ({
             <span
               className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleColor(member.role)}`}
             >
-              {member.role}
+              {formatRole(member.role)}
             </span>
           </div>
 
@@ -253,27 +264,28 @@ const MemberTableRow = ({
                 No roles available
               </div>
             ) : (
-              availableGroups.map((group) => {
-                const name = group.name ?? '';
-                const isSelected = newRole === name;
-                return (
-                  <button
-                    key={group.id ?? name}
-                    type="button"
-                    onClick={() => setNewRole(name)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-all ${
-                      isSelected
-                        ? 'border-primary bg-primary/5 text-foreground font-medium shadow-sm'
-                        : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-muted/40'
-                    }`}
-                  >
-                    <span>{name}</span>
-                    {isSelected && (
-                      <Check className="text-primary h-4 w-4 shrink-0" />
-                    )}
-                  </button>
-                );
-              })
+            availableGroups.map((group) => {
+              const name = group.name ?? '';
+              const isSelected = newRole === name;
+              const label = formatRole(name);
+              return (
+                <button
+                  key={group.id ?? name}
+                  type="button"
+                  onClick={() => setNewRole(name)}
+                  className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-all ${
+                    isSelected
+                      ? 'border-primary bg-primary/5 text-foreground font-medium shadow-sm'
+                      : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-muted/40'
+                  }`}
+                >
+                  <span>{label}</span>
+                  {isSelected && (
+                    <Check className="text-primary h-4 w-4 shrink-0" />
+                  )}
+                </button>
+              );
+            })
             )}
           </div>
 

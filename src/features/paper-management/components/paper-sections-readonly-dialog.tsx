@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { ChevronRight, Eye, Layers, X } from 'lucide-react';
+import { Eye, Layers, X } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import {

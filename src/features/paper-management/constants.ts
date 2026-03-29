@@ -29,6 +29,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/paper-contributors/papers/${paperId}/contributors`,
   SECTION_BY_ID: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}`,
+  SECTION_HISTORY: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/history`,
   SECTION_UPLOAD_FILE: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/upload-file`,
   SECTION_FILES: (sectionId: string) =>
@@ -38,6 +40,8 @@ export const PAPER_MANAGEMENT_API = {
   COMPILE_LATEX: `${LATEX_SERVICE_PREFIX}/compile`,
   MARK_SECTION: (id: string) =>
     `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}`,
+  MARK_MAIN_SECTION: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/mark-main-section`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
@@ -52,6 +56,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPER_SECTIONS: 'paper-sections',
   SECTION_FILES: 'section-files',
   MARK_SECTION: 'mark-section',
+  SECTION_HISTORY: 'section-history',
 } as const;
 
 export const PAPER_STATUS_MAP: Record<number, string> = {

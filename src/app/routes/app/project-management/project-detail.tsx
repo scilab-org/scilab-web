@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router';
 import { toast } from 'sonner';
 import {
-  ArrowLeft,
   Calendar,
   Database,
   FileText,
@@ -126,15 +125,6 @@ const ProjectDetailRoute = () => {
 
   const viewerIsSystemAdmin = getUserGroups().includes('system:admin');
 
-  if (!viewerIsSystemAdmin) {
-    return (
-      <Navigate
-        to={paths.app.assignedProjects.detail.getHref(projectId!)}
-        replace
-      />
-    );
-  }
-
   const projectQuery = useProjectDetail({
     projectId: projectId!,
     queryConfig: {
@@ -187,6 +177,15 @@ const ProjectDetailRoute = () => {
       },
     },
   });
+
+  if (!viewerIsSystemAdmin) {
+    return (
+      <Navigate
+        to={paths.app.assignedProjects.detail.getHref(projectId!)}
+        replace
+      />
+    );
+  }
 
   const handleRemoveManager = (memberId: string) => {
     setRemovingManagerId(memberId);

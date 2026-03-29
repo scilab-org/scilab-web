@@ -209,6 +209,8 @@ export type AssignedSection = {
   numbered: boolean;
   filePath: string | null;
   parentSectionId: string | null;
+  createdOnUtc?: string;
+  lastModifiedOnUtc?: string;
 };
 
 export type AssignedSectionsResult = {
@@ -254,6 +256,8 @@ export type AssignedSectionHistoryItem = {
   version: number;
   createdOnUtc: string;
   lastModifiedOnUtc: string;
+  isOldMainSection: boolean;
+  isMainSection: boolean;
 };
 
 export type AssignedSectionsHistoryResult = {

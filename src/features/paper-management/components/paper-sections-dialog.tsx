@@ -238,56 +238,6 @@ const AssignPanel = ({
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
         <div className="space-y-2">
-          <p className="text-foreground text-sm font-medium">Section Role</p>
-          {groupsQuery.isLoading ? (
-            <div className="flex gap-2">
-              <Skeleton className="h-10 flex-1" />
-              <Skeleton className="h-10 flex-1" />
-            </div>
-          ) : sectionGroups.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No section roles available
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {sectionGroups.map((g) => {
-                const label = g.name?.includes(':')
-                  ? g.name.split(':').pop()!
-                  : g.name!;
-                const isActive = selectedRole === g.name;
-                const isEdit =
-                  label.toLowerCase() === 'edit' ||
-                  label.toLowerCase() === 'author';
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setSelectedRole(isActive ? '' : g.name!)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-all',
-                      isActive
-                        ? isEdit
-                          ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                          : 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
-                        : 'border-border bg-background text-muted-foreground hover:border-blue-300',
-                    )}
-                  >
-                    {isActive ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : isEdit ? (
-                      <Pencil className="h-3.5 w-3.5" />
-                    ) : (
-                      <Users className="h-3.5 w-3.5" />
-                    )}
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
           <p className="text-foreground text-sm font-medium">Select Member</p>
           <Input
             placeholder="Search by name or email..."
@@ -302,12 +252,12 @@ const AssignPanel = ({
         <div className="flex-1 space-y-2">
           {membersQuery.isLoading ? (
             <>
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
             </>
           ) : filtered.length === 0 ? (
-            <div className="py-8 text-center">
+            <div className="bg-muted/30 rounded-xl py-10 text-center">
               <p className="text-muted-foreground text-sm">No members found</p>
             </div>
           ) : (
@@ -316,45 +266,123 @@ const AssignPanel = ({
               return (
                 <div
                   key={m.memberId}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedMember(isSelected ? null : m)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedMember(isSelected ? null : m);
-                    }
-                  }}
                   className={cn(
-                    'border-border flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-all',
+                    'rounded-xl border transition-all duration-200',
                     isSelected
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                      : 'hover:border-blue-300 hover:shadow-sm',
+                      ? 'border-blue-400 bg-blue-50 shadow-sm dark:bg-blue-950/30'
+                      : 'border-border hover:border-blue-300 hover:shadow-sm',
                   )}
                 >
+                  {/* Member row */}
                   <div
-                    className={cn(
-                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase',
-                      isSelected
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-muted text-muted-foreground',
-                    )}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedMember(null);
+                        setSelectedRole('');
+                      } else {
+                        setSelectedMember(m);
+                        setSelectedRole('');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (isSelected) {
+                          setSelectedMember(null);
+                          setSelectedRole('');
+                        } else {
+                          setSelectedMember(m);
+                          setSelectedRole('');
+                        }
+                      }
+                    }}
+                    className="flex cursor-pointer items-center gap-3 px-4 py-3"
                   >
-                    {isSelected ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      (m.firstName?.[0] ?? m.username?.[0] ?? '?')
-                    )}
+                    <div
+                      className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase transition-colors',
+                        isSelected
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {isSelected ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        (m.firstName?.[0] ?? m.username?.[0] ?? '?')
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-foreground truncate text-sm font-medium">
+                        {m.firstName} {m.lastName}
+                      </p>
+                      <p className="text-muted-foreground truncate text-xs">
+                        {m.email}
+                        {m.username && ` · @${m.username}`}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-foreground truncate text-sm font-medium">
-                      {m.firstName} {m.lastName}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {m.email}
-                      {m.username && ` · @${m.username}`}
-                    </p>
-                  </div>
+
+                  {/* Role pill selector — shown inline when member is selected */}
+                  {isSelected && (
+                    <div
+                      className="border-t border-blue-200 px-4 pt-2 pb-3 dark:border-blue-800/50"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      role="presentation"
+                    >
+                      <p className="text-muted-foreground mb-2 text-xs font-medium">
+                        Assign role
+                      </p>
+                      {groupsQuery.isLoading ? (
+                        <div className="flex gap-2">
+                          <Skeleton className="h-7 w-16 rounded-full" />
+                          <Skeleton className="h-7 w-16 rounded-full" />
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {sectionGroups.map((g) => {
+                            const rawLabel = g.name?.includes(':')
+                              ? g.name.split(':').pop()!
+                              : g.name!;
+                            const label =
+                              rawLabel.charAt(0).toUpperCase() +
+                              rawLabel.slice(1);
+                            const isActive = selectedRole === g.name;
+                            const isEdit =
+                              rawLabel.toLowerCase() === 'edit' ||
+                              rawLabel.toLowerCase() === 'author';
+                            return (
+                              <button
+                                key={g.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedRole(isActive ? '' : g.name!)
+                                }
+                                className={cn(
+                                  'flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150',
+                                  isActive
+                                    ? isEdit
+                                      ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
+                                      : 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                                    : isEdit
+                                      ? 'border-border bg-background text-muted-foreground hover:border-blue-300 hover:text-blue-600'
+                                      : 'border-border bg-background text-muted-foreground hover:border-emerald-300 hover:text-emerald-600',
+                                )}
+                              >
+                                {isActive && (
+                                  <Check className="h-3 w-3 shrink-0" />
+                                )}
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })

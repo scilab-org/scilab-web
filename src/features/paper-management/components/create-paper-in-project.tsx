@@ -325,6 +325,10 @@ export const CreatePaperInProject = ({
     e.preventDefault();
     if (!formData.title.trim()) return;
     if (!formData.context.trim()) return;
+    if (!formData.abstract.trim()) return;
+    if (!formData.researchGap.trim()) return;
+    if (!formData.gapType.trim()) return;
+    if (!formData.mainContribution.trim()) return;
 
     const payload: CreatePaperInProjectDto = {
       projectId: _projectId,
@@ -417,7 +421,7 @@ export const CreatePaperInProject = ({
 
           <div className="space-y-1.5">
             <label htmlFor="cpp-abstract" className="text-sm font-medium">
-              Abstract
+              Abstract <span className="text-destructive">*</span>
             </label>
             <textarea
               id="cpp-abstract"
@@ -427,12 +431,13 @@ export const CreatePaperInProject = ({
                 setFormData((prev) => ({ ...prev, abstract: e.target.value }))
               }
               placeholder="Enter abstract"
+              required
             />
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="cpp-research-gap" className="text-sm font-medium">
-              Research Gap
+              Research Gap <span className="text-destructive">*</span>
             </label>
             <textarea
               id="cpp-research-gap"
@@ -445,12 +450,13 @@ export const CreatePaperInProject = ({
                 }))
               }
               placeholder="Enter research gap"
+              required
             />
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="cpp-gap-type" className="text-sm font-medium">
-              Gap Type
+              Gap Type <span className="text-destructive">*</span>
             </label>
             <Input
               id="cpp-gap-type"
@@ -459,6 +465,7 @@ export const CreatePaperInProject = ({
                 setFormData((prev) => ({ ...prev, gapType: e.target.value }))
               }
               placeholder="e.g. Methodological, Empirical"
+              required
             />
           </div>
 
@@ -467,7 +474,7 @@ export const CreatePaperInProject = ({
               htmlFor="cpp-main-contribution"
               className="text-sm font-medium"
             >
-              Main Contribution
+              Main Contribution <span className="text-destructive">*</span>
             </label>
             <textarea
               id="cpp-main-contribution"
@@ -480,6 +487,7 @@ export const CreatePaperInProject = ({
                 }))
               }
               placeholder="Enter main contribution"
+              required
             />
           </div>
 
@@ -889,7 +897,11 @@ export const CreatePaperInProject = ({
             disabled={
               createMutation.isPending ||
               !formData.title.trim() ||
-              !formData.context.trim()
+              !formData.context.trim() ||
+              !formData.abstract.trim() ||
+              !formData.researchGap.trim() ||
+              !formData.gapType.trim() ||
+              !formData.mainContribution.trim()
             }
             className={BTN.CREATE}
           >

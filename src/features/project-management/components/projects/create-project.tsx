@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,22 @@ export const CreateProject = () => {
       onSuccess: () => {
         setOpen(false);
         resetForm();
+      },
+      onError: (error: any) => {
+        const errorsData = error?.response?.data?.errors;
+        if (errorsData && errorsData.length > 0) {
+          const codeExistsError = errorsData.find(
+            (e: any) => e.errorMessage === 'PROJECT_CODE_ALREADY_EXISTS',
+          );
+          if (codeExistsError) {
+            setErrors((prev) => ({
+              ...prev,
+              code: 'This project code already exists.',
+            }));
+            return;
+          }
+        }
+        toast.error('Failed to create project. Please try again.');
       },
     },
   });
