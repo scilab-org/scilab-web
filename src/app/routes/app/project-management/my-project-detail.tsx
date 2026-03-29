@@ -10,6 +10,7 @@ import {
   Calendar,
   Hash,
   Info,
+  Bot,
 } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
@@ -288,6 +289,15 @@ const MyProjectDetailRoute = () => {
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
+              <Button
+                className="btn-auto-tag"
+                onClick={() =>
+                  navigate(paths.app.aiResearch.getHref(projectId!))
+                }
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                AI Research
+              </Button>
               <div className="flex flex-col gap-1.5 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="text-muted-foreground h-4 w-4" />
