@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { paths } from '@/config/paths';
 
 import { useProjectDetail } from '@/features/project-management/api/projects/get-project';
+import { useProjectPapers } from '@/features/project-management/api/papers/get-project-papers';
 import { useSessions } from '../api/get-sessions';
 import { useSendMessage } from '../api/send-message';
 import { ChatSessionSidebar } from './chat-session-sidebar';
@@ -26,25 +27,34 @@ export const AIChatPage = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   const projectQuery = useProjectDetail({
     projectId: projectId!,
     queryConfig: { enabled: !!projectId },
   });
 
-  const sessionsQuery = useSessions({
+  const projectPapersQuery = useProjectPapers({
     projectId: projectId!,
+    queryConfig: { enabled: !!projectId },
+  });
+
+  const sessionsQuery = useSessions({
+    params: { projectId: projectId!, limit: 50, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
   const sendMessageMutation = useSendMessage({
     mutationConfig: {
       onSuccess: (data) => {
-        // If a new session was created, select it
         if (!activeSessionId) {
           setActiveSessionId(data.sessionId);
         }
+        setPendingMessage(null);
         setRefreshKey((k) => k + 1);
+      },
+      onError: () => {
+        setPendingMessage(null);
       },
     },
   });
@@ -58,13 +68,18 @@ export const AIChatPage = () => {
   const handleSend = useCallback(
     (content: string) => {
       if (!projectId) return;
+      setPendingMessage(content);
+      const paperIds = (
+        (projectPapersQuery.data as any)?.result?.items ?? []
+      ).map((p: { id: string }) => p.id);
       sendMessageMutation.mutate({
         sessionId: activeSessionId ?? undefined,
         projectId,
-        content,
+        message: content,
+        paperIds,
       });
     },
-    [projectId, activeSessionId, sendMessageMutation],
+    [projectId, activeSessionId, sendMessageMutation, projectPapersQuery.data],
   );
 
   const handleNewChat = useCallback(() => {
@@ -129,7 +144,39 @@ export const AIChatPage = () => {
               <ChatMessageList
                 sessionId={activeSessionId}
                 refreshKey={refreshKey}
+                pendingMessage={pendingMessage}
               />
+            ) : pendingMessage ? (
+              <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
+                <div className="mx-auto max-w-4xl space-y-6">
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="bg-primary text-primary-foreground max-w-2xl rounded-2xl rounded-tr-sm px-4 py-3">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {pendingMessage}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="/Logo.svg"
+                      alt="HyperDataLab Assistant"
+                      className="mt-5 h-8 w-8 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-primary mb-1 block text-xs font-semibold">
+                        HyperDataLab Assistant
+                      </span>
+                      <div className="border-border bg-card inline-flex rounded-lg border px-5 py-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="bg-muted-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0ms]" />
+                          <span className="bg-muted-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:150ms]" />
+                          <span className="bg-muted-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:300ms]" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
                 <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-full">
@@ -137,7 +184,7 @@ export const AIChatPage = () => {
                 </div>
                 <div className="text-center">
                   <h2 className="text-foreground text-lg font-semibold">
-                    AI Research Assistant
+                    HyperDataLab Assistant
                   </h2>
                   <p className="text-muted-foreground mt-1 max-w-md text-sm">
                     Start a conversation to research topics related to{' '}

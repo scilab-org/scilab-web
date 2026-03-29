@@ -1,9 +1,11 @@
 const AI_SERVICE_PREFIX = '/ai-service';
 
 export const AI_CHAT_API = {
-  SESSIONS: `${AI_SERVICE_PREFIX}/chat`,
+  SESSIONS: `${AI_SERVICE_PREFIX}/sessions`,
   SESSION_MESSAGES: (sessionId: string) =>
     `${AI_SERVICE_PREFIX}/sessions/${sessionId}/messages`,
+  RENAME_SESSION: (sessionId: string) =>
+    `${AI_SERVICE_PREFIX}/sessions/${sessionId}`,
   DELETE_SESSION: (sessionId: string) =>
     `${AI_SERVICE_PREFIX}/sessions/${sessionId}`,
   SEND_MESSAGE: `${AI_SERVICE_PREFIX}/chat`,

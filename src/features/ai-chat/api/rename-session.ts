@@ -4,30 +4,32 @@ import { api } from '@/lib/api-client';
 import { MutationConfig } from '@/lib/react-query';
 
 import { AI_CHAT_API, AI_CHAT_QUERY_KEYS } from '../constants';
+import type { RenameSessionRequest, RenameSessionResponse } from '../types';
 
-export const deleteSession = ({
+export const renameSession = ({
   sessionId,
+  title,
 }: {
   sessionId: string;
-}): Promise<void> => {
-  return api.delete(AI_CHAT_API.DELETE_SESSION(sessionId));
+} & RenameSessionRequest): Promise<RenameSessionResponse> => {
+  return api.patch(AI_CHAT_API.RENAME_SESSION(sessionId), { title });
 };
 
-type UseDeleteSessionOptions = {
+type UseRenameSessionOptions = {
   projectId: string;
-  mutationConfig?: MutationConfig<typeof deleteSession>;
+  mutationConfig?: MutationConfig<typeof renameSession>;
 };
 
-export const useDeleteSession = ({
+export const useRenameSession = ({
   projectId,
   mutationConfig,
-}: UseDeleteSessionOptions) => {
+}: UseRenameSessionOptions) => {
   const queryClient = useQueryClient();
 
   const { onSuccess, ...restConfig } = mutationConfig || {};
 
   return useMutation({
-    mutationFn: deleteSession,
+    mutationFn: renameSession,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
         queryKey: [AI_CHAT_QUERY_KEYS.SESSIONS, { projectId }],

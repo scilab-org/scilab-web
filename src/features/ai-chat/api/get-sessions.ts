@@ -1,34 +1,33 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
+import { api } from '@/lib/api-client';
 import { QueryConfig } from '@/lib/react-query';
 
-import { AI_CHAT_QUERY_KEYS } from '../constants';
-import { mockGetSessions } from '../mock-data';
-import type { GetSessionsResponse } from '../types';
+import { AI_CHAT_API, AI_CHAT_QUERY_KEYS } from '../constants';
+import type { GetSessionsParams, GetSessionsResponse } from '../types';
 
 export const getSessions = (
-  projectId: string,
+  params: GetSessionsParams,
 ): Promise<GetSessionsResponse> => {
-  // TODO: replace with real API call
-  // return api.get(AI_CHAT_API.SESSIONS, { params: { projectId } });
-  return mockGetSessions(projectId);
+  return api.get(AI_CHAT_API.SESSIONS, { params });
 };
 
-export const getSessionsQueryOptions = (projectId: string) => {
+export const getSessionsQueryOptions = (params: GetSessionsParams) => {
   return queryOptions({
-    queryKey: [AI_CHAT_QUERY_KEYS.SESSIONS, projectId],
-    queryFn: () => getSessions(projectId),
+    queryKey: [AI_CHAT_QUERY_KEYS.SESSIONS, params],
+    queryFn: () => getSessions(params),
+    enabled: !!params.projectId,
   });
 };
 
 type UseSessionsOptions = {
-  projectId: string;
+  params: GetSessionsParams;
   queryConfig?: QueryConfig<typeof getSessionsQueryOptions>;
 };
 
-export const useSessions = ({ projectId, queryConfig }: UseSessionsOptions) => {
+export const useSessions = ({ params, queryConfig }: UseSessionsOptions) => {
   return useQuery({
-    ...getSessionsQueryOptions(projectId),
+    ...getSessionsQueryOptions(params),
     ...queryConfig,
   });
 };

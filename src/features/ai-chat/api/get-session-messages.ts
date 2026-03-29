@@ -1,9 +1,9 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
+import { api } from '@/lib/api-client';
 import { QueryConfig } from '@/lib/react-query';
 
-import { AI_CHAT_QUERY_KEYS } from '../constants';
-import { mockGetSessionMessages } from '../mock-data';
+import { AI_CHAT_API, AI_CHAT_QUERY_KEYS } from '../constants';
 import type {
   GetSessionMessagesParams,
   GetSessionMessagesResponse,
@@ -13,9 +13,7 @@ export const getSessionMessages = (
   sessionId: string,
   params: GetSessionMessagesParams = {},
 ): Promise<GetSessionMessagesResponse> => {
-  // TODO: replace with real API call
-  // return api.get(AI_CHAT_API.SESSION_MESSAGES(sessionId), { params });
-  return mockGetSessionMessages(sessionId, params);
+  return api.get(AI_CHAT_API.SESSION_MESSAGES(sessionId), { params });
 };
 
 export const getSessionMessagesQueryOptions = (

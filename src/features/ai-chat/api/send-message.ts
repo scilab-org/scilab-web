@@ -1,17 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { api } from '@/lib/api-client';
 import { MutationConfig } from '@/lib/react-query';
 
-import { AI_CHAT_QUERY_KEYS } from '../constants';
-import { mockSendMessage } from '../mock-data';
+import { AI_CHAT_API, AI_CHAT_QUERY_KEYS } from '../constants';
 import type { SendMessageRequest, SendMessageResponse } from '../types';
 
 export const sendMessage = (
   request: SendMessageRequest,
 ): Promise<SendMessageResponse> => {
-  // TODO: replace with real API call
-  // return api.post(AI_CHAT_API.SEND_MESSAGE, request);
-  return mockSendMessage(request);
+  return api.post(AI_CHAT_API.SEND_MESSAGE, {
+    message: request.message,
+    projectId: request.projectId,
+    sessionId: request.sessionId ?? null,
+    paperIds: request.paperIds ?? [],
+  });
 };
 
 type UseSendMessageOptions = {
@@ -28,17 +31,21 @@ export const useSendMessage = ({
   return useMutation({
     mutationFn: sendMessage,
     onSuccess: (...args) => {
-      const [, variables] = args;
-      // Invalidate session messages for the active session
-      if (variables.sessionId) {
+      const [data, variables] = args;
+      // Invalidate session messages for the active or newly created session
+      queryClient.invalidateQueries({
+        queryKey: [AI_CHAT_QUERY_KEYS.SESSION_MESSAGES, data.sessionId],
+      });
+      // Invalidate sessions list to update order & pick up new session
+      if (variables.projectId) {
         queryClient.invalidateQueries({
-          queryKey: [AI_CHAT_QUERY_KEYS.SESSION_MESSAGES, variables.sessionId],
+          queryKey: [
+            AI_CHAT_QUERY_KEYS.SESSIONS,
+            { projectId: variables.projectId },
+          ],
+          exact: false,
         });
       }
-      // Invalidate sessions list to update order & counts
-      queryClient.invalidateQueries({
-        queryKey: [AI_CHAT_QUERY_KEYS.SESSIONS, variables.projectId],
-      });
       onSuccess?.(...args);
     },
     ...restConfig,

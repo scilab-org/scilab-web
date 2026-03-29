@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, MessageSquare, Loader2, Bot } from 'lucide-react';
+import { Send, MessageSquare, Loader2 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
@@ -10,38 +12,51 @@ import { useSendMessage } from '@/features/ai-chat/api/send-message';
 import { useSessionMessages } from '@/features/ai-chat/api/get-session-messages';
 import { useSessions } from '@/features/ai-chat/api/get-sessions';
 import type { ChatMessage } from '@/features/ai-chat/types';
+import { useProjectPapers } from '../../api/papers/get-project-papers';
 
 // ─── Compact chat message bubble for the editor side panel ────────────────────
+
+const formatTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Normalise LaTeX delimiters so remark-math can parse them.
+ * - \[...\]  →  $$...$$   (display / block math)
+ * - \(...\)  →  $...$     (inline math)
+ */
+const normalizeLatex = (text: string): string =>
+  text
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_m, body) => `$$${body}$$`)
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_m, body) => `$${body}$`);
 
 const CompactMessageBubble = ({ message }: { message: ChatMessage }) => {
   const isUser = message.role === 'user';
 
   if (isUser) {
     return (
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-0.5">
         <div className="bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2">
           <p className="text-xs leading-relaxed whitespace-pre-wrap">
             {message.content}
           </p>
-          <span className="mt-1 block text-[10px] opacity-60">
-            {new Date(message.createdAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
         </div>
+        <span className="text-muted-foreground text-left text-[10px]">
+          {formatTime(message.createdAt)}
+        </span>
       </div>
     );
   }
 
   return (
     <div className="flex items-start gap-2">
-      <div className="bg-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-        <Bot className="text-primary-foreground h-3.5 w-3.5" />
-      </div>
-      <div className="max-w-[85%]">
+      <img
+        src="/Logo.svg"
+        alt="HyperDataLab Assistant"
+        className="mt-4 h-5 w-5 shrink-0"
+      />
+      <div className="min-w-0 flex-1">
         <span className="text-primary text-[10px] font-semibold">
-          AI Assistant
+          HyperDataLab Assistant
         </span>
         <div
           className={cn(
@@ -55,13 +70,15 @@ const CompactMessageBubble = ({ message }: { message: ChatMessage }) => {
             'prose-code:text-xs',
           )}
         >
-          <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+          <Markdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {normalizeLatex(message.content)}
+          </Markdown>
         </div>
-        <span className="text-muted-foreground mt-1 block text-[10px]">
-          {new Date(message.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+        <span className="text-muted-foreground mt-0.5 block text-[10px]">
+          {formatTime(message.createdAt)}
         </span>
       </div>
     </div>
@@ -141,9 +158,11 @@ const MESSAGE_LIMIT = 100;
 const CompactMessageList = ({
   sessionId,
   refreshKey,
+  pendingMessage,
 }: {
   sessionId: string;
   refreshKey: number;
+  pendingMessage?: string | null;
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
@@ -155,15 +174,19 @@ const CompactMessageList = ({
 
   useEffect(() => {
     if (!messagesQuery.data) return;
-    setAllMessages(messagesQuery.data.messages);
+    const sorted = [...messagesQuery.data.messages].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    setAllMessages(sorted);
   }, [messagesQuery.data]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages or pending
   useEffect(() => {
-    if (scrollRef.current && allMessages.length > 0) {
+    if (scrollRef.current && (allMessages.length > 0 || pendingMessage)) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [allMessages, refreshKey]);
+  }, [allMessages, refreshKey, pendingMessage]);
 
   if (messagesQuery.isLoading) {
     return (
@@ -182,6 +205,38 @@ const CompactMessageList = ({
       {allMessages.map((message) => (
         <CompactMessageBubble key={message.id} message={message} />
       ))}
+
+      {/* Optimistic pending message + typing indicator */}
+      {pendingMessage && (
+        <>
+          <div className="flex justify-end">
+            <div className="bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2">
+              <p className="text-xs leading-relaxed whitespace-pre-wrap">
+                {pendingMessage}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <img
+              src="/Logo.svg"
+              alt="HyperDataLab Assistant"
+              className="mt-4 h-5 w-5 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <span className="text-primary mb-1 block text-[10px] font-semibold">
+                HyperDataLab Assistant
+              </span>
+              <div className="border-border bg-card inline-flex rounded-lg border px-3 py-2">
+                <div className="flex items-center gap-1">
+                  <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:0ms]" />
+                  <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:150ms]" />
+                  <span className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:300ms]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -200,7 +255,7 @@ const SessionList = ({
   onNewChat: () => void;
 }) => {
   const sessionsQuery = useSessions({
-    projectId,
+    params: { projectId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
@@ -242,7 +297,7 @@ const SessionList = ({
             >
               <span className="block truncate">{session.title}</span>
               <span className="text-muted-foreground mt-0.5 block text-[10px]">
-                {new Date(session.lastMessageAt).toLocaleDateString()}
+                {new Date(session.updatedAt).toLocaleDateString()}
               </span>
             </button>
           ))
@@ -266,6 +321,12 @@ export const EditorChatPanel = ({
   const [chatTab, setChatTab] = useState<'chat' | 'sessions'>('chat');
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+
+  const projectPapersQuery = useProjectPapers({
+    projectId,
+    queryConfig: { enabled: !!projectId },
+  });
 
   const sendMessageMutation = useSendMessage({
     mutationConfig: {
@@ -273,7 +334,11 @@ export const EditorChatPanel = ({
         if (!activeSessionId) {
           setActiveSessionId(data.sessionId);
         }
+        setPendingMessage(null);
         setRefreshKey((k) => k + 1);
+      },
+      onError: () => {
+        setPendingMessage(null);
       },
     },
   });
@@ -281,13 +346,18 @@ export const EditorChatPanel = ({
   const handleSend = useCallback(
     (content: string) => {
       if (!projectId) return;
+      setPendingMessage(content);
+      const paperIds = (
+        (projectPapersQuery.data as any)?.result?.items ?? []
+      ).map((p: { id: string }) => p.id);
       sendMessageMutation.mutate({
         sessionId: activeSessionId ?? undefined,
         projectId,
-        content,
+        message: content,
+        paperIds,
       });
     },
-    [projectId, activeSessionId, sendMessageMutation],
+    [projectId, activeSessionId, sendMessageMutation, projectPapersQuery.data],
   );
 
   const handleNewChat = useCallback(() => {
@@ -338,6 +408,13 @@ export const EditorChatPanel = ({
             <CompactMessageList
               sessionId={activeSessionId}
               refreshKey={refreshKey}
+              pendingMessage={pendingMessage}
+            />
+          ) : pendingMessage ? (
+            <CompactMessageList
+              sessionId=""
+              refreshKey={refreshKey}
+              pendingMessage={pendingMessage}
             />
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
@@ -346,7 +423,7 @@ export const EditorChatPanel = ({
               </div>
               <div className="text-center">
                 <h3 className="text-foreground text-sm font-semibold">
-                  AI Assistant
+                  HyperDataLab Assistant
                 </h3>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
                   Ask questions about{' '}

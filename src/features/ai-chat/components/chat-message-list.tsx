@@ -8,6 +8,7 @@ import type { ChatMessage } from '../types';
 type ChatMessageListProps = {
   sessionId: string;
   refreshKey?: number; // increment to force re-fetch after sending
+  pendingMessage?: string | null;
 };
 
 const MESSAGE_LIMIT = 100;
@@ -15,6 +16,7 @@ const MESSAGE_LIMIT = 100;
 export const ChatMessageList = ({
   sessionId,
   refreshKey,
+  pendingMessage,
 }: ChatMessageListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -47,7 +49,7 @@ export const ChatMessageList = ({
     if (!messagesQuery.data) return;
 
     const fetched = messagesQuery.data.messages;
-    setHasMore(messagesQuery.data.hasMore);
+    setHasMore(messagesQuery.data.hasMore ?? false);
 
     setAllMessages((prev) => {
       if (offset === 0) {
@@ -68,11 +70,11 @@ export const ChatMessageList = ({
     if (
       shouldAutoScroll.current &&
       scrollRef.current &&
-      allMessages.length > 0
+      (allMessages.length > 0 || pendingMessage)
     ) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [allMessages, refreshKey]);
+  }, [allMessages, refreshKey, pendingMessage]);
 
   // IntersectionObserver to detect scroll-to-top for loading older messages
   const handleLoadMore = useCallback(() => {
@@ -143,6 +145,38 @@ export const ChatMessageList = ({
         {allMessages.map((message) => (
           <ChatMessageBubble key={message.id} message={message} />
         ))}
+
+        {/* Optimistic pending message + typing indicator */}
+        {pendingMessage && (
+          <>
+            <div className="flex flex-col items-end gap-1">
+              <div className="bg-primary text-primary-foreground max-w-2xl rounded-2xl rounded-tr-sm px-4 py-3">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {pendingMessage}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <img
+                src="/Logo.svg"
+                alt="HyperDataLab Assistant"
+                className="mt-5 h-8 w-8 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <span className="text-primary mb-1 block text-xs font-semibold">
+                  HyperDataLab Assistant
+                </span>
+                <div className="border-border bg-card inline-flex rounded-lg border px-5 py-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="bg-muted-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0ms]" />
+                    <span className="bg-muted-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:150ms]" />
+                    <span className="bg-muted-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:300ms]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Initial loading state */}
