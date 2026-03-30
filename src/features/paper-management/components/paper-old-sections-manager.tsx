@@ -364,9 +364,8 @@ export const PaperOldSectionsManager = ({
   };
 
   const toggleVersionExpand = (id: string, markSectionId: string) => {
-    void queryClient.fetchQuery({
+    void queryClient.invalidateQueries({
       queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.SECTION_HISTORY, markSectionId],
-      queryFn: () => getSectionHistory(markSectionId),
     });
     setExpandedVersions((prev) => {
       const next = new Set(prev);

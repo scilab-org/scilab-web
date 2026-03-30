@@ -124,6 +124,8 @@ const toDateTimeLocalValue = (value?: string | null) => {
 };
 
 const statusBadgeClass = (status: number) => {
+  if (status === 4)
+    return 'border-gray-300 bg-gray-200 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300';
   if (status === 3)
     return 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300';
   if (status === 2)
@@ -133,9 +135,13 @@ const statusBadgeClass = (status: number) => {
   return 'border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300';
 };
 
-const getStatusLabel = (status: number) =>
-  TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
-  `Status ${status}`;
+const getStatusLabel = (status: number) => {
+  if (status === 4) return 'Closed';
+  return (
+    TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
+    `Status ${status}`
+  );
+};
 
 type TaskFormState = {
   paperId: string;
