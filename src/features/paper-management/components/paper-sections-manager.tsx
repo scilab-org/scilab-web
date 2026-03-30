@@ -1049,9 +1049,8 @@ export const PaperSectionsManager = ({
   );
   const queryClient = useQueryClient();
   const toggleExpand = (id: string, markSectionId: string) => {
-    void queryClient.fetchQuery({
+    void queryClient.invalidateQueries({
       queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION, markSectionId],
-      queryFn: () => getMarkSection(markSectionId),
     });
 
     setExpandedSections((prev) => {

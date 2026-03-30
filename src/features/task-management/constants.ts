@@ -26,3 +26,8 @@ export const TASK_STATUS_OPTIONS = [
   { label: 'In Progress', value: 2 },
   { label: 'Completed', value: 3 },
 ] as const;
+
+export const AUTHOR_TASK_STATUS_OPTIONS = [
+  ...TASK_STATUS_OPTIONS,
+  { label: 'Closed', value: 4 },
+] as const;

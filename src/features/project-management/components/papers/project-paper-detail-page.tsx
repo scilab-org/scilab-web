@@ -9,6 +9,7 @@ import {
   Search,
   User,
   X,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,18 +43,20 @@ import { useWritingPaperDetail } from '@/features/paper-management/api/get-writi
 import { PaperSectionsManager } from '@/features/paper-management/components/paper-sections-manager';
 import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
 import { MarkMainSectionDialog } from '@/features/paper-management/components/mark-main-section-dialog';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { PAPER_STATUS_MAP, PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { ProjectMember } from '@/features/project-management/types';
 import {
   useCreateTask,
   usePaperTasks,
   useUpdateTask,
+  useDeleteTask,
 } from '@/features/task-management/api';
 import {
   DATE_TASK_FILTER_OPTIONS,
   TASK_MANAGEMENT_QUERY_KEYS,
   TASK_STATUS_OPTIONS,
+  AUTHOR_TASK_STATUS_OPTIONS,
 } from '@/features/task-management/constants';
 import {
   DateTaskFilterField,
@@ -73,6 +76,8 @@ const formatDate = (dateString: string | null | undefined) => {
 };
 
 const statusBadgeClass = (status: number) => {
+  if (status === 4)
+    return 'border-gray-300 bg-gray-200 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300';
   if (status === 3)
     return 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300';
   if (status === 2)
@@ -80,9 +85,13 @@ const statusBadgeClass = (status: number) => {
   return 'border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300';
 };
 
-const getStatusLabel = (status: number) =>
-  TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
-  `Status ${status}`;
+const getStatusLabel = (status: number) => {
+  if (status === 4) return 'Closed';
+  return (
+    TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
+    `Status ${status}`
+  );
+};
 
 const toDateTimeLocalValue = (value?: string | null) => {
   if (!value) return '';
@@ -128,6 +137,9 @@ export const ProjectPaperDetailPage = ({
     completeDate: '',
   });
   const [updateForm, setUpdateForm] = useState({
+    name: '',
+    description: '',
+    assignedToUserName: '',
     status: '1',
     startDate: '',
     nextReviewDate: '',
@@ -243,6 +255,24 @@ export const ProjectPaperDetailPage = ({
     },
   });
 
+  const deleteTaskMutation = useDeleteTask({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Task deleted successfully');
+        queryClient.invalidateQueries({
+          queryKey: [TASK_MANAGEMENT_QUERY_KEYS.PAPER_TASKS, paperId],
+        });
+      },
+      onError: () => toast.error('Failed to delete task'),
+    },
+  });
+
+  const handleDeleteTask = (taskId: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      deleteTaskMutation.mutate(taskId);
+    }
+  };
+
   if (paperQuery.isLoading) {
     return (
       <ContentLayout title="Loading...">
@@ -257,6 +287,9 @@ export const ProjectPaperDetailPage = ({
   const openUpdateTask = (task: TaskItem) => {
     setEditingTask(task);
     setUpdateForm({
+      name: task.name,
+      description: task.description || '',
+      assignedToUserName: task.assignedToUserName,
       status: String(task.status),
       startDate: toDateTimeLocalValue(task.startDate),
       nextReviewDate: toDateTimeLocalValue(task.nextReviewDate),
@@ -323,9 +356,9 @@ export const ProjectPaperDetailPage = ({
     updateTaskMutation.mutate({
       id: editingTask.id,
       data: {
-        name: editingTask.name,
-        description: editingTask.description || '',
-        assignedToUserName: editingTask.assignedToUserName,
+        name: isAuthor ? updateForm.name : editingTask.name,
+        description: isAuthor ? updateForm.description : (editingTask.description || ''),
+        assignedToUserName: isAuthor ? updateForm.assignedToUserName : editingTask.assignedToUserName,
         status: Number(updateForm.status),
         startDate: updateForm.startDate
           ? new Date(updateForm.startDate).toISOString()
@@ -493,7 +526,15 @@ export const ProjectPaperDetailPage = ({
             <Button
               type="button"
               variant={activeTab === 'sections' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('sections')}
+              onClick={() => {
+                setActiveTab('sections');
+                queryClient.invalidateQueries({
+                  queryKey: [
+                    PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+                    paperId,
+                  ],
+                });
+              }}
               className={cn(
                 'h-9 px-4 text-sm font-medium',
                 activeTab === 'sections' ? 'bg-blue-600 hover:bg-blue-700' : '',
@@ -504,7 +545,12 @@ export const ProjectPaperDetailPage = ({
             <Button
               type="button"
               variant={activeTab === 'tasks' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('tasks')}
+              onClick={() => {
+                setActiveTab('tasks');
+                queryClient.invalidateQueries({
+                  queryKey: [TASK_MANAGEMENT_QUERY_KEYS.PAPER_TASKS, paperId],
+                });
+              }}
               className={cn(
                 'h-9 px-4 text-sm font-medium',
                 activeTab === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : '',
@@ -517,6 +563,12 @@ export const ProjectPaperDetailPage = ({
               variant={activeTab === 'old-sections' ? 'default' : 'outline'}
               onClick={() => {
                 setActiveTab('old-sections');
+                queryClient.invalidateQueries({
+                  queryKey: [
+                    PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS_HISTORY,
+                    paperId,
+                  ],
+                });
               }}
               className={cn(
                 'h-9 px-4 text-sm font-medium',
@@ -784,9 +836,29 @@ export const ProjectPaperDetailPage = ({
                                 {formatDate(task.completeDate)}
                               </TableCell>
                               <TableCell className="text-right">
-                                {currentUsername &&
-                                task.assignedToUserName.toLowerCase() ===
-                                  currentUsername ? (
+                                {isAuthor ? (
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      size="icon-sm"
+                                      variant="ghost"
+                                      onClick={() => openUpdateTask(task)}
+                                      title="Update task details"
+                                    >
+                                      <Pencil className="size-4 text-blue-600" />
+                                    </Button>
+                                    <Button
+                                      size="icon-sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeleteTask(task.id)}
+                                      title="Delete task"
+                                      disabled={deleteTaskMutation.isPending}
+                                    >
+                                      <Trash2 className="size-4 text-red-600" />
+                                    </Button>
+                                  </div>
+                                ) : currentUsername &&
+                                  task.assignedToUserName.toLowerCase() ===
+                                    currentUsername ? (
                                   <Button
                                     size="icon-sm"
                                     variant="ghost"
@@ -1052,11 +1124,80 @@ export const ProjectPaperDetailPage = ({
             <SheetHeader>
               <SheetTitle>Update Task</SheetTitle>
               <SheetDescription>
-                Only status and your date fields can be updated
+                {isAuthor ? 'Update task details' : 'Only status and your date fields can be updated'}
               </SheetDescription>
             </SheetHeader>
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
+              {isAuthor && (
+                <>
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="updateTaskName"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
+                      Task Name
+                    </label>
+                    <Input
+                      id="updateTaskName"
+                      value={updateForm.name}
+                      onChange={(e) =>
+                        setUpdateForm((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="updateTaskDesc"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
+                      Description
+                    </label>
+                    <textarea
+                      id="updateTaskDesc"
+                      className="border-input bg-background focus-visible:ring-ring min-h-[90px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      value={updateForm.description}
+                      onChange={(e) =>
+                        setUpdateForm((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="updateTaskAssignee"
+                      className="text-muted-foreground text-xs font-medium"
+                    >
+                      Assign Username
+                    </label>
+                    <select
+                      id="updateTaskAssignee"
+                      className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      value={updateForm.assignedToUserName}
+                      onChange={(e) =>
+                        setUpdateForm((prev) => ({
+                          ...prev,
+                          assignedToUserName: e.target.value,
+                        }))
+                      }
+                      required
+                    >
+                      <option value="">Select assignee</option>
+                      {memberOptions.map((member) => (
+                        <option key={member.value} value={member.value}>
+                          {member.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-1.5">
                 <label
                   htmlFor="updateTaskStatus"
@@ -1075,7 +1216,7 @@ export const ProjectPaperDetailPage = ({
                     }))
                   }
                 >
-                  {TASK_STATUS_OPTIONS.map((status) => (
+                  {(isAuthor ? AUTHOR_TASK_STATUS_OPTIONS : TASK_STATUS_OPTIONS).map((status) => (
                     <option key={status.value} value={String(status.value)}>
                       {status.label}
                     </option>
