@@ -67,7 +67,7 @@ type TabConfig = {
 const TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Info },
   { id: 'members', label: 'Members', icon: Users },
-  { id: 'papers', label: 'Refereces', icon: FileText },
+  { id: 'papers', label: 'References', icon: FileText },
   { id: 'writing-papers', label: 'Papers', icon: FileText },
   { id: 'datasets', label: 'Datasets', icon: Database },
 ];

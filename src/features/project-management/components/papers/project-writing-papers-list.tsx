@@ -226,23 +226,23 @@ export const ProjectWritingPapersList = ({
                           size="sm"
                           onClick={() => setMembersSheetPaper(paper)}
                           disabled={!paper.subProjectId}
-                          className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
+                          className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.VIEW_OUTLINE}`}
+                          title="Members"
                         >
-                          <Users className="h-3.5 w-3.5" />
-                          Members
+                          <Users className="h-4 w-4" />
                         </Button>
                         {(user?.preferredUsername === paper.createdBy ||
                           isManager) &&
                           !readOnly && (
                             <Button
-                              variant="outline"
+                              variant="destructive"
                               size="sm"
                               onClick={() => setPaperToDelete(paper)}
                               disabled={!paper.subProjectId}
-                              className={`flex items-center gap-1.5 ${BTN.DANGER_OUTLINE}`}
+                              className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.DANGER}`}
+                              title="Delete Paper"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
                       </div>
