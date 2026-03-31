@@ -189,14 +189,14 @@ const MemberTableRow = ({
                 size="sm"
                 onClick={() => onRemoveManager(member.memberId)}
                 disabled={isRemovingManager}
-                className="flex items-center gap-1.5"
+                className="h-8 w-8 p-0"
+                title="Remove Manager"
               >
                 {isRemovingManager ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Trash2 className="h-3.5 w-3.5" />
                 )}
-                Remove
               </Button>
             )}
 
@@ -210,14 +210,14 @@ const MemberTableRow = ({
                   size="sm"
                   onClick={() => onRemove(member.memberId)}
                   disabled={isRemoving}
-                  className="flex items-center gap-1.5"
+                  className="h-8 w-8 p-0"
+                  title="Remove Member"
                 >
                   {isRemoving ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Trash2 className="h-3.5 w-3.5" />
                   )}
-                  Remove
                 </Button>
               )}
           </div>
@@ -440,7 +440,7 @@ export const ProjectMembersList = ({
               <Button
                 onClick={onAddManagersClick}
                 size="sm"
-                className="flex items-center gap-2 bg-orange-600 text-white hover:bg-orange-700"
+                className={`${BTN.CREATE} flex items-center gap-2`}
               >
                 <UserPlus className="h-4 w-4" />
                 Add Manager

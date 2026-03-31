@@ -11,6 +11,7 @@ import {
   Trash2,
   Users,
   Pencil,
+  Loader2,
 } from 'lucide-react';
 import { useRemoveMembers } from '@/features/project-management/api/members/remove-members';
 import { useRemoveProjectManagers } from '@/features/project-management/api/members/remove-project-managers';
@@ -74,7 +75,7 @@ type TabConfig = {
 const TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Info },
   { id: 'members', label: 'Members', icon: Users },
-  { id: 'papers', label: 'Refereces', icon: FileText },
+  { id: 'papers', label: 'References', icon: FileText },
   { id: 'writing-papers', label: 'Papers', icon: FileText },
   { id: 'datasets', label: 'Datasets', icon: Database },
 ];
@@ -318,10 +319,10 @@ const ProjectDetailRoute = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setUpdateProjectOpen(true)}
-                    className="h-8 gap-1.5 px-3 text-xs"
+                    className="h-8 w-8 p-0"
+                    title="Edit"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
+                    <Pencil className="h-4 w-4" />
                   </Button>
                 )}
                 <Button
@@ -329,10 +330,10 @@ const ProjectDetailRoute = () => {
                   size="sm"
                   onClick={handleDelete}
                   disabled={deleteMutation.isPending}
-                  className="flex items-center gap-1.5"
+                  className="h-8 w-8 p-0"
+                  title="Delete"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+                  {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 </Button>
               </div>
               <div className="flex flex-col gap-1 text-sm">

@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,6 @@ export const ProjectView = ({
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -87,27 +85,27 @@ export const ProjectView = ({
               variant="outline"
               size="sm"
               onClick={onUpdate}
-              className={BTN.EDIT_OUTLINE}
+              className={`h-8 w-8 p-0 ${BTN.EDIT_OUTLINE}`}
+              title="Edit"
             >
               <Pencil className="size-4" />
-              Edit
             </Button>
             <Button
               variant="destructive"
               size="sm"
               onClick={onDelete}
               disabled={isDeleting}
-              className={BTN.DANGER}
+              className={`h-8 w-8 p-0 ${BTN.DANGER}`}
+              title="Delete"
             >
-              <Trash2 className="size-4" />
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
             </Button>
           </div>
         </div>
       )}
 
       {/* Project Header */}
-      <div className="border-border from-muted/50 to-muted/30 rounded-xl border bg-linear-to-br p-6 shadow-sm">
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-3">
@@ -125,94 +123,96 @@ export const ProjectView = ({
       </div>
 
       {/* Project Information */}
-      <div className="border-border rounded-xl border shadow-sm">
-        <div className="border-border bg-muted/30 border-b px-6 py-4">
-          <h2 className="text-foreground text-lg font-semibold">
+      <div className="rounded-xl border bg-card shadow-sm">
+        <div className="border-b bg-muted/30 px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">
             Project Overview
           </h2>
         </div>
         <div className="p-6">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <div className="space-y-8">
+            <div className="space-y-3 sm:col-span-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Description
-              </dt>
-              <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap">
-                {project.description || '—'}
-              </dd>
+              </h3>
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
+                {project.description || 'No description provided.'}
+              </p>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-3">
-              <div className="space-y-2">
-                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <div className="grid gap-x-12 gap-y-8 sm:grid-cols-3">
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Domain
-                </dt>
-                <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                  {project.domain || '—'}
-                </dd>
+                </h3>
+                <p className="text-[15px] text-foreground/90">
+                  {project.domain || 'Not specified'}
+                </p>
               </div>
 
-              <div className="space-y-2 sm:col-span-2">
-                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              <div className="space-y-3 sm:col-span-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Context
-                </dt>
-                <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                  {project.context || '—'}
-                </dd>
+                </h3>
+                <p className="text-[15px] leading-relaxed text-foreground/90">
+                  {project.context || 'Not specified'}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Keypoint
-              </dt>
-              <dd className="text-foreground bg-muted/30 rounded-lg p-4 text-sm leading-relaxed">
-                {project.keypoint || '—'}
-              </dd>
+              </h3>
+              <p className="text-[15px] leading-relaxed text-foreground/90">
+                {project.keypoint || 'Not specified'}
+              </p>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Research Timeline
-                </dt>
-                <dd className="text-foreground space-y-2">
-                  <div className="bg-muted/30 flex items-center justify-between rounded-lg p-3">
-                    <span className="text-muted-foreground text-xs font-medium">
+            <div className="grid gap-x-12 gap-y-10 sm:grid-cols-2">
+              <div className="space-y-4">
+                <div className="border-b pb-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Research Timeline
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[15px] font-medium text-muted-foreground">
                       Start Date
                     </span>
-                    <span className="text-sm font-semibold">
+                    <span className="text-[15px] font-semibold text-foreground">
                       {formatDate(project.startDate)}
                     </span>
                   </div>
-                  <div className="bg-muted/30 flex items-center justify-between rounded-lg p-3">
-                    <span className="text-muted-foreground text-xs font-medium">
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[15px] font-medium text-muted-foreground">
                       End Date
                     </span>
-                    <span className="text-sm font-semibold">
+                    <span className="text-[15px] font-semibold text-foreground">
                       {formatDate(project.endDate)}
                     </span>
                   </div>
-                </dd>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Project Status
-                </dt>
-                <dd className="bg-muted/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-foreground text-sm font-medium">
-                      Current Status
-                    </span>
-                    <Badge
-                      variant={getStatusVariant(project.status).variant}
-                      className={getStatusVariant(project.status).className}
-                    >
-                      {getStatusText(project.status)}
-                    </Badge>
-                  </div>
-                </dd>
+              <div className="space-y-4">
+                <div className="border-b pb-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Project Status
+                  </h3>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-[15px] font-medium text-foreground">
+                    Current Status
+                  </span>
+                  <Badge
+                    variant={getStatusVariant(project.status).variant}
+                    className={getStatusVariant(project.status).className}
+                  >
+                    {getStatusText(project.status)}
+                  </Badge>
+                </div>
               </div>
             </div>
           </div>

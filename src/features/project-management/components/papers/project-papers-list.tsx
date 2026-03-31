@@ -141,10 +141,10 @@ export const ProjectPapersList = ({
               <Button
                 onClick={onAddPapersClick}
                 size="sm"
-                className={`${BTN.VIEW_OUTLINE} flex items-center gap-2`}
+                className="btn-create flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Refereces
+                Add References
               </Button>
             )}
           </div>
@@ -192,28 +192,28 @@ export const ProjectPapersList = ({
           </div>
         ) : papers.length > 0 ? (
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[25%] font-semibold text-green-900 dark:text-green-200">
                     Title
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
                     Status
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
                     DOI
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
                     Journal / Conference
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
                     Published
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
                     Tags
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] text-right font-semibold text-green-900 dark:text-green-200">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -224,10 +224,11 @@ export const ProjectPapersList = ({
                     key={paper.id}
                     className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="overflow-hidden font-medium">
                       <Link
                         to={paths.app.paperManagement.paper.getHref(paper.id)}
-                        className="text-blue-600 hover:underline dark:text-blue-400"
+                        className="block truncate text-blue-600 hover:underline dark:text-blue-400"
+                        title={paper.title || '(Untitled)'}
                       >
                         {paper.title || '(Untitled)'}
                       </Link>
@@ -243,10 +244,10 @@ export const ProjectPapersList = ({
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="truncate text-muted-foreground text-sm" title={paper.doi || ''}>
                       {paper.doi || '—'}
                     </TableCell>
-                    <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
+                    <TableCell className="truncate text-muted-foreground text-sm" title={paper.journalName || paper.conferenceName || ''}>
                       {paper.journalName || paper.conferenceName || '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -296,7 +297,8 @@ export const ProjectPapersList = ({
                             variant="outline"
                             size="sm"
                             asChild
-                            className={BTN.VIEW_OUTLINE}
+                            className={`h-8 w-8 p-0 ${BTN.VIEW_OUTLINE}`}
+                            title="Download"
                           >
                             <a
                               href={paper.filePath}
@@ -304,8 +306,7 @@ export const ProjectPapersList = ({
                               rel="noopener noreferrer"
                               download
                             >
-                              <Download className="h-3.5 w-3.5" />
-                              <span className="ml-1.5">Download</span>
+                              <Download className="h-4 w-4" />
                             </a>
                           </Button>
                         )}
@@ -315,13 +316,14 @@ export const ProjectPapersList = ({
                             size="sm"
                             onClick={() => setPendingRemovePaperId(paper.id)}
                             disabled={removingPaperId === paper.id}
+                            className={`h-8 w-8 p-0 ${BTN.DANGER}`}
+                            title="Remove Paper"
                           >
                             {removingPaperId === paper.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-4 w-4" />
                             )}
-                            <span className="ml-1.5">Remove</span>
                           </Button>
                         )}
                       </div>

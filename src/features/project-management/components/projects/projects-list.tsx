@@ -232,17 +232,23 @@ export const ProjectsList = () => {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
-                      variant="outline" size="sm" className={BTN.EDIT_OUTLINE}
+                      variant="outline"
+                      size="sm"
+                      className={`h-8 w-8 p-0 ${BTN.EDIT_OUTLINE}`}
                       onClick={() => handleUpdate(project)}
+                      title="Edit Project"
                     >
-                      <Pencil className="h-3 w-3" />
+                      <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="destructive" size="sm" className={BTN.DANGER}
+                      variant="destructive"
+                      size="sm"
+                      className={`h-8 w-8 p-0 ${BTN.DANGER}`}
                       onClick={() => handleDelete(project)}
                       disabled={deleteMutation.isPending}
+                      title="Delete Project"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>

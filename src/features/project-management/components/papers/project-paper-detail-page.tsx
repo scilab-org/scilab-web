@@ -10,6 +10,11 @@ import {
   User,
   X,
   Trash2,
+  FileText,
+  Target,
+  BookOpen,
+  Globe,
+  PenTool,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -448,69 +453,116 @@ export const ProjectPaperDetailPage = ({
             </div>
 
             {isPaperInfoExpanded && (
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-foreground font-semibold">Abstract</h3>
-                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                      {paper.abstract || 'No abstract'}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="text-foreground font-semibold">Context</h3>
-                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                      {paper.context || 'No context'}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="text-foreground font-semibold">
-                      Research Gap
+              <div className="mt-8 space-y-6 border-t pt-8">
+                {/* Abstract - Full Width */}
+                <div className="rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                      <FileText className="size-5" />
+                    </div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      Abstract
                     </h3>
-                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                      {paper.researchGap || 'No research gap'}
+                  </div>
+                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
+                    {paper.abstract || 'No abstract provided for this paper.'}
+                  </p>
+                </div>
+
+                {/* Metadata Grid */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100/50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <BookOpen className="size-5" />
+                      </div>
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Main Contribution
+                      </h3>
+                    </div>
+                    <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
+                      {paper.mainContribution || 'No main contribution listed.'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100/50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                        <Globe className="size-5" />
+                      </div>
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Context
+                      </h3>
+                    </div>
+                    <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
+                      {paper.context || 'No context defined.'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100/50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                        <Target className="size-5" />
+                      </div>
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Research Gap
+                      </h3>
+                    </div>
+                    <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
+                      {paper.researchGap || 'No research gap explicitly stated.'}
                     </p>
                     {paper.gapType && (
-                      <p className="text-muted-foreground mt-1 text-xs">
+                      <p className="mt-4 inline-block rounded-md bg-muted/50 px-3 py-1 text-sm font-medium text-muted-foreground">
                         Type: {paper.gapType}
                       </p>
                     )}
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-foreground font-semibold">
-                      Main Contribution
-                    </h3>
-                    <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                      {paper.mainContribution || 'No contribution listed'}
-                    </p>
-                  </div>
+
                   {(paper.journalName || paper.journal) && (
-                    <div>
-                      <h3 className="text-foreground font-semibold">Journal</h3>
-                      {paper.journalName && (
-                        <p className="text-muted-foreground bg-muted/30 mt-1 mb-2 rounded-md p-3 text-sm whitespace-pre-wrap">
-                          {paper.journalName}
-                        </p>
-                      )}
-                      {paper.journal && paper.journal !== paper.journalName && (
-                        <p className="text-muted-foreground bg-muted/30 mt-1 rounded-md p-3 text-sm whitespace-pre-wrap">
-                          {paper.journal}
-                        </p>
-                      )}
+                    <div className="rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100/50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                          <BookOpen className="size-5" />
+                        </div>
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                          Journal
+                        </h3>
+                      </div>
+                      <div className="space-y-2">
+                        {paper.journalName && (
+                          <p className="text-[15px] font-medium text-foreground">
+                            {paper.journalName}
+                          </p>
+                        )}
+                        {paper.journal && paper.journal !== paper.journalName && (
+                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/80">
+                            {paper.journal}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
+
                   {(paper.styleName || paper.styleDescription) && (
-                    <div>
-                      <h3 className="text-foreground font-semibold">
-                        Style Guidelines
-                      </h3>
-                      <div className="text-muted-foreground bg-muted/30 mt-1 space-y-2 rounded-md p-3 text-sm">
+                    <div className="rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100/50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                          <PenTool className="size-5" />
+                        </div>
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                          Style Guidelines
+                        </h3>
+                      </div>
+                      <div className="space-y-2 text-[15px] leading-relaxed">
                         {paper.styleName && (
-                          <p className="font-medium">{paper.styleName}</p>
+                          <p className="font-medium text-foreground">
+                            {paper.styleName}
+                          </p>
                         )}
                         {paper.styleDescription && (
-                          <p>{paper.styleDescription}</p>
+                          <p className="text-foreground/80">
+                            {paper.styleDescription}
+                          </p>
                         )}
                       </div>
                     </div>

@@ -187,20 +187,20 @@ export const DatasetsList = ({
                                   variant="default"
                                   size="sm"
                                   onClick={() => onViewChartClick(dataset)}
-                                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700"
+                                  className="flex h-8 w-8 items-center justify-center p-0 bg-blue-600 hover:bg-blue-700"
+                                  title="Chart"
                                 >
-                                  <BarChart3 className="h-3.5 w-3.5" />
-                                  Chart
+                                  <BarChart3 className="h-4 w-4" />
                                 </Button>
                               )}
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={handleDownload}
-                              className={`flex items-center gap-1.5 ${BTN.VIEW_OUTLINE}`}
+                              className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.VIEW_OUTLINE}`}
+                              title="Download"
                             >
-                              <Download className="h-3.5 w-3.5" />
-                              Download
+                              <Download className="h-4 w-4" />
                             </Button>
                             {!readOnly && (
                               <>
@@ -210,10 +210,10 @@ export const DatasetsList = ({
                                   onClick={() =>
                                     (onUpdateClick ?? (() => { }))(dataset)
                                   }
-                                  className={`flex items-center gap-1.5 ${BTN.EDIT_OUTLINE}`}
+                                  className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.EDIT_OUTLINE}`}
+                                  title="Edit"
                                 >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                  Edit
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="destructive"
@@ -221,10 +221,10 @@ export const DatasetsList = ({
                                   onClick={() =>
                                     setPendingDeleteDatasetId(dataset.id)
                                   }
-                                  className={`flex items-center gap-1.5 ${BTN.DANGER}`}
+                                  className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.DANGER}`}
+                                  title="Delete"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  Delete
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>
                             )}
