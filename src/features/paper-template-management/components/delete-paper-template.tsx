@@ -43,7 +43,6 @@ export const DeletePaperTemplate = ({ id, name }: DeletePaperTemplateProps) => {
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size="sm" className={BTN.DANGER}>
           <Trash2 className="size-4" />
-          Delete
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

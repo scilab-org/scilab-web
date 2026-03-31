@@ -208,7 +208,7 @@ export const DatasetsList = ({
                                   variant="outline"
                                   size="sm"
                                   onClick={() =>
-                                    (onUpdateClick ?? (() => {}))(dataset)
+                                    (onUpdateClick ?? (() => { }))(dataset)
                                   }
                                   className={`flex items-center gap-1.5 ${BTN.EDIT_OUTLINE}`}
                                 >
@@ -366,7 +366,7 @@ export const DatasetsList = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (pendingDeleteDatasetId) {
-                  (onDeleteClick ?? (() => {}))(pendingDeleteDatasetId);
+                  (onDeleteClick ?? (() => { }))(pendingDeleteDatasetId);
                   setPendingDeleteDatasetId(null);
                 }
               }}

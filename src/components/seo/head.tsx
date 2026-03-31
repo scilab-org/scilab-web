@@ -7,7 +7,7 @@ type HeadProps = {
 
 export const Head = ({ title = '', description = '' }: HeadProps = {}) => {
   useEffect(() => {
-    document.title = title ? `${title} | Scilab` : 'Scilab';
+    document.title = title ? `${title} | HyperDataLab` : 'HyperDataLab';
 
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {

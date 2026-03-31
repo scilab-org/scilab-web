@@ -205,13 +205,8 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={`gap-1 ${BTN.EDIT_OUTLINE}`}
-        >
+        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
           <Pencil className="size-4" />
-          Edit
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">

@@ -32,6 +32,7 @@ import { getProjectQueryOptions } from '../../api/projects/get-project';
 import { useDeleteProject } from '../../api/projects/delete-project';
 import { UpdateProject } from './update-project';
 import { Project } from '../../types';
+import { BTN } from '@/lib/button-styles';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);
@@ -231,15 +232,13 @@ export const ProjectsList = () => {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
-                      variant="outline"
-                      size="xs"
+                      variant="outline" size="sm" className={BTN.EDIT_OUTLINE}
                       onClick={() => handleUpdate(project)}
                     >
                       <Pencil className="h-3 w-3" />
                     </Button>
                     <Button
-                      variant="destructive"
-                      size="xs"
+                      variant="destructive" size="sm" className={BTN.DANGER}
                       onClick={() => handleDelete(project)}
                       disabled={deleteMutation.isPending}
                     >

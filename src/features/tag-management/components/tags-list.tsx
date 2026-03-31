@@ -112,7 +112,7 @@ export const TagsList = () => {
       </Table>
 
       {paging && (
-        <div className="mt-6 grid grid-cols-3 items-center border-t pt-4">
+        <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
           <p className="text-muted-foreground text-sm">
             Page{' '}
             <span className="text-foreground font-medium">

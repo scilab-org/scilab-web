@@ -72,7 +72,6 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
           <Pencil className="size-4" />
-          Edit
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">

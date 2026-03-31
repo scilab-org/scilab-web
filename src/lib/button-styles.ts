@@ -14,7 +14,7 @@ const CREATE = 'btn-create';
 const EDIT = 'btn-edit';
 
 /** Blue outline — for edit trigger / outline buttons */
-const EDIT_OUTLINE = 'btn-edit-outline';
+const EDIT_OUTLINE = 'btn-view-outline';
 
 /** Red — for delete / destructive actions */
 const DANGER = 'btn-danger';

@@ -12,6 +12,7 @@ import { useUserDetail } from '../api/get-user';
 import { UpdateUser } from './update-user';
 import { DeactivateUser } from './deactivate-user';
 import { ActivateUser } from './activate-user';
+import { capitalize } from '@/utils/stringUtils';
 
 export const UserView = ({ userId }: { userId: string }) => {
   const userQuery = useUserDetail({ userId });
@@ -105,33 +106,15 @@ export const UserView = ({ userId }: { userId: string }) => {
           <CardContent className="space-y-3">
             <div>
               <p className="text-muted-foreground text-sm">First Name</p>
-              <p className="font-medium">{user.firstName || 'N/A'}</p>
+              <p className="font-medium">{capitalize(user.firstName) || 'N/A'}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Last Name</p>
-              <p className="font-medium">{user.lastName || 'N/A'}</p>
+              <p className="font-medium">{capitalize(user.lastName) || 'N/A'}</p>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {user.groups && user.groups.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Groups</CardTitle>
-            <CardDescription>Groups this user belongs to</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {user.groups.map((group) => (
-                <Badge key={group.id} variant="secondary">
-                  {group.name}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

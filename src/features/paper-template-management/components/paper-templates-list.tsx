@@ -129,7 +129,6 @@ export const PaperTemplatesList = () => {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1.5">
-                  <ViewPaperTemplate id={template.id} name={template.name} />
                   <UpdatePaperTemplate template={template} />
                   <DeletePaperTemplate id={template.id} name={template.name} />
                 </div>

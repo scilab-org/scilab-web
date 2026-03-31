@@ -188,13 +188,13 @@ export const ProjectWritingPapersList = ({
                         onClick={() => {
                           const href = readOnly
                             ? paths.app.projectPaperDetail.getHref(
-                                projectId,
-                                paper.id,
-                              )
+                              projectId,
+                              paper.id,
+                            )
                             : paths.app.assignedProjects.paperDetail.getHref(
-                                projectId,
-                                paper.id,
-                              );
+                              projectId,
+                              paper.id,
+                            );
                           navigate(href);
                         }}
                         className="text-left text-blue-600 hover:underline dark:text-blue-400"

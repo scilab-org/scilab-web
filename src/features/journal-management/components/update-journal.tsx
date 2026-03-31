@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Edit, Trash2, Plus, X } from 'lucide-react';
+import { Edit, Trash2, Plus, X, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -154,12 +154,8 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 text-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30"
-        >
-          <Edit className="size-4" />
+        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
+          <Pencil className="size-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">

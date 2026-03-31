@@ -20,6 +20,11 @@ import { BTN } from '@/lib/button-styles';
 
 import { useUsers } from '../api/get-users';
 import { getUserQueryOptions } from '../api/get-user';
+import { UpdateUser } from './update-user';
+import { DeactivateUser } from './deactivate-user';
+import { ActivateUser } from './activate-user';
+import { capitalize } from '@/utils/stringUtils';
+import { GROUPS } from '@/lib/authorization';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);
@@ -85,7 +90,7 @@ export const UsersList = () => {
               Status
             </TableHead>
             <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Groups
+              Roles
             </TableHead>
             <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
               Actions
@@ -93,73 +98,74 @@ export const UsersList = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user, index) => (
-            <TableRow
-              key={user.id}
-              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
-            >
-              <TableCell className="font-medium">
-                <Link
-                  to={paths.app.userManagement.user.getHref(user.id!)}
-                  className="flex items-center gap-2.5 hover:underline"
-                  onMouseEnter={() => {
-                    queryClient.prefetchQuery(getUserQueryOptions(user.id!));
-                  }}
-                >
-                  <span className="relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                    {user.avatarUrl ? (
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.username ?? ''}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-xs font-semibold text-slate-600 select-none dark:text-slate-300">
-                        {(
-                          user.firstName?.[0] ??
-                          user.username?.[0] ??
-                          '?'
-                        ).toUpperCase()}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-primary">{user.username}</span>
-                </Link>
-              </TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                {user.firstName} {user.lastName}
-              </TableCell>
-              <TableCell>
-                <Badge variant={user.enabled ? 'default' : 'destructive'}>
-                  {user.enabled ? 'Active' : 'Disabled'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {user.groups?.map((g) => (
-                    <Badge key={g.id} variant="outline">
-                      {g.name}
-                    </Badge>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    asChild
-                    className={BTN.VIEW_OUTLINE}
+          {users.map((user, index) => {
+            return (
+              <TableRow
+                key={user.id}
+                className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+              >
+                <TableCell className="font-medium">
+                  <Link
+                    to={paths.app.userManagement.user.getHref(user.id!)}
+                    className="flex items-center gap-2.5 hover:underline"
+                    onMouseEnter={() => {
+                      queryClient.prefetchQuery(getUserQueryOptions(user.id!));
+                    }}
                   >
-                    <Link to={paths.app.userManagement.user.getHref(user.id!)}>
-                      View
-                    </Link>
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                    <span className="relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                      {user.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.username ?? ''}
+                          className="size-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-600 select-none dark:text-slate-300">
+                          {(
+                            user.firstName?.[0] ??
+                            user.username?.[0] ??
+                            '?'
+                          ).toUpperCase()}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-primary">{user.username}</span>
+                  </Link>
+                </TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  {capitalize(user.firstName)} {capitalize(user.lastName)}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={user.enabled ? 'default' : 'destructive'}>
+                    {user.enabled ? 'Active' : 'Disabled'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {user.groups?.some((g) => g.name === GROUPS.SYSTEM_ADMIN) ? (
+                      <Badge variant="admin">
+                        Admin
+                      </Badge>
+                    ) : (
+                      <Badge variant="user">
+                        User
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <UpdateUser user={user} userId={user.id!} />
+                    {user.enabled ? (
+                      <DeactivateUser userId={user.id!} />
+                    ) : (
+                      <ActivateUser userId={user.id!} />
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 

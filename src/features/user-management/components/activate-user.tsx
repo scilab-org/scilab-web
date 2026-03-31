@@ -22,14 +22,14 @@ type ActivateUserProps = {
 };
 
 export const ActivateUser = ({ userId }: ActivateUserProps) => {
+  const minRows = 10;
   const activateUserMutation = useActivateUser({});
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" size="xs" className={BTN.SUCCESS}>
-          <CheckCircle className="size-3" />
-          Activate
+        <Button variant="outline" size="sm" className={BTN.SUCCESS}>
+          <CheckCircle className="size-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

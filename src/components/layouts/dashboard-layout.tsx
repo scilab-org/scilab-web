@@ -205,12 +205,9 @@ const navigation: SideNavigationItem[] = [
     icon: Users,
   },
   {
-    name: 'Permissions',
-    to: paths.app.groupRoleManagement.groups.getHref(),
-    icon: User,
+    name: 'Projects',
+    to: paths.app.projects.getHref(), icon: FolderKanban
   },
-
-  { name: 'Projects', to: paths.app.projects.getHref(), icon: FolderKanban },
   {
     name: 'Assigned Projects',
     to: paths.app.assignedProjects.list.getHref(),

@@ -27,13 +27,33 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   );
 }
 
-function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
+type TableBodyProps = React.ComponentProps<'tbody'> & {
+  minRows?: number;
+  colSpan?: number;
+};
+
+function TableBody({
+  className,
+  minRows = 10,
+  colSpan = 1,
+  children,
+  ...props
+}: TableBodyProps) {
+  const rowCount = React.Children.count(children);
+  const emptyRows = Math.max(0, minRows - rowCount);
   return (
     <tbody
       data-slot="table-body"
       className={cn('[&_tr:last-child]:border-0', className)}
       {...props}
-    />
+    >
+      {children}
+      {Array.from({ length: emptyRows }).map((_, i) => (
+        <tr key={`empty-${i}`} className="h-12">
+          <td colSpan={colSpan} />
+        </tr>
+      ))}
+    </tbody>
   );
 }
 

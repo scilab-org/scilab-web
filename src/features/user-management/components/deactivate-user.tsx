@@ -27,9 +27,8 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="xs" className={BTN.DANGER}>
-          <Trash2 className="size-3" />
-          Deactivate
+        <Button variant="destructive" size="sm" className={BTN.DANGER}>
+          <Trash2 className="size-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

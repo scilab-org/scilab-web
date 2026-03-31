@@ -86,9 +86,8 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="xs" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-3" />
-          Edit
+        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
+          <Pencil className="size-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
@@ -153,34 +152,6 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
               />
               Enabled
             </label>
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="text-sm font-medium">Groups</div>
-            {groupsQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">Loading groups...</p>
-            ) : allGroups.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No groups available
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {allGroups.map((group) => (
-                  <Badge
-                    key={group.id}
-                    variant={
-                      formData.groupNames.includes(group.name!)
-                        ? 'default'
-                        : 'outline'
-                    }
-                    className="cursor-pointer"
-                    onClick={() => toggleGroup(group.name!)}
-                  >
-                    {group.name}
-                  </Badge>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">

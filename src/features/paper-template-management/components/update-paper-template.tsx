@@ -148,7 +148,6 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
           <Pencil className="size-4" />
-          Edit
         </Button>
       </SheetTrigger>
 

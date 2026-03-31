@@ -36,7 +36,6 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className={BTN.VIEW_OUTLINE}>
           <Eye className="size-4" />
-          View
         </Button>
       </SheetTrigger>
 
