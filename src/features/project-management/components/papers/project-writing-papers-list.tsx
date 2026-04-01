@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Users, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 
@@ -29,7 +29,6 @@ import { BTN } from '@/lib/button-styles';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { SubProjectPaper } from '../../types';
-import { PaperMembersSheet } from './paper-members-sheet';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { useUser } from '@/lib/auth';
 import { paths } from '@/config/paths';
@@ -53,6 +52,7 @@ const getStatusColor = (status: number | null) => {
 
 type ProjectWritingPapersListProps = {
   projectId: string;
+  getPaperHref?: (projectId: string, paperId: string) => string;
   isManager?: boolean;
   isAuthor?: boolean;
   readOnly?: boolean;
@@ -61,6 +61,7 @@ type ProjectWritingPapersListProps = {
 
 export const ProjectWritingPapersList = ({
   projectId,
+  getPaperHref,
   isManager = false,
   isAuthor = false,
   readOnly = false,
@@ -68,8 +69,6 @@ export const ProjectWritingPapersList = ({
 }: ProjectWritingPapersListProps) => {
   const [searchText, setSearchText] = useState('');
   const [searchDebounce, setSearchDebounce] = useState('');
-  const [membersSheetPaper, setMembersSheetPaper] =
-    useState<SubProjectPaper | null>(null);
   const [paperToDelete, setPaperToDelete] = useState<SubProjectPaper | null>(
     null,
   );
@@ -186,15 +185,17 @@ export const ProjectWritingPapersList = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const href = readOnly
-                            ? paths.app.projectPaperDetail.getHref(
-                              projectId,
-                              paper.id,
-                            )
-                            : paths.app.assignedProjects.paperDetail.getHref(
-                              projectId,
-                              paper.id,
-                            );
+                          const href = getPaperHref
+                            ? getPaperHref(projectId, paper.id)
+                            : readOnly
+                              ? paths.app.projectPaperDetail.getHref(
+                                  projectId,
+                                  paper.id,
+                                )
+                              : paths.app.assignedProjects.paperDetail.getHref(
+                                  projectId,
+                                  paper.id,
+                                );
                           navigate(href);
                         }}
                         className="text-left text-blue-600 hover:underline dark:text-blue-400"
@@ -221,16 +222,6 @@ export const ProjectWritingPapersList = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setMembersSheetPaper(paper)}
-                          disabled={!paper.subProjectId}
-                          className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.VIEW_OUTLINE}`}
-                          title="Members"
-                        >
-                          <Users className="h-4 w-4" />
-                        </Button>
                         {(user?.preferredUsername === paper.createdBy ||
                           isManager) &&
                           !readOnly && (
@@ -269,19 +260,6 @@ export const ProjectWritingPapersList = ({
           </div>
         )}
       </div>
-
-      {membersSheetPaper && membersSheetPaper.subProjectId && (
-        <PaperMembersSheet
-          subProjectId={membersSheetPaper.subProjectId}
-          isManager={readOnly ? false : isManager}
-          isAuthor={isAuthor}
-          paperTitle={membersSheetPaper.title ?? '(Untitled)'}
-          open={!!membersSheetPaper}
-          onOpenChange={(o) => {
-            if (!o) setMembersSheetPaper(null);
-          }}
-        />
-      )}
 
       <AlertDialog
         open={!!paperToDelete}

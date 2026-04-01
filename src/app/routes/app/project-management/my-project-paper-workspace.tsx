@@ -1,15 +1,17 @@
 import { useParams } from 'react-router';
-import { ProjectPaperDetailPage } from '@/features/project-management/components/papers/project-paper-detail-page';
+
+import { PaperWorkspacePage } from '@/features/project-management/components/papers/paper-workspace-page';
 import { paths } from '@/config/paths';
 import { useMyProjectRole } from '@/features/project-management/api/projects/get-my-role';
 
-const MyProjectPaperDetailRoute = () => {
+const MyProjectPaperWorkspaceRoute = () => {
   const { projectId, paperId } = useParams();
 
   const roleQuery = useMyProjectRole({
     projectId: projectId!,
     queryConfig: { enabled: !!projectId },
   });
+
   const isManager =
     roleQuery.data?.result === 'project:project-manager' ||
     roleQuery.data?.result === 'project:admin' ||
@@ -17,13 +19,12 @@ const MyProjectPaperDetailRoute = () => {
   const isAuthor = roleQuery.data?.result === 'project:author';
 
   return (
-    <ProjectPaperDetailPage
+    <PaperWorkspacePage
       projectId={projectId!}
       paperId={paperId!}
       isManager={isManager}
       isAuthor={isAuthor}
-      backPath={paths.app.assignedProjects.detail.getHref(projectId!)}
-      workspacePath={paths.app.assignedProjects.paperWorkspace.getHref(
+      backPath={paths.app.assignedProjects.paperDetail.getHref(
         projectId!,
         paperId!,
       )}
@@ -31,4 +32,4 @@ const MyProjectPaperDetailRoute = () => {
   );
 };
 
-export default MyProjectPaperDetailRoute;
+export default MyProjectPaperWorkspaceRoute;

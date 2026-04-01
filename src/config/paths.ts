@@ -29,6 +29,11 @@ export const paths = {
       getHref: (projectId: string, paperId: string) =>
         `/app/projects/details/${projectId}/papers/${paperId}`,
     },
+    projectPaperWorkspace: {
+      path: 'projects/details/:projectId/papers/:paperId/workspace',
+      getHref: (projectId: string, paperId: string) =>
+        `/app/projects/details/${projectId}/papers/${paperId}/workspace`,
+    },
     settings: {
       path: 'settings',
       getHref: () => '/app/settings',
@@ -102,6 +107,11 @@ export const paths = {
         path: 'my-projects/:projectId/papers/:paperId',
         getHref: (projectId: string, paperId: string) =>
           `/app/my-projects/${projectId}/papers/${paperId}`,
+      },
+      paperWorkspace: {
+        path: 'my-projects/:projectId/papers/:paperId/workspace',
+        getHref: (projectId: string, paperId: string) =>
+          `/app/my-projects/${projectId}/papers/${paperId}/workspace`,
       },
     },
     myTasks: {

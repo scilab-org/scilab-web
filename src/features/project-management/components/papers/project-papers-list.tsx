@@ -36,6 +36,7 @@ import { ProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
+import { formatPublicationDate } from '@/utils/stringUtils';
 
 const getStatusColor = (status: number | null) => {
   switch (status) {
@@ -73,6 +74,7 @@ const getTagColor = (tag: string) => {
 
 type ProjectPapersListProps = {
   projectId: string;
+  getPaperHref?: (projectId: string, paperId: string) => string;
   onAddPapersClick?: () => void;
   onCreatePaperClick?: () => void;
   onRemovePaper?: (paperId: string) => void;
@@ -82,6 +84,7 @@ type ProjectPapersListProps = {
 
 export const ProjectPapersList = ({
   projectId,
+  getPaperHref,
   onAddPapersClick,
   onCreatePaperClick,
   onRemovePaper,
@@ -226,7 +229,11 @@ export const ProjectPapersList = ({
                   >
                     <TableCell className="overflow-hidden font-medium">
                       <Link
-                        to={paths.app.paperManagement.paper.getHref(paper.id)}
+                        to={
+                          getPaperHref
+                            ? getPaperHref(projectId, paper.id)
+                            : paths.app.paperManagement.paper.getHref(paper.id)
+                        }
                         className="block truncate text-blue-600 hover:underline dark:text-blue-400"
                         title={paper.title || '(Untitled)'}
                       >
@@ -244,15 +251,21 @@ export const ProjectPapersList = ({
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="truncate text-muted-foreground text-sm" title={paper.doi || ''}>
+                    <TableCell
+                      className="text-muted-foreground truncate text-sm"
+                      title={paper.doi || ''}
+                    >
                       {paper.doi || '—'}
                     </TableCell>
-                    <TableCell className="truncate text-muted-foreground text-sm" title={paper.journalName || paper.conferenceName || ''}>
+                    <TableCell
+                      className="text-muted-foreground truncate text-sm"
+                      title={paper.journalName || paper.conferenceName || ''}
+                    >
                       {paper.journalName || paper.conferenceName || '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {paper.publicationDate
-                        ? new Date(paper.publicationDate).toLocaleDateString()
+                        ? formatPublicationDate(paper.publicationDate)
                         : '—'}
                     </TableCell>
                     <TableCell>

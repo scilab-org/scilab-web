@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ArrowLeft,
   ChevronDown,
   ChevronRight,
   Eye,
@@ -21,8 +22,6 @@ import {
 import { BTN } from '@/lib/button-styles';
 import { useUser } from '@/lib/auth';
 import { cn } from '@/utils/cn';
-import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
-
 import { useAssignedSectionsHistory } from '../api/get-assigned-sections-history';
 import {
   getSectionHistory,
@@ -248,19 +247,24 @@ const ExpandedVersionRows = ({
 export const PaperOldSectionsManager = ({
   paperId,
   paperTitle,
+  onViewSection: onExternalViewSection,
 }: {
   paperId: string;
   paperTitle: string;
+  onViewSection?: (item: MarkSectionItem) => void;
 }) => {
   const { data: user } = useUser();
   const currentUserEmail = (user?.email || '').trim().toLowerCase();
   const queryClient = useQueryClient();
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
-  const [viewingReadOnlyMode, setViewingReadOnlyMode] = useState<boolean>(false);
-  const [initialViewSectionId, setInitialViewSectionId] = useState<string | null>(null);
-  const [viewTargetItem, setViewTargetItem] = useState<MarkSectionItem | null>(null);
-  const [sectionRoleFilter, setSectionRoleFilter] = useState<'' | 'section:read' | 'section:edit'>('');
+  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(
+    new Set(),
+  );
+  const [viewingItem, setViewingItem] = useState<{
+    title: string;
+    content: string;
+    versionLabel?: string;
+    contributorName?: string;
+  } | null>(null);
   const [fromDateFilter, setFromDateFilter] = useState('');
   const [toDateFilter, setToDateFilter] = useState('');
 
@@ -269,7 +273,6 @@ export const PaperOldSectionsManager = ({
     params: {
       PageNumber: 1,
       PageSize: 1000,
-      SectionRole: sectionRoleFilter || undefined,
       FromDate: fromDateFilter || undefined,
       ToDate: toDateFilter || undefined,
     },
@@ -285,7 +288,8 @@ export const PaperOldSectionsManager = ({
   const oldSections = useMemo(
     () =>
       [...(historyQuery.data?.result?.items ?? [])].sort((a, b) => {
-        if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+        if (a.displayOrder !== b.displayOrder)
+          return a.displayOrder - b.displayOrder;
         return stripLatex(a.title).localeCompare(stripLatex(b.title));
       }),
     [historyQuery.data?.result?.items],
@@ -294,7 +298,11 @@ export const PaperOldSectionsManager = ({
   const groupedOldSections = useMemo(() => {
     const groups = new Map<
       string,
-      { key: string; latest: AssignedSectionHistoryItem; versions: AssignedSectionHistoryItem[] }
+      {
+        key: string;
+        latest: AssignedSectionHistoryItem;
+        versions: AssignedSectionHistoryItem[];
+      }
     >();
 
     oldSections.forEach((section) => {
@@ -308,8 +316,12 @@ export const PaperOldSectionsManager = ({
       if (
         section.version > current.latest.version ||
         (section.version === current.latest.version &&
-          new Date(section.lastModifiedOnUtc || section.createdOnUtc).getTime() >
-            new Date(current.latest.lastModifiedOnUtc || current.latest.createdOnUtc).getTime())
+          new Date(
+            section.lastModifiedOnUtc || section.createdOnUtc,
+          ).getTime() >
+            new Date(
+              current.latest.lastModifiedOnUtc || current.latest.createdOnUtc,
+            ).getTime())
       ) {
         current.latest = section;
       }
@@ -330,7 +342,9 @@ export const PaperOldSectionsManager = ({
     result.sort((a, b) => {
       if (a.latest.displayOrder !== b.latest.displayOrder)
         return a.latest.displayOrder - b.latest.displayOrder;
-      return stripLatex(a.latest.title).localeCompare(stripLatex(b.latest.title));
+      return stripLatex(a.latest.title).localeCompare(
+        stripLatex(b.latest.title),
+      );
     });
 
     return result;
@@ -354,15 +368,6 @@ export const PaperOldSectionsManager = ({
     });
   }, [markSectionIdsToPrefetch, queryClient]);
 
-  const toggleGroupExpand = (groupKey: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupKey)) next.delete(groupKey);
-      else next.add(groupKey);
-      return next;
-    });
-  };
-
   const toggleVersionExpand = (id: string, markSectionId: string) => {
     void queryClient.invalidateQueries({
       queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.SECTION_HISTORY, markSectionId],
@@ -375,57 +380,44 @@ export const PaperOldSectionsManager = ({
     });
   };
 
-  if (viewingReadOnlyMode) {
-    const editorSections = oldSections.map((node: AssignedSectionHistoryItem) => ({
-      id: node.id,
-      markSectionId: node.markSectionId,
-      paperId: node.paperId,
-      title: stripLatex(node.title),
-      content: node.content || '',
-      memberId: node.memberId,
-      numbered: node.numbered,
-      sectionSumary: node.sectionSumary || '',
-      parentSectionId: node.parentSectionId,
-      sectionRole: node.sectionRole,
-      description: node.description || '',
-    }));
-
+  if (viewingItem) {
     return (
-      <LatexPaperEditor
-        readOnly={true}
-        paperTitle={paperTitle}
-        sections={
-          viewTargetItem
-            ? [
-                {
-                  id: viewTargetItem.sectionId,
-                  markSectionId: viewTargetItem.markSectionId,
-                  paperId,
-                  title: stripLatex(viewTargetItem.title),
-                  content: viewTargetItem.content || '',
-                  memberId: viewTargetItem.memberId,
-                  numbered: true,
-                  sectionSumary: '',
-                  parentSectionId: viewTargetItem.parentSectionId,
-                  sectionRole: viewTargetItem.sectionRole,
-                  description: viewTargetItem.description || '',
-                },
-              ]
-            : editorSections
-        }
-        initialSectionId={
-          viewTargetItem ? viewTargetItem.sectionId : initialViewSectionId || undefined
-        }
-        onClose={() => {
-          setViewingReadOnlyMode(false);
-          setViewTargetItem(null);
-        }}
-      />
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="border-border bg-background flex shrink-0 items-center gap-2 border-b px-3 py-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setViewingItem(null)}
+            className="h-7 gap-1.5 px-2 text-xs"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back
+          </Button>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold">{viewingItem.title}</span>
+            {viewingItem.versionLabel && (
+              <span className="rounded-full border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                {viewingItem.versionLabel}
+              </span>
+            )}
+            {viewingItem.contributorName && (
+              <span className="text-muted-foreground text-xs">
+                by {viewingItem.contributorName}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto p-4">
+          <pre className="min-h-50 rounded-lg bg-slate-900 p-4 font-mono text-xs wrap-break-word whitespace-pre-wrap text-green-400 dark:bg-slate-950">
+            {viewingItem.content || '(No content)'}
+          </pre>
+        </div>
+      </div>
     );
   }
 
   const totalCount = groupedOldSections.length;
-  const hasActiveFilters = !!(sectionRoleFilter || fromDateFilter || toDateFilter);
+  const hasActiveFilters = !!(fromDateFilter || toDateFilter);
 
   return (
     <div className="border-border bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm">
@@ -436,7 +428,9 @@ export const PaperOldSectionsManager = ({
             <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
               <Layers className="text-primary h-5 w-5" />
             </div>
-            <h3 className="text-foreground text-lg font-semibold">Old Sections</h3>
+            <h3 className="text-foreground text-lg font-semibold">
+              Old Sections
+            </h3>
           </div>
           <button
             type="button"
@@ -446,22 +440,14 @@ export const PaperOldSectionsManager = ({
             title="Refresh"
           >
             <RefreshCw
-              className={cn('h-3.5 w-3.5', historyQuery.isFetching && 'animate-spin')}
+              className={cn(
+                'h-3.5 w-3.5',
+                historyQuery.isFetching && 'animate-spin',
+              )}
             />
           </button>
         </div>
-        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
-          <select
-            className="border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-            value={sectionRoleFilter}
-            onChange={(e) =>
-              setSectionRoleFilter(e.target.value as '' | 'section:read' | 'section:edit')
-            }
-          >
-            <option value="">All Permissions</option>
-            <option value="section:read">Read</option>
-            <option value="section:edit">Edit</option>
-          </select>
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
           <input
             type="date"
             className="border-input bg-background focus-visible:ring-ring h-9 rounded-md border px-3 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
@@ -480,7 +466,6 @@ export const PaperOldSectionsManager = ({
             size="sm"
             disabled={!hasActiveFilters}
             onClick={() => {
-              setSectionRoleFilter('');
               setFromDateFilter('');
               setToDateFilter('');
             }}
@@ -514,7 +499,9 @@ export const PaperOldSectionsManager = ({
         ) : groupedOldSections.length === 0 ? (
           <div className="py-16 text-center">
             <Layers className="text-muted-foreground mx-auto mb-3 h-12 w-12 opacity-30" />
-            <p className="text-muted-foreground text-sm font-medium">No old sections found.</p>
+            <p className="text-muted-foreground text-sm font-medium">
+              No old sections found.
+            </p>
           </div>
         ) : (
           <Table>
@@ -544,158 +531,142 @@ export const PaperOldSectionsManager = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {groupedOldSections.flatMap((group, idx) => {
-                const groupSection = group.latest;
-                const isGroupExpanded = expandedGroups.has(group.key);
-                const versionCount = group.versions.length;
+              {(() => {
+                let rowIndex = 0;
+                return groupedOldSections.flatMap((group, groupIdx) =>
+                  group.versions.flatMap((version, versionIdx) => {
+                    rowIndex++;
+                    const currentRowIndex = rowIndex;
+                    const subVersion = group.versions.length - versionIdx;
+                    const versionNumber = `${groupIdx + 1}.${subVersion}`;
+                    const isVersionReadOnly = isReadOnlyHistoryEntry(
+                      version.sectionRole,
+                    );
+                    const isVersionExpanded = expandedVersions.has(version.id);
+                    const markId = version.markSectionId || version.id;
 
-                const headerRow = (
-                  <TableRow
-                    key={group.key}
-                    onClick={() => toggleGroupExpand(group.key)}
-                    className={cn(
-                      'cursor-pointer transition-colors hover:bg-green-50/60 dark:hover:bg-green-950/20',
-                      idx % 2 === 0
-                        ? 'bg-white dark:bg-transparent'
-                        : 'bg-slate-50/50 dark:bg-slate-900/20',
-                    )}
-                  >
-                    <TableCell className="text-center text-sm font-semibold">{idx + 1}</TableCell>
-                    <TableCell />
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="text-foreground text-sm font-semibold leading-snug">
-                          {stripLatex(groupSection.title)}
-                        </span>
-                        <span className="text-muted-foreground shrink-0 text-xs">
-                          {versionCount} version{versionCount !== 1 ? 's' : ''}
-                        </span>
-                        {isGroupExpanded ? (
-                          <ChevronDown className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                        ) : (
-                          <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell />
-                    <TableCell />
-                    <TableCell />
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleGroupExpand(group.key);
+                    const versionRow = (
+                      <TableRow
+                        key={version.id}
+                        onClick={() => {
+                          if (!isVersionReadOnly)
+                            toggleVersionExpand(version.id, markId);
                         }}
                         className={cn(
-                          'h-7 px-2.5 text-xs',
-                          isGroupExpanded ? BTN.CANCEL : BTN.CREATE,
+                          'transition-colors',
+                          groupIdx % 2 === 0
+                            ? 'bg-white dark:bg-transparent'
+                            : 'bg-slate-50/50 dark:bg-slate-900/20',
+                          !isVersionReadOnly &&
+                            'cursor-pointer hover:bg-green-50/60 dark:hover:bg-green-950/20',
                         )}
                       >
-                        {isGroupExpanded ? 'Hide' : 'Show'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-
-                if (!isGroupExpanded) return [headerRow];
-
-                const versionRows = group.versions.flatMap((version, versionIdx) => {
-                  // Descending numbering: highest sub-version = newest (index 0)
-                  const subVersion = group.versions.length - versionIdx;
-                  const versionNumber = `${idx + 1}.${subVersion}`;
-                  const isVersionReadOnly = isReadOnlyHistoryEntry(version.sectionRole);
-                  const isVersionExpanded = expandedVersions.has(version.id);
-                  const markId = version.markSectionId || version.id;
-
-                  const versionRow = (
-                    <TableRow
-                      key={version.id}
-                      onClick={() => {
-                        if (!isVersionReadOnly) toggleVersionExpand(version.id, markId);
-                      }}
-                      className={cn(
-                        'bg-blue-50/25 transition-colors dark:bg-blue-950/10',
-                        !isVersionReadOnly &&
-                          'cursor-pointer hover:bg-blue-50/60 dark:hover:bg-blue-950/25',
-                      )}
-                    >
-                      <TableCell className="text-center" />
-                      <TableCell>
-                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                          {versionNumber}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-foreground text-sm">
-                            {stripLatex(version.title)}
+                        <TableCell className="text-center text-sm font-semibold">
+                          {currentRowIndex}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                            {versionNumber}
                           </span>
-                          {version.isOldMainSection && (
-                            <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                              main
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-foreground text-sm">
+                              {stripLatex(version.title)}
                             </span>
-                          )}
-                          {!isVersionReadOnly &&
-                            (isVersionExpanded ? (
-                              <ChevronDown className="text-muted-foreground h-3 w-3 shrink-0" />
-                            ) : (
-                              <ChevronRight className="text-muted-foreground h-3 w-3 shrink-0" />
-                            ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {formatDisplayDate(version.createdOnUtc)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {formatDisplayDate(version.lastModifiedOnUtc)}
-                      </TableCell>
-                      <TableCell>
-                        <ContributorCell markSectionId={markId} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setInitialViewSectionId(version.id);
-                            setViewingReadOnlyMode(true);
-                          }}
-                          className={cn(
-                            'flex h-7 items-center gap-1 px-2 text-xs',
-                            BTN.VIEW_OUTLINE,
-                          )}
-                        >
-                          <Eye className="h-3 w-3" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-
-                  // Contributor sub-rows rendered as a React component (uses hooks internally)
-                  const contributorRows =
-                    isVersionExpanded && !isVersionReadOnly
-                      ? [
-                          <ExpandedVersionRows
-                            key={`${version.id}-expanded`}
-                            markSectionId={markId}
-                            currentUserEmail={currentUserEmail}
-                            onViewSection={(item) => {
-                              setViewTargetItem(item);
-                              setViewingReadOnlyMode(true);
+                            {version.isOldMainSection && (
+                              <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                main
+                              </span>
+                            )}
+                            {!isVersionReadOnly &&
+                              (isVersionExpanded ? (
+                                <ChevronDown className="text-muted-foreground h-3 w-3 shrink-0" />
+                              ) : (
+                                <ChevronRight className="text-muted-foreground h-3 w-3 shrink-0" />
+                              ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {formatDisplayDate(version.createdOnUtc)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {formatDisplayDate(version.lastModifiedOnUtc)}
+                        </TableCell>
+                        <TableCell>
+                          <ContributorCell markSectionId={markId} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onExternalViewSection) {
+                                onExternalViewSection({
+                                  sectionId: version.id,
+                                  markSectionId:
+                                    version.markSectionId || version.id,
+                                  memberId: version.memberId,
+                                  sectionRole: version.sectionRole || '',
+                                  title: stripLatex(version.title),
+                                  name: `v${versionNumber} · ${stripLatex(version.title)}`,
+                                  email: '',
+                                  isMainSection:
+                                    version.isOldMainSection ??
+                                    version.isMainSection,
+                                  parentSectionId: version.parentSectionId,
+                                  previousVersionSectionId: null,
+                                  nextVersionSectionId: null,
+                                  content: version.content || '',
+                                });
+                              } else {
+                                setViewingItem({
+                                  title: stripLatex(version.title),
+                                  content: version.content || '',
+                                  versionLabel: versionNumber,
+                                });
+                              }
                             }}
-                          />,
-                        ]
-                      : [];
+                            className={cn(
+                              'flex h-7 items-center gap-1 px-2 text-xs',
+                              BTN.VIEW_OUTLINE,
+                            )}
+                          >
+                            <Eye className="h-3 w-3" />
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
 
-                  return [versionRow, ...contributorRows];
-                });
+                    const contributorRows =
+                      isVersionExpanded && !isVersionReadOnly
+                        ? [
+                            <ExpandedVersionRows
+                              key={`${version.id}-expanded`}
+                              markSectionId={markId}
+                              currentUserEmail={currentUserEmail}
+                              onViewSection={
+                                onExternalViewSection
+                                  ? onExternalViewSection
+                                  : (item) => {
+                                      setViewingItem({
+                                        title: stripLatex(version.title),
+                                        content: item.content || '',
+                                        versionLabel: versionNumber,
+                                        contributorName: item.name,
+                                      });
+                                    }
+                              }
+                            />,
+                          ]
+                        : [];
 
-                return [headerRow, ...versionRows];
-              })}
+                    return [versionRow, ...contributorRows];
+                  }),
+                );
+              })()}
             </TableBody>
           </Table>
         )}
