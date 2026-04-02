@@ -28,6 +28,7 @@ import { getUserGroups } from '@/lib/auth';
 import { usePaperDetail } from '../api/get-paper';
 import { UpdatePaper } from './update-paper';
 import { DeletePaper } from './delete-paper';
+import { formatPublicationDate } from '@/utils/stringUtils';
 import { PAPER_STATUS_MAP } from '../constants';
 
 const TAG_COLORS = [
@@ -113,7 +114,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
   return (
     <div className="space-y-6">
       {/* Header bar */}
-      <div className="flex items-center justify-between rounded-xl border bg-card p-4 shadow-sm">
+      <div className="bg-card flex items-center justify-between rounded-xl border p-4 shadow-sm">
         <div className="flex items-center gap-3">
           <Badge
             variant={getStatusVariant(paper.status).variant}
@@ -149,10 +150,10 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
 
       {/* Paper Info & Publication Details */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <CardHeader className="border-b bg-muted/30 px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <BookOpen className="size-5 text-muted-foreground" />
+        <Card className="bg-card overflow-hidden rounded-xl border shadow-sm">
+          <CardHeader className="bg-muted/30 border-b px-6 py-4">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <BookOpen className="text-muted-foreground size-5" />
               Paper Information
             </CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -161,57 +162,61 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </CardHeader>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <BookOpen className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <BookOpen className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Title
                 </p>
-                <p className="font-medium text-foreground">{paper.title || 'N/A'}</p>
+                <p className="text-foreground font-medium">
+                  {paper.title || 'N/A'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <Hash className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Hash className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   DOI
                 </p>
-                <p className="font-medium text-foreground">{paper.doi || 'N/A'}</p>
+                <p className="text-foreground font-medium">
+                  {paper.doi || 'N/A'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <FileText className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <FileText className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Paper Type
                 </p>
-                <p className="font-medium text-foreground">{paper.paperType || 'N/A'}</p>
+                <p className="text-foreground font-medium">
+                  {paper.paperType || 'N/A'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <Calendar className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Calendar className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Publication Date
                 </p>
-                <p className="font-medium text-foreground">
-                  {paper.publicationDate
-                    ? new Date(paper.publicationDate).toLocaleDateString()
-                    : 'N/A'}
+                <p className="text-foreground font-medium">
+                  {formatPublicationDate(paper.publicationDate)}
                 </p>
               </div>
             </div>
             <div className="flex gap-4 pt-1">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg border bg-muted/50 p-2">
-                  <Database className="size-4 text-muted-foreground" />
+                <div className="bg-muted/50 rounded-lg border p-2">
+                  <Database className="text-muted-foreground size-4" />
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
@@ -230,8 +235,8 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="rounded-lg border bg-muted/50 p-2">
-                  <Sparkles className="size-4 text-muted-foreground" />
+                <div className="bg-muted/50 rounded-lg border p-2">
+                  <Sparkles className="text-muted-foreground size-4" />
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
@@ -253,10 +258,10 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <CardHeader className="border-b bg-muted/30 px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Globe className="size-5 text-muted-foreground" />
+        <Card className="bg-card overflow-hidden rounded-xl border shadow-sm">
+          <CardHeader className="bg-muted/30 border-b px-6 py-4">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Globe className="text-muted-foreground size-5" />
               Publication Details
             </CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -265,36 +270,40 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </CardHeader>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <Building2 className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Building2 className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Journal Name
                 </p>
-                <p className="font-medium text-foreground">{paper.journalName || 'N/A'}</p>
+                <p className="text-foreground font-medium">
+                  {paper.journalName || 'N/A'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <Presentation className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Presentation className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Conference Name
                 </p>
-                <p className="font-medium text-foreground">{paper.conferenceName || 'N/A'}</p>
+                <p className="text-foreground font-medium">
+                  {paper.conferenceName || 'N/A'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <Clock className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Clock className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Created
                 </p>
-                <p className="font-medium text-foreground">
+                <p className="text-foreground font-medium">
                   {paper.createdOnUtc
                     ? new Date(paper.createdOnUtc).toLocaleString()
                     : 'N/A'}
@@ -302,14 +311,14 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg border bg-muted/50 p-2">
-                <RefreshCw className="size-4 text-muted-foreground" />
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <RefreshCw className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Last Modified
                 </p>
-                <p className="font-medium text-foreground">
+                <p className="text-foreground font-medium">
                   {paper.lastModifiedOnUtc
                     ? new Date(paper.lastModifiedOnUtc).toLocaleString()
                     : 'N/A'}
@@ -322,10 +331,10 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
 
       {/* Tags & Abstract */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <CardHeader className="border-b bg-muted/30 px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Tags className="size-5 text-muted-foreground" />
+        <Card className="bg-card overflow-hidden rounded-xl border shadow-sm">
+          <CardHeader className="bg-muted/30 border-b px-6 py-4">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Tags className="text-muted-foreground size-5" />
               Tags
             </CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -351,10 +360,10 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <CardHeader className="border-b bg-muted/30 px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <BookOpen className="size-5 text-muted-foreground" />
+        <Card className="bg-card overflow-hidden rounded-xl border shadow-sm">
+          <CardHeader className="bg-muted/30 border-b px-6 py-4">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <BookOpen className="text-muted-foreground size-5" />
               Abstract
             </CardTitle>
             <CardDescription className="text-muted-foreground">

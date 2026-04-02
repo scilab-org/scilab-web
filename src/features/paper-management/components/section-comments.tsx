@@ -202,7 +202,7 @@ export const SectionComments = ({
       <div className="flex items-center justify-between text-sm font-semibold text-slate-800 dark:text-slate-200">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-emerald-500" />
-          Feedback{' '}
+          Comment{' '}
           {comments.length > 0 && (
             <span className="text-slate-500">({comments.length})</span>
           )}
@@ -229,7 +229,7 @@ export const SectionComments = ({
       ) : commentsQuery.isError ? (
         <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-center dark:border-red-900/30 dark:bg-red-900/10">
           <p className="text-xs text-red-600 dark:text-red-400">
-            Failed to load feedback.
+            Failed to load comments.
           </p>
         </div>
       ) : (
@@ -247,7 +247,7 @@ export const SectionComments = ({
             <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center dark:border-slate-800 dark:bg-slate-900/20">
               <MessageSquare className="h-6 w-6 text-slate-300 dark:text-slate-600" />
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                No feedback provided yet.
+                No comments yet.
                 {!isReadOnly && (
                   <>
                     <br /> Be the first to review this section!
@@ -263,7 +263,7 @@ export const SectionComments = ({
       {!isReadOnly && (
         <div className="mt-2 flex shrink-0 flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
           <Input
-            placeholder="Leave specific, actionable feedback..."
+            placeholder="Leave a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="h-10 border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder-slate-500"

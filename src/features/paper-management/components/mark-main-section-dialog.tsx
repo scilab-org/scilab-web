@@ -113,9 +113,9 @@ export const MarkMainSectionDialog = ({
     );
   });
 
-  const latestVersions = sortedVersions
-    .filter((v, i, self) => self.findIndex((x) => x.memberId === v.memberId) === i)
-    .filter((v) => !v.isMainSection && v.sectionId !== v.markSectionId);
+  const latestVersions = sortedVersions.filter(
+    (v, i, self) => self.findIndex((x) => x.memberId === v.memberId) === i,
+  );
 
   const handleConfirm = () => {
     if (!selectedSectionId || !selectedVersionId) return;
@@ -194,17 +194,16 @@ export const MarkMainSectionDialog = ({
                       ? 'Loading versions...'
                       : 'Select a version'}
                   </option>
-                  {latestVersions.map((version) => {
-                    const isMain =
-                      version.isMainSection ||
-                      version.sectionId === version.markSectionId;
-                    return (
+                  {latestVersions
+                    .filter(
+                      (v) =>
+                        !v.isMainSection && v.sectionId !== v.markSectionId,
+                    )
+                    .map((version) => (
                       <option key={version.sectionId} value={version.sectionId}>
-                        {version.name} {isMain ? '(Current Main)' : ''} -{' '}
-                        {version.email}
+                        {version.name} - {version.email}
                       </option>
-                    );
-                  })}
+                    ))}
                 </select>
                 {latestVersions.length === 0 && !versionsQuery.isLoading && (
                   <div className="text-muted-foreground px-2 py-2 text-sm">

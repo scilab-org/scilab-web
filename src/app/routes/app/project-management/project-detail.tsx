@@ -333,7 +333,11 @@ const ProjectDetailRoute = () => {
                   className="h-8 w-8 p-0"
                   title="Delete"
                 >
-                  {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {deleteMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
               <div className="flex flex-col gap-1 text-sm">
@@ -400,7 +404,11 @@ const ProjectDetailRoute = () => {
           )}
 
           {activeTab === 'papers' && (
-            <ProjectPapersList projectId={projectId} readOnly />
+            <ProjectPapersList
+              projectId={projectId}
+              readOnly
+              getPaperHref={paths.app.projectPaperDetail.getHref}
+            />
           )}
 
           {activeTab === 'writing-papers' && (
@@ -408,6 +416,7 @@ const ProjectDetailRoute = () => {
               projectId={projectId!}
               isManager
               readOnly
+              getPaperHref={paths.app.projectPaperDetail.getHref}
             />
           )}
 

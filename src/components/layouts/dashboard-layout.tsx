@@ -95,15 +95,29 @@ const Breadcrumb = () => {
   const location = useLocation();
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
+  const isIdLikeSegment = (segment: string | undefined) => {
+    if (!segment) return false;
+    return (
+      segment.length > 30 ||
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+        segment,
+      )
+    );
+  };
+
   const breadcrumbItems = pathSegments
     .map((segment, index, arr) => {
+      const next = arr[index + 1];
+
+      if (segment === 'papers' && isIdLikeSegment(next)) {
+        return {
+          label: 'Paper Detail',
+          path: '/' + arr.slice(0, index + 2).join('/'),
+        };
+      }
+
       // Handle UUID-like segments
-      if (
-        segment.length > 30 ||
-        /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
-          segment,
-        )
-      ) {
+      if (isIdLikeSegment(segment)) {
         const prev = arr[index - 1];
         if (prev === 'my-projects' || prev === 'assigned-projects') {
           return {
@@ -206,7 +220,8 @@ const navigation: SideNavigationItem[] = [
   },
   {
     name: 'Projects',
-    to: paths.app.projects.getHref(), icon: FolderKanban
+    to: paths.app.projects.getHref(),
+    icon: FolderKanban,
   },
   {
     name: 'Assigned Projects',

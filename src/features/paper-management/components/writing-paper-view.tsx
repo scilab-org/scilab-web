@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { formatPublicationDate } from '@/utils/stringUtils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -198,9 +199,7 @@ export const WritingPaperView = ({ paperId }: { paperId: string }) => {
                   Publication Date
                 </p>
                 <p className="font-medium">
-                  {paper.publicationDate
-                    ? new Date(paper.publicationDate).toLocaleDateString()
-                    : 'N/A'}
+                  {formatPublicationDate(paper.publicationDate)}
                 </p>
               </div>
             </div>

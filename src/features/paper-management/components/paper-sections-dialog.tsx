@@ -922,6 +922,7 @@ export const PaperSectionsDialog = ({
     queryConfig: { enabled: open && !!paperId },
   });
 
+  const currentMemberId = sectionsQuery.data?.result?.memberId ?? '';
   const rawSections = sectionsQuery.data?.result?.items ?? [];
   const displaySections = useMemo(
     () => dedupeSectionsForList(rawSections),
@@ -1265,7 +1266,7 @@ export const PaperSectionsDialog = ({
                     paperId,
                     title: stripLatex(editTargetItem.title),
                     content: editTargetItem.content || '',
-                    memberId: editTargetItem.memberId,
+                    memberId: editTargetItem.memberId || currentMemberId,
                     numbered: true,
                     sectionSumary: '',
                     parentSectionId: editTargetItem.parentSectionId,
@@ -1282,7 +1283,7 @@ export const PaperSectionsDialog = ({
                   paperId: node.paperId,
                   title: stripLatex(node.title),
                   content: node.content || '',
-                  memberId: node.memberId,
+                  memberId: node.memberId || currentMemberId,
                   numbered: node.numbered,
                   sectionSumary: node.sectionSumary || '',
                   parentSectionId: node.parentSectionId,
@@ -1322,7 +1323,7 @@ export const PaperSectionsDialog = ({
                     paperId,
                     title: stripLatex(editTargetItem.title),
                     content: editTargetItem.content || '',
-                    memberId: editTargetItem.memberId,
+                    memberId: editTargetItem.memberId || currentMemberId,
                     numbered: true,
                     sectionSumary: '',
                     parentSectionId: editTargetItem.parentSectionId,
@@ -1339,7 +1340,7 @@ export const PaperSectionsDialog = ({
                   paperId: node.paperId,
                   title: stripLatex(node.title),
                   content: node.content || '',
-                  memberId: node.memberId,
+                  memberId: node.memberId || currentMemberId,
                   numbered: node.numbered,
                   sectionSumary: node.sectionSumary || '',
                   parentSectionId: node.parentSectionId,

@@ -28,18 +28,33 @@ type UpdatePaperProps = {
 
 export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const [open, setOpen] = React.useState(false);
+  const initialPublicationDate = paper?.publicationDate
+    ? paper.publicationDate.split('T')[0]
+    : '';
+  const initialDateParts = initialPublicationDate
+    ? initialPublicationDate.split('-')
+    : [];
   const [formData, setFormData] = React.useState({
     title: paper?.title || '',
     abstract: paper?.abstract || '',
     doi: paper?.doi || '',
-    publicationDate: paper?.publicationDate
-      ? new Date(paper.publicationDate).toISOString().slice(0, 16)
-      : '',
     paperType: paper?.paperType || '',
     journalName: paper?.journalName || '',
     conferenceName: paper?.conferenceName || '',
     status: paper?.status || 1,
   });
+  const [pubYear, setPubYear] = React.useState(initialDateParts[0] || '');
+  const [pubMonth, setPubMonth] = React.useState(
+    initialDateParts[1] && initialDateParts[1] !== '01'
+      ? initialDateParts[1]
+      : '',
+  );
+  const [pubDay, setPubDay] = React.useState(
+    initialDateParts[2] && initialDateParts[2] !== '01'
+      ? initialDateParts[2]
+      : '',
+  );
+  const [pubYearError, setPubYearError] = React.useState('');
   const [tagList, setTagList] = React.useState<string[]>(paper?.tagNames || []);
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [isAutoTagged, setIsAutoTagged] = React.useState(
@@ -67,18 +82,23 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
   React.useEffect(() => {
     if (open && paper) {
+      const publicationDate = paper.publicationDate
+        ? paper.publicationDate.split('T')[0]
+        : '';
+      const dateParts = publicationDate ? publicationDate.split('-') : [];
       setFormData({
         title: paper.title || '',
         abstract: paper.abstract || '',
         doi: paper.doi || '',
-        publicationDate: paper.publicationDate
-          ? new Date(paper.publicationDate).toISOString().slice(0, 16)
-          : '',
         paperType: paper.paperType || '',
         journalName: paper.journalName || '',
         conferenceName: paper.conferenceName || '',
         status: paper.status || 1,
       });
+      setPubYear(dateParts[0] || '');
+      setPubMonth(dateParts[1] && dateParts[1] !== '01' ? dateParts[1] : '');
+      setPubDay(dateParts[2] && dateParts[2] !== '01' ? dateParts[2] : '');
+      setPubYearError('');
       setTagList(paper.tagNames || []);
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
@@ -179,10 +199,22 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      formData.publicationDate &&
-      new Date(formData.publicationDate) > new Date()
-    ) {
+    if (!pubYear.trim()) {
+      setPubYearError('Publication year is required.');
+      return;
+    }
+    const year = parseInt(pubYear, 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(year) || year < 1000 || year > currentYear) {
+      setPubYearError(`Year must be between 1000 and ${currentYear}.`);
+      return;
+    }
+    const yStr = pubYear.padStart(4, '0');
+    const mStr = pubMonth ? pubMonth.padStart(2, '0') : '01';
+    const dStr = pubDay ? pubDay.padStart(2, '0') : '01';
+    const composedDate = `${yStr}-${mStr}-${dStr}`;
+    if (new Date(composedDate) > new Date()) {
+      setPubYearError('Publication date cannot be in the future.');
       return;
     }
     updatePaperMutation.mutate({
@@ -191,7 +223,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         title: formData.title,
         abstract: formData.abstract,
         doi: formData.doi,
-        publicationDate: formData.publicationDate,
+        publicationDate: composedDate,
         paperType: formData.paperType,
         journalName: formData.journalName,
         conferenceName: formData.conferenceName,
@@ -311,30 +343,51 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="update-paper-pubdate"
-              className="text-sm font-medium"
-            >
-              Publication Date
+            <label className="text-sm font-medium">
+              Publication Date <span className="text-destructive">*</span>
             </label>
-            <Input
-              id="update-paper-pubdate"
-              type="datetime-local"
-              value={formData.publicationDate}
-              max={new Date().toISOString().slice(0, 16)}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  publicationDate: e.target.value,
-                }))
-              }
-            />
-            {formData.publicationDate &&
-              new Date(formData.publicationDate) > new Date() && (
-                <p className="text-destructive text-xs">
-                  Publication date cannot be in the future.
-                </p>
-              )}
+            <div className="flex gap-1.5">
+              <Input
+                id="update-paper-pubyear"
+                type="number"
+                min="1000"
+                max={new Date().getFullYear()}
+                placeholder="YYYY"
+                value={pubYear}
+                className="w-20 min-w-0"
+                onChange={(e) => {
+                  setPubYear(e.target.value);
+                  setPubYearError('');
+                }}
+              />
+              <select
+                value={pubMonth}
+                onChange={(e) => setPubMonth(e.target.value)}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-14 min-w-0 rounded-md border px-1 text-xs focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <option value="">MM</option>
+                {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                  (month) => (
+                    <option key={month} value={String(month).padStart(2, '0')}>
+                      {String(month).padStart(2, '0')}
+                    </option>
+                  ),
+                )}
+              </select>
+              <Input
+                id="update-paper-pubday"
+                type="number"
+                min="1"
+                max="31"
+                placeholder="DD"
+                value={pubDay}
+                className="w-14 min-w-0"
+                onChange={(e) => setPubDay(e.target.value)}
+              />
+            </div>
+            {pubYearError && (
+              <p className="text-destructive text-xs">{pubYearError}</p>
+            )}
           </div>
 
           <div className="space-y-2">

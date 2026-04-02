@@ -435,9 +435,7 @@ const AssignPanel = ({
                                 key={g.id}
                                 type="button"
                                 onClick={() =>
-                                  setSelectedRole(
-                                    isActive ? '' : g.name!,
-                                  )
+                                  setSelectedRole(isActive ? '' : g.name!)
                                 }
                                 className={cn(
                                   'flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150',
@@ -537,7 +535,10 @@ const SectionExpandedView = ({
   if (query.isLoading) {
     return (
       <TableRow className="bg-blue-50/20 hover:bg-transparent">
-        <TableCell colSpan={5} className="border-t border-blue-100 p-4 dark:border-blue-900/30">
+        <TableCell
+          colSpan={5}
+          className="border-t border-blue-100 p-4 dark:border-blue-900/30"
+        >
           <div className="space-y-3">
             <Skeleton className="h-10 w-full rounded-lg" />
             <Skeleton className="h-10 w-full rounded-lg" />
@@ -588,7 +589,10 @@ const SectionExpandedView = ({
   if (sorted.length === 0) {
     return (
       <TableRow className="bg-blue-50/20 hover:bg-transparent">
-        <TableCell colSpan={5} className="border-t border-blue-100 px-3 py-4 text-center text-xs text-muted-foreground dark:border-blue-900/30">
+        <TableCell
+          colSpan={5}
+          className="text-muted-foreground border-t border-blue-100 px-3 py-4 text-center text-xs dark:border-blue-900/30"
+        >
           No other versions
         </TableCell>
       </TableRow>
@@ -610,26 +614,27 @@ const SectionExpandedView = ({
           normalizedCurrentEmail &&
           (item.email || '').trim().toLowerCase() === normalizedCurrentEmail;
 
-        const isMain = item.isMainSection || item.sectionId === item.markSectionId;
+        const isMain =
+          item.isMainSection || item.sectionId === item.markSectionId;
         const showEdit = isAuthor && onEditSection && !isMain;
 
         return (
           <TableRow
             key={item.sectionId}
-            className="bg-blue-50/40 transition-colors hover:bg-blue-100/40 dark:bg-blue-950/15 dark:hover:bg-blue-950/25 border-t border-blue-100 dark:border-blue-900/30"
+            className="border-t border-blue-100 bg-blue-50/40 transition-colors hover:bg-blue-100/40 dark:border-blue-900/30 dark:bg-blue-950/15 dark:hover:bg-blue-950/25"
           >
             {/* Empty # column */}
             <TableCell className="w-8 border-none" />
 
             {/* Section — member info */}
-            <TableCell className="py-3 pl-8 border-none">
+            <TableCell className="border-none py-3 pl-8">
               <div className="flex items-center gap-2.5">
                 {item.name ? (
                   <div className="bg-primary/10 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
                     {initials}
                   </div>
                 ) : (
-                  <div className="bg-emerald-100 text-emerald-700 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold dark:bg-emerald-900/30 dark:text-emerald-300">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                     M
                   </div>
                 )}
@@ -659,22 +664,22 @@ const SectionExpandedView = ({
             </TableCell>
 
             {/* Created At */}
-            <TableCell className="w-40 py-3 border-none">
+            <TableCell className="w-40 border-none py-3">
               <span className="text-muted-foreground text-sm font-medium">
                 {formatDisplayDate(item.createdOnUtc)}
               </span>
             </TableCell>
 
             {/* Last Modified */}
-            <TableCell className="w-40 py-3 border-none">
+            <TableCell className="w-40 border-none py-3">
               <span className="text-muted-foreground text-sm font-medium">
                 {formatDisplayDate(item.lastModifiedOnUtc)}
               </span>
             </TableCell>
 
             {/* Actions */}
-            <TableCell className="w-52 py-3 text-right border-none">
-              <div className="flex items-center justify-end gap-1 ml-auto">
+            <TableCell className="w-52 border-none py-3 text-right">
+              <div className="ml-auto flex items-center justify-end gap-1">
                 {showEdit && (
                   <button
                     type="button"
@@ -1071,6 +1076,8 @@ export const PaperSectionsManager = ({
     paperId,
     queryConfig: { enabled: !!paperId && !!isManager },
   });
+
+  const currentMemberId = assignedSectionsQuery.data?.result?.memberId ?? '';
 
   const rawSections = isManager
     ? (allSectionsQuery.data?.result?.items || []).map(

@@ -42,19 +42,19 @@ import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
-    async ({ params }: { params: Record<string, string | undefined> }) => {
-      const projectId = params.projectId as string;
-      const query = getProjectQueryOptions(projectId);
+  async ({ params }: { params: Record<string, string | undefined> }) => {
+    const projectId = params.projectId as string;
+    const query = getProjectQueryOptions(projectId);
 
-      try {
-        return (
-          queryClient.getQueryData(query.queryKey) ??
-          (await queryClient.fetchQuery(query))
-        );
-      } catch {
-        return null;
-      }
-    };
+    try {
+      return (
+        queryClient.getQueryData(query.queryKey) ??
+        (await queryClient.fetchQuery(query))
+      );
+    } catch {
+      return null;
+    }
+  };
 
 type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
@@ -328,10 +328,11 @@ const MyProjectDetailRoute = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${isActive
+                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
                       ? 'border-primary text-primary'
                       : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                    }`}
+                  }`}
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
@@ -362,6 +363,7 @@ const MyProjectDetailRoute = () => {
           {activeTab === 'papers' && (
             <ProjectPapersList
               projectId={projectId}
+              getPaperHref={paths.app.assignedProjects.paperDetail.getHref}
               onAddPapersClick={
                 isManager ? () => setAddPapersOpen(true) : undefined
               }
@@ -374,6 +376,7 @@ const MyProjectDetailRoute = () => {
           {activeTab === 'writing-papers' && (
             <ProjectWritingPapersList
               projectId={projectId}
+              getPaperHref={paths.app.assignedProjects.paperDetail.getHref}
               isManager={isManager}
               isAuthor={isAuthor}
               onCreatePaperClick={

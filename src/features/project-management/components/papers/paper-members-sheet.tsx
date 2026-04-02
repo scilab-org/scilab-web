@@ -6,7 +6,6 @@ import {
   Search,
   Check,
   ArrowLeft,
-  Eye,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { BTN } from '@/lib/button-styles';
+import { useUser } from '@/lib/auth';
 import { usePaperMembers } from '../../api/papers/get-paper-members';
 import { usePaperMembersAvailable } from '../../api/papers/get-paper-members-available';
 import { useAddSubProjectMembers } from '../../api/papers/add-sub-project-members';
@@ -46,7 +46,7 @@ const PROJECT_MEMBER_ROLE = 'project:member';
 const PAPER_AUTHOR_GROUP = 'paper:author';
 const PAPER_MEMBER_GROUP = 'paper:member';
 
-type Panel = 'default' | 'view' | 'add';
+type Panel = 'view' | 'add';
 
 const getRoleColor = (role: string) => {
   const r = role.toLowerCase();
@@ -69,11 +69,6 @@ const formatRole = (role: string): string => {
   return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 };
 
-const canManagerRemoveRole = (role?: string) => {
-  const normalized = (role || '').trim().toLowerCase();
-  return normalized === AUTHOR_ROLE || normalized === PAPER_AUTHOR_GROUP;
-};
-
 type PaperMembersSheetProps = {
   /** Sub-project ID */
   subProjectId: string;
@@ -92,11 +87,14 @@ export const PaperMembersSheet = ({
   open,
   onOpenChange,
 }: PaperMembersSheetProps) => {
+  const { data: user } = useUser();
+  const isSystemAdmin = user?.groups?.includes('system:admin') ?? false;
+
   // Manager adds authors; author adds members
-  const canAddMembers = isManager || isAuthor;
+  const canAddMembers = (isManager || isAuthor) && !isSystemAdmin;
   const addRoleFilter = isManager ? AUTHOR_ROLE : PROJECT_MEMBER_ROLE;
   const addGroupName = isManager ? PAPER_AUTHOR_GROUP : PAPER_MEMBER_GROUP;
-  const [panel, setPanel] = useState<Panel>('default');
+  const [panel, setPanel] = useState<Panel>('view');
   const [searchText, setSearchText] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
     new Set(),
@@ -163,7 +161,7 @@ export const PaperMembersSheet = ({
       onSuccess: () => {
         toast.success('Members added successfully');
         setSelectedUserIds(new Set());
-        setPanel('default');
+        setPanel('view');
       },
       onError: () => {
         toast.error('Failed to add members. Please try again.');
@@ -204,21 +202,16 @@ export const PaperMembersSheet = ({
   };
 
   const goBack = () => {
-    setPanel('default');
+    setPanel('view');
     setSelectedUserIds(new Set());
     setSearchText('');
   };
 
   const handleClose = () => {
-    setPanel('default');
+    setPanel('view');
     setSelectedUserIds(new Set());
     setSearchText('');
     onOpenChange(false);
-  };
-
-  const handleOpenViewPanel = () => {
-    setPanel('view');
-    void membersQuery.refetch();
   };
 
   const handleOpenAddPanel = () => {
@@ -230,7 +223,6 @@ export const PaperMembersSheet = ({
   const selectedCount = selectedUserIds.size;
 
   const panelTitle = {
-    default: 'Paper Members',
     view: 'View Members',
     add: isManager ? 'Add Authors to Paper' : 'Add Member to Paper',
   }[panel];
@@ -240,7 +232,6 @@ export const PaperMembersSheet = ({
     : 'Select project members to add';
 
   const panelDescription = {
-    default: '',
     view: 'Members assigned to this paper',
     add: addPanelDesc,
   }[panel];
@@ -255,7 +246,7 @@ export const PaperMembersSheet = ({
       <SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm">
         <SheetHeader className="px-1 pb-2">
           <div className="flex items-center gap-2">
-            {panel !== 'default' && (
+            {panel === 'add' && (
               <button
                 onClick={goBack}
                 className="text-muted-foreground hover:text-foreground mr-1 transition-colors"
@@ -263,7 +254,7 @@ export const PaperMembersSheet = ({
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
-            {panel === 'default' && <Users className="h-5 w-5" />}
+            <Users className="h-5 w-5" />
             <SheetTitle>{panelTitle}</SheetTitle>
           </div>
           <SheetDescription className="truncate">
@@ -272,108 +263,79 @@ export const PaperMembersSheet = ({
         </SheetHeader>
 
         <div className="mt-4 flex flex-1 flex-col gap-3 overflow-hidden px-1">
-          {/* ── Default panel: action buttons ──────────────────────────── */}
-          {panel === 'default' && (
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleOpenViewPanel}
-                className="border-border hover:border-primary/50 hover:bg-muted/40 flex items-center gap-4 rounded-lg border px-5 py-4 text-left transition-all"
-              >
-                <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-                  <Eye className="text-muted-foreground h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-foreground text-sm font-semibold">
-                    View Members
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    See who is currently assigned to this paper
-                  </p>
-                </div>
-              </button>
-
-              {canAddMembers && (
-                <button
-                  onClick={handleOpenAddPanel}
-                  className="border-border hover:border-primary/50 hover:bg-muted/40 flex items-center gap-4 rounded-lg border px-5 py-4 text-left transition-all"
-                >
-                  <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-                    <UserPlus className="text-muted-foreground h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-foreground text-sm font-semibold">
-                      Add Members
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {isManager
-                        ? 'Add project authors to this paper'
-                        : 'Add project members to this paper'}
-                    </p>
-                  </div>
-                </button>
-              )}
-            </div>
-          )}
-
           {/* ── View panel: GET /projects/{id}/papers/{paperId}/members ── */}
           {panel === 'view' && (
-            <div className="flex-1 overflow-y-auto pr-1">
-              {membersQuery.isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                </div>
-              ) : sortedMembers.length > 0 ? (
-                <ul className="space-y-2">
-                  {sortedMembers.map((m) => (
-                    <li
-                      key={m.memberId}
-                      className="border-border flex items-center gap-3 rounded-xl border px-4 py-3 transition-shadow hover:shadow-sm"
-                    >
-                      <div className="bg-muted text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase">
-                        {m.firstName?.[0] ?? m.username?.[0] ?? '?'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-foreground truncate text-sm font-medium">
-                          {m.firstName} {m.lastName}
-                        </p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {m.email}
-                          {m.username && ` · @${m.username}`}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleColor(m.role)}`}
-                      >
-                        {formatRole(m.role)}
-                      </span>
-                      {((isManager && canManagerRemoveRole(m.role)) ||
-                        (isAuthor && m.role === PAPER_MEMBER_GROUP)) && (
-                        <button
-                          onClick={() => setMemberToRemove(m)}
-                          disabled={removeMemberMutation.isPending}
-                          className="text-muted-foreground hover:text-destructive ml-1 shrink-0 transition-colors disabled:opacity-50"
-                          title="Remove member"
-                        >
-                          {removeMemberMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="bg-muted/30 rounded-xl py-12 text-center">
-                  <Users className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
-                  <p className="text-muted-foreground text-sm">
-                    No members assigned to this paper yet
-                  </p>
+            <div className="flex h-full flex-col">
+              {canAddMembers && (
+                <div className="mb-3 flex shrink-0 justify-end">
+                  <Button
+                    size="sm"
+                    onClick={handleOpenAddPanel}
+                    className={`gap-1.5 ${BTN.CREATE}`}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Add Member
+                  </Button>
                 </div>
               )}
+
+              <div className="flex-1 overflow-y-auto pr-1">
+                {membersQuery.isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                  </div>
+                ) : sortedMembers.length > 0 ? (
+                  <ul className="space-y-2">
+                    {sortedMembers.map((m) => (
+                      <li
+                        key={m.memberId}
+                        className="border-border flex items-center gap-3 rounded-xl border px-4 py-3 transition-shadow hover:shadow-sm"
+                      >
+                        <div className="bg-muted text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold uppercase">
+                          {m.firstName?.[0] ?? m.username?.[0] ?? '?'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-foreground truncate text-sm font-medium">
+                            {m.firstName} {m.lastName}
+                          </p>
+                          <p className="text-muted-foreground truncate text-xs">
+                            {m.email}
+                            {m.username && ` · @${m.username}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleColor(m.role)}`}
+                        >
+                          {formatRole(m.role)}
+                        </span>
+                        {isAuthor && m.role === PAPER_MEMBER_GROUP && (
+                          <button
+                            onClick={() => setMemberToRemove(m)}
+                            disabled={removeMemberMutation.isPending}
+                            className="text-muted-foreground hover:text-destructive ml-1 shrink-0 transition-colors disabled:opacity-50"
+                            title="Remove member"
+                          >
+                            {removeMemberMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="bg-muted/30 rounded-xl py-12 text-center">
+                    <Users className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
+                    <p className="text-muted-foreground text-sm">
+                      No members assigned to this paper yet
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -476,22 +438,12 @@ export const PaperMembersSheet = ({
         </div>
 
         <SheetFooter className="mt-4 flex-col gap-2 px-1 sm:flex-col">
-          {panel === 'default' && (
+          {panel === 'view' && (
             <SheetClose asChild>
               <Button variant="outline" className={`w-full ${BTN.CANCEL}`}>
                 Close
               </Button>
             </SheetClose>
-          )}
-
-          {panel === 'view' && (
-            <Button
-              variant="outline"
-              onClick={goBack}
-              className={`w-full ${BTN.CANCEL}`}
-            >
-              Back
-            </Button>
           )}
 
           {panel === 'add' && (

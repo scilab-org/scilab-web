@@ -36,6 +36,7 @@ import { getPaperQueryOptions } from '../api/get-paper';
 import { DeletePaper } from './delete-paper';
 import { PAPER_STATUS_MAP } from '../constants';
 import { UpdatePaper } from './update-paper';
+import { formatPublicationDate } from '@/utils/stringUtils';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
@@ -203,10 +204,11 @@ export const PapersList = () => {
           {papers.map((paper, index) => (
             <TableRow
               key={paper.id}
-              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0
-                ? 'bg-white dark:bg-transparent'
-                : 'bg-slate-50/50 dark:bg-slate-900/20'
-                }`}
+              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${
+                index % 2 === 0
+                  ? 'bg-white dark:bg-transparent'
+                  : 'bg-slate-50/50 dark:bg-slate-900/20'
+              }`}
             >
               <TableCell className="overflow-hidden font-medium">
                 <Link
@@ -233,7 +235,7 @@ export const PapersList = () => {
                 {paper.publicationDate ? (
                   <span className="flex items-center gap-1.5 text-sm">
                     <Calendar className="size-3.5 text-violet-400" />
-                    {new Date(paper.publicationDate).toLocaleDateString()}
+                    {formatPublicationDate(paper.publicationDate)}
                   </span>
                 ) : (
                   <span className="text-muted-foreground text-xs italic">
