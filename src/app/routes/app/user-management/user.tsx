@@ -8,25 +8,25 @@ import {
   getUserQueryOptions,
 } from '@/features/user-management/api/get-user';
 import { UserView } from '@/features/user-management/components/user-view';
-import { capitalize } from '@/utils/stringUtils';
+import { capitalize } from '@/utils/string-utils';
 import { GROUPS } from '@/lib/authorization';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
-    async ({ params }: { params: Record<string, string | undefined> }) => {
-      const userId = params.userId as string;
+  async ({ params }: { params: Record<string, string | undefined> }) => {
+    const userId = params.userId as string;
 
-      const query = getUserQueryOptions(userId);
+    const query = getUserQueryOptions(userId);
 
-      try {
-        return (
-          queryClient.getQueryData(query.queryKey) ??
-          (await queryClient.fetchQuery(query))
-        );
-      } catch {
-        return null;
-      }
-    };
+    try {
+      return (
+        queryClient.getQueryData(query.queryKey) ??
+        (await queryClient.fetchQuery(query))
+      );
+    } catch {
+      return null;
+    }
+  };
 
 const UserRoute = () => {
   const params = useParams();
@@ -55,13 +55,14 @@ const UserRoute = () => {
       </ContentLayout>
     );
   }
-  console.log(user)
+  console.log(user);
   return (
     <ContentLayout
-      title={`${capitalize(user.firstName)} ${capitalize(user.lastName)} ${user.groups?.some((g) => g.name === GROUPS.SYSTEM_ADMIN)
-        ? "(Admin)"
-        : "(User)"
-        }`}
+      title={`${capitalize(user.firstName)} ${capitalize(user.lastName)} ${
+        user.groups?.some((g) => g.name === GROUPS.SYSTEM_ADMIN)
+          ? '(Admin)'
+          : '(User)'
+      }`}
     >
       <UserView userId={userId} />
     </ContentLayout>

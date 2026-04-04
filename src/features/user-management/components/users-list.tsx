@@ -23,7 +23,7 @@ import { getUserQueryOptions } from '../api/get-user';
 import { UpdateUser } from './update-user';
 import { DeactivateUser } from './deactivate-user';
 import { ActivateUser } from './activate-user';
-import { capitalize } from '@/utils/stringUtils';
+import { capitalize } from '@/utils/string-utils';
 import { GROUPS } from '@/lib/authorization';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
@@ -117,7 +117,8 @@ export const UsersList = () => {
                         <img
                           src={user.avatarUrl}
                           alt={user.username ?? ''}
-                          className="size-full object-cover" />
+                          className="size-full object-cover"
+                        />
                       ) : (
                         <span className="text-xs font-semibold text-slate-600 select-none dark:text-slate-300">
                           {(
@@ -142,14 +143,12 @@ export const UsersList = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {user.groups?.some((g) => g.name === GROUPS.SYSTEM_ADMIN) ? (
-                      <Badge variant="admin">
-                        Admin
-                      </Badge>
+                    {user.groups?.some(
+                      (g) => g.name === GROUPS.SYSTEM_ADMIN,
+                    ) ? (
+                      <Badge variant="admin">Admin</Badge>
                     ) : (
-                      <Badge variant="user">
-                        User
-                      </Badge>
+                      <Badge variant="user">User</Badge>
                     )}
                   </div>
                 </TableCell>

@@ -52,7 +52,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
-import { formatPublicationDate } from '@/utils/stringUtils';
+import { formatPublicationDate } from '@/utils/string-utils';
 import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { PaperSectionsManager } from '@/features/paper-management/components/paper-sections-manager';

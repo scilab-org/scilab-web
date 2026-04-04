@@ -118,7 +118,7 @@ export const CreateUser = () => {
 
           <div className="space-y-1.5">
             <label htmlFor="cu-firstName" className="text-sm font-medium">
-              First Name
+              First Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="cu-firstName"
@@ -127,12 +127,13 @@ export const CreateUser = () => {
                 setFormData((prev) => ({ ...prev, firstName: e.target.value }))
               }
               placeholder="Enter first name"
+              required
             />
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="cu-lastName" className="text-sm font-medium">
-              Last Name
+              Last Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="cu-lastName"
@@ -141,6 +142,7 @@ export const CreateUser = () => {
                 setFormData((prev) => ({ ...prev, lastName: e.target.value }))
               }
               placeholder="Enter last name"
+              required
             />
           </div>
 

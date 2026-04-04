@@ -28,7 +28,7 @@ import { getUserGroups } from '@/lib/auth';
 import { usePaperDetail } from '../api/get-paper';
 import { UpdatePaper } from './update-paper';
 import { DeletePaper } from './delete-paper';
-import { formatPublicationDate } from '@/utils/stringUtils';
+import { formatPublicationDate } from '@/utils/string-utils';
 import { PAPER_STATUS_MAP } from '../constants';
 
 const TAG_COLORS = [
