@@ -5,8 +5,9 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
+
 import Editor, { type Monaco } from '@monaco-editor/react';
-import type { editor as MonacoEditor } from 'monaco-editor';
+import type * as MonacoEditor from 'monaco-editor';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -39,6 +40,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
@@ -59,6 +61,10 @@ import {
 } from '@/components/ui/popover';
 import { BTN } from '@/lib/button-styles';
 
+import {
+  type SectionReferenceOtherItem,
+  useGetSectionReference,
+} from '@/features/paper-management/api/get-section-reference';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
 import {
@@ -71,7 +77,6 @@ import { useSectionComments } from '@/features/paper-management/api/get-section-
 import { SectionComments } from '@/features/paper-management/components/section-comments';
 import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
 import { useDatasets } from '@/features/dataset-management/api/get-datasets';
-import { useProjectPapers } from '@/features/project-management/api/papers/get-project-papers';
 import { useUser } from '@/lib/auth';
 
 import { EditorChatPanel } from './editor-chat-panel';
@@ -81,7 +86,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-// ── LaTeX stats helper ────────────────────────────────────────────────────────
+// LaTeX stats helper
 const computeLatexStats = (latexContent: string) => {
   if (!latexContent)
     return {
@@ -96,9 +101,10 @@ const computeLatexStats = (latexContent: string) => {
 
   const headerRe =
     /\\(?:chapter|section|subsection|subsubsection|paragraph|subparagraph)\*?\{([^}]*)\}/g;
-  let numHeaders = 0,
-    wordsInHeaders = 0;
+  let numHeaders = 0;
+  let wordsInHeaders = 0;
   let m: RegExpExecArray | null;
+
   while ((m = headerRe.exec(latexContent)) !== null) {
     numHeaders++;
     wordsInHeaders += m[1].trim().split(/\s+/).filter(Boolean).length;
@@ -106,12 +112,10 @@ const computeLatexStats = (latexContent: string) => {
 
   const numFigures = (latexContent.match(/\\begin\s*\{figure\*?\}/g) || [])
     .length;
-
-  const numDisplayedEnvs = (
+  const numDisplayedEnvs =
     latexContent.match(
       /\\begin\s*\{(?:equation|align|gather|multline|eqnarray|displaymath)\*?\}/g,
-    ) || []
-  ).length;
+    )?.length || 0;
   const doubleDollarCount = (latexContent.match(/\$\$/g) || []).length;
   const numMathDisplayed = numDisplayedEnvs + Math.floor(doubleDollarCount / 2);
 
@@ -125,6 +129,7 @@ const computeLatexStats = (latexContent: string) => {
     .replace(/[{}$%\\[\]]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
   const allWords = stripped
     .split(/\s+/)
     .filter((w) => w.length > 0 && /[a-zA-Z]/.test(w));
@@ -142,7 +147,6 @@ const computeLatexStats = (latexContent: string) => {
   };
 };
 
-// ── Sidebar contributor versions panel ───────────────────────────────────────
 type MarkSectionItem = {
   sectionId: string;
   name: string;
@@ -152,56 +156,6 @@ type MarkSectionItem = {
   isMainSection: boolean;
   content: string;
 };
-
-const ContributorFullView = ({
-  item,
-  onBack,
-}: {
-  item: MarkSectionItem;
-  onBack: () => void;
-}) => (
-  <div className="flex h-full flex-col overflow-hidden">
-    <div className="flex shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onBack}
-        className="h-7 gap-1.5 px-2 text-xs"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Back
-      </Button>
-      <div className="flex min-w-0 items-center gap-2 text-sm">
-        <span className="truncate font-semibold text-slate-800 dark:text-slate-200">
-          {item.isMainSection ? 'Origin section' : item.name || item.email}
-        </span>
-        {item.isMainSection && (
-          <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-            origin
-          </span>
-        )}
-      </div>
-    </div>
-    <div className="flex-1 overflow-hidden">
-      <Editor
-        defaultLanguage="latex"
-        value={item.content || ''}
-        theme="vs-dark"
-        options={{
-          readOnly: true,
-          fontSize: 13,
-          lineNumbers: 'on',
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          wordWrap: 'on',
-          renderLineHighlight: 'none',
-          scrollbar: { verticalScrollbarSize: 6 },
-          padding: { top: 12 },
-        }}
-      />
-    </div>
-  </div>
-);
 
 const SectionVersionsPanel = ({
   markSectionId,
@@ -216,7 +170,7 @@ const SectionVersionsPanel = ({
 }) => {
   const query = useMarkSection({ markSectionId: markSectionId || null });
   const allItems: MarkSectionItem[] = query.data?.result?.items ?? [];
-  // Always keep main section; hide own non-main versions (including the one being edited)
+
   const items = allItems.filter((i) => {
     if (i.isMainSection) return true;
     if (excludeSectionId && i.sectionId === excludeSectionId) return false;
@@ -228,7 +182,7 @@ const SectionVersionsPanel = ({
   if (query.isLoading) {
     return (
       <div className="flex items-center justify-center py-4 text-xs text-slate-400">
-        Loading contributors…
+        Loading contributors...
       </div>
     );
   }
@@ -248,6 +202,7 @@ const SectionVersionsPanel = ({
     'bg-emerald-500',
     'bg-rose-500',
   ];
+
   const sorted = [...items].sort((a, b) => {
     if (a.isMainSection && !b.isMainSection) return -1;
     if (!a.isMainSection && b.isMainSection) return 1;
@@ -257,8 +212,6 @@ const SectionVersionsPanel = ({
   return (
     <div className="flex flex-col">
       {sorted.map((item, idx) => {
-        const isMe =
-          (item.email || '').toLowerCase() === currentUserEmail.toLowerCase();
         const displayName = item.isMainSection
           ? 'Origin section'
           : item.name || item.email;
@@ -272,6 +225,7 @@ const SectionVersionsPanel = ({
                 .join('')
                 .toUpperCase()
             : '?';
+
         return (
           <button
             key={item.sectionId}
@@ -306,69 +260,6 @@ const SectionVersionsPanel = ({
       })}
     </div>
   );
-};
-
-// ── Versions tab panel (Old Versions + Other Versions switcher) ─────────────────
-const openVersionInNewTab = (item: MarkSectionItem) => {
-  const title = item.isMainSection ? 'Origin section' : item.name || item.email;
-  const escaped = (item.content || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>${title} — LaTeX Source</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px; line-height: 1.6; }
-    header { background: #252526; border-bottom: 1px solid #333; padding: 10px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
-    header h1 { font-size: 14px; font-weight: 600; color: #ccc; }
-    header span { font-size: 11px; background: #3a3a3a; border-radius: 4px; padding: 2px 8px; color: #888; }
-    .code-wrap { padding: 20px 0; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 0; vertical-align: top; }
-    td.ln { padding: 0 16px; text-align: right; color: #555; user-select: none; min-width: 48px; border-right: 1px solid #333; }
-    td.code { padding: 0 20px; white-space: pre; }
-    tr:hover td { background: #2a2d2e; }
-    .kw  { color: #4ec9b0; }
-    .arg { color: #ce9178; }
-    .opt { color: #b5cea8; }
-    .cmt { color: #6a9955; font-style: italic; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>${title}</h1>
-    <span>LaTeX source — read only</span>
-  </header>
-  <div class="code-wrap">
-    <table><tbody>
-${(item.content || '')
-  .split('\n')
-  .map((line, i) => {
-    const esc = line
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    const highlighted = esc
-      .replace(/(\\[a-zA-Z@]+)/g, '<span class="kw">$1</span>')
-      .replace(/\{([^}]*)\}/g, '{<span class="arg">$1</span>}')
-      .replace(/\[([^\]]*)\]/g, '[<span class="opt">$1</span>]')
-      .replace(/(%.*)$/, '<span class="cmt">$1</span>');
-    return `      <tr><td class="ln">${i + 1}</td><td class="code">${highlighted}</td></tr>`;
-  })
-  .join('\n')}
-    </tbody></table>
-  </div>
-</body>
-</html>`;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
-  // revoke after tab opens
-  if (win) setTimeout(() => URL.revokeObjectURL(url), 10000);
 };
 
 const VersionsTabPanel = ({
@@ -435,34 +326,137 @@ const VersionsTabPanel = ({
   );
 };
 
-// ── References tab panel (project papers) ─────────────────────────────────────
 const ReferencesTab = ({
-  projectId,
+  sectionId,
   compact = false,
+  onOpenSectionInEditor,
 }: {
-  projectId?: string;
+  sectionId?: string;
   compact?: boolean;
+  onOpenSectionInEditor?: (
+    section: SectionReferenceOtherItem['sections'][number],
+  ) => void;
 }) => {
-  const query = useProjectPapers({
-    projectId: projectId || '',
-    queryConfig: { enabled: !!projectId },
+  const query = useGetSectionReference({
+    sectionId: sectionId ?? null,
   });
-  const papers = ((query.data as any)?.result?.items ?? []) as Array<{
-    id: string;
-    title: string | null;
-    abstract: string | null;
-    doi: string | null;
-    filePath: string | null;
-    journalName: string | null;
-    conferenceName: string | null;
-    publicationDate: string | null;
-    tagNames: string[];
-  }>;
+  const inUse = useMemo(
+    () => query.data?.result?.inUse ?? [],
+    [query.data?.result?.inUse],
+  );
+  const otherReferences = useMemo(
+    () => query.data?.result?.otherReference ?? [],
+    [query.data?.result?.otherReference],
+  );
+  const [selectedReference, setSelectedReference] = useState<{
+    type: 'in-use' | 'other';
+    index: number;
+  } | null>(null);
 
-  if (!projectId) {
+  useEffect(() => {
+    setSelectedReference(null);
+  }, [sectionId]);
+
+  const handleSectionClick = useCallback(
+    (section: SectionReferenceOtherItem['sections'][number]) => {
+      if (!onOpenSectionInEditor) return;
+
+      onOpenSectionInEditor(section);
+      setSelectedReference(null);
+    },
+    [onOpenSectionInEditor],
+  );
+
+  const activeReference = useMemo(() => {
+    if (!selectedReference) return null;
+
+    if (selectedReference.type === 'in-use') {
+      return {
+        type: 'in-use' as const,
+        index: selectedReference.index,
+        paper: inUse[selectedReference.index] ?? null,
+      };
+    }
+
+    return {
+      type: 'other' as const,
+      index: selectedReference.index,
+      item: otherReferences[selectedReference.index] ?? null,
+    };
+  }, [inUse, otherReferences, selectedReference]);
+
+  const activePaper =
+    activeReference?.type === 'in-use'
+      ? activeReference.paper
+      : activeReference?.type === 'other'
+        ? (activeReference.item?.paperBank ?? null)
+        : null;
+  const activeTags = Array.isArray(activePaper?.tagNames)
+    ? activePaper.tagNames
+    : [];
+  const activeSections =
+    activeReference?.type === 'other' &&
+    Array.isArray(activeReference.item?.sections)
+      ? activeReference.item.sections
+      : [];
+
+  const renderPaperCard = (
+    paper: {
+      id: string;
+      title: string | null;
+      abstract: string | null;
+      doi: string | null;
+      filePath: string | null;
+      journalName: string | null;
+      conferenceName: string | null;
+      publicationDate: string | null;
+      tagNames: string[];
+    },
+    index: number,
+  ) => (
+    <button
+      key={paper.id}
+      type="button"
+      onClick={() => setSelectedReference({ type: 'in-use', index })}
+      className={
+        compact
+          ? 'flex w-full items-start gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+          : 'flex w-full items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+      }
+    >
+      <span className="shrink-0 text-[10px] font-bold text-slate-400">
+        [{index + 1}]
+      </span>
+      <div className="min-w-0 flex-1">
+        <p
+          className={`leading-snug font-semibold text-slate-800 dark:text-slate-200 ${compact ? 'text-sm' : 'text-sm'}`}
+        >
+          {paper.title || '(Untitled)'}
+        </p>
+        {(paper.journalName || paper.conferenceName) && (
+          <p className="mt-0.5 text-xs text-slate-500 italic">
+            {paper.journalName || paper.conferenceName}
+          </p>
+        )}
+        {!compact && paper.doi && (
+          <p className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-blue-600 dark:text-blue-400">
+            <Link2 className="h-2.5 w-2.5" />
+            {paper.doi}
+          </p>
+        )}
+        {!compact && paper.publicationDate && (
+          <p className="mt-0.5 text-[10px] text-slate-400">
+            {new Date(paper.publicationDate).getFullYear()}
+          </p>
+        )}
+      </div>
+    </button>
+  );
+
+  if (!sectionId) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-center text-xs text-slate-400">
-        No project context to load references.
+        Select a section to load references.
       </div>
     );
   }
@@ -475,86 +469,340 @@ const ReferencesTab = ({
     );
   }
 
-  if (papers.length === 0) {
+  if (inUse.length === 0 && otherReferences.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
         <BookMarked className="h-7 w-7 text-slate-300 dark:text-slate-600" />
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          No reference papers linked to this project yet.
+          No references linked to this section yet.
         </p>
       </div>
     );
   }
 
   return (
-    <div className={compact ? '' : 'flex flex-1 flex-col overflow-y-auto p-4'}>
-      {!compact && (
-        <h3 className="mb-3 text-xs font-semibold tracking-wide text-slate-600 uppercase dark:text-slate-400">
-          References
-          <span className="ml-1 font-normal text-slate-400 normal-case">
-            ({papers.length})
-          </span>
-        </h3>
-      )}
-      <ol className={compact ? 'space-y-1' : 'space-y-2'}>
-        {papers.map((paper, i) => (
-          <li
-            key={paper.id}
+    <div
+      className={
+        compact
+          ? 'rounded-lg border border-slate-200 bg-slate-50/70 p-2 dark:border-slate-700 dark:bg-slate-900/40'
+          : 'flex flex-1 flex-col overflow-y-auto p-4'
+      }
+    >
+      <div className={compact ? 'space-y-2' : 'space-y-3'}>
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-bold tracking-wide text-slate-700 uppercase dark:text-slate-300">
+              In use ({inUse.length})
+            </p>
+          </div>
+          <ol className={compact ? 'space-y-1.5' : 'space-y-2'}>
+            {inUse.map((paper, index) => renderPaperCard(paper, index))}
+          </ol>
+        </div>
+
+        {otherReferences.length > 0 && (
+          <div
             className={
               compact
-                ? 'flex items-start gap-1.5 rounded-md px-1 py-1 hover:bg-slate-50 dark:hover:bg-slate-800'
-                : 'flex gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900'
+                ? 'mt-2'
+                : 'mt-1 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50'
             }
           >
-            <span className="shrink-0 text-[10px] font-bold text-slate-400">
-              [{i + 1}]
-            </span>
-            <div className="min-w-0 flex-1">
-              <p
-                className={`leading-snug font-medium text-slate-800 dark:text-slate-200 ${compact ? 'text-[11px]' : 'text-xs'}`}
-              >
-                {paper.title || '(Untitled)'}
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold tracking-wide text-slate-700 uppercase dark:text-slate-300">
+                Other references ({otherReferences.length})
               </p>
-              {!compact && (paper.journalName || paper.conferenceName) && (
-                <p className="mt-0.5 text-[10px] text-slate-500 italic">
-                  {paper.journalName || paper.conferenceName}
-                </p>
-              )}
-              {!compact && paper.doi && (
-                <a
-                  href={`https://doi.org/${paper.doi}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-blue-600 hover:underline dark:text-blue-400"
-                >
-                  <Link2 className="h-2.5 w-2.5" />
-                  {paper.doi}
-                </a>
-              )}
-              {!compact && paper.publicationDate && (
-                <p className="mt-0.5 text-[10px] text-slate-400">
-                  {new Date(paper.publicationDate).getFullYear()}
-                </p>
-              )}
             </div>
-            {paper.filePath && (
-              <a
-                href={paper.filePath}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Download paper"
-                className={
-                  compact
-                    ? 'ml-auto flex shrink-0 items-center self-start rounded text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
-                    : 'ml-auto flex shrink-0 items-center self-start rounded-md border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-700 dark:hover:bg-blue-900/30 dark:hover:text-blue-400'
-                }
-              >
-                <Download className="h-3 w-3" />
-              </a>
-            )}
-          </li>
-        ))}
-      </ol>
+
+            <div className="space-y-1.5">
+              {otherReferences.map((item, index) => (
+                <button
+                  key={item.paperBank.id}
+                  type="button"
+                  onClick={() => setSelectedReference({ type: 'other', index })}
+                  className={
+                    compact
+                      ? 'flex w-full items-start gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+                      : 'flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+                  }
+                >
+                  <span className="shrink-0 text-[10px] font-bold text-slate-400">
+                    [{index + 1}]
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm leading-snug font-semibold text-slate-800 dark:text-slate-100">
+                      {item.paperBank.title || `Reference ${index + 1}`}
+                    </p>
+                    {(item.paperBank.journalName ||
+                      item.paperBank.conferenceName) && (
+                      <p className="mt-0.5 text-xs text-slate-500 italic">
+                        {item.paperBank.journalName ||
+                          item.paperBank.conferenceName}
+                      </p>
+                    )}
+                    {!compact && item.paperBank.doi && (
+                      <p className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-blue-600 dark:text-blue-400">
+                        <Link2 className="h-2.5 w-2.5" />
+                        {item.paperBank.doi}
+                      </p>
+                    )}
+                    {!compact && item.paperBank.publicationDate && (
+                      <p className="mt-0.5 text-[10px] text-slate-400">
+                        {new Date(item.paperBank.publicationDate).getFullYear()}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Dialog
+        open={!!activeReference}
+        onOpenChange={(open) => {
+          if (!open) setSelectedReference(null);
+        }}
+      >
+        <DialogContent className="w-[min(1040px,calc(100vw-2rem))]! max-w-none! gap-0 overflow-hidden border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+          {activePaper ? (
+            <div className="flex max-h-[88vh] flex-col overflow-hidden">
+              <div className="border-b border-slate-200 bg-linear-to-r from-slate-50 via-white to-blue-50/70 px-6 py-4 dark:border-slate-800 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+                <div className="flex items-start justify-between gap-4 pr-8 sm:pr-10">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          activeReference?.type === 'in-use'
+                            ? 'secondary'
+                            : 'outline'
+                        }
+                        className="rounded-full px-2.5 py-0.5 text-[10px]"
+                      >
+                        {activeReference?.type === 'in-use'
+                          ? 'In use'
+                          : 'Other reference'}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <h2 className="truncate text-xl font-semibold text-slate-900 dark:text-slate-100">
+                        {activePaper.title || '(Untitled)'}
+                      </h2>
+                      <p className="max-w-2xl text-xs text-slate-500 dark:text-slate-400">
+                        {activeReference?.type === 'in-use'
+                          ? 'Reference currently used in this section'
+                          : 'Other reference linked to this section'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-start gap-1.5">
+                    {activeReference?.type === 'in-use' ? (
+                      <Badge
+                        variant="outline"
+                        className="rounded-full px-2.5 py-0.5 text-[10px]"
+                      >
+                        {activeTags.length} tags
+                      </Badge>
+                    ) : (
+                      <>
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-2.5 py-0.5 text-[10px]"
+                        >
+                          {activeTags.length} tags
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-2.5 py-0.5 text-[10px]"
+                        >
+                          {activeSections.length} sections
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 overflow-y-auto px-4 py-4 sm:px-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,1fr)]">
+                <div className="space-y-4">
+                  {activePaper.abstract && (
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                          Abstract
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-2 py-0.5 text-[10px]"
+                        >
+                          Preview
+                        </Badge>
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                        {activePaper.abstract}
+                      </p>
+                    </section>
+                  )}
+
+                  {activeSections.length > 0 && (
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                            Sections using this paper
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-slate-400">
+                            Click a section to jump in editor
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-2 py-0.5 text-[10px]"
+                        >
+                          {activeSections.length}
+                        </Badge>
+                      </div>
+                      <div className="max-h-80 space-y-2 overflow-auto pr-1">
+                        {activeSections.map((section, index) => (
+                          <button
+                            key={section.id}
+                            type="button"
+                            onClick={() => handleSectionClick(section)}
+                            className="group w-full rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white px-3 py-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 dark:hover:border-blue-700 dark:hover:bg-blue-950/20"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                    {index + 1}
+                                  </span>
+                                  <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                    {section.title || '(Untitled section)'}
+                                  </p>
+                                  <span className="shrink-0 text-[10px] text-slate-400">
+                                    -
+                                  </span>
+                                  <span className="truncate text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                                    Created by {section.createdBy || 'Unknown'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  variant="secondary"
+                                  className="rounded-full px-2 py-0.5 text-[10px]"
+                                >
+                                  Jump
+                                </Badge>
+                                <ChevronRight className="h-3.5 w-3.5 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-500" />
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+
+                <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                    <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                      Metadata
+                    </p>
+                    <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Journal / Conference
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.journalName ||
+                            activePaper.conferenceName ||
+                            'Not provided'}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Year
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activePaper.publicationDate
+                              ? new Date(
+                                  activePaper.publicationDate,
+                                ).getFullYear()
+                              : 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Sections
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeSections.length}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          DOI
+                        </p>
+                        {activePaper.doi ? (
+                          <a
+                            href={`https://doi.org/${activePaper.doi}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-mono break-all text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            <Link2 className="h-3 w-3" />
+                            {activePaper.doi}
+                          </a>
+                        ) : (
+                          <p className="mt-0.5 font-medium">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Tags
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {activeTags.length ? (
+                            activeTags.slice(0, 8).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="rounded-full px-2 py-0.5 text-[10px]"
+                              >
+                                {tag}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                              No tags
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {activePaper.filePath && (
+                    <a
+                      href={activePaper.filePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                    >
+                      <Download className="h-4 w-4" />
+                      Open file
+                    </a>
+                  )}
+                </aside>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -638,15 +886,12 @@ const DatasetsTab = ({ projectId }: { projectId: string }) => {
  * commands are green, math delimiters purple, etc.
  */
 const registerLatexLanguage = (monaco: Monaco) => {
-  // Only register once
-  if (
-    monaco.languages
-      .getLanguages()
-      .some((l: { id: string }) => l.id === 'latex-custom')
-  )
-    return;
-
-  monaco.languages.register({ id: 'latex-custom' });
+  const languageExists = monaco.languages
+    .getLanguages()
+    .some((l: { id: string }) => l.id === 'latex-custom');
+  if (!languageExists) {
+    monaco.languages.register({ id: 'latex-custom' });
+  }
 
   monaco.languages.setMonarchTokensProvider('latex-custom', {
     tokenizer: {
@@ -697,31 +942,166 @@ const registerLatexLanguage = (monaco: Monaco) => {
     },
   });
 
+  const latexCompletions = [
+    {
+      label: '\\section',
+      insertText: '\\section{$1}',
+      detail: 'Section heading',
+    },
+    {
+      label: '\\subsection',
+      insertText: '\\subsection{$1}',
+      detail: 'Subsection heading',
+    },
+    {
+      label: '\\subsubsection',
+      insertText: '\\subsubsection{$1}',
+      detail: 'Subsubsection heading',
+    },
+    {
+      label: '\\paragraph',
+      insertText: '\\paragraph{$1}',
+      detail: 'Paragraph heading',
+    },
+    {
+      label: '\\textbf',
+      insertText: '\\textbf{$1}',
+      detail: 'Bold text',
+    },
+    {
+      label: '\\textit',
+      insertText: '\\textit{$1}',
+      detail: 'Italic text',
+    },
+    {
+      label: '\\underline',
+      insertText: '\\underline{$1}',
+      detail: 'Underline text',
+    },
+    {
+      label: '\\emph',
+      insertText: '\\emph{$1}',
+      detail: 'Emphasized text',
+    },
+    {
+      label: '\\begin{itemize}',
+      insertText: '\\begin{itemize}\n  \\item $1\n\\end{itemize}',
+      detail: 'Itemize environment',
+    },
+    {
+      label: '\\begin{enumerate}',
+      insertText: '\\begin{enumerate}\n  \\item $1\n\\end{enumerate}',
+      detail: 'Enumerate environment',
+    },
+    {
+      label: '\\begin{equation}',
+      insertText: '\\begin{equation}\n  $1\n\\end{equation}',
+      detail: 'Equation environment',
+    },
+    {
+      label: '\\begin{align}',
+      insertText: '\\begin{align}\n  $1\n\\end{align}',
+      detail: 'Align environment',
+    },
+    {
+      label: '\\begin{figure}',
+      insertText:
+        '\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{$1}\n  \\caption{$2}\n  \\label{fig:$3}\n\\end{figure}',
+      detail: 'Figure template',
+    },
+    {
+      label: '\\includegraphics',
+      insertText: '\\includegraphics[width=0.8\\textwidth]{$1}',
+      detail: 'Insert image',
+    },
+    {
+      label: '\\cite',
+      insertText: '\\cite{$1}',
+      detail: 'Citation',
+    },
+    {
+      label: '\\ref',
+      insertText: '\\ref{$1}',
+      detail: 'Reference label',
+    },
+    {
+      label: '\\label',
+      insertText: '\\label{$1}',
+      detail: 'Create label',
+    },
+    {
+      label: '\\frac',
+      insertText: '\\frac{$1}{$2}',
+      detail: 'Fraction',
+    },
+    {
+      label: '\\sqrt',
+      insertText: '\\sqrt{$1}',
+      detail: 'Square root',
+    },
+  ];
+
+  monaco.languages.registerCompletionItemProvider('latex-custom', {
+    triggerCharacters: ['\\', ...'abcdefghijklmnopqrstuvwxyz'.split('')],
+    provideCompletionItems: (
+      model: MonacoEditor.editor.ITextModel,
+      position: MonacoEditor.Position,
+    ) => {
+      const linePrefix = model
+        .getLineContent(position.lineNumber)
+        .slice(0, position.column - 1);
+      const match = linePrefix.match(/\\[a-zA-Z]*$/);
+
+      if (!match) {
+        return { suggestions: [] };
+      }
+
+      const typed = match[0].slice(1).toLowerCase();
+      const range = {
+        startLineNumber: position.lineNumber,
+        startColumn: position.column - match[0].length,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      };
+
+      const suggestions = latexCompletions
+        .filter((item) => item.label.slice(1).toLowerCase().includes(typed))
+        .map((item) => ({
+          label: item.label,
+          kind: monaco.languages.CompletionItemKind.Function,
+          insertText: item.insertText,
+          insertTextRules:
+            monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: item.detail,
+          range,
+        }));
+
+      return { suggestions };
+    },
+  });
+
   // Custom light theme
   monaco.editor.defineTheme('latex-light', {
     base: 'vs',
     inherit: true,
+    semanticHighlighting: false,
     rules: [
-      // LaTeX commands (\documentclass, \usepackage …) → dark navy blue
+      // Keep command highlighting only; all other tokens are plain black.
       { token: 'keyword', foreground: '2f6b5b', fontStyle: '' },
-      // Math content → purple
-      { token: 'string.math', foreground: '8250df' },
-      // Math delimiters ($, $$) → purple bold
-      { token: 'delimiter.math', foreground: '8250df', fontStyle: 'bold' },
-      // Environment names → teal/dark-cyan
-      { token: 'type.identifier', foreground: '0969da', fontStyle: 'italic' },
-      // Curly brace content → orange/brown
-      { token: 'delimiter.curly', foreground: 'bc4c00' },
-      // Square bracket content → dark green
-      { token: 'delimiter.square', foreground: '116329' },
-      // Comments → slate italic
-      { token: 'comment', foreground: '6e7781', fontStyle: 'italic' },
-      // Numbers → amber
-      { token: 'number', foreground: 'b45309' },
+      { token: 'string.math', foreground: '000000', fontStyle: '' },
+      { token: 'delimiter.math', foreground: '000000', fontStyle: '' },
+      { token: 'type.identifier', foreground: '000000', fontStyle: '' },
+      { token: 'delimiter.curly', foreground: '000000', fontStyle: '' },
+      { token: 'delimiter.square', foreground: '000000', fontStyle: '' },
+      { token: 'comment', foreground: '000000', fontStyle: '' },
+      { token: 'number', foreground: '000000', fontStyle: '' },
+      { token: 'number.float', foreground: '000000', fontStyle: '' },
+      { token: 'number.hex', foreground: '000000', fontStyle: '' },
+      { token: 'constant.numeric', foreground: '000000', fontStyle: '' },
     ],
     colors: {
       'editor.background': '#ffffff',
-      'editor.foreground': '#1f2328',
+      'editor.foreground': '#000000',
       'editor.lineHighlightBackground': '#f6f8fa',
       'editor.selectionBackground': '#dbeafe',
       'editor.inactiveSelectionBackground': '#e2e8f0',
@@ -753,6 +1133,7 @@ type SectionProp = {
 type LatexPaperEditorProps = {
   paperTitle: string;
   projectId?: string;
+  draftStorageScope?: string;
   initialContent?: string;
   sections?: SectionProp[];
   initialSectionId?: string;
@@ -802,6 +1183,7 @@ const toLatexLabel = (fileUrl: string): string => {
 export const LatexPaperEditor = ({
   paperTitle,
   projectId,
+  draftStorageScope,
   initialContent,
   sections,
   initialSectionId,
@@ -855,15 +1237,103 @@ export const LatexPaperEditor = ({
   const [savedContent, setSavedContent] = useState(initialContent ?? '');
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<MonacoEditor.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
   const cursorPositionRef = useRef<CursorPosition | null>(null);
   const previousActiveSectionIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastReadOnlyToastRef = useRef<number>(0);
 
+  const draftStorageKey = useMemo(() => {
+    if (draftStorageScope) return `latex-editor-drafts:${draftStorageScope}`;
+
+    const derivedPaperId = sections?.[0]?.paperId || 'paper';
+    const derivedProjectId = projectId || 'workspace';
+    return `latex-editor-drafts:${derivedProjectId}:${derivedPaperId}`;
+  }, [draftStorageScope, projectId, sections]);
+
+  const getDraftMap = useCallback((): Record<string, string> => {
+    if (typeof window === 'undefined') return {};
+
+    try {
+      const raw = sessionStorage.getItem(draftStorageKey);
+      if (!raw) return {};
+
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+
+      return parsed as Record<string, string>;
+    } catch {
+      return {};
+    }
+  }, [draftStorageKey]);
+
+  const setDraftMap = useCallback(
+    (next: Record<string, string>) => {
+      if (typeof window === 'undefined') return;
+
+      try {
+        if (Object.keys(next).length === 0) {
+          sessionStorage.removeItem(draftStorageKey);
+          return;
+        }
+
+        sessionStorage.setItem(draftStorageKey, JSON.stringify(next));
+      } catch {
+        // ignore storage failures
+      }
+    },
+    [draftStorageKey],
+  );
+
+  const getSectionDraft = useCallback(
+    (sectionId: string): string | null => {
+      const draftMap = getDraftMap();
+      const value = draftMap[sectionId];
+      return typeof value === 'string' ? value : null;
+    },
+    [getDraftMap],
+  );
+
+  const setSectionDraft = useCallback(
+    (sectionId: string, value: string) => {
+      const draftMap = getDraftMap();
+      draftMap[sectionId] = value;
+      setDraftMap(draftMap);
+    },
+    [getDraftMap, setDraftMap],
+  );
+
+  const clearSectionDraft = useCallback(
+    (sectionId: string) => {
+      const draftMap = getDraftMap();
+      if (!(sectionId in draftMap)) return;
+
+      delete draftMap[sectionId];
+      setDraftMap(draftMap);
+    },
+    [getDraftMap, setDraftMap],
+  );
+
   useEffect(() => {
     setEditorSections(sections);
   }, [sections]);
+
+  useEffect(() => {
+    const fallbackSectionId = initialSectionId || sections?.[0]?.id || null;
+    if (!fallbackSectionId) return;
+
+    setActiveSectionId((prev) => {
+      if (!sections?.length) return prev ?? fallbackSectionId;
+      if (prev && sections.some((section) => section.id === prev)) {
+        return prev;
+      }
+      return fallbackSectionId;
+    });
+  }, [initialSectionId, sections]);
 
   const activeSection =
     editorSections?.find((section) => section.id === activeSectionId) ?? null;
@@ -1000,10 +1470,14 @@ export const LatexPaperEditor = ({
 
         // Only reset content when actually switching sections to avoid jank on save
         if (isSectionSwitched) {
-          setContent(activeSection.content || '');
+          const persistedDraft = getSectionDraft(activeSectionId);
+          const serverContent = activeSection.content || '';
+          const nextContent = persistedDraft ?? serverContent;
+
+          setContent(nextContent);
           setSavedContent(activeSection.content || '');
-          if (activeSection.content) {
-            compileAndRender(activeSection.content);
+          if (nextContent) {
+            compileAndRender(nextContent);
           } else {
             setPdfUrl(null);
             setCompileError(null);
@@ -1012,7 +1486,25 @@ export const LatexPaperEditor = ({
         }
       }
     }
-  }, [editorSections, activeSectionId, compileAndRender]);
+  }, [editorSections, activeSectionId, compileAndRender, getSectionDraft]);
+
+  useEffect(() => {
+    if (!activeSectionId || versionPreview) return;
+
+    if (content === savedContent) {
+      clearSectionDraft(activeSectionId);
+      return;
+    }
+
+    setSectionDraft(activeSectionId, content);
+  }, [
+    activeSectionId,
+    clearSectionDraft,
+    content,
+    savedContent,
+    setSectionDraft,
+    versionPreview,
+  ]);
 
   useEffect(() => {
     if (!editorSections?.length && sidebarTab !== 'files') {
@@ -1063,6 +1555,27 @@ export const LatexPaperEditor = ({
       });
     },
     [activeSectionId, uploadSectionFileMutation],
+  );
+
+  const handleOpenReferenceSectionInEditor = useCallback(
+    (section: SectionReferenceOtherItem['sections'][number]) => {
+      setPreviewEditContent(null);
+      setVersionPreview({
+        item: {
+          sectionId: section.id,
+          name: section.createdBy || 'Reference section',
+          email: '',
+          memberId: 'reference',
+          sectionRole: 'reference:readonly',
+          isMainSection: false,
+          content: section.content || '',
+        },
+        returnSectionId: activeSectionId,
+      });
+      setIsSidebarRefOpen(false);
+      setIsToolsOpen(false);
+    },
+    [activeSectionId],
   );
 
   const handleInsertFileUrl = useCallback((fileUrl: string) => {
@@ -1173,6 +1686,7 @@ export const LatexPaperEditor = ({
       });
 
       if (isEditingPreview) {
+        clearSectionDraft(targetSectionId);
         // Exit preview mode; active section stays unchanged
         setVersionPreview(null);
         setPreviewEditContent(null);
@@ -1186,6 +1700,11 @@ export const LatexPaperEditor = ({
         id: latestSectionId,
         content: contentToSave,
       };
+
+      clearSectionDraft(activeSectionId);
+      if (latestSectionId !== activeSectionId) {
+        clearSectionDraft(latestSectionId);
+      }
 
       // Update ref BEFORE state to prevent the section-switch effect from re-setting content
       previousActiveSectionIdRef.current = latestSectionId;
@@ -1222,6 +1741,7 @@ export const LatexPaperEditor = ({
     onSave,
     isActiveSectionReadOnly,
     resolveLatestSectionId,
+    clearSectionDraft,
   ]);
 
   const handleClose = useCallback(() => {
@@ -1231,43 +1751,6 @@ export const LatexPaperEditor = ({
       onClose();
     }
   }, [content, savedContent, onClose, isActiveSectionReadOnly]);
-
-  const [kbdPos, setKbdPos] = useState({ x: 24, y: -1 });
-  const kbdDragRef = useRef<{
-    startX: number;
-    startY: number;
-    startPosX: number;
-    startPosY: number;
-  } | null>(null);
-
-  const handleKbdPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.currentTarget.setPointerCapture(e.pointerId);
-      kbdDragRef.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        startPosX: kbdPos.x,
-        startPosY: kbdPos.y,
-      };
-    },
-    [kbdPos],
-  );
-
-  const handleKbdPointerMove = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (!kbdDragRef.current) return;
-      const dx = e.clientX - kbdDragRef.current.startX;
-      const dy = e.clientY - kbdDragRef.current.startY;
-      const newX = Math.max(0, kbdDragRef.current.startPosX + dx);
-      const newY = kbdDragRef.current.startPosY + dy;
-      setKbdPos({ x: newX, y: newY });
-    },
-    [],
-  );
-
-  const handleKbdPointerUp = useCallback(() => {
-    kbdDragRef.current = null;
-  }, []);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -1377,10 +1860,10 @@ export const LatexPaperEditor = ({
 
       {/* Left sidebar — Files only */}
       {isSidebarOpen && (
-        <div className="flex w-48 shrink-0 flex-col bg-[#f1f1f1] dark:bg-[#1e1e1e]">
+        <div className="flex w-72 shrink-0 flex-col bg-[#f1f1f1] dark:bg-[#1e1e1e]">
           {/* Sidebar header */}
           <div className="flex shrink-0 items-center border-b border-[#e5e5e5] px-3 py-2 dark:border-[#2a2a2a]">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
               Files
             </span>
           </div>
@@ -1499,7 +1982,7 @@ export const LatexPaperEditor = ({
               <button
                 type="button"
                 onClick={() => setIsSidebarRefOpen((v) => !v)}
-                className="flex w-full items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                className="flex w-full items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
               >
                 {isSidebarRefOpen ? (
                   <ChevronRight className="h-3 w-3 rotate-90 transition-transform" />
@@ -1509,8 +1992,12 @@ export const LatexPaperEditor = ({
                 References
               </button>
               {isSidebarRefOpen && (
-                <div className="max-h-64 overflow-y-auto px-2 pb-2">
-                  <ReferencesTab projectId={projectId} compact />
+                <div className="max-h-136 overflow-y-auto px-2 pb-2">
+                  <ReferencesTab
+                    sectionId={activeSectionId ?? undefined}
+                    compact
+                    onOpenSectionInEditor={handleOpenReferenceSectionInEditor}
+                  />
                 </div>
               )}
             </div>
@@ -1568,6 +2055,58 @@ export const LatexPaperEditor = ({
                 </div>
 
                 <div className="flex-1" />
+
+                {!isActiveSectionReadOnly && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 rounded-md border-slate-300 bg-white hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
+                        title="Keyboard Shortcuts"
+                      >
+                        <Keyboard className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="bottom"
+                      align="end"
+                      className="w-64 p-0"
+                    >
+                      <div className="border-b border-slate-200 px-4 py-2.5 dark:border-slate-700">
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          Keyboard Shortcuts
+                        </h4>
+                      </div>
+                      <div className="space-y-1 px-4 py-3 text-sm">
+                        {[
+                          ['Save', 'Ctrl + S'],
+                          ['Compile', 'Ctrl + Enter'],
+                          ['Bold', 'Ctrl + B'],
+                          ['Italic', 'Ctrl + I'],
+                          ['Underline', 'Ctrl + U'],
+                          ['Inline Math', 'Ctrl + Shift + M'],
+                          ['Display Math', 'Ctrl + Shift + E'],
+                          ['Environment', 'Ctrl + Shift + B'],
+                          ['Toggle Comment', 'Ctrl + /'],
+                          ['Close Editor', 'Esc'],
+                        ].map(([label, kbd]) => (
+                          <div
+                            key={label}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-slate-600 dark:text-slate-400">
+                              {label}
+                            </span>
+                            <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                              {kbd}
+                            </kbd>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
 
                 {/* Close editor — shown first so Tools stays near the right edge of text */}
                 <button
@@ -1824,7 +2363,7 @@ export const LatexPaperEditor = ({
                             if (!selection) return;
                             const model = editor.getModel();
                             if (!model) return;
-                            const edits: MonacoEditor.IIdentifiedSingleEditOperation[] =
+                            const edits: MonacoEditor.editor.IIdentifiedSingleEditOperation[] =
                               [];
                             for (
                               let line = selection.startLineNumber;
@@ -2181,7 +2720,7 @@ export const LatexPaperEditor = ({
                           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
                             <FileText className="h-3.5 w-3.5 text-white" />
                           </div>
-                          <span className="max-w-[12rem] truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          <span className="max-w-48 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
                             {activeSectionId && editorSections
                               ? activeSectionTitle || paperTitle
                               : paperTitle}
@@ -2222,7 +2761,7 @@ export const LatexPaperEditor = ({
                         >
                           <ChevronLeft className="h-3.5 w-3.5" />
                         </button>
-                        <span className="min-w-[3.5rem] text-center text-xs text-slate-600 tabular-nums dark:text-slate-400">
+                        <span className="min-w-14 text-center text-xs text-slate-600 tabular-nums dark:text-slate-400">
                           <span className="font-semibold text-[#1a6b4e] dark:text-[#4fc3a1]">
                             {String(pdfPageNum).padStart(2, '0')}
                           </span>{' '}
@@ -2255,7 +2794,7 @@ export const LatexPaperEditor = ({
                         >
                           <Minus className="h-3 w-3" />
                         </button>
-                        <span className="min-w-[2.5rem] text-center text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className="min-w-10 text-center text-[10px] text-slate-500 dark:text-slate-400">
                           {pdfZoom}%
                         </span>
                         <button
@@ -2402,58 +2941,6 @@ export const LatexPaperEditor = ({
         {/* close outer card */}
       </div>
       {/* close content area */}
-      {!isActiveSectionReadOnly && (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="fixed z-50 h-9 w-9 cursor-grab rounded-full border-slate-300 bg-white shadow-lg hover:bg-slate-50 active:cursor-grabbing dark:border-slate-600 dark:bg-slate-800"
-              style={{
-                left: kbdPos.x,
-                ...(kbdPos.y < 0 ? { bottom: 24 } : { top: kbdPos.y }),
-              }}
-              title="Keyboard Shortcuts"
-              onPointerDown={handleKbdPointerDown}
-              onPointerMove={handleKbdPointerMove}
-              onPointerUp={handleKbdPointerUp}
-            >
-              <Keyboard className="h-4 w-4 text-slate-600 dark:text-slate-300" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-64 p-0">
-            <div className="border-b border-slate-200 px-4 py-2.5 dark:border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Keyboard Shortcuts
-              </h4>
-            </div>
-            <div className="space-y-1 px-4 py-3 text-sm">
-              {[
-                ['Save', 'Ctrl + S'],
-                ['Compile', 'Ctrl + Enter'],
-                ['Bold', 'Ctrl + B'],
-                ['Italic', 'Ctrl + I'],
-                ['Underline', 'Ctrl + U'],
-                ['Inline Math', 'Ctrl + Shift + M'],
-                ['Display Math', 'Ctrl + Shift + E'],
-                ['Environment', 'Ctrl + Shift + B'],
-                ['Toggle Comment', 'Ctrl + /'],
-                ['Close Editor', 'Esc'],
-              ].map(([label, kbd]) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-slate-600 dark:text-slate-400">
-                    {label}
-                  </span>
-                  <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                    {kbd}
-                  </kbd>
-                </div>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-      )}
-
       {/* Image lightbox */}
       <Dialog
         open={!!imagePreviewUrl}

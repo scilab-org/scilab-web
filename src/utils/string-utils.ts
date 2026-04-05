@@ -5,9 +5,9 @@ export function capitalize(word: string | null | undefined): string {
 
 /**
  * Formats a publication date string smartly:
- * - day=1, month=January → show year only (e.g. "2010")
- * - day=1, month≠January → show month + year (e.g. "Aug 2010")
- * - otherwise → show full date (e.g. "8/15/2010")
+ * - day=1, month=January -> show year only (e.g. "2010")
+ * - day=1, month!=January -> show month + year (e.g. "Aug 2010")
+ * - otherwise -> show full date (e.g. "8/15/2010")
  */
 export function formatPublicationDate(
   dateStr: string | null | undefined,

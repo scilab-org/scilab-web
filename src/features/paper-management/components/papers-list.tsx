@@ -36,7 +36,7 @@ import { getPaperQueryOptions } from '../api/get-paper';
 import { DeletePaper } from './delete-paper';
 import { PAPER_STATUS_MAP } from '../constants';
 import { UpdatePaper } from './update-paper';
-import { formatPublicationDate } from '@/utils/stringUtils';
+import { formatPublicationDate } from '@/utils/string-utils';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',

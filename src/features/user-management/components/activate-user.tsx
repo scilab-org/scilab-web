@@ -22,7 +22,6 @@ type ActivateUserProps = {
 };
 
 export const ActivateUser = ({ userId }: ActivateUserProps) => {
-  const minRows = 10;
   const activateUserMutation = useActivateUser({});
 
   return (

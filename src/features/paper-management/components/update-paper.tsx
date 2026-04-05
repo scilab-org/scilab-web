@@ -343,7 +343,10 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="update-paper-pubyear"
+              className="text-sm font-medium"
+            >
               Publication Date <span className="text-destructive">*</span>
             </label>
             <div className="flex gap-1.5">

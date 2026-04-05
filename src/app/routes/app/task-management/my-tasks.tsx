@@ -229,7 +229,10 @@ const MyTasksRoute = () => {
   const assignedPapersQuery = useMyAssignedPapers({
     params: { PageNumber: 1, PageSize: 1000 },
   });
-  const assignedPapers = assignedPapersQuery.data?.result?.items ?? [];
+  const assignedPapers = useMemo(
+    () => assignedPapersQuery.data?.result?.items ?? [],
+    [assignedPapersQuery.data?.result?.items],
+  );
   const isDateFieldSelected = Boolean(localFilters.DateField);
   const selectedPaperLabel = useMemo(() => {
     if (!localFilters.PaperId) return 'All Papers';
@@ -476,9 +479,9 @@ const MyTasksRoute = () => {
       >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12">
           <div className="space-y-1.5 xl:col-span-4">
-            <label className="text-muted-foreground text-xs font-medium">
+            <p className="text-muted-foreground text-xs font-medium">
               Paper Name
-            </label>
+            </p>
             <Popover open={paperFilterOpen} onOpenChange={setPaperFilterOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -492,7 +495,7 @@ const MyTasksRoute = () => {
               </PopoverTrigger>
               <PopoverContent
                 align="start"
-                className="w-[var(--radix-popover-trigger-width)] p-2"
+                className="w-(--radix-popover-trigger-width) p-2"
               >
                 <Input
                   placeholder="Type to filter paper..."
@@ -541,9 +544,7 @@ const MyTasksRoute = () => {
             </Popover>
           </div>
           <div className="space-y-1.5 xl:col-span-2">
-            <label className="text-muted-foreground text-xs font-medium">
-              Status
-            </label>
+            <p className="text-muted-foreground text-xs font-medium">Status</p>
             <select
               className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               value={localFilters.Status}
@@ -558,9 +559,9 @@ const MyTasksRoute = () => {
             </select>
           </div>
           <div className="space-y-1.5 xl:col-span-2">
-            <label className="text-muted-foreground text-xs font-medium">
+            <p className="text-muted-foreground text-xs font-medium">
               Date Field
-            </label>
+            </p>
             <select
               className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               value={localFilters.DateField}
@@ -575,9 +576,9 @@ const MyTasksRoute = () => {
             </select>
           </div>
           <div className="space-y-1.5 xl:col-span-2">
-            <label className="text-muted-foreground text-xs font-medium">
+            <p className="text-muted-foreground text-xs font-medium">
               From Date
-            </label>
+            </p>
             <Input
               type="date"
               value={localFilters.FromDate}
@@ -586,9 +587,7 @@ const MyTasksRoute = () => {
             />
           </div>
           <div className="space-y-1.5 xl:col-span-2">
-            <label className="text-muted-foreground text-xs font-medium">
-              To Date
-            </label>
+            <p className="text-muted-foreground text-xs font-medium">To Date</p>
             <Input
               type="date"
               value={localFilters.ToDate}
@@ -735,6 +734,14 @@ const MyTasksRoute = () => {
                             setDragOverCol(null);
                           }}
                           onClick={() => openEdit(task)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              openEdit(task);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
                           className={cn(
                             'group bg-card relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
                             isPending &&
@@ -1065,9 +1072,7 @@ const MyTasksRoute = () => {
               return (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm leading-none font-medium">
-                      Paper
-                    </label>
+                    <p className="text-sm leading-none font-medium">Paper</p>
                     <Input
                       value={
                         editingTask?.paperTitle || editingTask?.paperId || ''
@@ -1078,9 +1083,9 @@ const MyTasksRoute = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm leading-none font-medium">
+                    <p className="text-sm leading-none font-medium">
                       Task Name
-                    </label>
+                    </p>
                     <Input
                       value={editingTask?.name || ''}
                       readOnly
@@ -1090,9 +1095,9 @@ const MyTasksRoute = () => {
 
                   {editingTask?.description && (
                     <div className="space-y-2">
-                      <label className="text-sm leading-none font-medium">
+                      <p className="text-sm leading-none font-medium">
                         Description
-                      </label>
+                      </p>
                       <p className="text-muted-foreground bg-muted/50 rounded-md border px-3 py-2 text-sm">
                         {editingTask.description}
                       </p>

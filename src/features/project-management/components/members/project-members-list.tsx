@@ -264,28 +264,28 @@ const MemberTableRow = ({
                 No roles available
               </div>
             ) : (
-            availableGroups.map((group) => {
-              const name = group.name ?? '';
-              const isSelected = newRole === name;
-              const label = formatRole(name);
-              return (
-                <button
-                  key={group.id ?? name}
-                  type="button"
-                  onClick={() => setNewRole(name)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-all ${
-                    isSelected
-                      ? 'border-primary bg-primary/5 text-foreground font-medium shadow-sm'
-                      : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-muted/40'
-                  }`}
-                >
-                  <span>{label}</span>
-                  {isSelected && (
-                    <Check className="text-primary h-4 w-4 shrink-0" />
-                  )}
-                </button>
-              );
-            })
+              availableGroups.map((group) => {
+                const name = group.name ?? '';
+                const isSelected = newRole === name;
+                const label = formatRole(name);
+                return (
+                  <button
+                    key={group.id ?? name}
+                    type="button"
+                    onClick={() => setNewRole(name)}
+                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/5 text-foreground font-medium shadow-sm'
+                        : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-muted/40'
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {isSelected && (
+                      <Check className="text-primary h-4 w-4 shrink-0" />
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
 

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { formatPublicationDate } from '@/utils/stringUtils';
+import { formatPublicationDate } from '@/utils/string-utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {

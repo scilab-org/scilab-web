@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Edit, Trash2, Plus, X, Pencil } from 'lucide-react';
+import { Trash2, Plus, X, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';

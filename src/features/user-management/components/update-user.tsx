@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Pencil } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +12,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useGroups } from '@/features/group-role-management/api/get-groups';
 
 import { BTN } from '@/lib/button-styles';
 import { useUpdateUser } from '../api/update-user';
@@ -34,9 +32,6 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
     avatarImage: null as File | null,
   });
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
-
-  const groupsQuery = useGroups();
-  const allGroups = groupsQuery.data?.result || [];
 
   const updateUserMutation = useUpdateUser({
     mutationConfig: {
@@ -59,15 +54,6 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
       setAvatarPreview(null);
     }
   }, [open, user]);
-
-  const toggleGroup = (groupName: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      groupNames: prev.groupNames.includes(groupName)
-        ? prev.groupNames.filter((n) => n !== groupName)
-        : [...prev.groupNames, groupName],
-    }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

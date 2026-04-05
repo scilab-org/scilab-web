@@ -415,6 +415,14 @@ export const ExcelChartViewer = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={handleBackdropClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="bg-card max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-lg shadow-xl">
         {/* Header */}

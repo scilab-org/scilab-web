@@ -36,7 +36,7 @@ import { ProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
-import { formatPublicationDate } from '@/utils/stringUtils';
+import { formatPublicationDate } from '@/utils/string-utils';
 
 const getStatusColor = (status: number | null) => {
   switch (status) {

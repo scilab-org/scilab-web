@@ -69,14 +69,12 @@ const getRoleColor = (name: string) => {
   const n = name.toLowerCase();
   if (n.includes('author'))
     return {
-      active:
-        'border-blue-500 bg-blue-500 text-white shadow-sm',
+      active: 'border-blue-500 bg-blue-500 text-white shadow-sm',
       idle: 'border-border bg-background text-muted-foreground hover:border-blue-300 hover:text-blue-600',
     };
   if (n.includes('member'))
     return {
-      active:
-        'border-green-500 bg-green-500 text-white shadow-sm',
+      active: 'border-green-500 bg-green-500 text-white shadow-sm',
       idle: 'border-border bg-background text-muted-foreground hover:border-green-300 hover:text-green-600',
     };
   return {

@@ -440,7 +440,7 @@ const flattenTree = (
 
 const SectionExpandedView = ({
   markSectionId,
-  excludeSectionId,
+  excludeSectionId: _excludeSectionId,
   isAuthor,
   currentUserEmail,
   onEditSection,
@@ -923,7 +923,10 @@ export const PaperSectionsDialog = ({
   });
 
   const currentMemberId = sectionsQuery.data?.result?.memberId ?? '';
-  const rawSections = sectionsQuery.data?.result?.items ?? [];
+  const rawSections = useMemo(
+    () => sectionsQuery.data?.result?.items ?? [],
+    [sectionsQuery.data?.result?.items],
+  );
   const displaySections = useMemo(
     () => dedupeSectionsForList(rawSections),
     [rawSections],

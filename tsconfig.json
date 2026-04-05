@@ -16,7 +16,6 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "monaco-editor"],
     "isolatedModules": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
