@@ -11,7 +11,6 @@ import {
   Trash2,
   Pencil,
   Eye,
-  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,12 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -187,13 +181,13 @@ const RoleSelector = ({
           role="combobox"
           disabled={disabled}
           aria-expanded={open}
-          className="h-8 w-[130px] justify-between px-2 text-xs capitalize"
+          className="h-8 w-32.5 justify-between px-2 text-xs capitalize"
         >
           {selectedLabel}
           <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[130px] p-1">
+      <PopoverContent className="w-32.5 p-1">
         <div className="flex flex-col gap-1">
           {options.map((option) => {
             const label = option.name?.split(':').pop();
@@ -206,7 +200,7 @@ const RoleSelector = ({
                   setOpen(false);
                 }}
                 className={cn(
-                  'hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm py-1.5 pr-8 pl-2 text-xs capitalize outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+                  'hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm py-1.5 pr-8 pl-2 text-xs capitalize outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50',
                   isSelected && 'bg-accent text-accent-foreground',
                 )}
               >
@@ -517,7 +511,7 @@ const flattenTree = (
 
 const SectionExpandedView = ({
   markSectionId,
-  excludeSectionId,
+  excludeSectionId: _excludeSectionId,
   isAuthor,
   currentUserEmail,
   onEditSection,
@@ -1077,10 +1071,9 @@ export const PaperSectionsManager = ({
     queryConfig: { enabled: !!paperId && !!isManager },
   });
 
-  const currentMemberId = assignedSectionsQuery.data?.result?.memberId ?? '';
-
-  const rawSections = isManager
-    ? (allSectionsQuery.data?.result?.items || []).map(
+  const rawSections = useMemo(() => {
+    if (isManager) {
+      return (allSectionsQuery.data?.result?.items || []).map(
         (s) =>
           ({
             ...s,
@@ -1103,8 +1096,16 @@ export const PaperSectionsManager = ({
             numbered: s.numbered,
             displayOrder: s.displayOrder,
           }) as AssignedSection,
-      )
-    : (assignedSectionsQuery.data?.result?.items ?? []);
+      );
+    }
+
+    return assignedSectionsQuery.data?.result?.items ?? [];
+  }, [
+    isManager,
+    allSectionsQuery.data?.result?.items,
+    assignedSectionsQuery.data?.result?.items,
+    paperId,
+  ]);
 
   const isLoading = isManager
     ? allSectionsQuery.isLoading

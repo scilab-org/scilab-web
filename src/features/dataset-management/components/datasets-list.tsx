@@ -40,17 +40,6 @@ const canViewChart = (filePath: string) => {
   return extension === 'xlsx' || extension === 'xls' || extension === 'csv';
 };
 
-const getStatusColor = (status: number) => {
-  switch (status) {
-    case 1:
-      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    case 0:
-      return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-    default:
-      return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-  }
-};
-
 type DatasetsListProps = {
   projectId: string;
   onCreateClick?: () => void;
@@ -187,7 +176,7 @@ export const DatasetsList = ({
                                   variant="default"
                                   size="sm"
                                   onClick={() => onViewChartClick(dataset)}
-                                  className="flex h-8 w-8 items-center justify-center p-0 bg-blue-600 hover:bg-blue-700"
+                                  className="flex h-8 w-8 items-center justify-center bg-blue-600 p-0 hover:bg-blue-700"
                                   title="Chart"
                                 >
                                   <BarChart3 className="h-4 w-4" />
@@ -208,7 +197,7 @@ export const DatasetsList = ({
                                   variant="outline"
                                   size="sm"
                                   onClick={() =>
-                                    (onUpdateClick ?? (() => { }))(dataset)
+                                    (onUpdateClick ?? (() => {}))(dataset)
                                   }
                                   className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.EDIT_OUTLINE}`}
                                   title="Edit"
@@ -366,7 +355,7 @@ export const DatasetsList = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (pendingDeleteDatasetId) {
-                  (onDeleteClick ?? (() => { }))(pendingDeleteDatasetId);
+                  (onDeleteClick ?? (() => {}))(pendingDeleteDatasetId);
                   setPendingDeleteDatasetId(null);
                 }
               }}

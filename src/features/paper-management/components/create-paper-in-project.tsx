@@ -140,7 +140,10 @@ export const CreatePaperInProject = ({
     params: { PageNumber: 1, PageSize: 200 },
     queryConfig: { enabled: open },
   });
-  const journalResults: JournalDto[] = journalsQuery.data?.result?.items ?? [];
+  const journalResults: JournalDto[] = React.useMemo(
+    () => journalsQuery.data?.result?.items ?? [],
+    [journalsQuery.data?.result?.items],
+  );
 
   const selectedJournal = React.useMemo(
     () =>

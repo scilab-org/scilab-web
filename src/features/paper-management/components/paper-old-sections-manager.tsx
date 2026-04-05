@@ -246,7 +246,7 @@ const ExpandedVersionRows = ({
 
 export const PaperOldSectionsManager = ({
   paperId,
-  paperTitle,
+  paperTitle: _paperTitle,
   onViewSection: onExternalViewSection,
 }: {
   paperId: string;

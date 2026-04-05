@@ -11,7 +11,6 @@ import {
   Search,
   Settings,
   Tag,
-  User,
   Users,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';

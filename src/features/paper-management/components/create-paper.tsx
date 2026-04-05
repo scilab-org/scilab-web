@@ -45,10 +45,8 @@ export const CreatePaper = () => {
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
   const [parsedText, setParsedText] = React.useState<string | null>(null);
-  const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [tagList, setTagList] = React.useState<string[]>([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
-  const [showTags, setShowTags] = React.useState(false);
 
   // Auto-tag rate limiting state
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
@@ -74,10 +72,9 @@ export const CreatePaper = () => {
     setFormData(initialFormData);
     setFile(undefined);
     setParsedText(null);
-    setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
-    setShowTags(false);
+    setAutoTagCooldown(0);
     setPubYear('');
     setPubMonth('');
     setPubDay('');
@@ -93,10 +90,8 @@ export const CreatePaper = () => {
     // Create new abort controller for this upload
     abortControllerRef.current = new AbortController();
     setFile(selectedFile);
-    setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
-    setShowTags(false);
     setIsParsing(true);
 
     try {
@@ -160,10 +155,8 @@ export const CreatePaper = () => {
   const handleRemoveFile = () => {
     setFile(undefined);
     setParsedText(null);
-    setSuggestedTags([]);
     setTagList([]);
     setIsAutoTagged(false);
-    setShowTags(false);
   };
 
   const handleAutoTag = async () => {
@@ -188,7 +181,6 @@ export const CreatePaper = () => {
       });
 
       const suggestedTagsList = response.tags || [];
-      setSuggestedTags(suggestedTagsList);
 
       // Merge suggested tags with existing tags (avoiding duplicates)
       setTagList((prev) => {
@@ -206,7 +198,6 @@ export const CreatePaper = () => {
       });
 
       setIsAutoTagged(true);
-      setShowTags(true);
       setAutoTagCooldown(60); // 60 seconds cooldown
       toast.success(`Added ${suggestedTagsList.length} suggested tags`);
     } catch (error) {
@@ -464,7 +455,10 @@ export const CreatePaper = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="create-paper-pubyear"
+                className="text-sm font-medium"
+              >
                 Publication Date <span className="text-destructive">*</span>
               </label>
               <div className="flex gap-1.5">

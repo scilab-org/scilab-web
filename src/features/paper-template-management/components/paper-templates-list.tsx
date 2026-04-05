@@ -17,7 +17,6 @@ import {
 import { usePaperTemplates } from '../api/get-paper-templates';
 import { DeletePaperTemplate } from './delete-paper-template';
 import { UpdatePaperTemplate } from './update-paper-template';
-import { ViewPaperTemplate } from './view-paper-template';
 
 const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
   const params = new URLSearchParams(currentParams);

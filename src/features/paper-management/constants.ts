@@ -29,6 +29,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/paper-contributors/papers/${paperId}/contributors`,
   SECTION_BY_ID: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}`,
+  SECTION_REFERENCE: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/reference`,
   SECTION_HISTORY: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/history`,
   SECTION_UPLOAD_FILE: (sectionId: string) =>
@@ -55,6 +57,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPER_CONTRIBUTORS: 'paper-contributors',
   PAPER_SECTIONS: 'paper-sections',
   SECTION_FILES: 'section-files',
+  SECTION_REFERENCE: 'section-reference',
   MARK_SECTION: 'mark-section',
   SECTION_HISTORY: 'section-history',
 } as const;

@@ -13,12 +13,9 @@ import {
   BookOpen,
   Globe,
   PenTool,
-  FolderOpen,
   ClipboardList,
   Hash,
-  Tags,
   Calendar,
-  Building2,
   Presentation,
   LayoutTemplate,
   ExternalLink,
@@ -55,21 +52,11 @@ import { cn } from '@/utils/cn';
 import { formatPublicationDate } from '@/utils/string-utils';
 import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
-import { PaperSectionsManager } from '@/features/paper-management/components/paper-sections-manager';
-import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
-import { MarkMainSectionDialog } from '@/features/paper-management/components/mark-main-section-dialog';
-import {
-  PAPER_STATUS_MAP,
-  PAPER_MANAGEMENT_QUERY_KEYS,
-} from '@/features/paper-management/constants';
+import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
 import { ProjectMember } from '@/features/project-management/types';
-import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
 import { PaperMembersSheet } from '@/features/project-management/components/papers/paper-members-sheet';
-import { useAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
-import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
-import { AssignedSection } from '@/features/paper-management/types';
 import {
   useCreateTask,
   usePaperTasks,
@@ -149,13 +136,6 @@ const formatDate = (dateString: string | null | undefined) => {
     month: 'short',
     day: 'numeric',
   });
-};
-
-const getStatusLabel = (status: number) => {
-  return (
-    TASK_STATUS_OPTIONS.find((s) => s.value === status)?.label ??
-    `Status ${status}`
-  );
 };
 
 const toDateTimeLocalValue = (value?: string | null) => {
@@ -245,8 +225,6 @@ export const ProjectPaperDetailPage = ({
 
   const paperSubProjectId =
     paper?.subProjectId || matchedSubProject?.subProjectId || '';
-  const subProjectId = paperSubProjectId || projectId;
-
   const paperTasksQuery = usePaperTasks({
     paperId,
     params: {
@@ -1068,6 +1046,8 @@ export const ProjectPaperDetailPage = ({
                               <div
                                 key={task.id}
                                 draggable
+                                role="button"
+                                tabIndex={canEdit ? 0 : -1}
                                 onDragStart={(e) => {
                                   setDraggedTaskId(task.id);
                                   e.dataTransfer.effectAllowed = 'move';
@@ -1079,6 +1059,13 @@ export const ProjectPaperDetailPage = ({
                                   setDragOverCol(null);
                                 }}
                                 onClick={() => canEdit && openUpdateTask(task)}
+                                onKeyDown={(e) => {
+                                  if (!canEdit) return;
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    openUpdateTask(task);
+                                  }
+                                }}
                                 className={cn(
                                   'bg-card relative flex flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
                                   canEdit && 'cursor-pointer',
@@ -1194,7 +1181,7 @@ export const ProjectPaperDetailPage = ({
                 </label>
                 <textarea
                   id="createTaskDesc"
-                  className="border-input bg-background focus-visible:ring-ring min-h-[90px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-input bg-background focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.description}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
@@ -1366,9 +1353,9 @@ export const ProjectPaperDetailPage = ({
               {!isAuthor && (
                 <>
                   <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-xs font-medium">
+                    <p className="text-muted-foreground text-xs font-medium">
                       Task Name
-                    </label>
+                    </p>
                     <Input
                       value={editingTask?.name ?? ''}
                       readOnly
@@ -1378,9 +1365,9 @@ export const ProjectPaperDetailPage = ({
 
                   {editingTask?.description && (
                     <div className="space-y-1.5">
-                      <label className="text-muted-foreground text-xs font-medium">
+                      <p className="text-muted-foreground text-xs font-medium">
                         Description
-                      </label>
+                      </p>
                       <p className="text-muted-foreground bg-muted/50 rounded-md border px-3 py-2 text-sm">
                         {editingTask.description}
                       </p>
@@ -1420,7 +1407,7 @@ export const ProjectPaperDetailPage = ({
                     </label>
                     <textarea
                       id="updateTaskDesc"
-                      className="border-input bg-background focus-visible:ring-ring min-h-[90px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      className="border-input bg-background focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={updateForm.description}
                       onChange={(e) =>
                         setUpdateForm((prev) => ({

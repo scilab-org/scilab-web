@@ -16,7 +16,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
-import { BTN } from '@/lib/button-styles';
 
 import { useUsers } from '../api/get-users';
 import { getUserQueryOptions } from '../api/get-user';

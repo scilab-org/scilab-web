@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
-  ArrowLeft,
   Users,
   FileText,
   Database,

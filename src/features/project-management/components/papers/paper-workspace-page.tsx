@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft,
   BookOpen,
   Check,
-  ChevronDown,
   ChevronRight,
   Edit3,
   Eye,
@@ -12,7 +11,6 @@ import {
   Hash,
   LayoutList,
   Loader2,
-  Pencil,
   Star,
   Trash2,
   UserPlus,
@@ -22,7 +20,6 @@ import { toast } from 'sonner';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -50,14 +47,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
-import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
@@ -65,7 +56,6 @@ import { useGetSectionMembers } from '@/features/paper-management/api/get-sectio
 import { useAvailableSectionMembers } from '@/features/paper-management/api/get-available-section-members';
 import { useCreatePaperContributor } from '@/features/paper-management/api/create-paper-contributor';
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
-import { useUpdatePaperContributor } from '@/features/paper-management/api/update-paper-contributor';
 import {
   AssignedSection,
   AvailableSectionMember,
@@ -89,73 +79,6 @@ const stripLatex = (input: string): string => {
 // Format description: convert literal \n to real newlines
 const formatDesc = (text: string) =>
   text.replace(/\\n/g, '\n').replace(/  +/g, ' ').trim();
-
-// ── Role Selector ─────────────────────────────────────────────────────────────
-const RoleSelector = ({
-  value,
-  onChange,
-  options,
-  disabled,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  options: { id: string; name: string }[];
-  disabled?: boolean;
-}) => {
-  const [open, setOpen] = useState(false);
-  const selectedLabel =
-    options
-      .find((o) => o.name === value)
-      ?.name?.split(':')
-      .pop() ||
-    value.split(':').pop() ||
-    'Select Role';
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          disabled={disabled}
-          aria-expanded={open}
-          className="h-8 w-[130px] justify-between px-2 text-xs capitalize"
-        >
-          {selectedLabel}
-          <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[130px] p-1">
-        <div className="flex flex-col gap-1">
-          {options.map((option) => {
-            const label = option.name?.split(':').pop();
-            const isSelected = value === option.name;
-            return (
-              <button
-                key={option.id}
-                onClick={() => {
-                  onChange(option.name);
-                  setOpen(false);
-                }}
-                className={cn(
-                  'hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm py-1.5 pr-8 pl-2 text-xs capitalize outline-none select-none',
-                  isSelected && 'bg-accent text-accent-foreground',
-                )}
-              >
-                {label}
-                {isSelected && (
-                  <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-                    <Check className="h-4 w-4" />
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-};
 
 // ── Section Members Sheet ────────────────────────────────────────────────────
 const SectionMembersSheet = ({
@@ -198,11 +121,6 @@ const SectionMembersSheet = ({
   const availableMembers: AvailableSectionMember[] =
     availableQuery.data?.result?.items ?? [];
 
-  const groupsQuery = useGroups();
-  const sectionGroups = (groupsQuery.data?.result ?? []).filter((g) =>
-    g.name?.toLowerCase().startsWith('section'),
-  );
-
   const getSectionRolePriority = (role: string) => {
     const normalized = role.toLowerCase();
     if (normalized.includes('author')) return 0;
@@ -232,17 +150,6 @@ const SectionMembersSheet = ({
     mutationConfig: {
       onSuccess: () => toast.success('Member removed successfully'),
       onError: () => toast.error('Failed to remove member'),
-    },
-  });
-
-  const updateMutation = useUpdatePaperContributor({
-    sectionId,
-    paperId,
-    mutationConfig: {
-      onSuccess: () => {
-        toast.success('Role updated successfully');
-      },
-      onError: () => toast.error('Failed to update role'),
     },
   });
 
@@ -604,32 +511,6 @@ const SectionMembersSheet = ({
   );
 };
 
-// ── Role helpers ─────────────────────────────────────────────────────────────
-const roleBadge = (role: string) => {
-  if (role === 'paper:author' || role === 'section:edit')
-    return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-  if (role === 'project:manager' || role === 'system:admin')
-    return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-900/20 dark:text-violet-300';
-  return 'border-muted bg-muted/50 text-muted-foreground';
-};
-
-const roleLabel = (role: string) => {
-  switch (role) {
-    case 'paper:author':
-      return 'Author';
-    case 'section:edit':
-      return 'Editor';
-    case 'section:view':
-      return 'Viewer';
-    case 'project:manager':
-      return 'Manager';
-    case 'system:admin':
-      return 'Admin';
-    default:
-      return role;
-  }
-};
-
 type EditorState = { initialSectionId: string; readOnly: boolean } | null;
 
 export const PaperWorkspacePage = ({
@@ -646,7 +527,42 @@ export const PaperWorkspacePage = ({
   backPath: string;
 }) => {
   const navigate = useNavigate();
-  const [editorState, setEditorState] = useState<EditorState>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editorSessionKey = useMemo(
+    () => `paper-workspace:editor:${projectId}:${paperId}`,
+    [paperId, projectId],
+  );
+  const [editorState, setEditorState] = useState<EditorState>(() => {
+    const querySectionId = searchParams.get('editorSectionId');
+    if (querySectionId) {
+      return {
+        initialSectionId: querySectionId,
+        readOnly: searchParams.get('editorReadOnly') === '1',
+      };
+    }
+
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const raw = sessionStorage.getItem(
+        `paper-workspace:editor:${projectId}:${paperId}`,
+      );
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as EditorState;
+      if (
+        parsed &&
+        typeof parsed.initialSectionId === 'string' &&
+        typeof parsed.readOnly === 'boolean'
+      ) {
+        return parsed;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  });
   const [memberSheet, setMemberSheet] = useState<{
     id: string;
     title: string;
@@ -781,6 +697,59 @@ export const PaperWorkspacePage = ({
     [workspaceSections],
   );
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      if (editorState) {
+        sessionStorage.setItem(editorSessionKey, JSON.stringify(editorState));
+      } else {
+        sessionStorage.removeItem(editorSessionKey);
+      }
+    } catch {
+      // ignore storage failures
+    }
+  }, [editorSessionKey, editorState]);
+
+  useEffect(() => {
+    const currentSectionId = searchParams.get('editorSectionId');
+    const currentReadOnly = searchParams.get('editorReadOnly') === '1';
+
+    const expectedSectionId = editorState?.initialSectionId ?? null;
+    const expectedReadOnly = editorState?.readOnly ?? false;
+
+    const isSameState =
+      currentSectionId === expectedSectionId &&
+      (!expectedSectionId || currentReadOnly === expectedReadOnly);
+    if (isSameState) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    if (expectedSectionId) {
+      nextParams.set('editorSectionId', expectedSectionId);
+      if (expectedReadOnly) {
+        nextParams.set('editorReadOnly', '1');
+      } else {
+        nextParams.delete('editorReadOnly');
+      }
+    } else {
+      nextParams.delete('editorSectionId');
+      nextParams.delete('editorReadOnly');
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  }, [editorState, searchParams, setSearchParams]);
+
+  const resolvedInitialSectionId = useMemo(() => {
+    if (!editorState) return undefined;
+
+    const sectionExists = editorSections.some(
+      (s) => s.id === editorState.initialSectionId,
+    );
+    if (sectionExists) return editorState.initialSectionId;
+
+    return editorSections[0]?.id;
+  }, [editorSections, editorState]);
+
   // Compute sequential numbers for numbered sections
   const sectionNumbers = useMemo(() => {
     const map = new Map<string, string>();
@@ -815,8 +784,9 @@ export const PaperWorkspacePage = ({
         readOnly={editorState.readOnly}
         paperTitle={paper?.title || 'Untitled'}
         projectId={projectId}
+        draftStorageScope={`${projectId}:${paperId}`}
         sections={editorSections}
-        initialSectionId={editorState.initialSectionId}
+        initialSectionId={resolvedInitialSectionId}
         onClose={() => setEditorState(null)}
       />
     );
@@ -865,7 +835,6 @@ export const PaperWorkspacePage = ({
       canEditSection(s.sectionRole || '') ||
       editableSectionIds.has(s.id) ||
       editableSectionIds.has(s.markSectionId || '');
-    const hasContent = !!s.content?.trim();
     const num = sectionNumbers.get(s.id);
     return (
       <div

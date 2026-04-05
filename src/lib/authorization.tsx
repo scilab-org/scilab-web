@@ -6,7 +6,7 @@ import { useUser } from './auth';
 
 // User Groups (what Keycloak calls groups)
 export enum GROUPS {
-  SYSTEM_ADMIN = "system:admin",
+  SYSTEM_ADMIN = 'system:admin',
   PROJECT_AUTHOR = 'project:author',
   PROJECT_PUBLISHER = 'project:publisher',
   PROJECT_CONTRIBUTOR = 'project:contributor',
@@ -80,15 +80,15 @@ type AuthorizationProps = {
   forbiddenFallback?: React.ReactNode;
   children: React.ReactNode;
 } & (
-    | {
+  | {
       allowedGroups: GROUPS[];
       policyCheck?: never;
     }
-    | {
+  | {
       allowedGroups?: never;
       policyCheck: boolean;
     }
-  );
+);
 
 export const Authorization = ({
   policyCheck,
