@@ -407,7 +407,9 @@ const ProjectDetailRoute = () => {
             <ProjectPapersList
               projectId={projectId}
               readOnly
-              getPaperHref={paths.app.projectPaperDetail.getHref}
+              getPaperHref={(_projectId, paperId) =>
+                paths.app.paperManagement.paper.getHref(paperId)
+              }
             />
           )}
 
