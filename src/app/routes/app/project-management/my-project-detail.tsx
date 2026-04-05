@@ -362,7 +362,9 @@ const MyProjectDetailRoute = () => {
           {activeTab === 'papers' && (
             <ProjectPapersList
               projectId={projectId}
-              getPaperHref={paths.app.assignedProjects.paperDetail.getHref}
+              getPaperHref={(_projectId, paperId) =>
+                paths.app.paperManagement.paper.getHref(paperId)
+              }
               onAddPapersClick={
                 isManager ? () => setAddPapersOpen(true) : undefined
               }
