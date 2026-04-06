@@ -18,6 +18,7 @@ import {
   Play,
   PanelLeftOpen,
   PanelLeftClose,
+  ChevronDown,
   ChevronRight,
   ChevronLeft,
   Upload,
@@ -807,6 +808,111 @@ const ReferencesTab = ({
   );
 };
 
+const InlineReferenceSectionEditor = ({
+  content,
+  canEdit,
+  isDirty,
+  isSaving,
+  onChange,
+  onSave,
+}: {
+  content: string;
+  canEdit: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
+  onChange: (value: string | undefined) => void;
+  onSave: () => void;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  return (
+    <div className="shrink-0 border-t border-[#e8e8e6] bg-[#fafafa] dark:border-[#2a2a2a] dark:bg-[#151515]">
+      <div className="flex h-9 items-center justify-between border-b border-[#e8e8e6] px-3 dark:border-[#2a2a2a]">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
+            <FileText className="h-3.5 w-3.5 text-white" />
+          </div>
+          <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
+            References
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            title={isExpanded ? 'Collapse references' : 'Expand references'}
+            aria-label={
+              isExpanded ? 'Collapse references' : 'Expand references'
+            }
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <span className="text-[10px] text-slate-400">SOURCE - LATEX</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400">
+              Unsaved changes
+            </span>
+          )}
+          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+            {canEdit ? 'Editable' : 'Read only'}
+          </span>
+          {canEdit && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onSave}
+              disabled={isSaving}
+              className="h-6 px-2 text-[10px]"
+            >
+              {isSaving ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                'Save References'
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="h-72">
+          <Editor
+            height="100%"
+            defaultLanguage="latex-custom"
+            value={content}
+            onChange={onChange}
+            theme="latex-light"
+            beforeMount={registerLatexLanguage}
+            options={{
+              readOnly: !canEdit,
+              domReadOnly: !canEdit,
+              fontSize: 14,
+              lineHeight: 22,
+              minimap: { enabled: false },
+              wordWrap: 'on',
+              scrollBeyondLastLine: false,
+              padding: { top: 10, bottom: 10 },
+              automaticLayout: true,
+              tabSize: 2,
+              lineNumbers: 'on',
+              scrollbar: {
+                verticalScrollbarSize: 6,
+                horizontalScrollbarSize: 6,
+                useShadows: false,
+              },
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Datasets tab panel ────────────────────────────────────────────────────────
 const DatasetsTab = ({ projectId }: { projectId: string }) => {
   const query = useDatasets({
@@ -1180,6 +1286,20 @@ const toLatexLabel = (fileUrl: string): string => {
     .slice(0, 40);
 };
 
+const toPlainSectionTitle = (title: string): string => {
+  if (!title) return '';
+
+  let result = title;
+  const cmdPattern = /\\[a-zA-Z*]+\{([^{}]*)\}/g;
+  let prev = '';
+  while (prev !== result) {
+    prev = result;
+    result = result.replace(cmdPattern, '$1');
+  }
+
+  return result.replace(/[{}]/g, '').trim().toLowerCase();
+};
+
 export const LatexPaperEditor = ({
   paperTitle,
   projectId,
@@ -1340,6 +1460,18 @@ export const LatexPaperEditor = ({
   const activeSectionTitle =
     editorSections?.find((section) => section.id === activeSectionId)?.title ??
     null;
+  const referenceSection = useMemo(
+    () =>
+      editorSections?.find((section) => {
+        const normalizedTitle = toPlainSectionTitle(section.title || '');
+        return (
+          normalizedTitle === 'references' || normalizedTitle === 'reference'
+        );
+      }) ?? null,
+    [editorSections],
+  );
+  const isReferenceSectionActive =
+    !!referenceSection && activeSectionId === referenceSection.id;
 
   // Whether the active user is an author (paper:author role)
   const isAuthorRole = activeSection?.sectionRole === 'paper:author';
@@ -1363,6 +1495,13 @@ export const LatexPaperEditor = ({
     editableSectionRoles.has(activeSection.sectionRole);
   const isActiveSectionReadOnly =
     readOnly || !hasEditPermissionForActiveSection;
+  const canEditReferenceSection =
+    !!referenceSection &&
+    !readOnly &&
+    (!referenceSection.sectionRole ||
+      editableSectionRoles.has(referenceSection.sectionRole));
+  const [referenceContent, setReferenceContent] = useState('');
+  const [savedReferenceContent, setSavedReferenceContent] = useState('');
 
   // Derive paperId from sections for version history
   const derivedPaperId =
@@ -1512,6 +1651,18 @@ export const LatexPaperEditor = ({
     }
   }, [editorSections, sidebarTab]);
 
+  useEffect(() => {
+    if (!referenceSection) {
+      setReferenceContent('');
+      setSavedReferenceContent('');
+      return;
+    }
+
+    const nextContent = referenceSection.content || '';
+    setReferenceContent(nextContent);
+    setSavedReferenceContent(nextContent);
+  }, [referenceSection]);
+
   // Auto-render on first mount with the initial section content
   const hasRenderedOnce = useRef(false);
   useEffect(() => {
@@ -1643,6 +1794,64 @@ export const LatexPaperEditor = ({
       return section.id;
     }
   }, []);
+
+  const handleSaveReferenceSection = useCallback(async () => {
+    if (!referenceSection) return;
+    if (!canEditReferenceSection) {
+      toast.error('You do not have permission to edit references.');
+      return;
+    }
+
+    try {
+      await updateSectionMutation.mutateAsync({
+        sectionId: referenceSection.id,
+        data: {
+          sectionId: referenceSection.id,
+          memberId: referenceSection.memberId,
+          title: referenceSection.title,
+          content: referenceContent,
+          numbered: referenceSection.numbered,
+          sectionSumary: referenceSection.sectionSumary || '',
+          parentSectionId: referenceSection.parentSectionId,
+        },
+      });
+
+      const latestSectionId = await resolveLatestSectionId(referenceSection);
+
+      setEditorSections((prev) => {
+        if (!prev?.length) return prev;
+        return prev.map((section) =>
+          section.id === referenceSection.id
+            ? {
+                ...section,
+                id: latestSectionId,
+                content: referenceContent,
+              }
+            : section,
+        );
+      });
+
+      setSavedReferenceContent(referenceContent);
+
+      if (activeSectionId === referenceSection.id) {
+        setActiveSectionId(latestSectionId);
+        setContent(referenceContent);
+        setSavedContent(referenceContent);
+      }
+
+      onSave?.(referenceContent, latestSectionId);
+    } catch {
+      // Mutation error is already handled by mutationConfig onError
+    }
+  }, [
+    referenceSection,
+    canEditReferenceSection,
+    updateSectionMutation,
+    referenceContent,
+    resolveLatestSectionId,
+    activeSectionId,
+    onSave,
+  ]);
 
   const handleSave = useCallback(async () => {
     if (isActiveSectionReadOnly) {
@@ -2430,6 +2639,19 @@ export const LatexPaperEditor = ({
                   </div>
                 )}
               </div>
+
+              {!versionPreview &&
+                referenceSection &&
+                !isReferenceSectionActive && (
+                  <InlineReferenceSectionEditor
+                    content={referenceContent}
+                    canEdit={canEditReferenceSection}
+                    isDirty={referenceContent !== savedReferenceContent}
+                    isSaving={updateSectionMutation.isPending}
+                    onChange={(value) => setReferenceContent(value ?? '')}
+                    onSave={handleSaveReferenceSection}
+                  />
+                )}
 
               {/* Save button — bottom of editor */}
               <div className="flex shrink-0 items-center justify-between border-t border-[#e8e8e6] px-4 py-2 dark:border-[#2a2a2a]">

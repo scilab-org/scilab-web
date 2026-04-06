@@ -170,32 +170,44 @@ export const PapersList = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
-      <Table className="table-fixed">
+    <div className="overflow-x-hidden rounded-xl border shadow-sm">
+      <Table
+        containerClassName="overflow-x-hidden"
+        className="w-full table-fixed"
+      >
         <TableHeader>
           <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="w-[22%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[14%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               Title
             </TableHead>
-            <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[7%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               DOI
             </TableHead>
-            <TableHead className="w-[9%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[11%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+              Authors
+            </TableHead>
+            <TableHead className="w-[10%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+              Publisher
+            </TableHead>
+            <TableHead className="w-[7%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               Paper Type
             </TableHead>
-            <TableHead className="w-[14%] font-semibold text-green-900 dark:text-green-200">
-              Journal / Conference
+            <TableHead className="w-[8%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+              Journal
             </TableHead>
-            <TableHead className="w-[11%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[8%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+              Conference
+            </TableHead>
+            <TableHead className="w-[9%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               Publication Date
             </TableHead>
-            <TableHead className="w-[8%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[8%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               Status
             </TableHead>
-            <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[8%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               Tags
             </TableHead>
-            <TableHead className="w-[16%] text-center font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-[10%] px-2 text-center text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
               Actions
             </TableHead>
           </TableRow>
@@ -210,7 +222,7 @@ export const PapersList = () => {
                   : 'bg-slate-50/50 dark:bg-slate-900/20'
               }`}
             >
-              <TableCell className="overflow-hidden font-medium">
+              <TableCell className="overflow-hidden font-medium wrap-break-word whitespace-normal">
                 <Link
                   to={paths.app.paperManagement.paper.getHref(paper.id)}
                   className="block truncate text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
@@ -224,16 +236,27 @@ export const PapersList = () => {
                   </span>
                 </Link>
               </TableCell>
-              <TableCell className="truncate">{paper.doi || 'N/A'}</TableCell>
-              <TableCell className="truncate">
+              <TableCell className="break-all whitespace-normal">
+                {paper.doi || 'N/A'}
+              </TableCell>
+              <TableCell className="wrap-break-word whitespace-normal">
+                {paper.authors || ''}
+              </TableCell>
+              <TableCell className="wrap-break-word whitespace-normal">
+                {paper.publisher || ''}
+              </TableCell>
+              <TableCell className="wrap-break-word whitespace-normal">
                 {paper.paperType || 'N/A'}
               </TableCell>
-              <TableCell className="truncate">
-                {paper.journalName || paper.conferenceName || 'N/A'}
+              <TableCell className="wrap-break-word whitespace-normal">
+                {paper.journalName || ''}
               </TableCell>
-              <TableCell>
+              <TableCell className="wrap-break-word whitespace-normal">
+                {paper.conferenceName || ''}
+              </TableCell>
+              <TableCell className="whitespace-normal">
                 {paper.publicationDate ? (
-                  <span className="flex items-center gap-1.5 text-sm">
+                  <span className="flex flex-wrap items-center gap-1.5 text-sm">
                     <Calendar className="size-3.5 text-violet-400" />
                     {formatPublicationDate(paper.publicationDate)}
                   </span>
@@ -243,7 +266,7 @@ export const PapersList = () => {
                   </span>
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="whitespace-normal">
                 {(() => {
                   const statusStyle = getStatusVariant(paper.status);
                   return (
@@ -256,7 +279,7 @@ export const PapersList = () => {
                   );
                 })()}
               </TableCell>
-              <TableCell>
+              <TableCell className="whitespace-normal">
                 {paper.tagNames && paper.tagNames.length > 0 ? (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -291,14 +314,14 @@ export const PapersList = () => {
                   </span>
                 )}
               </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-center gap-2">
+              <TableCell className="whitespace-nowrap">
+                <div className="flex flex-nowrap items-center justify-center gap-1">
                   {paper.filePath ? (
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
                       asChild
-                      className="gap-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                      className="size-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
                     >
                       <a
                         href={paper.filePath}
@@ -311,12 +334,11 @@ export const PapersList = () => {
                   ) : (
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       disabled
-                      className={BTN.CANCEL}
+                      className={`size-8 ${BTN.CANCEL}`}
                     >
                       <FileText className="size-4" />
-                      No file
                     </Button>
                   )}
                   <UpdatePaper paper={paper} paperId={paper.id} />

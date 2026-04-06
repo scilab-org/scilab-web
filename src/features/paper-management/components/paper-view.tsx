@@ -1,11 +1,14 @@
 import {
   FileText,
   BookOpen,
+  BookMarked,
   Calendar,
   Hash,
   Globe,
   Building2,
   Presentation,
+  Users,
+  ListOrdered,
   Clock,
   RefreshCw,
   Database,
@@ -189,7 +192,20 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
             </div>
             <div className="flex items-start gap-3">
               <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
-                <FileText className="text-muted-foreground size-4" />
+                <Users className="text-muted-foreground size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Authors
+                </p>
+                <p className="text-foreground font-medium">
+                  {paper.authors || 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <BookMarked className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
@@ -213,7 +229,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4 pt-1">
+            <div className="space-y-3 pt-1">
               <div className="flex items-center gap-2">
                 <div className="bg-muted/50 rounded-lg border p-2">
                   <Database className="text-muted-foreground size-4" />
@@ -271,7 +287,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           <CardContent className="space-y-4 p-6">
             <div className="flex items-start gap-3">
               <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
-                <Building2 className="text-muted-foreground size-4" />
+                <Globe className="text-muted-foreground size-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
@@ -292,6 +308,58 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                 </p>
                 <p className="text-foreground font-medium">
                   {paper.conferenceName || 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Building2 className="text-muted-foreground size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Publisher
+                </p>
+                <p className="text-foreground font-medium">
+                  {paper.publisher || 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <Hash className="text-muted-foreground size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Volume
+                </p>
+                <p className="text-foreground font-medium">
+                  {paper.volume || 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <FileText className="text-muted-foreground size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Pages
+                </p>
+                <p className="text-foreground font-medium">
+                  {paper.pages || 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-muted/50 mt-0.5 rounded-lg border p-2">
+                <ListOrdered className="text-muted-foreground size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Number
+                </p>
+                <p className="text-foreground font-medium">
+                  {paper.number || 'N/A'}
                 </p>
               </div>
             </div>
@@ -377,6 +445,20 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-card overflow-hidden rounded-xl border shadow-sm">
+        <CardHeader className="bg-muted/30 border-b px-6 py-4">
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <FileText className="text-muted-foreground size-5" />
+            Reference Content
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <pre className="border-input bg-muted/20 text-foreground min-h-40 w-full overflow-x-auto rounded-md border px-3 py-2 font-mono text-xs leading-5 whitespace-pre-wrap">
+            {paper.referenceContent || 'No reference content available'}
+          </pre>
+        </CardContent>
+      </Card>
     </div>
   );
 };
