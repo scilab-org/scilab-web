@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Editor, { type Monaco } from '@monaco-editor/react';
 import type * as MonacoEditor from 'monaco-editor';
@@ -38,6 +39,7 @@ import {
   RefreshCw,
   Minus,
   Plus,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -66,6 +68,7 @@ import {
   type SectionReferenceOtherItem,
   useGetSectionReference,
 } from '@/features/paper-management/api/get-section-reference';
+import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
 import {
@@ -78,7 +81,9 @@ import { useSectionComments } from '@/features/paper-management/api/get-section-
 import { SectionComments } from '@/features/paper-management/components/section-comments';
 import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
 import { useDatasets } from '@/features/dataset-management/api/get-datasets';
+import { useProjectPapers } from '@/features/project-management/api/papers/get-project-papers';
 import { useUser } from '@/lib/auth';
+import { api } from '@/lib/api-client';
 
 import { EditorChatPanel } from './editor-chat-panel';
 
@@ -156,6 +161,138 @@ type MarkSectionItem = {
   sectionRole: string;
   isMainSection: boolean;
   content: string;
+};
+
+type SectionReferenceInUsePaperBank = {
+  id: string;
+  title: string | null;
+  authors: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+  doi: string | null;
+};
+
+type ProjectPaperBankOption = {
+  id: string;
+  title: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+};
+
+type PaperBankDetailForEditor = {
+  id: string;
+  title: string | null;
+  abstract: string | null;
+  filePath: string | null;
+  authors: string | null;
+  publisher: string | null;
+  doi: string | null;
+  publicationDate: string | null;
+  paperType: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+  pages: string | null;
+  number: string | null;
+  volume: string | null;
+  referenceContent: string | null;
+  tagNames: string[];
+};
+
+type SectionReferenceInUseResult = {
+  referenceContent: string;
+  paperBanks: SectionReferenceInUsePaperBank[];
+};
+
+const getSectionReferenceInUseForEditor = async (
+  sectionId: string,
+): Promise<SectionReferenceInUseResult> => {
+  const response = (await api.get(
+    `/lab-service/sections/${sectionId}/reference/in-use`,
+  )) as {
+    result?: {
+      referenceContent?: unknown;
+      paperBanks?: unknown[];
+    };
+  };
+
+  const result = response?.result ?? {};
+  const paperBanksSource = Array.isArray(result.paperBanks)
+    ? result.paperBanks
+    : [];
+
+  return {
+    referenceContent:
+      typeof result.referenceContent === 'string'
+        ? result.referenceContent
+        : '',
+    paperBanks: paperBanksSource.map((paper) => {
+      const record = (paper ?? {}) as Record<string, unknown>;
+      return {
+        id: String(record.id ?? ''),
+        title: (record.title as string | null) ?? null,
+        authors: (record.authors as string | null) ?? null,
+        journalName: (record.journalName as string | null) ?? null,
+        conferenceName: (record.conferenceName as string | null) ?? null,
+        doi: (record.doi as string | null) ?? null,
+      };
+    }),
+  };
+};
+
+const updateSectionReferenceForEditor = async ({
+  sectionId,
+  paperId,
+  paperBankIds,
+}: {
+  sectionId: string;
+  paperId: string;
+  paperBankIds: string[];
+}) => {
+  return api.put(`/lab-service/sections/${sectionId}/reference`, {
+    paperId,
+    paperBankIds,
+  });
+};
+
+const getPaperBankDetailForEditor = async (
+  paperBankId: string,
+): Promise<PaperBankDetailForEditor | null> => {
+  const response = (await api.get(
+    `/lab-service/paper-bank/${paperBankId}`,
+  )) as {
+    result?: {
+      paperBank?: Record<string, unknown>;
+      paper?: Record<string, unknown>;
+    };
+  };
+
+  const source =
+    (response?.result?.paperBank as Record<string, unknown> | undefined) ??
+    (response?.result?.paper as Record<string, unknown> | undefined) ??
+    null;
+
+  if (!source) return null;
+
+  return {
+    id: String(source.id ?? ''),
+    title: (source.title as string | null) ?? null,
+    abstract: (source.abstract as string | null) ?? null,
+    filePath: (source.filePath as string | null) ?? null,
+    authors: (source.authors as string | null) ?? null,
+    publisher: (source.publisher as string | null) ?? null,
+    doi: (source.doi as string | null) ?? null,
+    publicationDate: (source.publicationDate as string | null) ?? null,
+    paperType: (source.paperType as string | null) ?? null,
+    journalName: (source.journalName as string | null) ?? null,
+    conferenceName: (source.conferenceName as string | null) ?? null,
+    pages: (source.pages as string | null) ?? null,
+    number: (source.number as string | null) ?? null,
+    volume: (source.volume as string | null) ?? null,
+    referenceContent: (source.referenceContent as string | null) ?? null,
+    tagNames: Array.isArray(source.tagNames)
+      ? source.tagNames.filter((tag): tag is string => typeof tag === 'string')
+      : [],
+  };
 };
 
 const SectionVersionsPanel = ({
@@ -330,10 +467,12 @@ const VersionsTabPanel = ({
 const ReferencesTab = ({
   sectionId,
   compact = false,
+  reloadToken,
   onOpenSectionInEditor,
 }: {
   sectionId?: string;
   compact?: boolean;
+  reloadToken?: number;
   onOpenSectionInEditor?: (
     section: SectionReferenceOtherItem['sections'][number],
   ) => void;
@@ -341,6 +480,7 @@ const ReferencesTab = ({
   const query = useGetSectionReference({
     sectionId: sectionId ?? null,
   });
+  const { refetch: refetchSectionReferences } = query;
   const inUse = useMemo(
     () => query.data?.result?.inUse ?? [],
     [query.data?.result?.inUse],
@@ -356,7 +496,10 @@ const ReferencesTab = ({
 
   useEffect(() => {
     setSelectedReference(null);
-  }, [sectionId]);
+    if (sectionId) {
+      void refetchSectionReferences();
+    }
+  }, [sectionId, reloadToken, refetchSectionReferences]);
 
   const handleSectionClick = useCallback(
     (section: SectionReferenceOtherItem['sections'][number]) => {
@@ -714,6 +857,22 @@ const ReferencesTab = ({
                     <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Authors
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.authors || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Publisher
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.publisher || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
                           Journal / Conference
                         </p>
                         <p className="mt-0.5 font-medium">
@@ -743,6 +902,30 @@ const ReferencesTab = ({
                             {activeSections.length}
                           </p>
                         </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Volume
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activePaper.volume || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Number
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activePaper.number || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Pages
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.pages || 'Not provided'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
@@ -815,6 +998,17 @@ const InlineReferenceSectionEditor = ({
   isSaving,
   onChange,
   onSave,
+  mode = 'editor',
+  usedReferenceContent = '',
+  usedPaperBanks = [],
+  isUsedReferenceLoading = false,
+  availablePaperBanks = [],
+  isAvailablePaperBanksLoading = false,
+  currentPaperId,
+  currentSectionId,
+  currentSectionTitle,
+  onUpdateReference,
+  isUpdatingReference = false,
 }: {
   content: string;
   canEdit: boolean;
@@ -822,94 +1016,592 @@ const InlineReferenceSectionEditor = ({
   isSaving: boolean;
   onChange: (value: string | undefined) => void;
   onSave: () => void;
+  mode?: 'editor' | 'in-use';
+  usedReferenceContent?: string;
+  usedPaperBanks?: SectionReferenceInUsePaperBank[];
+  isUsedReferenceLoading?: boolean;
+  availablePaperBanks?: ProjectPaperBankOption[];
+  isAvailablePaperBanksLoading?: boolean;
+  currentPaperId?: string;
+  currentSectionId?: string;
+  currentSectionTitle?: string;
+  onUpdateReference?: (paperBankIds: string[]) => Promise<void>;
+  isUpdatingReference?: boolean;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isBankDetailDialogOpen, setIsBankDetailDialogOpen] = useState(false);
+  const [isBankDetailLoading, setIsBankDetailLoading] = useState(false);
+  const [inUseEditorHeight, setInUseEditorHeight] = useState(288);
+  const [activeBankDetail, setActiveBankDetail] =
+    useState<PaperBankDetailForEditor | null>(null);
+  const [selectedPaperBankIds, setSelectedPaperBankIds] = useState<string[]>(
+    [],
+  );
+
+  const togglePaperBank = useCallback((paperBankId: string) => {
+    setSelectedPaperBankIds((prev) =>
+      prev.includes(paperBankId)
+        ? prev.filter((id) => id !== paperBankId)
+        : [...prev, paperBankId],
+    );
+  }, []);
+
+  const handleOpenUpdateDialog = useCallback(() => {
+    const ids = usedPaperBanks
+      .map((paper) => paper.id)
+      .filter((id): id is string => !!id);
+    setSelectedPaperBankIds(Array.from(new Set(ids)));
+    setIsUpdateDialogOpen(true);
+  }, [usedPaperBanks]);
+
+  const handleSubmitUpdateReference = useCallback(async () => {
+    if (!onUpdateReference) return;
+    await onUpdateReference(selectedPaperBankIds);
+    setIsUpdateDialogOpen(false);
+  }, [onUpdateReference, selectedPaperBankIds]);
+
+  const handleOpenBankDetail = useCallback(async (paperBankId: string) => {
+    setIsBankDetailDialogOpen(true);
+    setIsBankDetailLoading(true);
+    try {
+      const detail = await getPaperBankDetailForEditor(paperBankId);
+      setActiveBankDetail(detail);
+    } catch {
+      setActiveBankDetail(null);
+      toast.error('Failed to load paper bank detail.');
+    } finally {
+      setIsBankDetailLoading(false);
+    }
+  }, []);
+
+  const handleStartResizeInUseEditor = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      const startY = event.clientY;
+      const startHeight = inUseEditorHeight;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const deltaY = moveEvent.clientY - startY;
+        const nextHeight = Math.min(640, Math.max(160, startHeight - deltaY));
+        setInUseEditorHeight(nextHeight);
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [inUseEditorHeight],
+  );
 
   return (
-    <div className="shrink-0 border-t border-[#e8e8e6] bg-[#fafafa] dark:border-[#2a2a2a] dark:bg-[#151515]">
-      <div className="flex h-9 items-center justify-between border-b border-[#e8e8e6] px-3 dark:border-[#2a2a2a]">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
-            <FileText className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
-            References
-          </span>
+    <>
+      <div className="relative shrink-0 border-t border-[#e8e8e6] bg-[#fafafa] dark:border-[#2a2a2a] dark:bg-[#151515]">
+        {isExpanded && mode === 'in-use' && (
           <button
             type="button"
-            onClick={() => setIsExpanded((prev) => !prev)}
-            className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            title={isExpanded ? 'Collapse references' : 'Expand references'}
-            aria-label={
-              isExpanded ? 'Collapse references' : 'Expand references'
-            }
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-          </button>
-          <span className="text-[10px] text-slate-400">SOURCE - LATEX</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {isDirty && (
-            <span className="text-[10px] text-amber-600 dark:text-amber-400">
-              Unsaved changes
+            aria-label="Resize reference content"
+            onMouseDown={handleStartResizeInUseEditor}
+            className="absolute -top-2 left-0 z-10 h-3 w-full cursor-row-resize bg-transparent p-0 text-transparent outline-none"
+            title="Resize reference content"
+          />
+        )}
+
+        <div className="flex h-9 items-center justify-between border-b border-[#e8e8e6] px-3 dark:border-[#2a2a2a]">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
+              <FileText className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
+              References
             </span>
-          )}
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">
-            {canEdit ? 'Editable' : 'Read only'}
-          </span>
-          {canEdit && (
-            <Button
+            <button
               type="button"
-              size="sm"
-              onClick={onSave}
-              disabled={isSaving}
-              className="h-6 px-2 text-[10px]"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              title={isExpanded ? 'Collapse references' : 'Expand references'}
+              aria-label={
+                isExpanded ? 'Collapse references' : 'Expand references'
+              }
             >
-              {isSaving ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+              {isExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
               ) : (
-                'Save References'
+                <ChevronRight className="h-3.5 w-3.5" />
               )}
-            </Button>
-          )}
+            </button>
+            <span className="text-[10px] text-slate-400">SOURCE - LATEX</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {mode === 'in-use' ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleOpenUpdateDialog}
+                  disabled={!currentPaperId || !currentSectionId}
+                  className="h-6 px-2 text-[10px]"
+                >
+                  Update reference
+                </Button>
+              </>
+            ) : (
+              <>
+                {isDirty && (
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                    Unsaved changes
+                  </span>
+                )}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  {canEdit ? 'Editable' : 'Read only'}
+                </span>
+                {canEdit && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={onSave}
+                    disabled={isSaving}
+                    className="h-6 px-2 text-[10px]"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      'Save References'
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
+
+        {isExpanded &&
+          (mode === 'in-use' ? (
+            <div className="border-t border-transparent">
+              {isUsedReferenceLoading ? (
+                <div className="flex h-72 items-center gap-2 px-3 text-xs text-slate-500 dark:text-slate-400">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading reference content...
+                </div>
+              ) : usedReferenceContent.trim() ? (
+                <div
+                  className="overflow-hidden"
+                  style={{ height: `${inUseEditorHeight}px` }}
+                >
+                  <Editor
+                    height="100%"
+                    defaultLanguage="latex-custom"
+                    value={usedReferenceContent}
+                    beforeMount={registerLatexLanguage}
+                    theme="latex-light"
+                    options={{
+                      readOnly: true,
+                      domReadOnly: true,
+                      fontSize: 14,
+                      lineHeight: 22,
+                      minimap: { enabled: false },
+                      wordWrap: 'on',
+                      scrollBeyondLastLine: false,
+                      padding: { top: 10, bottom: 10 },
+                      automaticLayout: true,
+                      tabSize: 2,
+                      lineNumbers: 'on',
+                      renderLineHighlight: 'line',
+                      fontFamily:
+                        "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                      fontLigatures: true,
+                      smoothScrolling: true,
+                      scrollbar: {
+                        verticalScrollbarSize: 6,
+                        horizontalScrollbarSize: 6,
+                        useShadows: false,
+                      },
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="px-3 py-4 text-xs text-slate-500 dark:text-slate-400">
+                  No reference content is currently in use for this section.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="h-72">
+              <Editor
+                height="100%"
+                defaultLanguage="latex-custom"
+                value={content}
+                onChange={onChange}
+                theme="latex-light"
+                beforeMount={registerLatexLanguage}
+                options={{
+                  readOnly: !canEdit,
+                  domReadOnly: !canEdit,
+                  fontSize: 14,
+                  lineHeight: 22,
+                  minimap: { enabled: false },
+                  wordWrap: 'on',
+                  scrollBeyondLastLine: false,
+                  padding: { top: 10, bottom: 10 },
+                  automaticLayout: true,
+                  tabSize: 2,
+                  lineNumbers: 'on',
+                  scrollbar: {
+                    verticalScrollbarSize: 6,
+                    horizontalScrollbarSize: 6,
+                    useShadows: false,
+                  },
+                }}
+              />
+            </div>
+          ))}
       </div>
 
-      {isExpanded && (
-        <div className="h-72">
-          <Editor
-            height="100%"
-            defaultLanguage="latex-custom"
-            value={content}
-            onChange={onChange}
-            theme="latex-light"
-            beforeMount={registerLatexLanguage}
-            options={{
-              readOnly: !canEdit,
-              domReadOnly: !canEdit,
-              fontSize: 14,
-              lineHeight: 22,
-              minimap: { enabled: false },
-              wordWrap: 'on',
-              scrollBeyondLastLine: false,
-              padding: { top: 10, bottom: 10 },
-              automaticLayout: true,
-              tabSize: 2,
-              lineNumbers: 'on',
-              scrollbar: {
-                verticalScrollbarSize: 6,
-                horizontalScrollbarSize: 6,
-                useShadows: false,
-              },
-            }}
-          />
-        </div>
-      )}
-    </div>
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-hidden pt-9 sm:max-w-2xl [&>button]:top-3 [&>button]:right-3 [&>button]:z-20">
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+              <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Update references
+              </h3>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  Selected: {selectedPaperBankIds.length}
+                </span>
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                  Available: {availablePaperBanks.length}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+              <p>Section title: {currentSectionTitle || '-'}</p>
+            </div>
+
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+              {isAvailablePaperBanksLoading ? (
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading paper banks...
+                </div>
+              ) : availablePaperBanks.length > 0 ? (
+                availablePaperBanks.map((paper) => {
+                  const checked = selectedPaperBankIds.includes(paper.id);
+                  return (
+                    <label
+                      key={paper.id}
+                      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2.5 transition-colors ${
+                        checked
+                          ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
+                          : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5"
+                        checked={checked}
+                        onChange={() => togglePaperBank(paper.id)}
+                      />
+                      <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+                            {paper.title || 'Untitled paper'}
+                          </p>
+                          {(paper.journalName || paper.conferenceName) && (
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                              {paper.journalName || paper.conferenceName}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            void handleOpenBankDetail(paper.id);
+                          }}
+                          title="View detail"
+                          aria-label="View detail"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </label>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  No paper banks found in this project.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsUpdateDialogOpen(false)}
+                disabled={isUpdatingReference}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmitUpdateReference}
+                disabled={
+                  isUpdatingReference || !currentPaperId || !currentSectionId
+                }
+              >
+                {isUpdatingReference ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Updating...
+                  </span>
+                ) : (
+                  'Update Reference'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isBankDetailDialogOpen}
+        onOpenChange={(open) => {
+          setIsBankDetailDialogOpen(open);
+          if (!open) setActiveBankDetail(null);
+        }}
+      >
+        <DialogContent
+          overlayClassName="bg-black/50"
+          className="max-h-[88vh] w-[min(1220px,calc(100vw-2rem))]! max-w-none! overflow-hidden pt-9 [&>button]:top-3 [&>button]:right-3 [&>button]:z-20"
+        >
+          {isBankDetailLoading ? (
+            <div className="flex items-center gap-2 py-4 text-sm text-slate-500 dark:text-slate-400">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading paper detail...
+            </div>
+          ) : activeBankDetail ? (
+            <div className="max-h-[72vh] space-y-4 overflow-y-auto pr-1">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                  {activeBankDetail.title || 'Untitled paper'}
+                </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Reference currently used in this section
+                </p>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,1fr)]">
+                <div className="space-y-4">
+                  {activeBankDetail.abstract && (
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                          Abstract
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-2 py-0.5 text-[10px]"
+                        >
+                          Preview
+                        </Badge>
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                        {activeBankDetail.abstract}
+                      </p>
+                    </section>
+                  )}
+
+                  <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                      Reference content
+                    </p>
+                    <div className="mt-2 h-80 max-h-[65vh] min-h-45 resize-y overflow-auto">
+                      <Editor
+                        height="100%"
+                        defaultLanguage="latex-custom"
+                        value={activeBankDetail.referenceContent || ''}
+                        beforeMount={registerLatexLanguage}
+                        theme="latex-light"
+                        options={{
+                          readOnly: true,
+                          domReadOnly: true,
+                          fontSize: 13,
+                          lineHeight: 22,
+                          minimap: { enabled: false },
+                          wordWrap: 'on',
+                          scrollBeyondLastLine: false,
+                          padding: { top: 10, bottom: 10 },
+                          automaticLayout: true,
+                          tabSize: 2,
+                          lineNumbers: 'off',
+                          glyphMargin: false,
+                          lineDecorationsWidth: 0,
+                          folding: false,
+                          renderLineHighlight: 'line',
+                          fontFamily:
+                            "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                          fontLigatures: true,
+                          smoothScrolling: true,
+                          scrollbar: {
+                            verticalScrollbarSize: 6,
+                            horizontalScrollbarSize: 6,
+                            useShadows: false,
+                          },
+                        }}
+                      />
+                    </div>
+                  </section>
+                </div>
+
+                <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                    <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                      Metadata
+                    </p>
+                    <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Authors
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activeBankDetail.authors || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Publisher
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activeBankDetail.publisher || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Journal / Conference
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activeBankDetail.journalName ||
+                            activeBankDetail.conferenceName ||
+                            'Not provided'}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Year
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.publicationDate
+                              ? new Date(
+                                  activeBankDetail.publicationDate,
+                                ).getFullYear()
+                              : 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Volume
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.volume || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Number
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.number || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Pages
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.pages || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          DOI
+                        </p>
+                        {activeBankDetail.doi ? (
+                          <a
+                            href={
+                              activeBankDetail.doi.startsWith('http')
+                                ? activeBankDetail.doi
+                                : `https://doi.org/${activeBankDetail.doi}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-mono break-all text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            <Link2 className="h-3 w-3" />
+                            {activeBankDetail.doi}
+                          </a>
+                        ) : (
+                          <p className="mt-0.5 font-medium">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Tags
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {activeBankDetail.tagNames.length ? (
+                            activeBankDetail.tagNames.slice(0, 8).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="rounded-full px-2 py-0.5 text-[10px]"
+                              >
+                                {tag}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                              No tags
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeBankDetail.filePath && (
+                    <a
+                      href={activeBankDetail.filePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                    >
+                      <Download className="h-4 w-4" />
+                      Open file
+                    </a>
+                  )}
+                </aside>
+              </div>
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-slate-500 dark:text-slate-400">
+              No detail available.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -1338,7 +2030,7 @@ export const LatexPaperEditor = ({
   const [toolsTab, setToolsTab] = useState<
     'chat' | 'versions' | 'comments' | 'info' | 'datasets'
   >('chat');
-  const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(false);
+  const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(true);
   const [editorWidthPct, setEditorWidthPct] = useState(50);
   const [pdfZoom, setPdfZoom] = useState(100);
   // Version preview state: when set, editor shows a read-only version tab
@@ -1451,9 +2143,52 @@ export const LatexPaperEditor = ({
       if (prev && sections.some((section) => section.id === prev)) {
         return prev;
       }
+
+      const previousSection = prev
+        ? editorSections?.find((section) => section.id === prev)
+        : null;
+
+      if (previousSection) {
+        const previousMarkSectionId =
+          previousSection.markSectionId || previousSection.id;
+
+        const matchedByMarkAndIdentity = sections.find((section) => {
+          const currentMarkSectionId = section.markSectionId || section.id;
+          return (
+            currentMarkSectionId === previousMarkSectionId &&
+            section.memberId === previousSection.memberId &&
+            section.sectionRole === previousSection.sectionRole
+          );
+        });
+
+        if (matchedByMarkAndIdentity) {
+          return matchedByMarkAndIdentity.id;
+        }
+
+        const matchedByMark = sections.find((section) => {
+          const currentMarkSectionId = section.markSectionId || section.id;
+          return currentMarkSectionId === previousMarkSectionId;
+        });
+
+        if (matchedByMark) {
+          return matchedByMark.id;
+        }
+
+        const matchedByStructure = sections.find(
+          (section) =>
+            section.title === previousSection.title &&
+            section.parentSectionId === previousSection.parentSectionId &&
+            section.memberId === previousSection.memberId,
+        );
+
+        if (matchedByStructure) {
+          return matchedByStructure.id;
+        }
+      }
+
       return fallbackSectionId;
     });
-  }, [initialSectionId, sections]);
+  }, [initialSectionId, sections, editorSections]);
 
   const activeSection =
     editorSections?.find((section) => section.id === activeSectionId) ?? null;
@@ -1502,6 +2237,14 @@ export const LatexPaperEditor = ({
       editableSectionRoles.has(referenceSection.sectionRole));
   const [referenceContent, setReferenceContent] = useState('');
   const [savedReferenceContent, setSavedReferenceContent] = useState('');
+  const [inUseReferenceContent, setInUseReferenceContent] = useState('');
+  const [inUsePaperBanks, setInUsePaperBanks] = useState<
+    SectionReferenceInUsePaperBank[]
+  >([]);
+  const [isInUseReferenceLoading, setIsInUseReferenceLoading] = useState(false);
+  const [isUpdatingReference, setIsUpdatingReference] = useState(false);
+  const [inUseReferenceReloadKey, setInUseReferenceReloadKey] = useState(0);
+  const queryClient = useQueryClient();
 
   // Derive paperId from sections for version history
   const derivedPaperId =
@@ -1514,6 +2257,25 @@ export const LatexPaperEditor = ({
   // Current user for "me" badges
   const { data: currentUser } = useUser();
   const currentUserEmail = (currentUser?.email || '').toLowerCase();
+
+  const projectPapersQuery = useProjectPapers({
+    projectId: projectId ?? '',
+    params: { PageNumber: 1, PageSize: 200 },
+    queryConfig: { enabled: !!projectId },
+  });
+  const availableProjectPaperBanks = useMemo<ProjectPaperBankOption[]>(() => {
+    const items =
+      ((projectPapersQuery.data as any)?.result?.items as Array<
+        Record<string, unknown>
+      >) ?? [];
+
+    return items.map((paper) => ({
+      id: String(paper.id ?? ''),
+      title: (paper.title as string | null) ?? null,
+      journalName: (paper.journalName as string | null) ?? null,
+      conferenceName: (paper.conferenceName as string | null) ?? null,
+    }));
+  }, [projectPapersQuery.data]);
 
   // LaTeX stats computed from current content
   const latexStats = useMemo(() => computeLatexStats(content), [content]);
@@ -1662,6 +2424,82 @@ export const LatexPaperEditor = ({
     setReferenceContent(nextContent);
     setSavedReferenceContent(nextContent);
   }, [referenceSection]);
+
+  useEffect(() => {
+    let disposed = false;
+
+    if (!activeSectionId) {
+      setInUseReferenceContent('');
+      setInUsePaperBanks([]);
+      setIsInUseReferenceLoading(false);
+      return;
+    }
+
+    const loadInUseReferences = async () => {
+      setIsInUseReferenceLoading(true);
+      try {
+        const data = await getSectionReferenceInUseForEditor(activeSectionId);
+        if (disposed) return;
+        setInUseReferenceContent(data.referenceContent);
+        setInUsePaperBanks(data.paperBanks);
+      } catch {
+        if (disposed) return;
+        setInUseReferenceContent('');
+        setInUsePaperBanks([]);
+      } finally {
+        if (!disposed) {
+          setIsInUseReferenceLoading(false);
+        }
+      }
+    };
+
+    loadInUseReferences();
+
+    return () => {
+      disposed = true;
+    };
+  }, [activeSectionId, inUseReferenceReloadKey]);
+
+  const handleUpdateSectionReference = useCallback(
+    async (paperBankIds: string[]) => {
+      if (!activeSectionId) {
+        toast.error('No active section to update reference.');
+        return;
+      }
+      if (!derivedPaperId) {
+        toast.error('Cannot resolve current paper id.');
+        return;
+      }
+
+      try {
+        setIsUpdatingReference(true);
+        await updateSectionReferenceForEditor({
+          sectionId: activeSectionId,
+          paperId: derivedPaperId,
+          paperBankIds,
+        });
+        toast.success('Reference updated successfully.');
+        setInUseReferenceReloadKey((prev) => prev + 1);
+        await queryClient.invalidateQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
+            activeSectionId,
+          ],
+        });
+        await queryClient.refetchQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
+            activeSectionId,
+          ],
+        });
+      } catch {
+        toast.error('Failed to update reference. Please try again.');
+      } finally {
+        setIsUpdatingReference(false);
+      }
+    },
+    [activeSectionId, derivedPaperId, queryClient],
+  );
 
   // Auto-render on first mount with the initial section content
   const hasRenderedOnce = useRef(false);
@@ -1832,6 +2670,7 @@ export const LatexPaperEditor = ({
       });
 
       setSavedReferenceContent(referenceContent);
+      setInUseReferenceReloadKey((prev) => prev + 1);
 
       if (activeSectionId === referenceSection.id) {
         setActiveSectionId(latestSectionId);
@@ -1851,6 +2690,7 @@ export const LatexPaperEditor = ({
     resolveLatestSectionId,
     activeSectionId,
     onSave,
+    setInUseReferenceReloadKey,
   ]);
 
   const handleSave = useCallback(async () => {
@@ -1954,12 +2794,36 @@ export const LatexPaperEditor = ({
   ]);
 
   const handleClose = useCallback(() => {
-    if (!isActiveSectionReadOnly && content !== savedContent) {
+    const hasUnsavedMainContent = content !== savedContent;
+    const hasUnsavedReferenceContent =
+      referenceContent !== savedReferenceContent;
+
+    if (
+      !isActiveSectionReadOnly &&
+      (hasUnsavedMainContent || hasUnsavedReferenceContent)
+    ) {
       setShowCloseConfirm(true);
     } else {
       onClose();
     }
-  }, [content, savedContent, onClose, isActiveSectionReadOnly]);
+  }, [
+    content,
+    savedContent,
+    referenceContent,
+    savedReferenceContent,
+    onClose,
+    isActiveSectionReadOnly,
+  ]);
+
+  const handleCloseWithoutSaving = useCallback(() => {
+    setDraftMap({});
+    setContent(savedContent);
+    setReferenceContent(savedReferenceContent);
+    setPreviewEditContent(null);
+    setVersionPreview(null);
+    setShowCloseConfirm(false);
+    onClose();
+  }, [onClose, savedContent, savedReferenceContent, setDraftMap]);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -2058,7 +2922,7 @@ export const LatexPaperEditor = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={onClose}
+              onClick={handleCloseWithoutSaving}
               className="bg-red-600 text-white hover:bg-red-700"
             >
               Close without saving
@@ -2203,8 +3067,10 @@ export const LatexPaperEditor = ({
               {isSidebarRefOpen && (
                 <div className="max-h-136 overflow-y-auto px-2 pb-2">
                   <ReferencesTab
+                    key={`${activeSectionId ?? 'none'}-${inUseReferenceReloadKey}`}
                     sectionId={activeSectionId ?? undefined}
                     compact
+                    reloadToken={inUseReferenceReloadKey}
                     onOpenSectionInEditor={handleOpenReferenceSectionInEditor}
                   />
                 </div>
@@ -2650,6 +3516,17 @@ export const LatexPaperEditor = ({
                     isSaving={updateSectionMutation.isPending}
                     onChange={(value) => setReferenceContent(value ?? '')}
                     onSave={handleSaveReferenceSection}
+                    mode="in-use"
+                    usedReferenceContent={inUseReferenceContent}
+                    usedPaperBanks={inUsePaperBanks}
+                    isUsedReferenceLoading={isInUseReferenceLoading}
+                    availablePaperBanks={availableProjectPaperBanks}
+                    isAvailablePaperBanksLoading={projectPapersQuery.isLoading}
+                    currentPaperId={derivedPaperId}
+                    currentSectionId={activeSectionId ?? undefined}
+                    currentSectionTitle={activeSectionTitle ?? undefined}
+                    onUpdateReference={handleUpdateSectionReference}
+                    isUpdatingReference={isUpdatingReference}
                   />
                 )}
 
