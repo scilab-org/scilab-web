@@ -36,6 +36,9 @@ export const useUpdateSection = ({
     mutationFn: updateSection,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
+        queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS],
+      });
+      queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS],
       });
       onSuccess?.(...args);

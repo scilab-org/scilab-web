@@ -71,10 +71,9 @@ import {
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
-import {
-  getMarkSection,
-  useMarkSection,
-} from '@/features/paper-management/api/get-mark-section';
+import { useMarkSection } from '@/features/paper-management/api/get-mark-section';
+import { getAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
+import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
 import { useSectionComments } from '@/features/paper-management/api/get-section-comments';
@@ -161,6 +160,7 @@ type MarkSectionItem = {
   sectionRole: string;
   isMainSection: boolean;
   content: string;
+  nextVersionSectionId?: string | null;
 };
 
 type SectionReferenceInUsePaperBank = {
@@ -1995,7 +1995,6 @@ const toPlainSectionTitle = (title: string): string => {
 export const LatexPaperEditor = ({
   paperTitle,
   projectId,
-  draftStorageScope,
   initialContent,
   sections,
   initialSectionId,
@@ -2057,81 +2056,13 @@ export const LatexPaperEditor = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastReadOnlyToastRef = useRef<number>(0);
 
-  const draftStorageKey = useMemo(() => {
-    if (draftStorageScope) return `latex-editor-drafts:${draftStorageScope}`;
-
-    const derivedPaperId = sections?.[0]?.paperId || 'paper';
-    const derivedProjectId = projectId || 'workspace';
-    return `latex-editor-drafts:${derivedProjectId}:${derivedPaperId}`;
-  }, [draftStorageScope, projectId, sections]);
-
-  const getDraftMap = useCallback((): Record<string, string> => {
-    if (typeof window === 'undefined') return {};
-
-    try {
-      const raw = sessionStorage.getItem(draftStorageKey);
-      if (!raw) return {};
-
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        return {};
-      }
-
-      return parsed as Record<string, string>;
-    } catch {
-      return {};
-    }
-  }, [draftStorageKey]);
-
-  const setDraftMap = useCallback(
-    (next: Record<string, string>) => {
-      if (typeof window === 'undefined') return;
-
-      try {
-        if (Object.keys(next).length === 0) {
-          sessionStorage.removeItem(draftStorageKey);
-          return;
-        }
-
-        sessionStorage.setItem(draftStorageKey, JSON.stringify(next));
-      } catch {
-        // ignore storage failures
-      }
-    },
-    [draftStorageKey],
-  );
-
-  const getSectionDraft = useCallback(
-    (sectionId: string): string | null => {
-      const draftMap = getDraftMap();
-      const value = draftMap[sectionId];
-      return typeof value === 'string' ? value : null;
-    },
-    [getDraftMap],
-  );
-
-  const setSectionDraft = useCallback(
-    (sectionId: string, value: string) => {
-      const draftMap = getDraftMap();
-      draftMap[sectionId] = value;
-      setDraftMap(draftMap);
-    },
-    [getDraftMap, setDraftMap],
-  );
-
-  const clearSectionDraft = useCallback(
-    (sectionId: string) => {
-      const draftMap = getDraftMap();
-      if (!(sectionId in draftMap)) return;
-
-      delete draftMap[sectionId];
-      setDraftMap(draftMap);
-    },
-    [getDraftMap, setDraftMap],
-  );
-
   useEffect(() => {
     setEditorSections(sections);
+    // When the workspace passes a refreshed sections snapshot (e.g., after clicking Edit
+    // or after a save refresh), force the next load to re-fetch from server even if the
+    // activeSectionId hasn't changed. This prevents showing stale content due to the
+    // global React Query staleTime.
+    previousActiveSectionIdRef.current = null;
   }, [sections]);
 
   useEffect(() => {
@@ -2359,52 +2290,161 @@ export const LatexPaperEditor = ({
     };
   }, []);
 
+  const resolveLatestSectionIdFromAssignedSections = useCallback(
+    async (markSectionId: string, sectionSnapshot?: SectionProp | null) => {
+      if (!derivedPaperId) return null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const assignedResponse = await getAssignedSections({
+            paperId: derivedPaperId,
+            params: { PageNumber: 1, PageSize: 1000 },
+          });
+          const assignedItems = assignedResponse.result?.items ?? [];
+
+          const exactMatch = sectionSnapshot
+            ? assignedItems.find(
+                (item) =>
+                  (item.markSectionId || item.id) === markSectionId &&
+                  item.memberId === sectionSnapshot.memberId &&
+                  item.sectionRole === sectionSnapshot.sectionRole,
+              )
+            : undefined;
+
+          const markMatch = assignedItems.find(
+            (item) => (item.markSectionId || item.id) === markSectionId,
+          );
+
+          const resolvedId = exactMatch?.id || markMatch?.id || null;
+          if (resolvedId) return resolvedId;
+        } catch {
+          // ignore and retry
+        }
+
+        if (attempt < 2) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, 200);
+          });
+        }
+      }
+
+      return null;
+    },
+    [derivedPaperId],
+  );
+
   // When sections or activeSectionId changes, load content into editor
   useEffect(() => {
-    if (editorSections && activeSectionId) {
+    let disposed = false;
+
+    const loadLatestSectionContent = async () => {
+      if (!editorSections || !activeSectionId) return;
+
       const activeSection = editorSections.find(
         (s) => s.id === activeSectionId,
       );
-      if (activeSection) {
-        const isSectionSwitched =
-          previousActiveSectionIdRef.current !== activeSectionId;
+      if (!activeSection) return;
 
-        // Only reset content when actually switching sections to avoid jank on save
-        if (isSectionSwitched) {
-          const persistedDraft = getSectionDraft(activeSectionId);
-          const serverContent = activeSection.content || '';
-          const nextContent = persistedDraft ?? serverContent;
+      const isSectionSwitched =
+        previousActiveSectionIdRef.current !== activeSectionId;
 
-          setContent(nextContent);
-          setSavedContent(activeSection.content || '');
-          if (nextContent) {
-            compileAndRender(nextContent);
-          } else {
-            setPdfUrl(null);
-            setCompileError(null);
-          }
+      // Only refresh/reset when actually switching sections to avoid jank on save
+      if (!isSectionSwitched) return;
+
+      try {
+        // Always resolve the newest id from assigned-sections before loading content.
+        const markSectionId = (
+          activeSection.markSectionId || activeSection.id
+        ).trim();
+        const resolvedId =
+          (await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            activeSection,
+          )) || activeSectionId;
+
+        if (disposed) return;
+
+        if (resolvedId !== activeSectionId) {
+          setEditorSections((prev) => {
+            if (!prev?.length) return prev;
+            return prev.map((section) =>
+              section.id === activeSectionId
+                ? { ...section, id: resolvedId }
+                : section,
+            );
+          });
+          setActiveSectionId(resolvedId);
+          previousActiveSectionIdRef.current = null;
+        }
+
+        const response = await getSection(resolvedId);
+        if (disposed) return;
+
+        const latest = response.result;
+        const latestId = latest.id || resolvedId;
+        const latestContent = latest.content || '';
+
+        setEditorSections((prev) => {
+          if (!prev?.length) return prev;
+
+          return prev.map((section) => {
+            if (section.id !== activeSectionId) return section;
+
+            return {
+              ...section,
+              id: latestId,
+              title: latest.title || section.title,
+              content: latestContent,
+              numbered: latest.numbered,
+              displayOrder: latest.displayOrder,
+              sectionSumary: latest.sectionSumary || '',
+              description: latest.description || section.description,
+              parentSectionId: latest.parentSectionId ?? null,
+              memberId: latest.memberId || section.memberId,
+            };
+          });
+        });
+
+        if (latestId !== activeSectionId) {
+          setActiveSectionId(latestId);
+          previousActiveSectionIdRef.current = latestId;
+        } else {
           previousActiveSectionIdRef.current = activeSectionId;
         }
+
+        setContent(latestContent);
+        setSavedContent(latestContent);
+        if (latestContent) {
+          compileAndRender(latestContent);
+        } else {
+          setPdfUrl(null);
+          setCompileError(null);
+        }
+      } catch {
+        const fallbackContent = activeSection.content || '';
+
+        setContent(fallbackContent);
+        setSavedContent(fallbackContent);
+        if (fallbackContent) {
+          compileAndRender(fallbackContent);
+        } else {
+          setPdfUrl(null);
+          setCompileError(null);
+        }
+        previousActiveSectionIdRef.current = activeSectionId;
       }
-    }
-  }, [editorSections, activeSectionId, compileAndRender, getSectionDraft]);
+    };
 
-  useEffect(() => {
-    if (!activeSectionId || versionPreview) return;
+    void loadLatestSectionContent();
 
-    if (content === savedContent) {
-      clearSectionDraft(activeSectionId);
-      return;
-    }
-
-    setSectionDraft(activeSectionId, content);
+    return () => {
+      disposed = true;
+    };
   }, [
+    editorSections,
     activeSectionId,
-    clearSectionDraft,
-    content,
-    savedContent,
-    setSectionDraft,
-    versionPreview,
+    compileAndRender,
+    resolveLatestSectionIdFromAssignedSections,
   ]);
 
   useEffect(() => {
@@ -2428,7 +2468,7 @@ export const LatexPaperEditor = ({
   useEffect(() => {
     let disposed = false;
 
-    if (!activeSectionId) {
+    if (!referenceSection) {
       setInUseReferenceContent('');
       setInUsePaperBanks([]);
       setIsInUseReferenceLoading(false);
@@ -2438,7 +2478,33 @@ export const LatexPaperEditor = ({
     const loadInUseReferences = async () => {
       setIsInUseReferenceLoading(true);
       try {
-        const data = await getSectionReferenceInUseForEditor(activeSectionId);
+        const markSectionId = (
+          referenceSection.markSectionId || referenceSection.id
+        ).trim();
+        const resolvedRefId =
+          (await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            referenceSection,
+          )) || referenceSection.id;
+
+        if (disposed) return;
+
+        if (resolvedRefId !== referenceSection.id) {
+          setEditorSections((prev) => {
+            if (!prev?.length) return prev;
+            return prev.map((section) =>
+              section.id === referenceSection.id
+                ? { ...section, id: resolvedRefId }
+                : section,
+            );
+          });
+          if (activeSectionId === referenceSection.id) {
+            previousActiveSectionIdRef.current = null;
+            setActiveSectionId(resolvedRefId);
+          }
+        }
+
+        const data = await getSectionReferenceInUseForEditor(resolvedRefId);
         if (disposed) return;
         setInUseReferenceContent(data.referenceContent);
         setInUsePaperBanks(data.paperBanks);
@@ -2453,12 +2519,83 @@ export const LatexPaperEditor = ({
       }
     };
 
-    loadInUseReferences();
+    void loadInUseReferences();
 
     return () => {
       disposed = true;
     };
-  }, [activeSectionId, inUseReferenceReloadKey]);
+  }, [
+    referenceSection,
+    activeSectionId,
+    inUseReferenceReloadKey,
+    resolveLatestSectionIdFromAssignedSections,
+  ]);
+
+  const refreshReferenceSectionFromServer = useCallback(
+    async (fetchId?: string) => {
+      if (!referenceSection) return;
+
+      const sectionIdToFetch = fetchId || referenceSection.id;
+
+      try {
+        const response = await getSection(sectionIdToFetch);
+        const latest = response.result;
+        const latestId = latest.id || sectionIdToFetch;
+        const latestContent = latest.content || '';
+
+        setEditorSections((prev) => {
+          if (!prev?.length) return prev;
+
+          return prev.map((section) => {
+            if (
+              section.id !== referenceSection.id &&
+              section.id !== sectionIdToFetch &&
+              section.id !== latestId
+            ) {
+              return section;
+            }
+
+            return {
+              ...section,
+              id: latestId,
+              title: latest.title || section.title,
+              content: latestContent,
+              numbered: latest.numbered,
+              displayOrder: latest.displayOrder,
+              sectionSumary: latest.sectionSumary || '',
+              description: latest.description || section.description,
+              parentSectionId: latest.parentSectionId ?? null,
+              memberId: latest.memberId || section.memberId,
+            };
+          });
+        });
+
+        setReferenceContent(latestContent);
+        setSavedReferenceContent(latestContent);
+
+        if (
+          activeSectionId === referenceSection.id ||
+          activeSectionId === sectionIdToFetch ||
+          activeSectionId === latestId
+        ) {
+          previousActiveSectionIdRef.current = latestId;
+          setActiveSectionId(latestId);
+          setContent(latestContent);
+          setSavedContent(latestContent);
+
+          if (latestContent) {
+            compileAndRender(latestContent);
+          } else {
+            setPdfUrl(null);
+            setCompileError(null);
+          }
+        }
+      } catch {
+        // Keep existing content if server sync fails.
+      }
+    },
+    [activeSectionId, compileAndRender, referenceSection],
+  );
 
   const handleUpdateSectionReference = useCallback(
     async (paperBankIds: string[]) => {
@@ -2471,25 +2608,102 @@ export const LatexPaperEditor = ({
         return;
       }
 
+      const extractUpdatedSectionId = (response: unknown): string | null => {
+        const record = (response ?? {}) as Record<string, unknown>;
+        const result = (record.result ?? {}) as Record<string, unknown>;
+
+        const candidates: unknown[] = [
+          result.sectionId,
+          result.id,
+          (result.section as Record<string, unknown> | undefined)?.id,
+          record.sectionId,
+          record.id,
+        ];
+
+        const found = candidates.find(
+          (candidate): candidate is string => typeof candidate === 'string',
+        );
+
+        return found ? found.trim() : null;
+      };
+
+      const activeSectionSnapshot =
+        editorSections?.find((section) => section.id === activeSectionId) ??
+        null;
+
+      const markSectionId =
+        (activeSectionSnapshot?.markSectionId || '').trim() || activeSectionId;
+
+      // Resolve the latest id from assigned-sections and use it for ALL calls.
+      const sectionIdForUpdate =
+        (await resolveLatestSectionIdFromAssignedSections(
+          markSectionId,
+          activeSectionSnapshot,
+        )) || activeSectionId;
+
+      const previousSectionId = sectionIdForUpdate;
+
       try {
         setIsUpdatingReference(true);
-        await updateSectionReferenceForEditor({
-          sectionId: activeSectionId,
+        const updateResponse = await updateSectionReferenceForEditor({
+          sectionId: sectionIdForUpdate,
           paperId: derivedPaperId,
           paperBankIds,
         });
+
+        // After update, resolve id again from assigned-sections (authoritative).
+        let nextSectionId: string | null =
+          await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            activeSectionSnapshot,
+          );
+
+        // Fallbacks: server may return the new id directly, or we can resolve via mark-section.
+        if (!nextSectionId) {
+          nextSectionId = extractUpdatedSectionId(updateResponse);
+        }
+        // No mark-section fallback: assigned-sections is the requested source of truth.
+
+        // If the section was versioned (id changed), switch the editor to the new id.
+        if (nextSectionId && nextSectionId !== activeSectionId) {
+          previousActiveSectionIdRef.current = null;
+          setEditorSections((prev) => {
+            if (!prev?.length) return prev;
+            return prev.map((section) =>
+              section.id === activeSectionId
+                ? { ...section, id: nextSectionId }
+                : section,
+            );
+          });
+          setActiveSectionId(nextSectionId);
+        }
+
+        // Force refresh using the resolved id to avoid fetching by the old id via stale closure.
+        await refreshReferenceSectionFromServer(
+          nextSectionId || sectionIdForUpdate,
+        );
         toast.success('Reference updated successfully.');
         setInUseReferenceReloadKey((prev) => prev + 1);
+
+        const latestSectionIdForQuery = nextSectionId || previousSectionId;
         await queryClient.invalidateQueries({
           queryKey: [
             PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
-            activeSectionId,
+            previousSectionId,
           ],
         });
+        if (latestSectionIdForQuery !== previousSectionId) {
+          await queryClient.invalidateQueries({
+            queryKey: [
+              PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
+              latestSectionIdForQuery,
+            ],
+          });
+        }
         await queryClient.refetchQueries({
           queryKey: [
             PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
-            activeSectionId,
+            latestSectionIdForQuery,
           ],
         });
       } catch {
@@ -2498,7 +2712,14 @@ export const LatexPaperEditor = ({
         setIsUpdatingReference(false);
       }
     },
-    [activeSectionId, derivedPaperId, queryClient],
+    [
+      activeSectionId,
+      editorSections,
+      derivedPaperId,
+      queryClient,
+      refreshReferenceSectionFromServer,
+      resolveLatestSectionIdFromAssignedSections,
+    ],
   );
 
   // Auto-render on first mount with the initial section content
@@ -2549,22 +2770,12 @@ export const LatexPaperEditor = ({
   const handleOpenReferenceSectionInEditor = useCallback(
     (section: SectionReferenceOtherItem['sections'][number]) => {
       setPreviewEditContent(null);
-      setVersionPreview({
-        item: {
-          sectionId: section.id,
-          name: section.createdBy || 'Reference section',
-          email: '',
-          memberId: 'reference',
-          sectionRole: 'reference:readonly',
-          isMainSection: false,
-          content: section.content || '',
-        },
-        returnSectionId: activeSectionId,
-      });
+      setVersionPreview(null);
+      setActiveSectionId(section.id);
       setIsSidebarRefOpen(false);
       setIsToolsOpen(false);
     },
-    [activeSectionId],
+    [],
   );
 
   const handleInsertFileUrl = useCallback((fileUrl: string) => {
@@ -2607,32 +2818,6 @@ export const LatexPaperEditor = ({
     return () => window.clearTimeout(timeoutId);
   }, [copiedFileUrl]);
 
-  const resolveLatestSectionId = useCallback(async (section: SectionProp) => {
-    const markSectionId = section.markSectionId || section.id;
-
-    try {
-      const response = await getMarkSection(markSectionId);
-      const items = response.result?.items ?? [];
-
-      const sameMemberItems = items.filter(
-        (item) => item.memberId === section.memberId,
-      );
-      const sameRoleItems = sameMemberItems.filter(
-        (item) => item.sectionRole === section.sectionRole,
-      );
-      const candidates = sameRoleItems.length ? sameRoleItems : sameMemberItems;
-
-      if (!candidates.length) return section.id;
-
-      const latest =
-        candidates.find((item) => !item.nextVersionSectionId) ?? candidates[0];
-
-      return latest.sectionId || section.id;
-    } catch {
-      return section.id;
-    }
-  }, []);
-
   const handleSaveReferenceSection = useCallback(async () => {
     if (!referenceSection) return;
     if (!canEditReferenceSection) {
@@ -2654,7 +2839,14 @@ export const LatexPaperEditor = ({
         },
       });
 
-      const latestSectionId = await resolveLatestSectionId(referenceSection);
+      const markSectionId =
+        (referenceSection.markSectionId || referenceSection.id).trim() ||
+        referenceSection.id;
+      const latestSectionId =
+        (await resolveLatestSectionIdFromAssignedSections(
+          markSectionId,
+          referenceSection,
+        )) || referenceSection.id;
 
       setEditorSections((prev) => {
         if (!prev?.length) return prev;
@@ -2687,7 +2879,7 @@ export const LatexPaperEditor = ({
     canEditReferenceSection,
     updateSectionMutation,
     referenceContent,
-    resolveLatestSectionId,
+    resolveLatestSectionIdFromAssignedSections,
     activeSectionId,
     onSave,
     setInUseReferenceReloadKey,
@@ -2735,7 +2927,6 @@ export const LatexPaperEditor = ({
       });
 
       if (isEditingPreview) {
-        clearSectionDraft(targetSectionId);
         // Exit preview mode; active section stays unchanged
         setVersionPreview(null);
         setPreviewEditContent(null);
@@ -2743,17 +2934,19 @@ export const LatexPaperEditor = ({
         return;
       }
 
-      const latestSectionId = await resolveLatestSectionId(currentSection);
+      const markSectionId =
+        (currentSection.markSectionId || currentSection.id).trim() ||
+        currentSection.id;
+      const latestSectionId =
+        (await resolveLatestSectionIdFromAssignedSections(
+          markSectionId,
+          currentSection,
+        )) || activeSectionId;
       const nextSection: SectionProp = {
         ...currentSection,
         id: latestSectionId,
         content: contentToSave,
       };
-
-      clearSectionDraft(activeSectionId);
-      if (latestSectionId !== activeSectionId) {
-        clearSectionDraft(latestSectionId);
-      }
 
       // Update ref BEFORE state to prevent the section-switch effect from re-setting content
       previousActiveSectionIdRef.current = latestSectionId;
@@ -2789,8 +2982,7 @@ export const LatexPaperEditor = ({
     updateSectionMutation,
     onSave,
     isActiveSectionReadOnly,
-    resolveLatestSectionId,
-    clearSectionDraft,
+    resolveLatestSectionIdFromAssignedSections,
   ]);
 
   const handleClose = useCallback(() => {
@@ -2816,14 +3008,13 @@ export const LatexPaperEditor = ({
   ]);
 
   const handleCloseWithoutSaving = useCallback(() => {
-    setDraftMap({});
     setContent(savedContent);
     setReferenceContent(savedReferenceContent);
     setPreviewEditContent(null);
     setVersionPreview(null);
     setShowCloseConfirm(false);
     onClose();
-  }, [onClose, savedContent, savedReferenceContent, setDraftMap]);
+  }, [onClose, savedContent, savedReferenceContent]);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -3067,8 +3258,8 @@ export const LatexPaperEditor = ({
               {isSidebarRefOpen && (
                 <div className="max-h-136 overflow-y-auto px-2 pb-2">
                   <ReferencesTab
-                    key={`${activeSectionId ?? 'none'}-${inUseReferenceReloadKey}`}
-                    sectionId={activeSectionId ?? undefined}
+                    key={`${referenceSection?.id ?? 'none'}-${inUseReferenceReloadKey}`}
+                    sectionId={referenceSection?.id ?? undefined}
                     compact
                     reloadToken={inUseReferenceReloadKey}
                     onOpenSectionInEditor={handleOpenReferenceSectionInEditor}

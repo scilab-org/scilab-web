@@ -97,6 +97,11 @@ export const MarkMainSectionDialog = ({
   });
 
   const sections = sectionsQuery.data?.result?.items ?? [];
+  const selectableSections = sections.filter((section) => {
+    const normalizedTitle = section.title.trim().toLowerCase();
+
+    return normalizedTitle !== 'references' && normalizedTitle !== 'reference';
+  });
   const allVersions = versionsQuery.data?.result?.items ?? [];
 
   // Strictly filter by the currently selected section to avoid any ghost versions from other sections
@@ -136,7 +141,7 @@ export const MarkMainSectionDialog = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-150">
           <DialogHeader>
             <DialogTitle>Mark Main Section</DialogTitle>
           </DialogHeader>
@@ -162,13 +167,13 @@ export const MarkMainSectionDialog = ({
                     ? 'Loading sections...'
                     : 'Select a section'}
                 </option>
-                {sections.map((section) => (
+                {selectableSections.map((section) => (
                   <option key={section.id} value={section.id}>
                     {section.title}
                   </option>
                 ))}
               </select>
-              {sections.length === 0 && !sectionsQuery.isLoading && (
+              {selectableSections.length === 0 && !sectionsQuery.isLoading && (
                 <div className="text-muted-foreground px-2 py-2 text-sm">
                   No sections available
                 </div>
