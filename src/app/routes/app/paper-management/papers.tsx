@@ -13,6 +13,7 @@ export const clientLoader =
 
     const page = Number(url.searchParams.get('page') || 1);
     const title = url.searchParams.get('title') || undefined;
+    const publisher = url.searchParams.get('publisher') || undefined;
     const abstract = url.searchParams.get('abstract') || undefined;
     const doi = url.searchParams.get('doi') || undefined;
     const status = url.searchParams.get('status')
@@ -23,12 +24,19 @@ export const clientLoader =
     const paperType = url.searchParams.get('paperType') || undefined;
     const journalName = url.searchParams.get('journalName') || undefined;
     const conferenceName = url.searchParams.get('conferenceName') || undefined;
+    const authors = url.searchParams.getAll('author').length
+      ? url.searchParams.getAll('author')
+      : undefined;
+    const tags = url.searchParams.getAll('tag').length
+      ? url.searchParams.getAll('tag')
+      : undefined;
     const isDeleted = url.searchParams.get('isDeleted') === 'true';
 
     const query = getPapersQueryOptions({
       PageNumber: page,
       PageSize: 10,
       Title: title,
+      Publisher: publisher,
       Abstract: abstract,
       Doi: doi,
       Status: status,
@@ -37,6 +45,8 @@ export const clientLoader =
       PaperType: paperType,
       JournalName: journalName,
       ConferenceName: conferenceName,
+      Author: authors,
+      Tag: tags,
       IsDeleted: isDeleted,
     });
 

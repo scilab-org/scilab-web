@@ -114,6 +114,7 @@ export const PapersList = () => {
 
   const page = +(searchParams.get('page') || 1);
   const title = searchParams.get('title') || undefined;
+  const publisher = searchParams.get('publisher') || undefined;
   const abstract = searchParams.get('abstract') || undefined;
   const doi = searchParams.get('doi') || undefined;
   const status = searchParams.get('status')
@@ -124,6 +125,9 @@ export const PapersList = () => {
   const paperType = searchParams.get('paperType') || undefined;
   const journalName = searchParams.get('journalName') || undefined;
   const conferenceName = searchParams.get('conferenceName') || undefined;
+  const authors = searchParams.getAll('author').length
+    ? searchParams.getAll('author')
+    : undefined;
   const isDeleted = searchParams.get('isDeleted') === 'true';
   const tags = searchParams.getAll('tag').length
     ? searchParams.getAll('tag')
@@ -134,6 +138,7 @@ export const PapersList = () => {
       PageNumber: page,
       PageSize: 10,
       Title: title,
+      Publisher: publisher,
       Abstract: abstract,
       Doi: doi,
       Status: status,
@@ -142,6 +147,7 @@ export const PapersList = () => {
       PaperType: paperType,
       JournalName: journalName,
       ConferenceName: conferenceName,
+      Author: authors,
       Tag: tags,
       IsDeleted: isDeleted,
     },

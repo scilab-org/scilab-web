@@ -93,6 +93,7 @@ export type GetWritingPaperByIdResultApiResponse = {
 
 export type GetPapersParams = {
   Title?: string;
+  Publisher?: string;
   Abstract?: string;
   Doi?: string;
   Status?: number;
@@ -101,6 +102,7 @@ export type GetPapersParams = {
   PaperType?: string;
   JournalName?: string;
   ConferenceName?: string;
+  Author?: string[];
   Tag?: string[];
   IsDeleted?: boolean;
   PageNumber?: number;
