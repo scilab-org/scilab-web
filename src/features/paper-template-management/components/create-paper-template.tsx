@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/sheet';
 
 import { BTN } from '@/lib/button-styles';
-import { normalizeLatexPackages } from '@/features/paper-management/lib/latex-packages';
 import { useCreatePaperTemplate } from '../api/create-paper-template';
 import { CreateTemplateSectionDto } from '../types';
 
@@ -215,7 +214,10 @@ export const CreatePaperTemplate = () => {
           }
           return {
             ...s,
-            packages: normalizeLatexPackages(s.packages),
+            packages: [
+              '\\usepackage[utf8]{inputenc}',
+              '\\usepackage[T1]{fontenc}',
+            ],
             rule,
           };
         }),

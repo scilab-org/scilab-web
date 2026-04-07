@@ -63,7 +63,6 @@ import { useAvailableSectionMembers } from '@/features/paper-management/api/get-
 import { useCreatePaperContributor } from '@/features/paper-management/api/create-paper-contributor';
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
 import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
-import { getPaperSectionsQueryOptions } from '@/features/paper-management/api/get-paper-sections';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import {
   AssignedSection,
@@ -823,18 +822,15 @@ export const PaperWorkspacePage = ({
   };
 
   const handleEditorSave = async () => {
-    try {
-      await queryClient.invalidateQueries({
-        queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
-      });
-      // Warm the cache for when the editor closes but do NOT call
-      // setFreshSections — that would change the sections prop while the
-      // editor is open, triggering a re-fetch cascade that scrambles the
-      // section state the editor just saved.
-      await queryClient.fetchQuery(getPaperSectionsQueryOptions(paperId));
-    } catch {
-      // Keep the current snapshot if refresh fails.
-    }
+    // Mark queries stale but do NOT trigger background refetches while the
+    // editor is open. The editor manages its own section state after save;
+    // a background refetch would push structural IDs into the sections prop
+    // and cause the editor to call APIs with stale/wrong section IDs.
+    // Queries will auto-refetch when the editor closes (see onClose below).
+    queryClient.invalidateQueries({
+      queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
+      refetchType: 'none',
+    });
   };
 
   // If editor is open, render it (fixed inset-0, overlays everything)
@@ -850,6 +846,13 @@ export const PaperWorkspacePage = ({
         onClose={() => {
           setEditorState(null);
           setFreshSections(null);
+          // Now that the editor is closed, force fresh data for the workspace.
+          queryClient.invalidateQueries({
+            queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS],
+          });
         }}
       />
     );

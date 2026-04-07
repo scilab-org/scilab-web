@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/sheet';
 
 import { BTN } from '@/lib/button-styles';
-import { normalizeLatexPackages } from '@/features/paper-management/lib/latex-packages';
 import { useUpdatePaperTemplate } from '../api/update-paper-template';
 import { PaperTemplateDto, CreateTemplateSectionDto } from '../types';
 
@@ -141,7 +140,10 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             }
             return {
               ...s,
-              packages: normalizeLatexPackages(s.packages),
+              packages: [
+                '\\usepackage[utf8]{inputenc}',
+                '\\usepackage[T1]{fontenc}',
+              ],
               rule,
             };
           }),

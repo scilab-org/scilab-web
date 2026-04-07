@@ -73,7 +73,14 @@ import {
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
-import { useMarkSection } from '@/features/paper-management/api/get-mark-section';
+import {
+  KNOWN_LATEX_PACKAGES,
+  extractPackageName,
+} from '@/features/paper-management/lib/latex-packages';
+import {
+  getMarkSection,
+  useMarkSection,
+} from '@/features/paper-management/api/get-mark-section';
 import { getAssignedSectionsQueryOptions } from '@/features/paper-management/api/get-assigned-sections';
 import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
@@ -2166,7 +2173,36 @@ export const LatexPaperEditor = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarResourceTab, setSidebarResourceTab] = useState<
     'files' | 'packages'
-  >('files');
+  >('packages');
+  const [localPackages, setLocalPackages] = useState<string[]>([]);
+  const [savedPackages, setSavedPackages] = useState<string[]>([]);
+  const [newPackageInput, setNewPackageInput] = useState('');
+  const [editingPkgIdx, setEditingPkgIdx] = useState<number | null>(null);
+  const [editingPkgValue, setEditingPkgValue] = useState('');
+  const [pkgViewTab, setPkgViewTab] = useState<'current' | 'reference'>(
+    'current',
+  );
+  const commitPkgEdit = (idx: number, value: string) => {
+    const trimmed = value.trim();
+    setEditingPkgIdx(null);
+    setEditingPkgValue('');
+    if (!trimmed) return;
+    setLocalPackages((prev) => prev.map((p, i) => (i === idx ? trimmed : p)));
+  };
+  // Packages for the reference section (editable in the Reference tab)
+  const [localRefPackages, setLocalRefPackages] = useState<string[]>([]);
+  const [editingRefPkgIdx, setEditingRefPkgIdx] = useState<number | null>(null);
+  const [editingRefPkgValue, setEditingRefPkgValue] = useState('');
+  const [newRefPackageInput, setNewRefPackageInput] = useState('');
+  const commitRefPkgEdit = (idx: number, value: string) => {
+    const trimmed = value.trim();
+    setEditingRefPkgIdx(null);
+    setEditingRefPkgValue('');
+    if (!trimmed) return;
+    setLocalRefPackages((prev) =>
+      prev.map((p, i) => (i === idx ? trimmed : p)),
+    );
+  };
   const [editorSections, setEditorSections] = useState<
     SectionProp[] | undefined
   >(sections);
@@ -2217,8 +2253,19 @@ export const LatexPaperEditor = ({
   const prevSectionMarksRef = useRef(new Set<string>());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastReadOnlyToastRef = useRef<number>(0);
+  // Flag set by handleSave to prevent the sections-sync effects from
+  // overwriting local state with stale parent prop data.
+  const saveInProgressRef = useRef(false);
 
   useEffect(() => {
+    // When a save just completed successfully, the editor's local state
+    // already has the correct new section ID and content. Do NOT let the
+    // parent's stale `sections` prop overwrite it.
+    if (saveInProgressRef.current) {
+      saveInProgressRef.current = false;
+      return;
+    }
+
     // Save current active section info before editorSections is replaced.
     // The matching effect needs this when the version-specific ID is no
     // longer present in the new (structural) sections list.
@@ -2322,7 +2369,8 @@ export const LatexPaperEditor = ({
 
       return fallbackSectionId;
     });
-  }, [initialSectionId, sections, editorSections]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSectionId, sections]);
 
   const activeSection =
     editorSections?.find((section) => section.id === activeSectionId) ?? null;
@@ -2341,6 +2389,12 @@ export const LatexPaperEditor = ({
   );
   const isReferenceSectionActive =
     !!referenceSection && activeSectionId === referenceSection.id;
+
+  // Keep localRefPackages in sync whenever the reference section loads or changes
+
+  useEffect(() => {
+    setLocalRefPackages(referenceSection?.packages ?? []);
+  }, [referenceSection?.id, referenceSection?.packages]);
 
   // Whether the active user is an author (paper:author role)
   const isAuthorRole = activeSection?.sectionRole === 'paper:author';
@@ -2364,6 +2418,11 @@ export const LatexPaperEditor = ({
     editableSectionRoles.has(activeSection.sectionRole);
   const isActiveSectionReadOnly =
     readOnly || !hasEditPermissionForActiveSection;
+
+  // Reset package input when switching sections (packages are set after API response below)
+  useEffect(() => {
+    setNewPackageInput('');
+  }, [activeSectionId]);
   const canEditReferenceSection =
     !!referenceSection &&
     !readOnly &&
@@ -2401,6 +2460,15 @@ export const LatexPaperEditor = ({
   // without depending on the object reference (prevents re-fetch on Save Changes)
   const activeSectionRef = useRef<SectionProp | null>(activeSection);
   activeSectionRef.current = activeSection;
+
+  // Stable refs so the in-use-reference effect can read current editor state
+  // without causing re-run on every keystroke / package change.
+  const contentRef = useRef(content);
+  contentRef.current = content;
+  const localPackagesRef = useRef(localPackages);
+  localPackagesRef.current = localPackages;
+  const editorSectionsRef = useRef(editorSections);
+  editorSectionsRef.current = editorSections;
 
   // Current user for "me" badges
   const { data: currentUser } = useUser();
@@ -2488,11 +2556,15 @@ export const LatexPaperEditor = ({
   });
 
   const compileAndRender = useCallback(
-    async (latexContent: string, packages?: string[]) => {
+    async (latexContent: string, packages?: string[], refContent?: string) => {
       setIsCompiling(true);
       setCompileError(null);
       try {
-        const blob = await compileLatex({ content: latexContent, packages });
+        const blob = await compileLatex({
+          content: latexContent,
+          packages,
+          referenceContent: refContent,
+        });
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
         const newUrl = URL.createObjectURL(blob);
         pdfUrlRef.current = newUrl;
@@ -2514,18 +2586,27 @@ export const LatexPaperEditor = ({
 
   // Compile LaTeX to PDF via API
   const handleRender = useCallback(() => {
+    // Merge in-use reference content (from linked paper banks, shown in the
+    // bottom References panel) with the editable References section content.
+    // The in-use content takes priority since it is what the user sees.
+    const mergedRefContent =
+      inUseReferenceContent || referenceContent || undefined;
+
     if (versionPreview) {
       compileAndRender(
         previewEditContent ?? versionPreview.item.content ?? '',
-        activeSection?.packages,
+        localPackages,
+        mergedRefContent,
       );
       return;
     }
     if (isActiveSectionReadOnly) return;
-    compileAndRender(content, activeSection?.packages);
+    compileAndRender(content, localPackages, mergedRefContent);
   }, [
-    activeSection?.packages,
+    localPackages,
     content,
+    referenceContent,
+    inUseReferenceContent,
     previewEditContent,
     versionPreview,
     compileAndRender,
@@ -2603,6 +2684,10 @@ export const LatexPaperEditor = ({
     let disposed = false;
 
     const loadLatestSectionContent = async () => {
+      // While a save is in progress, handleSave manages all state directly.
+      // Do NOT interfere by resolving IDs or fetching section content.
+      if (saveInProgressRef.current) return;
+
       if (!editorSections || !activeSectionId) return;
 
       const activeSection = editorSections.find(
@@ -2653,7 +2738,11 @@ export const LatexPaperEditor = ({
             );
           });
           setActiveSectionId(resolvedId);
-          previousActiveSectionIdRef.current = null;
+          // Keep tracking the resolved ID as "current" so the effect does not
+          // re-trigger itself endlessly when it re-runs with the new
+          // activeSectionId. The getSection call below will fetch content for
+          // resolvedId, and the result handler sets the ref to the final id.
+          previousActiveSectionIdRef.current = resolvedId;
         }
 
         const response = await getSection(resolvedId);
@@ -2667,7 +2756,13 @@ export const LatexPaperEditor = ({
           if (!prev?.length) return prev;
 
           return prev.map((section) => {
-            if (section.id !== activeSectionId) return section;
+            // Match on BOTH possible IDs: the stale closure `activeSectionId`
+            // (when resolvedId === activeSectionId) and `resolvedId` (when they
+            // differ and the first block already swapped the id). Using both
+            // ensures the section is found regardless of which ID is current in
+            // the prev array at the time this updater runs.
+            if (section.id !== activeSectionId && section.id !== resolvedId)
+              return section;
 
             return {
               ...section,
@@ -2685,19 +2780,36 @@ export const LatexPaperEditor = ({
           });
         });
 
-        if (latestId !== activeSectionId) {
-          setActiveSectionId(latestId);
-          previousActiveSectionIdRef.current = latestId;
+        if (latestId !== activeSectionId || latestId !== resolvedId) {
+          // Use a functional setter so we only take effect when the current
+          // activeSectionId matches what this effect resolved. If another
+          // concurrent effect (e.g. loadInUseReferences) has already moved it
+          // somewhere else, we must not clobber that.
+          setActiveSectionId((prev) => {
+            if (prev === activeSectionId || prev === resolvedId) {
+              previousActiveSectionIdRef.current = latestId;
+              return latestId;
+            }
+            return prev;
+          });
         } else {
           previousActiveSectionIdRef.current = activeSectionId;
         }
 
         setContent(latestContent);
         setSavedContent(latestContent);
+        const resolvedPkgs =
+          latest.packages ??
+          packagesFromAssigned ??
+          activeSection.packages ??
+          [];
+        setLocalPackages(resolvedPkgs);
+        setSavedPackages(resolvedPkgs);
         if (latestContent) {
           compileAndRender(
             latestContent,
-            latest.packages || packagesFromAssigned || activeSection.packages,
+            resolvedPkgs,
+            referenceContent || undefined,
           );
         } else {
           setPdfUrl(null);
@@ -2705,11 +2817,18 @@ export const LatexPaperEditor = ({
         }
       } catch {
         const fallbackContent = activeSection.content || '';
+        const fallbackPkgs = activeSection.packages ?? [];
+        setLocalPackages(fallbackPkgs);
+        setSavedPackages(fallbackPkgs);
 
         setContent(fallbackContent);
         setSavedContent(fallbackContent);
         if (fallbackContent) {
-          compileAndRender(fallbackContent, activeSection.packages);
+          compileAndRender(
+            fallbackContent,
+            fallbackPkgs,
+            referenceContent || undefined,
+          );
         } else {
           setPdfUrl(null);
           setCompileError(null);
@@ -2731,6 +2850,7 @@ export const LatexPaperEditor = ({
     derivedPaperId,
     assignedSectionsParams,
     queryClient,
+    referenceContent,
   ]);
 
   useEffect(() => {
@@ -2753,6 +2873,10 @@ export const LatexPaperEditor = ({
 
   useEffect(() => {
     let disposed = false;
+
+    // While a save is in progress, handleSave manages all state directly.
+    // Do NOT interfere by resolving IDs or resetting resolvedActiveSectionId.
+    if (saveInProgressRef.current) return;
 
     // Read from the ref so the effect doesn't depend on the activeSection object
     // reference. This prevents a re-fetch every time editorSections is updated
@@ -2787,34 +2911,66 @@ export const LatexPaperEditor = ({
       });
       setIsInUseReferenceLoading(true);
       try {
-        const markSectionId = (section.markSectionId || section.id).trim();
-        const resolvedSectionId =
-          (await resolveLatestSectionIdFromAssignedSections(
-            markSectionId,
-            section,
-          )) || section.id;
+        // When previousActiveSectionIdRef already matches the current section ID,
+        // it means handleSave (or a previous resolution) already resolved the
+        // correct ID. Skip re-resolution to avoid cascading state changes that
+        // cause "Section not found" errors from stale/racing API calls.
+        const alreadyResolved =
+          previousActiveSectionIdRef.current === section.id;
 
-        if (disposed) return;
+        let sectionIdForReferences = section.id;
 
-        setResolvedActiveSectionId(resolvedSectionId);
+        if (!alreadyResolved) {
+          const markSectionId = (section.markSectionId || section.id).trim();
+          const resolvedSectionId =
+            (await resolveLatestSectionIdFromAssignedSections(
+              markSectionId,
+              section,
+            )) || section.id;
 
-        if (resolvedSectionId !== section.id) {
-          setEditorSections((prev) => {
-            if (!prev?.length) return prev;
-            return prev.map((s) =>
-              s.id === section.id ? { ...s, id: resolvedSectionId } : s,
-            );
-          });
-          if (activeSectionId === section.id) {
-            previousActiveSectionIdRef.current = null;
-            setActiveSectionId(resolvedSectionId);
+          if (disposed) return;
+
+          sectionIdForReferences = resolvedSectionId;
+          setResolvedActiveSectionId(resolvedSectionId);
+
+          if (resolvedSectionId !== section.id) {
+            setEditorSections((prev) => {
+              if (!prev?.length) return prev;
+              return prev.map((s) =>
+                s.id === section.id ? { ...s, id: resolvedSectionId } : s,
+              );
+            });
+            // Use functional setter: only update activeSectionId if it still
+            // matches section.id. If loadLatestSectionContent already advanced
+            // it to the actual latest version, we must not overwrite that.
+            setActiveSectionId((prev) => {
+              if (prev === section.id) {
+                previousActiveSectionIdRef.current = resolvedSectionId;
+                return resolvedSectionId;
+              }
+              return prev;
+            });
           }
+        } else {
+          setResolvedActiveSectionId(section.id);
         }
 
-        const data = await getSectionReferenceInUseForEditor(resolvedSectionId);
+        const data = await getSectionReferenceInUseForEditor(
+          sectionIdForReferences,
+        );
         if (disposed) return;
         setInUseReferenceContent(data.referenceContent);
         setInUsePaperBanks(data.paperBanks);
+
+        // Re-compile with merged content now that in-use references are
+        // available. Use stable refs to avoid stale closure on content/packages.
+        if (data.referenceContent && contentRef.current) {
+          compileAndRender(
+            contentRef.current,
+            localPackagesRef.current,
+            data.referenceContent,
+          );
+        }
       } catch {
         if (disposed) return;
         setInUseReferenceContent('');
@@ -2836,6 +2992,7 @@ export const LatexPaperEditor = ({
     activeSectionMarkId,
     inUseReferenceReloadKey,
     resolveLatestSectionIdFromAssignedSections,
+    compileAndRender,
   ]);
 
   const refreshSectionFromServer = useCallback(
@@ -2859,6 +3016,10 @@ export const LatexPaperEditor = ({
         const latest = response.result;
         const latestId = latest.id || sectionIdToFetch;
         const latestContent = latest.content || '';
+        const latestPackages =
+          latest.packages ||
+          targetSection?.packages ||
+          localPackagesRef.current;
 
         setEditorSections((prev) => {
           if (!prev?.length) return prev;
@@ -2893,31 +3054,58 @@ export const LatexPaperEditor = ({
           setSavedReferenceContent(latestContent);
         }
 
-        if (
-          activeSectionId === (targetSection?.id || sectionIdToFetch) ||
-          activeSectionId === sectionIdToFetch ||
-          activeSectionId === latestId
-        ) {
-          previousActiveSectionIdRef.current = latestId;
-          setActiveSectionId(latestId);
-          setContent(latestContent);
-          setSavedContent(latestContent);
+        // Use a functional setter so the comparison is against the live
+        // activeSectionId at call-time, not the stale closure value.
+        // This is critical when refreshSectionFromServer is called from
+        // handleUpdateSectionReference, where activeSectionId may already
+        // have been changed to a new version ID by a preceding await.
+        setActiveSectionId((currentId) => {
+          const isActiveSection =
+            currentId === (targetSection?.id || sectionIdToFetch) ||
+            currentId === sectionIdToFetch ||
+            currentId === latestId;
 
-          if (latestContent) {
-            compileAndRender(latestContent);
-          } else {
-            setPdfUrl(null);
-            setCompileError(null);
+          if (isActiveSection) {
+            previousActiveSectionIdRef.current = latestId;
+            // Side-effects inside the functional updater are safe here because
+            // this block only runs when the condition is true.
+            setContent(latestContent);
+            setSavedContent(latestContent);
+
+            if (latestContent) {
+              compileAndRender(
+                latestContent,
+                latestPackages,
+                inUseReferenceContent || referenceContent || undefined,
+              );
+            } else {
+              setPdfUrl(null);
+              setCompileError(null);
+            }
+
+            return latestId;
           }
-        }
 
-        return latestId;
+          return currentId;
+        });
+
+        return {
+          id: latestId,
+          content: latestContent,
+          packages: latestPackages,
+        };
       } catch {
         // Keep existing content if server sync fails.
-        return null;
+        return { id: null, content: '', packages: localPackagesRef.current };
       }
     },
-    [activeSectionId, compileAndRender, editorSections, referenceSection],
+    [
+      compileAndRender,
+      editorSections,
+      inUseReferenceContent,
+      referenceContent,
+      referenceSection,
+    ],
   );
 
   const handleUpdateSectionReference = useCallback(
@@ -2991,9 +3179,10 @@ export const LatexPaperEditor = ({
             PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
             derivedPaperId,
           ],
+          refetchType: 'none',
         });
 
-        await refreshSectionFromServer(
+        const refreshResult = await refreshSectionFromServer(
           nextSectionId || sectionIdForUpdate,
           activeSectionSnapshot,
         );
@@ -3010,6 +3199,16 @@ export const LatexPaperEditor = ({
             await getSectionReferenceInUseForEditor(finalSectionId);
           setInUsePaperBanks(inUseData.paperBanks);
           setInUseReferenceContent(inUseData.referenceContent);
+          // Re-compile with the fresh in-use reference content now that it is
+          // available. refreshSectionFromServer compiled with the OLD in-use
+          // content (stale closure); this second compile shows the final state.
+          if (refreshResult.content) {
+            void compileAndRender(
+              refreshResult.content,
+              refreshResult.packages,
+              inUseData.referenceContent || undefined,
+            );
+          }
         } catch {
           // keep existing in-use data if fetch fails
         }
@@ -3035,6 +3234,7 @@ export const LatexPaperEditor = ({
       editorSections,
       derivedPaperId,
       queryClient,
+      compileAndRender,
       refreshSectionFromServer,
       resolveLatestSectionIdFromAssignedSections,
       setResolvedActiveSectionId,
@@ -3211,28 +3411,58 @@ export const LatexPaperEditor = ({
       toast.error('You do not have permission to edit this section.');
       return;
     }
-    if (!activeSectionId || !editorSections) {
+
+    // Always read the latest values from refs to avoid stale-closure issues
+    // (e.g. section-load effect may have resolved a new id between renders).
+    const freshSections = editorSectionsRef.current;
+    const freshActiveSection = activeSectionRef.current;
+    const freshActiveSectionId = freshActiveSection?.id ?? activeSectionId;
+
+    if (!freshActiveSectionId || !freshSections) {
       toast.error('No section selected to save.');
       return;
     }
-    const currentSection = editorSections.find((s) => s.id === activeSectionId);
+    const currentSection =
+      freshActiveSection ??
+      freshSections.find((s) => s.id === freshActiveSectionId);
     if (!currentSection) {
       toast.error('Section not found.');
       return;
     }
     try {
+      // Lock ALL effects immediately — before any async work.
+      // This prevents the sections-sync / loadLatestSectionContent /
+      // loadInUseReferences effects from overwriting local state during the
+      // async gap while we're resolving the section ID and calling mutateAsync.
+      saveInProgressRef.current = true;
+
       const contentToSave =
         previewEditContent !== null ? previewEditContent : content;
 
       // When editing another member's version preview, save to their section
       const isEditingPreview =
         previewEditContent !== null && versionPreview !== null;
-      const targetSectionId = isEditingPreview
-        ? versionPreview.item.sectionId
-        : activeSectionId;
       const targetMemberId = isEditingPreview
         ? versionPreview.item.memberId
         : currentSection.memberId;
+
+      // The stable mark ID for this section (unchanged across versions)
+      const markSectionId =
+        (currentSection.markSectionId || currentSection.id).trim() ||
+        currentSection.id;
+
+      // Resolve the CURRENT version ID from assigned-sections BEFORE saving.
+      // freshActiveSectionId may still be the structural ID from allSectionsQuery
+      // if loadLatestSectionContent hasn't resolved it yet. The assigned-sections
+      // API is the authoritative source for the current version ID per member.
+      const resolvedSaveId = isEditingPreview
+        ? versionPreview.item.sectionId
+        : (await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            currentSection,
+          )) || freshActiveSectionId;
+
+      const targetSectionId = resolvedSaveId;
 
       await updateSectionMutation.mutateAsync({
         sectionId: targetSectionId,
@@ -3244,34 +3474,67 @@ export const LatexPaperEditor = ({
           numbered: currentSection.numbered,
           sectionSumary: currentSection.sectionSumary || '',
           parentSectionId: currentSection.parentSectionId,
+          packages: localPackages,
         },
       });
+
+      // Reflect updated packages into editorSections immediately
+      setEditorSections((prev) =>
+        prev?.map((s) =>
+          s.id === targetSectionId ? { ...s, packages: localPackages } : s,
+        ),
+      );
+      setSavedPackages(localPackages);
 
       if (isEditingPreview) {
         // Exit preview mode; active section stays unchanged
         setVersionPreview(null);
         setPreviewEditContent(null);
-        onSave?.(contentToSave, activeSectionId);
+        saveInProgressRef.current = false;
+        onSave?.(contentToSave, freshActiveSectionId);
         return;
       }
 
-      const markSectionId =
-        (currentSection.markSectionId || currentSection.id).trim() ||
-        currentSection.id;
+      // Resolve the post-save version ID via the mark-section version chain.
+      let latestSectionId = resolvedSaveId;
+      try {
+        const markResponse = await getMarkSection(markSectionId);
+        const markItems = markResponse.result?.items ?? [];
 
-      await queryClient.invalidateQueries({
-        queryKey: [
-          PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
-          derivedPaperId,
-        ],
-      });
+        // Primary strategy: find the section whose previousVersionSectionId
+        // equals the section we just saved. This is the version created by
+        // the current save and works for ALL roles (including managers whose
+        // memberId is "" in the editor, which makes the old member-filter fail).
+        const directSuccessor = markItems.find(
+          (item) => item.previousVersionSectionId === resolvedSaveId,
+        );
 
-      const latestSectionId =
-        (await resolveLatestSectionIdFromAssignedSections(
-          markSectionId,
-          currentSection,
-          { forceFresh: true },
-        )) || activeSectionId;
+        if (directSuccessor) {
+          latestSectionId = directSuccessor.sectionId || resolvedSaveId;
+        } else {
+          // Fallback: filter by member + role and take the tail of the chain.
+          // Used when the backend hasn't linked the predecessor yet (rare race)
+          // or when there is no version chain (first save of this section).
+          const memberItems = currentSection.memberId
+            ? markItems.filter(
+                (item) => item.memberId === currentSection.memberId,
+              )
+            : markItems;
+          const roleItems = memberItems.filter(
+            (item) => item.sectionRole === currentSection.sectionRole,
+          );
+          const candidates = roleItems.length ? roleItems : memberItems;
+          if (candidates.length) {
+            const latest =
+              candidates.find((item) => !item.nextVersionSectionId) ??
+              candidates[0];
+            latestSectionId = latest.sectionId || resolvedSaveId;
+          }
+        }
+      } catch {
+        // If mark-section lookup fails, keep the current section ID
+      }
+
       const nextSection: SectionProp = {
         ...currentSection,
         id: latestSectionId,
@@ -3285,7 +3548,7 @@ export const LatexPaperEditor = ({
         if (!prev?.length) return [nextSection];
 
         const next = [...prev];
-        const currentIndex = next.findIndex((s) => s.id === activeSectionId);
+        const currentIndex = next.findIndex((s) => s.id === resolvedSaveId);
 
         if (currentIndex >= 0) {
           next[currentIndex] = nextSection;
@@ -3304,36 +3567,65 @@ export const LatexPaperEditor = ({
       // references sidebar doesn't flash "Select a section" after save.
       setResolvedActiveSectionId(latestSectionId);
 
-      // Compile with the saved content directly — no need to re-fetch from
-      // server since we already have all the data (avoids double getSection call).
-      void compileAndRender(contentToSave, currentSection.packages);
+      // Compile locally with saved content — no need to re-fetch from server
+      // since we already have the authoritative content that was just saved.
+      void compileAndRender(
+        contentToSave,
+        localPackages,
+        inUseReferenceContent || referenceContent || undefined,
+      );
+
+      // Mark assigned-sections stale so next time it's needed it will be fresh
+      await queryClient.invalidateQueries({
+        queryKey: [
+          PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+          derivedPaperId,
+        ],
+        refetchType: 'none',
+      });
+
+      // Release the lock AFTER all state updates are committed.
+      // Use a microtask to ensure React has flushed the batched state updates
+      // before any effect can run with stale data.
+      queueMicrotask(() => {
+        saveInProgressRef.current = false;
+      });
+
       onSave?.(contentToSave, latestSectionId);
     } catch {
       // Mutation error is already handled by mutationConfig onError
+      saveInProgressRef.current = false;
     }
   }, [
     activeSectionId,
-    editorSections,
     content,
     previewEditContent,
     versionPreview,
     updateSectionMutation,
     onSave,
     isActiveSectionReadOnly,
+    resolveLatestSectionIdFromAssignedSections,
     derivedPaperId,
     queryClient,
     compileAndRender,
-    resolveLatestSectionIdFromAssignedSections,
+    inUseReferenceContent,
+    referenceContent,
+    localPackages,
   ]);
 
   const handleClose = useCallback(() => {
     const hasUnsavedMainContent = content !== savedContent;
     const hasUnsavedReferenceContent =
       referenceContent !== savedReferenceContent;
+    const hasUnsavedPackages =
+      localPackages.length !== savedPackages.length ||
+      localPackages.some((p, i) => p !== savedPackages[i]);
 
     if (
       !isActiveSectionReadOnly &&
-      (hasUnsavedMainContent || hasUnsavedReferenceContent)
+      (hasUnsavedMainContent ||
+        hasUnsavedReferenceContent ||
+        hasUnsavedPackages)
     ) {
       setShowCloseConfirm(true);
     } else {
@@ -3344,6 +3636,8 @@ export const LatexPaperEditor = ({
     savedContent,
     referenceContent,
     savedReferenceContent,
+    localPackages,
+    savedPackages,
     onClose,
     isActiveSectionReadOnly,
   ]);
@@ -3351,11 +3645,12 @@ export const LatexPaperEditor = ({
   const handleCloseWithoutSaving = useCallback(() => {
     setContent(savedContent);
     setReferenceContent(savedReferenceContent);
+    setLocalPackages(savedPackages);
     setPreviewEditContent(null);
     setVersionPreview(null);
     setShowCloseConfirm(false);
     onClose();
-  }, [onClose, savedContent, savedReferenceContent]);
+  }, [onClose, savedContent, savedReferenceContent, savedPackages]);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -3470,18 +3765,6 @@ export const LatexPaperEditor = ({
           <div className="flex shrink-0 items-center gap-1 border-b border-[#e5e5e5] px-2 py-2 dark:border-[#2a2a2a]">
             <button
               type="button"
-              onClick={() => setSidebarResourceTab('files')}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                sidebarResourceTab === 'files'
-                  ? 'bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100'
-                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200'
-              }`}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Files
-            </button>
-            <button
-              type="button"
               onClick={() => setSidebarResourceTab('packages')}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
                 sidebarResourceTab === 'packages'
@@ -3491,6 +3774,18 @@ export const LatexPaperEditor = ({
             >
               <Package className="h-3.5 w-3.5" />
               Packages
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarResourceTab('files')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                sidebarResourceTab === 'files'
+                  ? 'bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Files
             </button>
           </div>
 
@@ -3612,29 +3907,174 @@ export const LatexPaperEditor = ({
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                     Packages
                   </span>
-                  {activeSection?.packages &&
-                    activeSection.packages.length > 0 && (
-                      <span className="ml-auto rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
-                        {activeSection.packages.length}
-                      </span>
-                    )}
-                </div>
-                {activeSection?.packages &&
-                activeSection.packages.length > 0 ? (
-                  <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-2.5">
-                    {activeSection.packages.map((pkg) => (
-                      <li
-                        key={pkg}
-                        className="flex items-baseline gap-0 font-mono text-[12px] leading-relaxed"
+                  {localPackages.length > 0 && pkgViewTab === 'current' && (
+                    <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
+                      {localPackages.length}
+                    </span>
+                  )}
+                  {referenceSection && (
+                    <div className="ml-auto flex overflow-hidden rounded border border-slate-200 text-[10px] dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setPkgViewTab('current')}
+                        className={`px-2 py-0.5 font-medium transition-colors ${
+                          pkgViewTab === 'current'
+                            ? 'bg-violet-500 text-white'
+                            : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`}
                       >
-                        <span className="text-violet-600 dark:text-[#c678dd]">
-                          \usepackage
+                        Current
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPkgViewTab('reference')}
+                        className={`px-2 py-0.5 font-medium transition-colors ${
+                          pkgViewTab === 'reference'
+                            ? 'bg-violet-500 text-white'
+                            : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        Reference
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {/* Package list */}
+                {pkgViewTab === 'reference' ? (
+                  localRefPackages.length > 0 ? (
+                    <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+                      {localRefPackages.map((pkg, idx) => (
+                        <li
+                          key={idx}
+                          className="group flex items-center gap-1 font-mono text-[12px]"
+                        >
+                          {editingRefPkgIdx === idx ? (
+                            <input
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
+                              autoFocus
+                              type="text"
+                              value={editingRefPkgValue}
+                              onChange={(e) =>
+                                setEditingRefPkgValue(e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  commitRefPkgEdit(idx, editingRefPkgValue);
+                                } else if (e.key === 'Escape') {
+                                  setEditingRefPkgIdx(null);
+                                  setEditingRefPkgValue('');
+                                }
+                              }}
+                              onBlur={() =>
+                                commitRefPkgEdit(idx, editingRefPkgValue)
+                              }
+                              className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!canEditReferenceSection) return;
+                                setEditingRefPkgIdx(idx);
+                                setEditingRefPkgValue(pkg);
+                              }}
+                              title={
+                                canEditReferenceSection
+                                  ? 'Click to edit'
+                                  : undefined
+                              }
+                              className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
+                            >
+                              {pkg}
+                            </button>
+                          )}
+                          {canEditReferenceSection &&
+                            editingRefPkgIdx !== idx && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setLocalRefPackages((prev) =>
+                                    prev.filter((_, i) => i !== idx),
+                                  )
+                                }
+                                className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
+                                title="Remove package"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+                      <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                        <span className="text-violet-400 dark:text-[#c678dd]">
+                          {'% '}
                         </span>
-                        <span className="text-slate-400">{'{'}</span>
-                        <span className="text-emerald-600 dark:text-[#98c379]">
-                          {pkg}
-                        </span>
-                        <span className="text-slate-400">{'}'}</span>
+                        no packages on reference section
+                      </p>
+                    </div>
+                  )
+                ) : localPackages.length > 0 ? (
+                  <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+                    {localPackages.map((pkg, idx) => (
+                      <li
+                        key={idx}
+                        className="group flex items-center gap-1 font-mono text-[12px]"
+                      >
+                        {editingPkgIdx === idx ? (
+                          <input
+                            // eslint-disable-next-line jsx-a11y/no-autofocus
+                            autoFocus
+                            type="text"
+                            value={editingPkgValue}
+                            onChange={(e) => setEditingPkgValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                commitPkgEdit(idx, editingPkgValue);
+                              } else if (e.key === 'Escape') {
+                                setEditingPkgIdx(null);
+                                setEditingPkgValue('');
+                              }
+                            }}
+                            onBlur={() => commitPkgEdit(idx, editingPkgValue)}
+                            className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isActiveSectionReadOnly) return;
+                              setEditingPkgIdx(idx);
+                              setEditingPkgValue(pkg);
+                            }}
+                            title={
+                              isActiveSectionReadOnly
+                                ? undefined
+                                : 'Click to edit'
+                            }
+                            className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
+                          >
+                            {pkg}
+                          </button>
+                        )}
+                        {!isActiveSectionReadOnly && editingPkgIdx !== idx && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLocalPackages((prev) =>
+                                prev.filter((_, i) => i !== idx),
+                              )
+                            }
+                            className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
+                            title="Remove package"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -3646,6 +4086,307 @@ export const LatexPaperEditor = ({
                       </span>
                       no packages defined
                     </p>
+                  </div>
+                )}
+                {/* Add package input */}
+                {!isActiveSectionReadOnly && pkgViewTab === 'current' && (
+                  <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
+                    <form
+                      className="flex gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const trimmed = newPackageInput.trim();
+                        if (!trimmed) return;
+                        setLocalPackages((prev) =>
+                          prev.includes(trimmed) ? prev : [...prev, trimmed],
+                        );
+                        setNewPackageInput('');
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={newPackageInput}
+                        onChange={(e) => setNewPackageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setNewPackageInput('');
+                        }}
+                        placeholder="package name…"
+                        autoComplete="off"
+                        className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                      />
+                      <button
+                        type="submit"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+                        disabled={!newPackageInput.trim()}
+                        title="Add package"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </form>
+                    {/* Format hint */}
+                    <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      Type directly, e.g.:{' '}
+                      <span className="font-mono text-violet-500">
+                        {'\\usepackage{amsmath}'}
+                      </span>
+                    </p>
+                    {/* Quick-add: biblatex */}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        biblatex:
+                      </span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const bibPkg =
+                            '\\usepackage[backend=bibtex]{biblatex}';
+                          setLocalPackages((prev) =>
+                            prev.some(
+                              (p) => extractPackageName(p) === 'biblatex',
+                            )
+                              ? prev
+                              : [...prev, bibPkg],
+                          );
+                          setNewPackageInput('');
+                        }}
+                        className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                      >
+                        default
+                      </button>
+                      {[
+                        {
+                          label: 'apa',
+                          pkg: '\\usepackage[backend=biber,style=apa]{biblatex}',
+                        },
+                        {
+                          label: 'ieee',
+                          pkg: '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
+                        },
+                      ].map(({ label, pkg }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocalPackages((prev) => {
+                              const filtered = prev.filter(
+                                (p) => extractPackageName(p) !== 'biblatex',
+                              );
+                              return [...filtered, pkg];
+                            });
+                            setNewPackageInput('');
+                          }}
+                          className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Custom suggestion list */}
+                    {newPackageInput.trim() &&
+                      (() => {
+                        const q = newPackageInput.trim().toLowerCase();
+                        const suggestions = KNOWN_LATEX_PACKAGES.filter(
+                          (p) =>
+                            p.toLowerCase().includes(q) &&
+                            !localPackages.includes(p) &&
+                            !localPackages.some(
+                              (lp) =>
+                                lp !== p &&
+                                extractPackageName(lp) ===
+                                  extractPackageName(p),
+                            ),
+                        );
+                        if (!suggestions.length) return null;
+                        return (
+                          <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                            {suggestions.map((p) => {
+                              const idx = p.toLowerCase().indexOf(q);
+                              return (
+                                <li key={p}>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setLocalPackages((prev) =>
+                                        prev.includes(p) ? prev : [...prev, p],
+                                      );
+                                      setNewPackageInput('');
+                                    }}
+                                    className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                  >
+                                    {idx >= 0 ? (
+                                      <>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(0, idx)}
+                                        </span>
+                                        <span className="font-bold text-violet-600 dark:text-violet-400">
+                                          {p.slice(idx, idx + q.length)}
+                                        </span>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(idx + q.length)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      p
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        );
+                      })()}
+                  </div>
+                )}
+                {/* Add package input — Reference section */}
+                {canEditReferenceSection && pkgViewTab === 'reference' && (
+                  <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
+                    <form
+                      className="flex gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const trimmed = newRefPackageInput.trim();
+                        if (!trimmed) return;
+                        setLocalRefPackages((prev) =>
+                          prev.includes(trimmed) ? prev : [...prev, trimmed],
+                        );
+                        setNewRefPackageInput('');
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={newRefPackageInput}
+                        onChange={(e) => setNewRefPackageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setNewRefPackageInput('');
+                        }}
+                        placeholder="package name\u2026"
+                        autoComplete="off"
+                        className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                      />
+                      <button
+                        type="submit"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+                        disabled={!newRefPackageInput.trim()}
+                        title="Add package"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </form>
+                    <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      Type directly, e.g.:{' '}
+                      <span className="font-mono text-violet-500">
+                        {'\\usepackage{amsmath}'}
+                      </span>
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        biblatex:
+                      </span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const bibPkg =
+                            '\\usepackage[backend=bibtex]{biblatex}';
+                          setLocalRefPackages((prev) =>
+                            prev.some(
+                              (p) => extractPackageName(p) === 'biblatex',
+                            )
+                              ? prev
+                              : [...prev, bibPkg],
+                          );
+                          setNewRefPackageInput('');
+                        }}
+                        className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                      >
+                        default
+                      </button>
+                      {[
+                        {
+                          label: 'apa',
+                          pkg: '\\usepackage[backend=biber,style=apa]{biblatex}',
+                        },
+                        {
+                          label: 'ieee',
+                          pkg: '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
+                        },
+                      ].map(({ label, pkg }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocalRefPackages((prev) => {
+                              const filtered = prev.filter(
+                                (p) => extractPackageName(p) !== 'biblatex',
+                              );
+                              return [...filtered, pkg];
+                            });
+                            setNewRefPackageInput('');
+                          }}
+                          className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {newRefPackageInput.trim() &&
+                      (() => {
+                        const q = newRefPackageInput.trim().toLowerCase();
+                        const suggestions = KNOWN_LATEX_PACKAGES.filter(
+                          (p) =>
+                            p.toLowerCase().includes(q) &&
+                            !localRefPackages.includes(p) &&
+                            !localRefPackages.some(
+                              (lp) =>
+                                lp !== p &&
+                                extractPackageName(lp) ===
+                                  extractPackageName(p),
+                            ),
+                        );
+                        if (!suggestions.length) return null;
+                        return (
+                          <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                            {suggestions.map((p) => {
+                              const qi = p.toLowerCase().indexOf(q);
+                              return (
+                                <li key={p}>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setLocalRefPackages((prev) =>
+                                        prev.includes(p) ? prev : [...prev, p],
+                                      );
+                                      setNewRefPackageInput('');
+                                    }}
+                                    className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                  >
+                                    {qi >= 0 ? (
+                                      <>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(0, qi)}
+                                        </span>
+                                        <span className="font-bold text-violet-600 dark:text-violet-400">
+                                          {p.slice(qi, qi + q.length)}
+                                        </span>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(qi + q.length)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      p
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        );
+                      })()}
                   </div>
                 )}
               </div>

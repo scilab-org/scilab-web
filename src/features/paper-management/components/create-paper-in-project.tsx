@@ -34,7 +34,6 @@ import { PaperTemplateDto } from '@/features/paper-template-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto, JournalStyle } from '@/features/journal-management/types';
 import { useCreatePaperInProject } from '../api/initialize-paper';
-import { normalizeLatexPackages } from '../lib/latex-packages';
 import { CreatePaperInProjectDto, PaperSection } from '../types';
 
 const generateGuid = () => {
@@ -194,7 +193,7 @@ export const CreatePaperInProject = ({
           title: s.title,
           latex: s.latex ?? toLatex(s.title, false),
           content: '',
-          packages: normalizeLatexPackages(sectionPackages),
+          packages: sectionPackages ?? ['inputenc', 'fontenc'],
           numbered: s.numbered ?? true,
           displayOrder: s.displayOrder ?? s.order ?? i,
           sectionSumary: '',
@@ -333,13 +332,11 @@ export const CreatePaperInProject = ({
           : undefined,
       ...(selectedTemplate?.code && { template: selectedTemplate.code }),
       sections: sections.map((sec) => {
-        const packages = normalizeLatexPackages(sec.packages);
-
         return {
           id: sec.id,
           title: sec.title || '',
           content: sec.latex || sec.content || '',
-          packages,
+          packages: sec.packages ?? ['inputenc', 'fontenc'],
           numbered: sec.numbered,
           displayOrder: sec.displayOrder,
           sectionSumary: sec.sectionSumary || '',

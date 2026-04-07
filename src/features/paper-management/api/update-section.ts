@@ -35,11 +35,17 @@ export const useUpdateSection = ({
   return useMutation({
     mutationFn: updateSection,
     onSuccess: (...args) => {
+      // Mark queries stale but don't trigger background refetches.
+      // Callers (e.g. the LaTeX editor) manage their own state after save
+      // and explicitly refetch when ready. Background refetches would push
+      // stale structural IDs into the editor while it's still open.
       queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS],
+        refetchType: 'none',
       });
       queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS],
+        refetchType: 'none',
       });
       onSuccess?.(...args);
     },
