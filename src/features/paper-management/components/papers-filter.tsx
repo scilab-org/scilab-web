@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 
 import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
+import { MultiValueInput } from './multi-value-input';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
 export const PapersFilter = () => {
@@ -24,6 +25,7 @@ export const PapersFilter = () => {
 
   const [filters, setFilters] = React.useState({
     title: searchParams.get('title') || '',
+    publisher: searchParams.get('publisher') || '',
     abstract: searchParams.get('abstract') || '',
     doi: searchParams.get('doi') || '',
     status: searchParams.get('status') || '',
@@ -35,9 +37,29 @@ export const PapersFilter = () => {
     isDeleted: searchParams.get('isDeleted') || 'false',
   });
 
+  const [authorList, setAuthorList] = React.useState<string[]>(
+    searchParams.getAll('author'),
+  );
+
   const [tagList, setTagList] = React.useState<string[]>(
     searchParams.getAll('tag'),
   );
+
+  const handleAddAuthor = (value: string) => {
+    const trimmed = value.trim();
+    if (
+      trimmed &&
+      !authorList.some(
+        (author) => author.toLowerCase() === trimmed.toLowerCase(),
+      )
+    ) {
+      setAuthorList((prev) => [...prev, trimmed]);
+    }
+  };
+
+  const handleRemoveAuthor = (author: string) => {
+    setAuthorList((prev) => prev.filter((item) => item !== author));
+  };
 
   const handleAddTag = (value: string) => {
     const trimmed = value.trim();
@@ -57,6 +79,7 @@ export const PapersFilter = () => {
     Object.entries(filters).filter(
       ([key, value]) => key !== 'isDeleted' && Boolean(value),
     ).length +
+    (authorList.length > 0 ? 1 : 0) +
     (filters.isDeleted !== 'false' ? 1 : 0) +
     (tagList.length > 0 ? 1 : 0);
 
@@ -64,6 +87,7 @@ export const PapersFilter = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (filters.title) params.set('title', filters.title);
+    if (filters.publisher) params.set('publisher', filters.publisher);
     if (filters.abstract) params.set('abstract', filters.abstract);
     if (filters.doi) params.set('doi', filters.doi);
     if (filters.status) params.set('status', filters.status);
@@ -73,6 +97,7 @@ export const PapersFilter = () => {
     if (filters.journalName) params.set('journalName', filters.journalName);
     if (filters.conferenceName)
       params.set('conferenceName', filters.conferenceName);
+    authorList.forEach((author) => params.append('author', author));
     tagList.forEach((tag) => params.append('tag', tag));
     params.set('isDeleted', filters.isDeleted);
     params.set('page', '1');
@@ -82,6 +107,7 @@ export const PapersFilter = () => {
   const handleClear = () => {
     setFilters({
       title: '',
+      publisher: '',
       abstract: '',
       doi: '',
       status: '',
@@ -92,6 +118,7 @@ export const PapersFilter = () => {
       conferenceName: '',
       isDeleted: 'false',
     });
+    setAuthorList([]);
     setTagList([]);
     setSearchParams({ page: '1' });
   };
@@ -99,9 +126,9 @@ export const PapersFilter = () => {
   return (
     <form onSubmit={handleApply} className="bg-muted/40 rounded-xl border p-6">
       {/* Primary filters - always visible */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Title - wider */}
-        <div className="space-y-1.5 lg:col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Title */}
+        <div className="space-y-1.5">
           <label
             htmlFor="filter-title"
             className="text-muted-foreground text-xs font-medium"
@@ -118,6 +145,54 @@ export const PapersFilter = () => {
           />
         </div>
 
+        {/* Publisher */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="filter-publisher"
+            className="text-muted-foreground text-xs font-medium"
+          >
+            Publisher
+          </label>
+          <Input
+            id="filter-publisher"
+            value={filters.publisher}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, publisher: e.target.value }))
+            }
+            placeholder="Search by publisher..."
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {/* Tags */}
+        <div className="space-y-1.5">
+          <span className="text-muted-foreground text-xs font-medium">
+            Tags
+          </span>
+          <TagAutocompleteInput
+            tagList={tagList}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            placeholder="Type a tag and press Enter..."
+          />
+        </div>
+
+        {/* Authors */}
+        <div className="space-y-1.5">
+          <span className="text-muted-foreground text-xs font-medium">
+            Authors
+          </span>
+          <MultiValueInput
+            values={authorList}
+            onAddValue={handleAddAuthor}
+            onRemoveValue={handleRemoveAuthor}
+            placeholder="Type an author and press Enter..."
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Status */}
         <div className="space-y-1.5">
           <label
@@ -179,19 +254,6 @@ export const PapersFilter = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, toDate: e.target.value }))
             }
-          />
-        </div>
-
-        {/* Tags */}
-        <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-          <span className="text-muted-foreground text-xs font-medium">
-            Tags
-          </span>
-          <TagAutocompleteInput
-            tagList={tagList}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-            placeholder="Type a tag and press Enter..."
           />
         </div>
       </div>

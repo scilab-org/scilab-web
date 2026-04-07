@@ -16,12 +16,18 @@ export const createPaper = (
   formData.append('title', data.title);
   formData.append('abstract', data.abstract);
   formData.append('doi', data.doi);
+  formData.append('authors', data.authors);
+  formData.append('publisher', data.publisher);
+  formData.append('number', data.number);
   if (data.publicationDate) {
     formData.append('publicationDate', data.publicationDate);
   }
   formData.append('paperType', data.paperType);
   formData.append('journalName', data.journalName);
   formData.append('conferenceName', data.conferenceName);
+  formData.append('pages', data.pages);
+  formData.append('volume', data.volume);
+  formData.append('referenceContent', data.referenceContent);
   formData.append('file', data.file);
   formData.append('parsedText', String(data.parsedText ?? ''));
   formData.append('isAutoTagged', String(data.isAutoTagged));

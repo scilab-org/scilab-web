@@ -93,7 +93,6 @@ export const CreatePaperInProject = ({
 
   // Sections editor state
   const [sections, setSections] = React.useState<SectionRow[]>([]);
-  const [newSectionTitle, setNewSectionTitle] = React.useState('');
 
   const mainSections = React.useMemo(
     () =>
@@ -185,12 +184,16 @@ export const CreatePaperInProject = ({
     setSections(
       rawSections.map((s, i) => {
         const sectionId = generateGuid();
+        const sectionPackages =
+          s.packages ?? (s as { Packages?: string[] }).Packages ?? undefined;
+
         return {
           _id: `tpl-${sectionId}`,
           id: sectionId,
           title: s.title,
           latex: s.latex ?? toLatex(s.title, false),
           content: '',
+          packages: sectionPackages ?? ['inputenc', 'fontenc'],
           numbered: s.numbered ?? true,
           displayOrder: s.displayOrder ?? s.order ?? i,
           sectionSumary: '',
@@ -229,7 +232,6 @@ export const CreatePaperInProject = ({
     setSelectedTemplate(null);
     setShowTemplateDropdown(false);
     setSections([]);
-    setNewSectionTitle('');
   };
 
   const handleSelectTemplate = (template: PaperTemplateDto) => {
@@ -255,29 +257,6 @@ export const CreatePaperInProject = ({
   const handleSearchTemplate = () => {
     setTemplateSearch(templateCodeInput);
     setShowTemplateDropdown(true);
-  };
-
-  const handleAddSection = () => {
-    const trimmed = newSectionTitle.trim();
-    if (!trimmed) return;
-    const maxOrder = Math.max(...sections.map((s) => s.displayOrder), -1);
-    const sectionId = generateGuid();
-    setSections((prev) => [
-      ...prev,
-      {
-        _id: `custom-${sectionId}`,
-        id: sectionId,
-        title: trimmed,
-        latex: toLatex(trimmed, false),
-        content: '',
-        numbered: true,
-        displayOrder: maxOrder + 1,
-        sectionSumary: '',
-        description: '',
-        rule: '',
-      },
-    ]);
-    setNewSectionTitle('');
   };
 
   const handleRemoveSection = (rowId: string, sectionId: string) => {
@@ -352,17 +331,20 @@ export const CreatePaperInProject = ({
             }
           : undefined,
       ...(selectedTemplate?.code && { template: selectedTemplate.code }),
-      sections: sections.map((sec) => ({
-        id: sec.id,
-        title: sec.title || '',
-        content: sec.latex || sec.content || '',
-        numbered: sec.numbered,
-        displayOrder: sec.displayOrder,
-        sectionSumary: sec.sectionSumary || '',
-        description: sec.description || '',
-        rule: sec.rule || '',
-        ...(sec.parentSectionId && { parentSectionId: sec.parentSectionId }),
-      })),
+      sections: sections.map((sec) => {
+        return {
+          id: sec.id,
+          title: sec.title || '',
+          content: sec.latex || sec.content || '',
+          packages: sec.packages ?? ['inputenc', 'fontenc'],
+          numbered: sec.numbered,
+          displayOrder: sec.displayOrder,
+          sectionSumary: sec.sectionSumary || '',
+          description: sec.description || '',
+          rule: sec.rule || '',
+          ...(sec.parentSectionId && { parentSectionId: sec.parentSectionId }),
+        };
+      }),
     };
 
     createMutation.mutate(payload);
@@ -678,22 +660,17 @@ export const CreatePaperInProject = ({
                   Loading sections...
                 </div>
               ) : sections.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border shadow-sm">
-                  <Table className="table-fixed">
-                    <colgroup>
-                      <col className="w-10" />
-                      <col />
-                      <col className="w-20" />
-                    </colgroup>
+                <div className="rounded-xl border shadow-sm">
+                  <Table>
                     <TableHeader>
                       <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                        <TableHead className="w-10 font-semibold text-green-900 dark:text-green-200">
+                        <TableHead className="w-8 font-semibold text-green-900 dark:text-green-200">
                           #
                         </TableHead>
                         <TableHead className="font-semibold text-green-900 dark:text-green-200">
                           Section Title
                         </TableHead>
-                        <TableHead className="w-20" />
+                        <TableHead className="w-16" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -708,31 +685,29 @@ export const CreatePaperInProject = ({
                               <TableCell className="text-muted-foreground text-sm font-medium">
                                 {mainIndex + 1}
                               </TableCell>
-                              <TableCell className="align-top">
-                                <div>
-                                  <Input
-                                    value={mainSection.title}
-                                    onChange={(e) =>
-                                      setSections((prev) =>
-                                        prev.map((section) =>
-                                          section._id === mainSection._id
-                                            ? {
-                                                ...section,
-                                                title: e.target.value,
-                                                latex: toLatex(
-                                                  e.target.value,
-                                                  false,
-                                                ),
-                                              }
-                                            : section,
-                                        ),
-                                      )
-                                    }
-                                    className="h-8 text-sm"
-                                  />
-                                </div>
+                              <TableCell className="py-2">
+                                <Input
+                                  value={mainSection.title}
+                                  onChange={(e) =>
+                                    setSections((prev) =>
+                                      prev.map((section) =>
+                                        section._id === mainSection._id
+                                          ? {
+                                              ...section,
+                                              title: e.target.value,
+                                              latex: toLatex(
+                                                e.target.value,
+                                                false,
+                                              ),
+                                            }
+                                          : section,
+                                      ),
+                                    )
+                                  }
+                                  className="h-8 text-sm"
+                                />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="py-2">
                                 <div className="flex items-center justify-end gap-0.5">
                                   {mainSection.allowSubsections !== false && (
                                     <Button
@@ -765,6 +740,33 @@ export const CreatePaperInProject = ({
                                 </div>
                               </TableCell>
                             </TableRow>
+
+                            {/* Description row – spans below title, full width */}
+                            {mainSection.description !== undefined && (
+                              <TableRow className="hover:bg-transparent">
+                                <TableCell className="pt-0 pb-2" />
+                                <TableCell colSpan={2} className="pt-0 pb-2">
+                                  <textarea
+                                    value={mainSection.description ?? ''}
+                                    onChange={(e) =>
+                                      setSections((prev) =>
+                                        prev.map((section) =>
+                                          section._id === mainSection._id
+                                            ? {
+                                                ...section,
+                                                description: e.target.value,
+                                              }
+                                            : section,
+                                        ),
+                                      )
+                                    }
+                                    rows={2}
+                                    placeholder="Section description..."
+                                    className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-1.5 text-xs shadow-xs outline-none focus-visible:ring-2"
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            )}
 
                             {/* Subsection rows – each gets its own full-width row */}
                             {subSections.map((subSection, subIndex) => (
@@ -830,33 +832,6 @@ export const CreatePaperInProject = ({
                   </Table>
                 </div>
               ) : null}
-
-              {/* Add custom section row */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="New section title..."
-                  value={newSectionTitle}
-                  onChange={(e) => setNewSectionTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddSection();
-                    }
-                  }}
-                  className="h-8 text-sm"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-8 shrink-0"
-                  onClick={handleAddSection}
-                  disabled={!newSectionTitle.trim()}
-                >
-                  <Plus className="size-3.5" />
-                  Add
-                </Button>
-              </div>
             </div>
           )}
 

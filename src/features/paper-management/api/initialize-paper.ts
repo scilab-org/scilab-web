@@ -23,7 +23,10 @@ export const createPaperInProject = (
     mainContribution: data.mainContribution,
     status: data.status,
     journal: data.journal,
-    sections: data.sections,
+    sections: data.sections?.map((section) => ({
+      ...section,
+      ...(section.packages ? { Packages: section.packages } : {}),
+    })),
   });
 };
 

@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Editor, { type Monaco } from '@monaco-editor/react';
 import type * as MonacoEditor from 'monaco-editor';
@@ -18,10 +19,12 @@ import {
   Play,
   PanelLeftOpen,
   PanelLeftClose,
+  ChevronDown,
   ChevronRight,
   ChevronLeft,
   Upload,
   Image as ImageIcon,
+  Package,
   Loader2,
   Keyboard,
   Copy,
@@ -37,6 +40,7 @@ import {
   RefreshCw,
   Minus,
   Plus,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,22 +66,32 @@ import {
 import { BTN } from '@/lib/button-styles';
 
 import {
+  getSectionReference,
   type SectionReferenceOtherItem,
   useGetSectionReference,
 } from '@/features/paper-management/api/get-section-reference';
+import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
+import {
+  KNOWN_LATEX_PACKAGES,
+  extractPackageName,
+} from '@/features/paper-management/lib/latex-packages';
 import {
   getMarkSection,
   useMarkSection,
 } from '@/features/paper-management/api/get-mark-section';
+import { getAssignedSectionsQueryOptions } from '@/features/paper-management/api/get-assigned-sections';
+import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
 import { useSectionComments } from '@/features/paper-management/api/get-section-comments';
 import { SectionComments } from '@/features/paper-management/components/section-comments';
 import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
 import { useDatasets } from '@/features/dataset-management/api/get-datasets';
+import { useProjectPapers } from '@/features/project-management/api/papers/get-project-papers';
 import { useUser } from '@/lib/auth';
+import { api } from '@/lib/api-client';
 
 import { EditorChatPanel } from './editor-chat-panel';
 
@@ -155,6 +169,229 @@ type MarkSectionItem = {
   sectionRole: string;
   isMainSection: boolean;
   content: string;
+  createdOnUtc?: string | null;
+  lastModifiedOnUtc?: string | null;
+  nextVersionSectionId?: string | null;
+};
+
+type SectionReferenceInUsePaperBank = {
+  id: string;
+  title: string | null;
+  authors: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+  doi: string | null;
+};
+
+type ProjectPaperBankOption = {
+  id: string;
+  title: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+};
+
+type PaperBankDetailForEditor = {
+  id: string;
+  title: string | null;
+  abstract: string | null;
+  filePath: string | null;
+  authors: string | null;
+  publisher: string | null;
+  doi: string | null;
+  publicationDate: string | null;
+  paperType: string | null;
+  journalName: string | null;
+  conferenceName: string | null;
+  pages: string | null;
+  number: string | null;
+  volume: string | null;
+  referenceContent: string | null;
+  tagNames: string[];
+};
+
+type SectionReferenceInUseResult = {
+  referenceContent: string;
+  paperBanks: SectionReferenceInUsePaperBank[];
+};
+
+const toReferencePaperRecord = (value: unknown): Record<string, unknown> => {
+  const record = (value ?? {}) as Record<string, unknown>;
+
+  if (record.paperBank && typeof record.paperBank === 'object') {
+    return record.paperBank as Record<string, unknown>;
+  }
+
+  if (record.paper && typeof record.paper === 'object') {
+    return record.paper as Record<string, unknown>;
+  }
+
+  return record;
+};
+
+const toInUsePaperBank = (paper: unknown): SectionReferenceInUsePaperBank => {
+  const record = toReferencePaperRecord(paper);
+
+  return {
+    id: String(record.id ?? ''),
+    title: (record.title as string | null) ?? null,
+    authors: (record.authors as string | null) ?? null,
+    journalName: (record.journalName as string | null) ?? null,
+    conferenceName: (record.conferenceName as string | null) ?? null,
+    doi: (record.doi as string | null) ?? null,
+  };
+};
+
+const buildReferenceContentFromPapers = (papers: unknown[]): string => {
+  return papers
+    .map((paper) => {
+      const record = toReferencePaperRecord(paper);
+      return typeof record.referenceContent === 'string'
+        ? record.referenceContent.trim()
+        : '';
+    })
+    .filter(Boolean)
+    .join('\n\n');
+};
+
+const hydrateReferenceContentFromPaperBanks = async (
+  papers: unknown[],
+): Promise<string> => {
+  const uniquePaperIds = Array.from(
+    new Set(
+      papers
+        .map((paper) => toReferencePaperRecord(paper))
+        .map((record) => String(record.id ?? '').trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (uniquePaperIds.length === 0) {
+    return '';
+  }
+
+  const detailResults = await Promise.allSettled(
+    uniquePaperIds.map((paperBankId) =>
+      getPaperBankDetailForEditor(paperBankId),
+    ),
+  );
+
+  return detailResults
+    .map((result) =>
+      result.status === 'fulfilled'
+        ? (result.value?.referenceContent ?? '')
+        : '',
+    )
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join('\n\n');
+};
+
+const getSectionReferenceInUseForEditor = async (
+  sectionId: string,
+): Promise<SectionReferenceInUseResult> => {
+  const response = (await api.get(
+    `/lab-service/sections/${sectionId}/reference/in-use`,
+  )) as {
+    result?: {
+      referenceContent?: unknown;
+      paperBanks?: unknown[];
+      items?: unknown[];
+    };
+  };
+
+  const result = response?.result ?? {};
+  const paperBanksSource = Array.isArray(result.paperBanks)
+    ? result.paperBanks
+    : Array.isArray(result.items)
+      ? result.items
+      : [];
+
+  let referenceContent =
+    typeof result.referenceContent === 'string'
+      ? result.referenceContent
+      : buildReferenceContentFromPapers(paperBanksSource);
+
+  let paperBanks = paperBanksSource.map((paper) => toInUsePaperBank(paper));
+
+  if (!referenceContent.trim()) {
+    try {
+      const fallback = await getSectionReference(sectionId);
+      const inUsePapers = fallback.result?.inUse ?? [];
+
+      referenceContent = buildReferenceContentFromPapers(inUsePapers);
+      if (paperBanks.length === 0) {
+        paperBanks = inUsePapers.map((paper) => toInUsePaperBank(paper));
+      }
+
+      if (!referenceContent.trim()) {
+        referenceContent =
+          await hydrateReferenceContentFromPaperBanks(inUsePapers);
+      }
+    } catch {
+      // Keep the empty state if the fallback endpoint also fails.
+    }
+  }
+
+  return {
+    referenceContent,
+    paperBanks,
+  };
+};
+
+const updateSectionReferenceForEditor = async ({
+  sectionId,
+  paperId,
+  paperBankIds,
+}: {
+  sectionId: string;
+  paperId: string;
+  paperBankIds: string[];
+}) => {
+  return api.put(`/lab-service/sections/${sectionId}/reference`, {
+    paperId,
+    paperBankIds,
+  });
+};
+
+const getPaperBankDetailForEditor = async (
+  paperBankId: string,
+): Promise<PaperBankDetailForEditor | null> => {
+  const response = (await api.get(
+    `/lab-service/paper-bank/${paperBankId}`,
+  )) as {
+    result?: {
+      paperBank?: Record<string, unknown>;
+      paper?: Record<string, unknown>;
+    };
+  };
+
+  const source =
+    (response?.result?.paperBank as Record<string, unknown> | undefined) ??
+    (response?.result?.paper as Record<string, unknown> | undefined) ??
+    null;
+
+  if (!source) return null;
+
+  return {
+    id: String(source.id ?? ''),
+    title: (source.title as string | null) ?? null,
+    abstract: (source.abstract as string | null) ?? null,
+    filePath: (source.filePath as string | null) ?? null,
+    authors: (source.authors as string | null) ?? null,
+    publisher: (source.publisher as string | null) ?? null,
+    doi: (source.doi as string | null) ?? null,
+    publicationDate: (source.publicationDate as string | null) ?? null,
+    paperType: (source.paperType as string | null) ?? null,
+    journalName: (source.journalName as string | null) ?? null,
+    conferenceName: (source.conferenceName as string | null) ?? null,
+    pages: (source.pages as string | null) ?? null,
+    number: (source.number as string | null) ?? null,
+    volume: (source.volume as string | null) ?? null,
+    referenceContent: (source.referenceContent as string | null) ?? null,
+    tagNames: Array.isArray(source.tagNames)
+      ? source.tagNames.filter((tag): tag is string => typeof tag === 'string')
+      : [],
+  };
 };
 
 const SectionVersionsPanel = ({
@@ -168,10 +405,34 @@ const SectionVersionsPanel = ({
   excludeSectionId?: string;
   onViewItem: (item: MarkSectionItem) => void;
 }) => {
+  const formatVersionTimestamp = (value?: string | null) => {
+    if (!value) return 'Unavailable';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return 'Unavailable';
+
+    return parsed.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const query = useMarkSection({ markSectionId: markSectionId || null });
   const allItems: MarkSectionItem[] = query.data?.result?.items ?? [];
+  const [cachedItems, setCachedItems] = useState<MarkSectionItem[]>([]);
 
-  const items = allItems.filter((i) => {
+  useEffect(() => {
+    if (query.data?.result?.items) {
+      setCachedItems(query.data.result.items);
+    }
+  }, [query.data?.result?.items]);
+
+  const displayedItemsSource = allItems.length > 0 ? allItems : cachedItems;
+
+  const items = displayedItemsSource.filter((i) => {
     if (i.isMainSection) return true;
     if (excludeSectionId && i.sectionId === excludeSectionId) return false;
     if ((i.email || '').toLowerCase() === currentUserEmail.toLowerCase())
@@ -179,10 +440,10 @@ const SectionVersionsPanel = ({
     return true;
   });
 
-  if (query.isLoading) {
+  if (query.isLoading && items.length === 0) {
     return (
       <div className="flex items-center justify-center py-4 text-xs text-slate-400">
-        Loading contributors...
+        Loading sections...
       </div>
     );
   }
@@ -210,7 +471,12 @@ const SectionVersionsPanel = ({
   });
 
   return (
-    <div className="flex flex-col">
+    <div className="relative flex flex-col">
+      {query.isFetching && (
+        <div className="sticky top-0 z-10 flex items-center justify-center bg-white/85 py-2 text-xs text-slate-400 backdrop-blur-sm dark:bg-slate-950/85">
+          Loading sections...
+        </div>
+      )}
       {sorted.map((item, idx) => {
         const displayName = item.isMainSection
           ? 'Origin section'
@@ -231,10 +497,10 @@ const SectionVersionsPanel = ({
             key={item.sectionId}
             type="button"
             onClick={() => onViewItem(item)}
-            className="group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 hover:bg-slate-100 active:bg-slate-200 dark:hover:bg-slate-800/60 dark:active:bg-slate-800"
+            className="group mx-3 my-1.5 flex w-auto items-start gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-slate-50 hover:shadow-md active:translate-y-0 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
           >
             <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white transition-transform duration-150 group-hover:scale-105 ${
+              className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-[10px] font-bold text-white shadow-sm transition-transform duration-150 group-hover:scale-105 ${
                 item.isMainSection
                   ? 'bg-emerald-500'
                   : COLORS[idx % COLORS.length]
@@ -243,18 +509,50 @@ const SectionVersionsPanel = ({
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                  {displayName}
-                </span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {displayName}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        item.isMainSection
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      {item.isMainSection ? 'Main' : 'Contributor'}
+                    </span>
+                  </div>
+                  {!item.isMainSection && (
+                    <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
+                      {item.email}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-slate-400 dark:text-slate-600" />
               </div>
-              {!item.isMainSection && (
-                <p className="truncate text-xs text-slate-400 dark:text-slate-500">
-                  {item.email}
-                </p>
-              )}
+
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900/80">
+                  <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                    Created at
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    {formatVersionTimestamp(item.createdOnUtc)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900/80">
+                  <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                    Last modified
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    {formatVersionTimestamp(item.lastModifiedOnUtc)}
+                  </p>
+                </div>
+              </div>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-slate-400 dark:text-slate-600" />
           </button>
         );
       })}
@@ -713,6 +1011,22 @@ const ReferencesTab = ({
                     <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Authors
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.authors || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Publisher
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.publisher || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
                           Journal / Conference
                         </p>
                         <p className="mt-0.5 font-medium">
@@ -742,6 +1056,30 @@ const ReferencesTab = ({
                             {activeSections.length}
                           </p>
                         </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Volume
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activePaper.volume || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Number
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activePaper.number || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Pages
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activePaper.pages || 'Not provided'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
@@ -804,6 +1142,622 @@ const ReferencesTab = ({
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+const InlineReferenceSectionEditor = ({
+  content,
+  canEdit,
+  isDirty,
+  isSaving,
+  onChange,
+  onSave,
+  mode = 'editor',
+  usedReferenceContent = '',
+  usedPaperBanks = [],
+  isUsedReferenceLoading = false,
+  availablePaperBanks = [],
+  isAvailablePaperBanksLoading = false,
+  currentPaperId,
+  currentSectionId,
+  currentSectionTitle,
+  onUpdateReference,
+  isUpdatingReference = false,
+}: {
+  content: string;
+  canEdit: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
+  onChange: (value: string | undefined) => void;
+  onSave: () => void;
+  mode?: 'editor' | 'in-use';
+  usedReferenceContent?: string;
+  usedPaperBanks?: SectionReferenceInUsePaperBank[];
+  isUsedReferenceLoading?: boolean;
+  availablePaperBanks?: ProjectPaperBankOption[];
+  isAvailablePaperBanksLoading?: boolean;
+  currentPaperId?: string;
+  currentSectionId?: string;
+  currentSectionTitle?: string;
+  onUpdateReference?: (paperBankIds: string[]) => Promise<boolean>;
+  isUpdatingReference?: boolean;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isBankDetailDialogOpen, setIsBankDetailDialogOpen] = useState(false);
+  const [isBankDetailLoading, setIsBankDetailLoading] = useState(false);
+  const [inUseEditorHeight, setInUseEditorHeight] = useState(288);
+  const [activeBankDetail, setActiveBankDetail] =
+    useState<PaperBankDetailForEditor | null>(null);
+  const [selectedPaperBankIds, setSelectedPaperBankIds] = useState<string[]>(
+    [],
+  );
+
+  const togglePaperBank = useCallback((paperBankId: string) => {
+    setSelectedPaperBankIds((prev) =>
+      prev.includes(paperBankId)
+        ? prev.filter((id) => id !== paperBankId)
+        : [...prev, paperBankId],
+    );
+  }, []);
+
+  const handleOpenUpdateDialog = useCallback(() => {
+    const ids = usedPaperBanks
+      .map((paper) => paper.id)
+      .filter((id): id is string => !!id);
+    setSelectedPaperBankIds(Array.from(new Set(ids)));
+    setIsUpdateDialogOpen(true);
+  }, [usedPaperBanks]);
+
+  const handleSubmitUpdateReference = useCallback(async () => {
+    if (!onUpdateReference) return;
+    const isSuccessful = await onUpdateReference(selectedPaperBankIds);
+    if (isSuccessful) {
+      setIsUpdateDialogOpen(false);
+    }
+  }, [onUpdateReference, selectedPaperBankIds]);
+
+  const handleOpenBankDetail = useCallback(async (paperBankId: string) => {
+    setIsBankDetailDialogOpen(true);
+    setIsBankDetailLoading(true);
+    try {
+      const detail = await getPaperBankDetailForEditor(paperBankId);
+      setActiveBankDetail(detail);
+    } catch {
+      setActiveBankDetail(null);
+      toast.error('Failed to load paper bank detail.');
+    } finally {
+      setIsBankDetailLoading(false);
+    }
+  }, []);
+
+  const handleStartResizeInUseEditor = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      const startY = event.clientY;
+      const startHeight = inUseEditorHeight;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const deltaY = moveEvent.clientY - startY;
+        const nextHeight = Math.min(640, Math.max(160, startHeight - deltaY));
+        setInUseEditorHeight(nextHeight);
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [inUseEditorHeight],
+  );
+
+  return (
+    <>
+      <div className="relative shrink-0 border-t border-[#e8e8e6] bg-[#fafafa] dark:border-[#2a2a2a] dark:bg-[#151515]">
+        {isExpanded && mode === 'in-use' && (
+          <button
+            type="button"
+            aria-label="Resize reference content"
+            onMouseDown={handleStartResizeInUseEditor}
+            className="absolute -top-2 left-0 z-10 h-3 w-full cursor-row-resize bg-transparent p-0 text-transparent outline-none"
+            title="Resize reference content"
+          />
+        )}
+
+        <div className="flex h-9 items-center justify-between border-b border-[#e8e8e6] px-3 dark:border-[#2a2a2a]">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
+              <FileText className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
+              References
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              title={isExpanded ? 'Collapse references' : 'Expand references'}
+              aria-label={
+                isExpanded ? 'Collapse references' : 'Expand references'
+              }
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <span className="text-[10px] text-slate-400">SOURCE - LATEX</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {mode === 'in-use' ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleOpenUpdateDialog}
+                  disabled={!currentPaperId || !currentSectionId}
+                  className="h-6 px-2 text-[10px]"
+                >
+                  Update reference
+                </Button>
+              </>
+            ) : (
+              <>
+                {isDirty && (
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                    Unsaved changes
+                  </span>
+                )}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  {canEdit ? 'Editable' : 'Read only'}
+                </span>
+                {canEdit && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={onSave}
+                    disabled={isSaving}
+                    className="h-6 px-2 text-[10px]"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      'Save References'
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {isExpanded &&
+          (mode === 'in-use' ? (
+            <div className="border-t border-transparent">
+              {isUsedReferenceLoading ? (
+                <div className="flex h-72 items-center gap-2 px-3 text-xs text-slate-500 dark:text-slate-400">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading reference content...
+                </div>
+              ) : usedReferenceContent.trim() ? (
+                <div
+                  className="overflow-hidden"
+                  style={{ height: `${inUseEditorHeight}px` }}
+                >
+                  <Editor
+                    height="100%"
+                    defaultLanguage="latex-custom"
+                    value={usedReferenceContent}
+                    beforeMount={registerLatexLanguage}
+                    theme="latex-light"
+                    options={{
+                      readOnly: true,
+                      domReadOnly: true,
+                      fontSize: 14,
+                      lineHeight: 22,
+                      minimap: { enabled: false },
+                      wordWrap: 'on',
+                      scrollBeyondLastLine: false,
+                      padding: { top: 10, bottom: 10 },
+                      automaticLayout: true,
+                      tabSize: 2,
+                      lineNumbers: 'on',
+                      renderLineHighlight: 'line',
+                      fontFamily:
+                        "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                      fontLigatures: true,
+                      smoothScrolling: true,
+                      scrollbar: {
+                        verticalScrollbarSize: 6,
+                        horizontalScrollbarSize: 6,
+                        useShadows: false,
+                      },
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="px-3 py-4 text-xs text-slate-500 dark:text-slate-400">
+                  No reference content is currently in use for this section.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="h-72">
+              <Editor
+                height="100%"
+                defaultLanguage="latex-custom"
+                value={content}
+                onChange={onChange}
+                theme="latex-light"
+                beforeMount={registerLatexLanguage}
+                options={{
+                  readOnly: !canEdit,
+                  domReadOnly: !canEdit,
+                  fontSize: 14,
+                  lineHeight: 22,
+                  minimap: { enabled: false },
+                  wordWrap: 'on',
+                  scrollBeyondLastLine: false,
+                  padding: { top: 10, bottom: 10 },
+                  automaticLayout: true,
+                  tabSize: 2,
+                  lineNumbers: 'on',
+                  scrollbar: {
+                    verticalScrollbarSize: 6,
+                    horizontalScrollbarSize: 6,
+                    useShadows: false,
+                  },
+                }}
+              />
+            </div>
+          ))}
+      </div>
+
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-hidden pt-9 sm:max-w-2xl [&>button]:top-3 [&>button]:right-3 [&>button]:z-20">
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+              <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Update references
+              </h3>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  Selected: {selectedPaperBankIds.length}
+                </span>
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                  Available: {availablePaperBanks.length}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+              <p>Section title: {currentSectionTitle || '-'}</p>
+            </div>
+
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+              {isAvailablePaperBanksLoading ? (
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading paper banks...
+                </div>
+              ) : availablePaperBanks.length > 0 ? (
+                availablePaperBanks.map((paper) => {
+                  const checked = selectedPaperBankIds.includes(paper.id);
+                  return (
+                    <label
+                      key={paper.id}
+                      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2.5 transition-colors ${
+                        checked
+                          ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
+                          : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5"
+                        checked={checked}
+                        onChange={() => togglePaperBank(paper.id)}
+                      />
+                      <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+                            {paper.title || 'Untitled paper'}
+                          </p>
+                          {(paper.journalName || paper.conferenceName) && (
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                              {paper.journalName || paper.conferenceName}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            void handleOpenBankDetail(paper.id);
+                          }}
+                          title="View detail"
+                          aria-label="View detail"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </label>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  No paper banks found in this project.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsUpdateDialogOpen(false)}
+                disabled={isUpdatingReference}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmitUpdateReference}
+                disabled={
+                  isUpdatingReference || !currentPaperId || !currentSectionId
+                }
+              >
+                {isUpdatingReference ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Updating...
+                  </span>
+                ) : (
+                  'Update Reference'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isBankDetailDialogOpen}
+        onOpenChange={(open) => {
+          setIsBankDetailDialogOpen(open);
+          if (!open) setActiveBankDetail(null);
+        }}
+      >
+        <DialogContent
+          overlayClassName="bg-black/50"
+          className="max-h-[88vh] w-[min(1220px,calc(100vw-2rem))]! max-w-none! overflow-hidden pt-9 [&>button]:top-3 [&>button]:right-3 [&>button]:z-20"
+        >
+          {isBankDetailLoading ? (
+            <div className="flex items-center gap-2 py-4 text-sm text-slate-500 dark:text-slate-400">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading paper detail...
+            </div>
+          ) : activeBankDetail ? (
+            <div className="max-h-[72vh] space-y-4 overflow-y-auto pr-1">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                  {activeBankDetail.title || 'Untitled paper'}
+                </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Reference currently used in this section
+                </p>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,1fr)]">
+                <div className="space-y-4">
+                  {activeBankDetail.abstract && (
+                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                          Abstract
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-2 py-0.5 text-[10px]"
+                        >
+                          Preview
+                        </Badge>
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                        {activeBankDetail.abstract}
+                      </p>
+                    </section>
+                  )}
+
+                  <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                      Reference content
+                    </p>
+                    <div className="mt-2 h-80 max-h-[65vh] min-h-45 resize-y overflow-auto">
+                      <Editor
+                        height="100%"
+                        defaultLanguage="latex-custom"
+                        value={activeBankDetail.referenceContent || ''}
+                        beforeMount={registerLatexLanguage}
+                        theme="latex-light"
+                        options={{
+                          readOnly: true,
+                          domReadOnly: true,
+                          fontSize: 13,
+                          lineHeight: 22,
+                          minimap: { enabled: false },
+                          wordWrap: 'on',
+                          scrollBeyondLastLine: false,
+                          padding: { top: 10, bottom: 10 },
+                          automaticLayout: true,
+                          tabSize: 2,
+                          lineNumbers: 'off',
+                          glyphMargin: false,
+                          lineDecorationsWidth: 0,
+                          folding: false,
+                          renderLineHighlight: 'line',
+                          fontFamily:
+                            "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                          fontLigatures: true,
+                          smoothScrolling: true,
+                          scrollbar: {
+                            verticalScrollbarSize: 6,
+                            horizontalScrollbarSize: 6,
+                            useShadows: false,
+                          },
+                        }}
+                      />
+                    </div>
+                  </section>
+                </div>
+
+                <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                    <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                      Metadata
+                    </p>
+                    <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Authors
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activeBankDetail.authors || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Publisher
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activeBankDetail.publisher || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Journal / Conference
+                        </p>
+                        <p className="mt-0.5 font-medium">
+                          {activeBankDetail.journalName ||
+                            activeBankDetail.conferenceName ||
+                            'Not provided'}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Year
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.publicationDate
+                              ? new Date(
+                                  activeBankDetail.publicationDate,
+                                ).getFullYear()
+                              : 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Volume
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.volume || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Number
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.number || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                            Pages
+                          </p>
+                          <p className="mt-0.5 font-medium">
+                            {activeBankDetail.pages || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          DOI
+                        </p>
+                        {activeBankDetail.doi ? (
+                          <a
+                            href={
+                              activeBankDetail.doi.startsWith('http')
+                                ? activeBankDetail.doi
+                                : `https://doi.org/${activeBankDetail.doi}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-mono break-all text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            <Link2 className="h-3 w-3" />
+                            {activeBankDetail.doi}
+                          </a>
+                        ) : (
+                          <p className="mt-0.5 font-medium">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
+                          Tags
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {activeBankDetail.tagNames.length ? (
+                            activeBankDetail.tagNames.slice(0, 8).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="rounded-full px-2 py-0.5 text-[10px]"
+                              >
+                                {tag}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                              No tags
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeBankDetail.filePath && (
+                    <a
+                      href={activeBankDetail.filePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                    >
+                      <Download className="h-4 w-4" />
+                      Open file
+                    </a>
+                  )}
+                </aside>
+              </div>
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-slate-500 dark:text-slate-400">
+              No detail available.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -1122,6 +2076,7 @@ type SectionProp = {
   paperId?: string;
   title: string;
   content: string;
+  packages?: string[];
   memberId: string;
   numbered: boolean;
   sectionSumary: string;
@@ -1180,10 +2135,23 @@ const toLatexLabel = (fileUrl: string): string => {
     .slice(0, 40);
 };
 
+const toPlainSectionTitle = (title: string): string => {
+  if (!title) return '';
+
+  let result = title;
+  const cmdPattern = /\\[a-zA-Z*]+\{([^{}]*)\}/g;
+  let prev = '';
+  while (prev !== result) {
+    prev = result;
+    result = result.replace(cmdPattern, '$1');
+  }
+
+  return result.replace(/[{}]/g, '').trim().toLowerCase();
+};
+
 export const LatexPaperEditor = ({
   paperTitle,
   projectId,
-  draftStorageScope,
   initialContent,
   sections,
   initialSectionId,
@@ -1203,6 +2171,38 @@ export const LatexPaperEditor = ({
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarResourceTab, setSidebarResourceTab] = useState<
+    'files' | 'packages'
+  >('packages');
+  const [localPackages, setLocalPackages] = useState<string[]>([]);
+  const [savedPackages, setSavedPackages] = useState<string[]>([]);
+  const [newPackageInput, setNewPackageInput] = useState('');
+  const [editingPkgIdx, setEditingPkgIdx] = useState<number | null>(null);
+  const [editingPkgValue, setEditingPkgValue] = useState('');
+  const [pkgViewTab, setPkgViewTab] = useState<'current' | 'reference'>(
+    'current',
+  );
+  const commitPkgEdit = (idx: number, value: string) => {
+    const trimmed = value.trim();
+    setEditingPkgIdx(null);
+    setEditingPkgValue('');
+    if (!trimmed) return;
+    setLocalPackages((prev) => prev.map((p, i) => (i === idx ? trimmed : p)));
+  };
+  // Packages for the reference section (editable in the Reference tab)
+  const [localRefPackages, setLocalRefPackages] = useState<string[]>([]);
+  const [editingRefPkgIdx, setEditingRefPkgIdx] = useState<number | null>(null);
+  const [editingRefPkgValue, setEditingRefPkgValue] = useState('');
+  const [newRefPackageInput, setNewRefPackageInput] = useState('');
+  const commitRefPkgEdit = (idx: number, value: string) => {
+    const trimmed = value.trim();
+    setEditingRefPkgIdx(null);
+    setEditingRefPkgValue('');
+    if (!trimmed) return;
+    setLocalRefPackages((prev) =>
+      prev.map((p, i) => (i === idx ? trimmed : p)),
+    );
+  };
   const [editorSections, setEditorSections] = useState<
     SectionProp[] | undefined
   >(sections);
@@ -1218,7 +2218,7 @@ export const LatexPaperEditor = ({
   const [toolsTab, setToolsTab] = useState<
     'chat' | 'versions' | 'comments' | 'info' | 'datasets'
   >('chat');
-  const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(false);
+  const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(true);
   const [editorWidthPct, setEditorWidthPct] = useState(50);
   const [pdfZoom, setPdfZoom] = useState(100);
   // Version preview state: when set, editor shows a read-only version tab
@@ -1242,84 +2242,68 @@ export const LatexPaperEditor = ({
   );
   const cursorPositionRef = useRef<CursorPosition | null>(null);
   const previousActiveSectionIdRef = useRef<string | null>(null);
+  const previousActiveSectionInfoRef = useRef<{
+    id: string;
+    markSectionId: string;
+    memberId: string;
+    sectionRole: string;
+    title: string;
+    parentSectionId: string | null;
+  } | null>(null);
+  const prevSectionMarksRef = useRef(new Set<string>());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastReadOnlyToastRef = useRef<number>(0);
-
-  const draftStorageKey = useMemo(() => {
-    if (draftStorageScope) return `latex-editor-drafts:${draftStorageScope}`;
-
-    const derivedPaperId = sections?.[0]?.paperId || 'paper';
-    const derivedProjectId = projectId || 'workspace';
-    return `latex-editor-drafts:${derivedProjectId}:${derivedPaperId}`;
-  }, [draftStorageScope, projectId, sections]);
-
-  const getDraftMap = useCallback((): Record<string, string> => {
-    if (typeof window === 'undefined') return {};
-
-    try {
-      const raw = sessionStorage.getItem(draftStorageKey);
-      if (!raw) return {};
-
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        return {};
-      }
-
-      return parsed as Record<string, string>;
-    } catch {
-      return {};
-    }
-  }, [draftStorageKey]);
-
-  const setDraftMap = useCallback(
-    (next: Record<string, string>) => {
-      if (typeof window === 'undefined') return;
-
-      try {
-        if (Object.keys(next).length === 0) {
-          sessionStorage.removeItem(draftStorageKey);
-          return;
-        }
-
-        sessionStorage.setItem(draftStorageKey, JSON.stringify(next));
-      } catch {
-        // ignore storage failures
-      }
-    },
-    [draftStorageKey],
-  );
-
-  const getSectionDraft = useCallback(
-    (sectionId: string): string | null => {
-      const draftMap = getDraftMap();
-      const value = draftMap[sectionId];
-      return typeof value === 'string' ? value : null;
-    },
-    [getDraftMap],
-  );
-
-  const setSectionDraft = useCallback(
-    (sectionId: string, value: string) => {
-      const draftMap = getDraftMap();
-      draftMap[sectionId] = value;
-      setDraftMap(draftMap);
-    },
-    [getDraftMap, setDraftMap],
-  );
-
-  const clearSectionDraft = useCallback(
-    (sectionId: string) => {
-      const draftMap = getDraftMap();
-      if (!(sectionId in draftMap)) return;
-
-      delete draftMap[sectionId];
-      setDraftMap(draftMap);
-    },
-    [getDraftMap, setDraftMap],
-  );
+  // Flag set by handleSave to prevent the sections-sync effects from
+  // overwriting local state with stale parent prop data.
+  const saveInProgressRef = useRef(false);
 
   useEffect(() => {
+    // When a save just completed successfully, the editor's local state
+    // already has the correct new section ID and content. Do NOT let the
+    // parent's stale `sections` prop overwrite it.
+    if (saveInProgressRef.current) {
+      saveInProgressRef.current = false;
+      return;
+    }
+
+    // Save current active section info before editorSections is replaced.
+    // The matching effect needs this when the version-specific ID is no
+    // longer present in the new (structural) sections list.
+    const currentActive = activeSectionRef.current;
+    if (currentActive) {
+      previousActiveSectionInfoRef.current = {
+        id: currentActive.id,
+        markSectionId: (currentActive.markSectionId || currentActive.id).trim(),
+        memberId: currentActive.memberId,
+        sectionRole: currentActive.sectionRole || '',
+        title: currentActive.title,
+        parentSectionId: currentActive.parentSectionId,
+      };
+    }
+
+    // Detect whether the section *structure* changed (sections added/removed)
+    // vs a simple data refresh (same set of markSectionIds).
+    const newMarks = new Set(
+      (sections ?? [])
+        .map((s) => (s.markSectionId || s.id).trim())
+        .filter(Boolean),
+    );
+    const prevMarks = prevSectionMarksRef.current;
+    const structureChanged =
+      prevMarks.size !== newMarks.size ||
+      [...newMarks].some((m) => !prevMarks.has(m)) ||
+      [...prevMarks].some((m) => !newMarks.has(m));
+    prevSectionMarksRef.current = newMarks;
+
     setEditorSections(sections);
+
+    // Only force a server re-fetch when sections were genuinely added or
+    // removed. After a save-triggered refresh the markSectionIds stay the
+    // same, so the editor already has the latest content — resetting the
+    // ref here would cause an unnecessary re-fetch cascade.
+    if (structureChanged) {
+      previousActiveSectionIdRef.current = null;
+    }
   }, [sections]);
 
   useEffect(() => {
@@ -1331,8 +2315,61 @@ export const LatexPaperEditor = ({
       if (prev && sections.some((section) => section.id === prev)) {
         return prev;
       }
+
+      // Try the live editorSections first; when the version-specific ID was
+      // replaced by a structural ID (parent refresh after save), fall back
+      // to the snapshot saved before the replacement.
+      const previousSection =
+        (prev
+          ? editorSections?.find((section) => section.id === prev)
+          : null) ?? previousActiveSectionInfoRef.current;
+
+      if (previousSection) {
+        const previousMarkSectionId =
+          previousSection.markSectionId || previousSection.id;
+
+        const matchedByMarkAndIdentity = sections.find((section) => {
+          const currentMarkSectionId = section.markSectionId || section.id;
+          return (
+            currentMarkSectionId === previousMarkSectionId &&
+            section.memberId === previousSection.memberId &&
+            section.sectionRole === previousSection.sectionRole
+          );
+        });
+
+        if (matchedByMarkAndIdentity) {
+          // Sync the ref so loadLatestSectionContent does not treat the new
+          // ID as a section switch and trigger an unnecessary server fetch.
+          previousActiveSectionIdRef.current = matchedByMarkAndIdentity.id;
+          return matchedByMarkAndIdentity.id;
+        }
+
+        const matchedByMark = sections.find((section) => {
+          const currentMarkSectionId = section.markSectionId || section.id;
+          return currentMarkSectionId === previousMarkSectionId;
+        });
+
+        if (matchedByMark) {
+          previousActiveSectionIdRef.current = matchedByMark.id;
+          return matchedByMark.id;
+        }
+
+        const matchedByStructure = sections.find(
+          (section) =>
+            section.title === previousSection.title &&
+            section.parentSectionId === previousSection.parentSectionId &&
+            section.memberId === previousSection.memberId,
+        );
+
+        if (matchedByStructure) {
+          previousActiveSectionIdRef.current = matchedByStructure.id;
+          return matchedByStructure.id;
+        }
+      }
+
       return fallbackSectionId;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSectionId, sections]);
 
   const activeSection =
@@ -1340,6 +2377,24 @@ export const LatexPaperEditor = ({
   const activeSectionTitle =
     editorSections?.find((section) => section.id === activeSectionId)?.title ??
     null;
+  const referenceSection = useMemo(
+    () =>
+      editorSections?.find((section) => {
+        const normalizedTitle = toPlainSectionTitle(section.title || '');
+        return (
+          normalizedTitle === 'references' || normalizedTitle === 'reference'
+        );
+      }) ?? null,
+    [editorSections],
+  );
+  const isReferenceSectionActive =
+    !!referenceSection && activeSectionId === referenceSection.id;
+
+  // Keep localRefPackages in sync whenever the reference section loads or changes
+
+  useEffect(() => {
+    setLocalRefPackages(referenceSection?.packages ?? []);
+  }, [referenceSection?.id, referenceSection?.packages]);
 
   // Whether the active user is an author (paper:author role)
   const isAuthorRole = activeSection?.sectionRole === 'paper:author';
@@ -1364,6 +2419,35 @@ export const LatexPaperEditor = ({
   const isActiveSectionReadOnly =
     readOnly || !hasEditPermissionForActiveSection;
 
+  // Reset package input when switching sections (packages are set after API response below)
+  useEffect(() => {
+    setNewPackageInput('');
+  }, [activeSectionId]);
+  const canEditReferenceSection =
+    !!referenceSection &&
+    !readOnly &&
+    (!referenceSection.sectionRole ||
+      editableSectionRoles.has(referenceSection.sectionRole));
+  const [referenceContent, setReferenceContent] = useState('');
+  const [savedReferenceContent, setSavedReferenceContent] = useState('');
+  const [inUseReferenceContent, setInUseReferenceContent] = useState('');
+  const [inUsePaperBanks, setInUsePaperBanks] = useState<
+    SectionReferenceInUsePaperBank[]
+  >([]);
+  const [isInUseReferenceLoading, setIsInUseReferenceLoading] = useState(false);
+  const [isUpdatingReference, setIsUpdatingReference] = useState(false);
+  const [inUseReferenceReloadKey, setInUseReferenceReloadKey] = useState(0);
+  // Tracks the resolved section ID after assigned-sections lookup —
+  // used everywhere that needs the latest server-side section ID.
+  const [resolvedActiveSectionId, setResolvedActiveSectionId] = useState<
+    string | null
+  >(null);
+  const queryClient = useQueryClient();
+  const assignedSectionsParams = useMemo(
+    () => ({ PageNumber: 1, PageSize: 1000 }),
+    [],
+  );
+
   // Derive paperId from sections for version history
   const derivedPaperId =
     activeSection?.paperId || editorSections?.[0]?.paperId || '';
@@ -1372,9 +2456,42 @@ export const LatexPaperEditor = ({
   const activeSectionMarkId =
     activeSection?.markSectionId || activeSectionId || '';
 
+  // Stable ref so loadInUseReferences can read the full section object
+  // without depending on the object reference (prevents re-fetch on Save Changes)
+  const activeSectionRef = useRef<SectionProp | null>(activeSection);
+  activeSectionRef.current = activeSection;
+
+  // Stable refs so the in-use-reference effect can read current editor state
+  // without causing re-run on every keystroke / package change.
+  const contentRef = useRef(content);
+  contentRef.current = content;
+  const localPackagesRef = useRef(localPackages);
+  localPackagesRef.current = localPackages;
+  const editorSectionsRef = useRef(editorSections);
+  editorSectionsRef.current = editorSections;
+
   // Current user for "me" badges
   const { data: currentUser } = useUser();
   const currentUserEmail = (currentUser?.email || '').toLowerCase();
+
+  const projectPapersQuery = useProjectPapers({
+    projectId: projectId ?? '',
+    params: { PageNumber: 1, PageSize: 200 },
+    queryConfig: { enabled: !!projectId },
+  });
+  const availableProjectPaperBanks = useMemo<ProjectPaperBankOption[]>(() => {
+    const items =
+      ((projectPapersQuery.data as any)?.result?.items as Array<
+        Record<string, unknown>
+      >) ?? [];
+
+    return items.map((paper) => ({
+      id: String(paper.id ?? ''),
+      title: (paper.title as string | null) ?? null,
+      journalName: (paper.journalName as string | null) ?? null,
+      conferenceName: (paper.conferenceName as string | null) ?? null,
+    }));
+  }, [projectPapersQuery.data]);
 
   // LaTeX stats computed from current content
   const latexStats = useMemo(() => computeLatexStats(content), [content]);
@@ -1387,10 +2504,26 @@ export const LatexPaperEditor = ({
     ? []
     : (sectionFilesQuery.data ?? []);
 
+  // The section ID used for the Comments tab. When a contributor version
+  // preview is open, show that contributor's comments; otherwise default
+  // to the current active section.
+  const commentsSectionId =
+    versionPreview?.item.sectionId ?? resolvedActiveSectionId ?? null;
+
   useSectionComments({
-    sectionId: activeSectionId ?? '',
+    sectionId: resolvedActiveSectionId ?? '',
     queryConfig: {
-      enabled: !!activeSectionId,
+      enabled: !!resolvedActiveSectionId,
+    },
+  });
+
+  // Pre-warm comments for the contributor section as soon as preview opens.
+  useSectionComments({
+    sectionId: versionPreview?.item.sectionId ?? '',
+    queryConfig: {
+      enabled:
+        !!versionPreview?.item.sectionId &&
+        versionPreview.item.sectionId !== resolvedActiveSectionId,
     },
   });
 
@@ -1408,43 +2541,72 @@ export const LatexPaperEditor = ({
   const updateSectionMutation = useUpdateSection({
     mutationConfig: {
       onSuccess: () => {
-        toast.success('Section saved successfully');
+        toast.success('Section saved successfully', {
+          id: 'section-save-success',
+          duration: 3000,
+        });
       },
       onError: () => {
-        toast.error('Failed to save section. Please try again.');
+        toast.error('Failed to save section. Please try again.', {
+          id: 'section-save-error',
+          duration: 3000,
+        });
       },
     },
   });
 
-  const compileAndRender = useCallback(async (latexContent: string) => {
-    setIsCompiling(true);
-    setCompileError(null);
-    try {
-      const blob = await compileLatex({ content: latexContent });
-      if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
-      const newUrl = URL.createObjectURL(blob);
-      pdfUrlRef.current = newUrl;
-      setPdfUrl(newUrl);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to compile LaTeX';
-      setCompileError(message);
-      toast.error('LaTeX compilation failed');
-    } finally {
-      setIsCompiling(false);
-    }
-  }, []);
+  const compileAndRender = useCallback(
+    async (latexContent: string, packages?: string[], refContent?: string) => {
+      setIsCompiling(true);
+      setCompileError(null);
+      try {
+        const blob = await compileLatex({
+          content: latexContent,
+          packages,
+          referenceContent: refContent,
+        });
+        if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+        const newUrl = URL.createObjectURL(blob);
+        pdfUrlRef.current = newUrl;
+        setPdfUrl(newUrl);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to compile LaTeX';
+        setCompileError(message);
+        toast.error('LaTeX compilation failed', {
+          id: 'latex-compile-error',
+          duration: 3000,
+        });
+      } finally {
+        setIsCompiling(false);
+      }
+    },
+    [],
+  );
 
   // Compile LaTeX to PDF via API
   const handleRender = useCallback(() => {
+    // Merge in-use reference content (from linked paper banks, shown in the
+    // bottom References panel) with the editable References section content.
+    // The in-use content takes priority since it is what the user sees.
+    const mergedRefContent =
+      inUseReferenceContent || referenceContent || undefined;
+
     if (versionPreview) {
-      compileAndRender(previewEditContent ?? versionPreview.item.content ?? '');
+      compileAndRender(
+        previewEditContent ?? versionPreview.item.content ?? '',
+        localPackages,
+        mergedRefContent,
+      );
       return;
     }
     if (isActiveSectionReadOnly) return;
-    compileAndRender(content);
+    compileAndRender(content, localPackages, mergedRefContent);
   }, [
+    localPackages,
     content,
+    referenceContent,
+    inUseReferenceContent,
     previewEditContent,
     versionPreview,
     compileAndRender,
@@ -1458,52 +2620,237 @@ export const LatexPaperEditor = ({
     };
   }, []);
 
+  const resolveLatestSectionIdFromAssignedSections = useCallback(
+    async (
+      markSectionId: string,
+      sectionSnapshot?: SectionProp | null,
+      options?: { forceFresh?: boolean },
+    ) => {
+      if (!derivedPaperId) return null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const { queryKey, queryFn } = getAssignedSectionsQueryOptions(
+            derivedPaperId,
+            assignedSectionsParams,
+          );
+
+          const shouldForceFresh = Boolean(options?.forceFresh) || attempt > 0;
+
+          if (shouldForceFresh) {
+            await queryClient.invalidateQueries({ queryKey });
+          }
+
+          const assignedResponse = await queryClient.fetchQuery({
+            queryKey,
+            queryFn,
+            staleTime: shouldForceFresh ? 0 : 15_000,
+          });
+          const assignedItems = assignedResponse.result?.items ?? [];
+
+          const exactMatch = sectionSnapshot
+            ? assignedItems.find(
+                (item) =>
+                  (item.markSectionId || item.id) === markSectionId &&
+                  item.memberId === sectionSnapshot.memberId &&
+                  item.sectionRole === sectionSnapshot.sectionRole,
+              )
+            : undefined;
+
+          const markMatch = assignedItems.find(
+            (item) => (item.markSectionId || item.id) === markSectionId,
+          );
+
+          const resolvedId = exactMatch?.id || markMatch?.id || null;
+          if (resolvedId) return resolvedId;
+        } catch {
+          // ignore and retry
+        }
+
+        if (attempt < 2) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, 200);
+          });
+        }
+      }
+
+      return null;
+    },
+    [assignedSectionsParams, derivedPaperId, queryClient],
+  );
+
   // When sections or activeSectionId changes, load content into editor
   useEffect(() => {
-    if (editorSections && activeSectionId) {
+    let disposed = false;
+
+    const loadLatestSectionContent = async () => {
+      // While a save is in progress, handleSave manages all state directly.
+      // Do NOT interfere by resolving IDs or fetching section content.
+      if (saveInProgressRef.current) return;
+
+      if (!editorSections || !activeSectionId) return;
+
       const activeSection = editorSections.find(
         (s) => s.id === activeSectionId,
       );
-      if (activeSection) {
-        const isSectionSwitched =
-          previousActiveSectionIdRef.current !== activeSectionId;
+      if (!activeSection) return;
 
-        // Only reset content when actually switching sections to avoid jank on save
-        if (isSectionSwitched) {
-          const persistedDraft = getSectionDraft(activeSectionId);
-          const serverContent = activeSection.content || '';
-          const nextContent = persistedDraft ?? serverContent;
+      const isSectionSwitched =
+        previousActiveSectionIdRef.current !== activeSectionId;
 
-          setContent(nextContent);
-          setSavedContent(activeSection.content || '');
-          if (nextContent) {
-            compileAndRender(nextContent);
-          } else {
-            setPdfUrl(null);
-            setCompileError(null);
-          }
+      // Only refresh/reset when actually switching sections to avoid jank on save
+      if (!isSectionSwitched) return;
+
+      try {
+        // Always resolve the newest id from assigned-sections before loading content.
+        const markSectionId = (
+          activeSection.markSectionId || activeSection.id
+        ).trim();
+        const resolvedId =
+          (await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            activeSection,
+          )) || activeSectionId;
+
+        // Read packages from the assigned-sections cache that was just populated above.
+        // This is the authoritative source for packages (set per section by the author).
+        const cachedAssigned = queryClient.getQueryData<{
+          result: { items: Array<{ id: string; packages?: string[] | null }> };
+        }>(
+          getAssignedSectionsQueryOptions(
+            derivedPaperId ?? '',
+            assignedSectionsParams,
+          ).queryKey,
+        );
+        const packagesFromAssigned =
+          cachedAssigned?.result?.items?.find((item) => item.id === resolvedId)
+            ?.packages ?? undefined;
+
+        if (disposed) return;
+
+        if (resolvedId !== activeSectionId) {
+          setEditorSections((prev) => {
+            if (!prev?.length) return prev;
+            return prev.map((section) =>
+              section.id === activeSectionId
+                ? { ...section, id: resolvedId }
+                : section,
+            );
+          });
+          setActiveSectionId(resolvedId);
+          // Keep tracking the resolved ID as "current" so the effect does not
+          // re-trigger itself endlessly when it re-runs with the new
+          // activeSectionId. The getSection call below will fetch content for
+          // resolvedId, and the result handler sets the ref to the final id.
+          previousActiveSectionIdRef.current = resolvedId;
+        }
+
+        const response = await getSection(resolvedId);
+        if (disposed) return;
+
+        const latest = response.result;
+        const latestId = latest.id || resolvedId;
+        const latestContent = latest.content || '';
+
+        setEditorSections((prev) => {
+          if (!prev?.length) return prev;
+
+          return prev.map((section) => {
+            // Match on BOTH possible IDs: the stale closure `activeSectionId`
+            // (when resolvedId === activeSectionId) and `resolvedId` (when they
+            // differ and the first block already swapped the id). Using both
+            // ensures the section is found regardless of which ID is current in
+            // the prev array at the time this updater runs.
+            if (section.id !== activeSectionId && section.id !== resolvedId)
+              return section;
+
+            return {
+              ...section,
+              id: latestId,
+              title: latest.title || section.title,
+              content: latestContent,
+              packages: latest.packages || section.packages,
+              numbered: latest.numbered,
+              displayOrder: latest.displayOrder,
+              sectionSumary: latest.sectionSumary || '',
+              description: latest.description || section.description,
+              parentSectionId: latest.parentSectionId ?? null,
+              memberId: latest.memberId || section.memberId,
+            };
+          });
+        });
+
+        if (latestId !== activeSectionId || latestId !== resolvedId) {
+          // Use a functional setter so we only take effect when the current
+          // activeSectionId matches what this effect resolved. If another
+          // concurrent effect (e.g. loadInUseReferences) has already moved it
+          // somewhere else, we must not clobber that.
+          setActiveSectionId((prev) => {
+            if (prev === activeSectionId || prev === resolvedId) {
+              previousActiveSectionIdRef.current = latestId;
+              return latestId;
+            }
+            return prev;
+          });
+        } else {
           previousActiveSectionIdRef.current = activeSectionId;
         }
+
+        setContent(latestContent);
+        setSavedContent(latestContent);
+        const resolvedPkgs =
+          latest.packages ??
+          packagesFromAssigned ??
+          activeSection.packages ??
+          [];
+        setLocalPackages(resolvedPkgs);
+        setSavedPackages(resolvedPkgs);
+        if (latestContent) {
+          compileAndRender(
+            latestContent,
+            resolvedPkgs,
+            referenceContent || undefined,
+          );
+        } else {
+          setPdfUrl(null);
+          setCompileError(null);
+        }
+      } catch {
+        const fallbackContent = activeSection.content || '';
+        const fallbackPkgs = activeSection.packages ?? [];
+        setLocalPackages(fallbackPkgs);
+        setSavedPackages(fallbackPkgs);
+
+        setContent(fallbackContent);
+        setSavedContent(fallbackContent);
+        if (fallbackContent) {
+          compileAndRender(
+            fallbackContent,
+            fallbackPkgs,
+            referenceContent || undefined,
+          );
+        } else {
+          setPdfUrl(null);
+          setCompileError(null);
+        }
+        previousActiveSectionIdRef.current = activeSectionId;
       }
-    }
-  }, [editorSections, activeSectionId, compileAndRender, getSectionDraft]);
+    };
 
-  useEffect(() => {
-    if (!activeSectionId || versionPreview) return;
+    void loadLatestSectionContent();
 
-    if (content === savedContent) {
-      clearSectionDraft(activeSectionId);
-      return;
-    }
-
-    setSectionDraft(activeSectionId, content);
+    return () => {
+      disposed = true;
+    };
   }, [
+    editorSections,
     activeSectionId,
-    clearSectionDraft,
-    content,
-    savedContent,
-    setSectionDraft,
-    versionPreview,
+    compileAndRender,
+    resolveLatestSectionIdFromAssignedSections,
+    derivedPaperId,
+    assignedSectionsParams,
+    queryClient,
+    referenceContent,
   ]);
 
   useEffect(() => {
@@ -1511,6 +2858,390 @@ export const LatexPaperEditor = ({
       setSidebarTab('files' as const);
     }
   }, [editorSections, sidebarTab]);
+
+  useEffect(() => {
+    if (!referenceSection) {
+      setReferenceContent('');
+      setSavedReferenceContent('');
+      return;
+    }
+
+    const nextContent = referenceSection.content || '';
+    setReferenceContent(nextContent);
+    setSavedReferenceContent(nextContent);
+  }, [referenceSection]);
+
+  useEffect(() => {
+    let disposed = false;
+
+    // While a save is in progress, handleSave manages all state directly.
+    // Do NOT interfere by resolving IDs or resetting resolvedActiveSectionId.
+    if (saveInProgressRef.current) return;
+
+    // Read from the ref so the effect doesn't depend on the activeSection object
+    // reference. This prevents a re-fetch every time editorSections is updated
+    // (e.g. after Save Changes), since the object reference changes even though
+    // the section identity (id + markSectionId) stays the same.
+    const section = activeSectionRef.current;
+
+    if (!section) {
+      setInUseReferenceContent('');
+      setInUsePaperBanks([]);
+      setIsInUseReferenceLoading(false);
+      setResolvedActiveSectionId(null);
+      return;
+    }
+
+    const loadInUseReferences = async () => {
+      // Only reset the resolved ID (blanking the sidebar) when the active
+      // section actually changed identity. When reloading the same section
+      // (e.g. after Save Changes / reload-key bump) keep the previous value
+      // so the sidebar stays populated during the async resolution.
+      const currentSectionIdentity = (
+        section.markSectionId || section.id
+      ).trim();
+      setResolvedActiveSectionId((prev) => {
+        // If the previous resolved ID belongs to a completely different section
+        // (neither the raw id nor the mark id matches), blank it now.
+        const sameSection =
+          prev === section.id ||
+          prev === section.markSectionId ||
+          prev === currentSectionIdentity;
+        return sameSection ? prev : null;
+      });
+      setIsInUseReferenceLoading(true);
+      try {
+        // When previousActiveSectionIdRef already matches the current section ID,
+        // it means handleSave (or a previous resolution) already resolved the
+        // correct ID. Skip re-resolution to avoid cascading state changes that
+        // cause "Section not found" errors from stale/racing API calls.
+        const alreadyResolved =
+          previousActiveSectionIdRef.current === section.id;
+
+        let sectionIdForReferences = section.id;
+
+        if (!alreadyResolved) {
+          const markSectionId = (section.markSectionId || section.id).trim();
+          const resolvedSectionId =
+            (await resolveLatestSectionIdFromAssignedSections(
+              markSectionId,
+              section,
+            )) || section.id;
+
+          if (disposed) return;
+
+          sectionIdForReferences = resolvedSectionId;
+          setResolvedActiveSectionId(resolvedSectionId);
+
+          if (resolvedSectionId !== section.id) {
+            setEditorSections((prev) => {
+              if (!prev?.length) return prev;
+              return prev.map((s) =>
+                s.id === section.id ? { ...s, id: resolvedSectionId } : s,
+              );
+            });
+            // Use functional setter: only update activeSectionId if it still
+            // matches section.id. If loadLatestSectionContent already advanced
+            // it to the actual latest version, we must not overwrite that.
+            setActiveSectionId((prev) => {
+              if (prev === section.id) {
+                previousActiveSectionIdRef.current = resolvedSectionId;
+                return resolvedSectionId;
+              }
+              return prev;
+            });
+          }
+        } else {
+          setResolvedActiveSectionId(section.id);
+        }
+
+        const data = await getSectionReferenceInUseForEditor(
+          sectionIdForReferences,
+        );
+        if (disposed) return;
+        setInUseReferenceContent(data.referenceContent);
+        setInUsePaperBanks(data.paperBanks);
+
+        // Re-compile with merged content now that in-use references are
+        // available. Use stable refs to avoid stale closure on content/packages.
+        if (data.referenceContent && contentRef.current) {
+          compileAndRender(
+            contentRef.current,
+            localPackagesRef.current,
+            data.referenceContent,
+          );
+        }
+      } catch {
+        if (disposed) return;
+        setInUseReferenceContent('');
+        setInUsePaperBanks([]);
+      } finally {
+        if (!disposed) {
+          setIsInUseReferenceLoading(false);
+        }
+      }
+    };
+
+    void loadInUseReferences();
+
+    return () => {
+      disposed = true;
+    };
+  }, [
+    activeSectionId,
+    activeSectionMarkId,
+    inUseReferenceReloadKey,
+    resolveLatestSectionIdFromAssignedSections,
+    compileAndRender,
+  ]);
+
+  const refreshSectionFromServer = useCallback(
+    async (sectionIdToFetch: string, sectionSnapshot?: SectionProp | null) => {
+      const targetSection =
+        sectionSnapshot ||
+        editorSections?.find((section) => section.id === sectionIdToFetch) ||
+        null;
+
+      const targetIdentity = targetSection
+        ? (targetSection.markSectionId || targetSection.id).trim()
+        : sectionIdToFetch;
+      const referenceIdentity = referenceSection
+        ? (referenceSection.markSectionId || referenceSection.id).trim()
+        : null;
+      const isRefreshingReferenceSection =
+        !!referenceIdentity && targetIdentity === referenceIdentity;
+
+      try {
+        const response = await getSection(sectionIdToFetch);
+        const latest = response.result;
+        const latestId = latest.id || sectionIdToFetch;
+        const latestContent = latest.content || '';
+        const latestPackages =
+          latest.packages ||
+          targetSection?.packages ||
+          localPackagesRef.current;
+
+        setEditorSections((prev) => {
+          if (!prev?.length) return prev;
+
+          return prev.map((section) => {
+            if (
+              section.id !== (targetSection?.id || sectionIdToFetch) &&
+              section.id !== sectionIdToFetch &&
+              section.id !== latestId
+            ) {
+              return section;
+            }
+
+            return {
+              ...section,
+              id: latestId,
+              title: latest.title || section.title,
+              content: latestContent,
+              packages: latest.packages || section.packages,
+              numbered: latest.numbered,
+              displayOrder: latest.displayOrder,
+              sectionSumary: latest.sectionSumary || '',
+              description: latest.description || section.description,
+              parentSectionId: latest.parentSectionId ?? null,
+              memberId: latest.memberId || section.memberId,
+            };
+          });
+        });
+
+        if (isRefreshingReferenceSection) {
+          setReferenceContent(latestContent);
+          setSavedReferenceContent(latestContent);
+        }
+
+        // Use a functional setter so the comparison is against the live
+        // activeSectionId at call-time, not the stale closure value.
+        // This is critical when refreshSectionFromServer is called from
+        // handleUpdateSectionReference, where activeSectionId may already
+        // have been changed to a new version ID by a preceding await.
+        setActiveSectionId((currentId) => {
+          const isActiveSection =
+            currentId === (targetSection?.id || sectionIdToFetch) ||
+            currentId === sectionIdToFetch ||
+            currentId === latestId;
+
+          if (isActiveSection) {
+            previousActiveSectionIdRef.current = latestId;
+            // Side-effects inside the functional updater are safe here because
+            // this block only runs when the condition is true.
+            setContent(latestContent);
+            setSavedContent(latestContent);
+
+            if (latestContent) {
+              compileAndRender(
+                latestContent,
+                latestPackages,
+                inUseReferenceContent || referenceContent || undefined,
+              );
+            } else {
+              setPdfUrl(null);
+              setCompileError(null);
+            }
+
+            return latestId;
+          }
+
+          return currentId;
+        });
+
+        return {
+          id: latestId,
+          content: latestContent,
+          packages: latestPackages,
+        };
+      } catch {
+        // Keep existing content if server sync fails.
+        return { id: null, content: '', packages: localPackagesRef.current };
+      }
+    },
+    [
+      compileAndRender,
+      editorSections,
+      inUseReferenceContent,
+      referenceContent,
+      referenceSection,
+    ],
+  );
+
+  const handleUpdateSectionReference = useCallback(
+    async (paperBankIds: string[]) => {
+      if (!activeSectionId) {
+        toast.error('No active section to update reference.');
+        return false;
+      }
+      if (!derivedPaperId) {
+        toast.error('Cannot resolve current paper id.');
+        return false;
+      }
+
+      const extractUpdatedSectionId = (response: unknown): string | null => {
+        const record = (response ?? {}) as Record<string, unknown>;
+        const result = (record.result ?? {}) as Record<string, unknown>;
+
+        const candidates: unknown[] = [
+          result.sectionId,
+          result.id,
+          (result.section as Record<string, unknown> | undefined)?.id,
+          record.sectionId,
+          record.id,
+        ];
+
+        const found = candidates.find(
+          (candidate): candidate is string => typeof candidate === 'string',
+        );
+
+        return found ? found.trim() : null;
+      };
+
+      const activeSectionSnapshot =
+        editorSections?.find((section) => section.id === activeSectionId) ??
+        null;
+
+      const markSectionId =
+        (activeSectionSnapshot?.markSectionId || '').trim() || activeSectionId;
+
+      // Resolve the latest id from assigned-sections and use it for ALL calls.
+      const sectionIdForUpdate =
+        (await resolveLatestSectionIdFromAssignedSections(
+          markSectionId,
+          activeSectionSnapshot,
+        )) || activeSectionId;
+
+      try {
+        setIsUpdatingReference(true);
+        const updateResponse = await updateSectionReferenceForEditor({
+          sectionId: sectionIdForUpdate,
+          paperId: derivedPaperId,
+          paperBankIds,
+        });
+
+        // After update, resolve id again from assigned-sections (authoritative).
+        let nextSectionId: string | null =
+          await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            activeSectionSnapshot,
+            { forceFresh: true },
+          );
+
+        // Fallbacks: server may return the new id directly, or we can resolve via mark-section.
+        if (!nextSectionId) {
+          nextSectionId = extractUpdatedSectionId(updateResponse);
+        }
+        // No mark-section fallback: assigned-sections is the requested source of truth.
+
+        await queryClient.invalidateQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+            derivedPaperId,
+          ],
+          refetchType: 'none',
+        });
+
+        const refreshResult = await refreshSectionFromServer(
+          nextSectionId || sectionIdForUpdate,
+          activeSectionSnapshot,
+        );
+        toast.success('Reference updated successfully.');
+
+        // Explicitly fetch in-use reference data with the confirmed final ID.
+        // This must happen AFTER the PUT so the server returns updated data.
+        // We bypass the reload-key effect entirely for this case to avoid the
+        // race condition where the effect resolves with a stale section ID.
+        const finalSectionId = nextSectionId || sectionIdForUpdate;
+        setResolvedActiveSectionId(null); // pause ReferencesTab while we load
+        try {
+          const inUseData =
+            await getSectionReferenceInUseForEditor(finalSectionId);
+          setInUsePaperBanks(inUseData.paperBanks);
+          setInUseReferenceContent(inUseData.referenceContent);
+          // Re-compile with the fresh in-use reference content now that it is
+          // available. refreshSectionFromServer compiled with the OLD in-use
+          // content (stale closure); this second compile shows the final state.
+          if (refreshResult.content) {
+            void compileAndRender(
+              refreshResult.content,
+              refreshResult.packages,
+              inUseData.referenceContent || undefined,
+            );
+          }
+        } catch {
+          // keep existing in-use data if fetch fails
+        }
+        // Set the resolved ID so ReferencesTab re-queries with the correct
+        // final section ID. Invalidate so it gets fresh data.
+        setResolvedActiveSectionId(finalSectionId);
+        await queryClient.invalidateQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
+            finalSectionId,
+          ],
+        });
+        return true;
+      } catch {
+        toast.error('Failed to update reference. Please try again.');
+        return false;
+      } finally {
+        setIsUpdatingReference(false);
+      }
+    },
+    [
+      activeSectionId,
+      editorSections,
+      derivedPaperId,
+      queryClient,
+      compileAndRender,
+      refreshSectionFromServer,
+      resolveLatestSectionIdFromAssignedSections,
+      setResolvedActiveSectionId,
+      setInUsePaperBanks,
+      setInUseReferenceContent,
+    ],
+  );
 
   // Auto-render on first mount with the initial section content
   const hasRenderedOnce = useRef(false);
@@ -1560,22 +3291,12 @@ export const LatexPaperEditor = ({
   const handleOpenReferenceSectionInEditor = useCallback(
     (section: SectionReferenceOtherItem['sections'][number]) => {
       setPreviewEditContent(null);
-      setVersionPreview({
-        item: {
-          sectionId: section.id,
-          name: section.createdBy || 'Reference section',
-          email: '',
-          memberId: 'reference',
-          sectionRole: 'reference:readonly',
-          isMainSection: false,
-          content: section.content || '',
-        },
-        returnSectionId: activeSectionId,
-      });
+      setVersionPreview(null);
+      setActiveSectionId(section.id);
       setIsSidebarRefOpen(false);
       setIsToolsOpen(false);
     },
-    [activeSectionId],
+    [],
   );
 
   const handleInsertFileUrl = useCallback((fileUrl: string) => {
@@ -1618,59 +3339,130 @@ export const LatexPaperEditor = ({
     return () => window.clearTimeout(timeoutId);
   }, [copiedFileUrl]);
 
-  const resolveLatestSectionId = useCallback(async (section: SectionProp) => {
-    const markSectionId = section.markSectionId || section.id;
+  const handleSaveReferenceSection = useCallback(async () => {
+    if (!referenceSection) return;
+    if (!canEditReferenceSection) {
+      toast.error('You do not have permission to edit references.');
+      return;
+    }
 
     try {
-      const response = await getMarkSection(markSectionId);
-      const items = response.result?.items ?? [];
+      await updateSectionMutation.mutateAsync({
+        sectionId: referenceSection.id,
+        data: {
+          sectionId: referenceSection.id,
+          memberId: referenceSection.memberId,
+          title: referenceSection.title,
+          content: referenceContent,
+          numbered: referenceSection.numbered,
+          sectionSumary: referenceSection.sectionSumary || '',
+          parentSectionId: referenceSection.parentSectionId,
+        },
+      });
 
-      const sameMemberItems = items.filter(
-        (item) => item.memberId === section.memberId,
-      );
-      const sameRoleItems = sameMemberItems.filter(
-        (item) => item.sectionRole === section.sectionRole,
-      );
-      const candidates = sameRoleItems.length ? sameRoleItems : sameMemberItems;
+      const markSectionId =
+        (referenceSection.markSectionId || referenceSection.id).trim() ||
+        referenceSection.id;
+      const latestSectionId =
+        (await resolveLatestSectionIdFromAssignedSections(
+          markSectionId,
+          referenceSection,
+        )) || referenceSection.id;
 
-      if (!candidates.length) return section.id;
+      setEditorSections((prev) => {
+        if (!prev?.length) return prev;
+        return prev.map((section) =>
+          section.id === referenceSection.id
+            ? {
+                ...section,
+                id: latestSectionId,
+                content: referenceContent,
+              }
+            : section,
+        );
+      });
 
-      const latest =
-        candidates.find((item) => !item.nextVersionSectionId) ?? candidates[0];
+      setSavedReferenceContent(referenceContent);
+      setInUseReferenceReloadKey((prev) => prev + 1);
 
-      return latest.sectionId || section.id;
+      if (activeSectionId === referenceSection.id) {
+        setActiveSectionId(latestSectionId);
+        setContent(referenceContent);
+        setSavedContent(referenceContent);
+      }
+
+      onSave?.(referenceContent, latestSectionId);
     } catch {
-      return section.id;
+      // Mutation error is already handled by mutationConfig onError
     }
-  }, []);
+  }, [
+    referenceSection,
+    canEditReferenceSection,
+    updateSectionMutation,
+    referenceContent,
+    resolveLatestSectionIdFromAssignedSections,
+    activeSectionId,
+    onSave,
+    setInUseReferenceReloadKey,
+  ]);
 
   const handleSave = useCallback(async () => {
     if (isActiveSectionReadOnly) {
       toast.error('You do not have permission to edit this section.');
       return;
     }
-    if (!activeSectionId || !editorSections) {
+
+    // Always read the latest values from refs to avoid stale-closure issues
+    // (e.g. section-load effect may have resolved a new id between renders).
+    const freshSections = editorSectionsRef.current;
+    const freshActiveSection = activeSectionRef.current;
+    const freshActiveSectionId = freshActiveSection?.id ?? activeSectionId;
+
+    if (!freshActiveSectionId || !freshSections) {
       toast.error('No section selected to save.');
       return;
     }
-    const currentSection = editorSections.find((s) => s.id === activeSectionId);
+    const currentSection =
+      freshActiveSection ??
+      freshSections.find((s) => s.id === freshActiveSectionId);
     if (!currentSection) {
       toast.error('Section not found.');
       return;
     }
     try {
+      // Lock ALL effects immediately — before any async work.
+      // This prevents the sections-sync / loadLatestSectionContent /
+      // loadInUseReferences effects from overwriting local state during the
+      // async gap while we're resolving the section ID and calling mutateAsync.
+      saveInProgressRef.current = true;
+
       const contentToSave =
         previewEditContent !== null ? previewEditContent : content;
 
       // When editing another member's version preview, save to their section
       const isEditingPreview =
         previewEditContent !== null && versionPreview !== null;
-      const targetSectionId = isEditingPreview
-        ? versionPreview.item.sectionId
-        : activeSectionId;
       const targetMemberId = isEditingPreview
         ? versionPreview.item.memberId
         : currentSection.memberId;
+
+      // The stable mark ID for this section (unchanged across versions)
+      const markSectionId =
+        (currentSection.markSectionId || currentSection.id).trim() ||
+        currentSection.id;
+
+      // Resolve the CURRENT version ID from assigned-sections BEFORE saving.
+      // freshActiveSectionId may still be the structural ID from allSectionsQuery
+      // if loadLatestSectionContent hasn't resolved it yet. The assigned-sections
+      // API is the authoritative source for the current version ID per member.
+      const resolvedSaveId = isEditingPreview
+        ? versionPreview.item.sectionId
+        : (await resolveLatestSectionIdFromAssignedSections(
+            markSectionId,
+            currentSection,
+          )) || freshActiveSectionId;
+
+      const targetSectionId = resolvedSaveId;
 
       await updateSectionMutation.mutateAsync({
         sectionId: targetSectionId,
@@ -1682,29 +3474,72 @@ export const LatexPaperEditor = ({
           numbered: currentSection.numbered,
           sectionSumary: currentSection.sectionSumary || '',
           parentSectionId: currentSection.parentSectionId,
+          packages: localPackages,
         },
       });
 
+      // Reflect updated packages into editorSections immediately
+      setEditorSections((prev) =>
+        prev?.map((s) =>
+          s.id === targetSectionId ? { ...s, packages: localPackages } : s,
+        ),
+      );
+      setSavedPackages(localPackages);
+
       if (isEditingPreview) {
-        clearSectionDraft(targetSectionId);
         // Exit preview mode; active section stays unchanged
         setVersionPreview(null);
         setPreviewEditContent(null);
-        onSave?.(contentToSave, activeSectionId);
+        saveInProgressRef.current = false;
+        onSave?.(contentToSave, freshActiveSectionId);
         return;
       }
 
-      const latestSectionId = await resolveLatestSectionId(currentSection);
+      // Resolve the post-save version ID via the mark-section version chain.
+      let latestSectionId = resolvedSaveId;
+      try {
+        const markResponse = await getMarkSection(markSectionId);
+        const markItems = markResponse.result?.items ?? [];
+
+        // Primary strategy: find the section whose previousVersionSectionId
+        // equals the section we just saved. This is the version created by
+        // the current save and works for ALL roles (including managers whose
+        // memberId is "" in the editor, which makes the old member-filter fail).
+        const directSuccessor = markItems.find(
+          (item) => item.previousVersionSectionId === resolvedSaveId,
+        );
+
+        if (directSuccessor) {
+          latestSectionId = directSuccessor.sectionId || resolvedSaveId;
+        } else {
+          // Fallback: filter by member + role and take the tail of the chain.
+          // Used when the backend hasn't linked the predecessor yet (rare race)
+          // or when there is no version chain (first save of this section).
+          const memberItems = currentSection.memberId
+            ? markItems.filter(
+                (item) => item.memberId === currentSection.memberId,
+              )
+            : markItems;
+          const roleItems = memberItems.filter(
+            (item) => item.sectionRole === currentSection.sectionRole,
+          );
+          const candidates = roleItems.length ? roleItems : memberItems;
+          if (candidates.length) {
+            const latest =
+              candidates.find((item) => !item.nextVersionSectionId) ??
+              candidates[0];
+            latestSectionId = latest.sectionId || resolvedSaveId;
+          }
+        }
+      } catch {
+        // If mark-section lookup fails, keep the current section ID
+      }
+
       const nextSection: SectionProp = {
         ...currentSection,
         id: latestSectionId,
         content: contentToSave,
       };
-
-      clearSectionDraft(activeSectionId);
-      if (latestSectionId !== activeSectionId) {
-        clearSectionDraft(latestSectionId);
-      }
 
       // Update ref BEFORE state to prevent the section-switch effect from re-setting content
       previousActiveSectionIdRef.current = latestSectionId;
@@ -1713,7 +3548,7 @@ export const LatexPaperEditor = ({
         if (!prev?.length) return [nextSection];
 
         const next = [...prev];
-        const currentIndex = next.findIndex((s) => s.id === activeSectionId);
+        const currentIndex = next.findIndex((s) => s.id === resolvedSaveId);
 
         if (currentIndex >= 0) {
           next[currentIndex] = nextSection;
@@ -1727,30 +3562,95 @@ export const LatexPaperEditor = ({
       setActiveSectionId(latestSectionId);
       setContent(contentToSave);
       setSavedContent(contentToSave);
+
+      // Keep resolvedActiveSectionId in sync with the latest id so the
+      // references sidebar doesn't flash "Select a section" after save.
+      setResolvedActiveSectionId(latestSectionId);
+
+      // Compile locally with saved content — no need to re-fetch from server
+      // since we already have the authoritative content that was just saved.
+      void compileAndRender(
+        contentToSave,
+        localPackages,
+        inUseReferenceContent || referenceContent || undefined,
+      );
+
+      // Mark assigned-sections stale so next time it's needed it will be fresh
+      await queryClient.invalidateQueries({
+        queryKey: [
+          PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+          derivedPaperId,
+        ],
+        refetchType: 'none',
+      });
+
+      // Release the lock AFTER all state updates are committed.
+      // Use a microtask to ensure React has flushed the batched state updates
+      // before any effect can run with stale data.
+      queueMicrotask(() => {
+        saveInProgressRef.current = false;
+      });
+
       onSave?.(contentToSave, latestSectionId);
     } catch {
       // Mutation error is already handled by mutationConfig onError
+      saveInProgressRef.current = false;
     }
   }, [
     activeSectionId,
-    editorSections,
     content,
     previewEditContent,
     versionPreview,
     updateSectionMutation,
     onSave,
     isActiveSectionReadOnly,
-    resolveLatestSectionId,
-    clearSectionDraft,
+    resolveLatestSectionIdFromAssignedSections,
+    derivedPaperId,
+    queryClient,
+    compileAndRender,
+    inUseReferenceContent,
+    referenceContent,
+    localPackages,
   ]);
 
   const handleClose = useCallback(() => {
-    if (!isActiveSectionReadOnly && content !== savedContent) {
+    const hasUnsavedMainContent = content !== savedContent;
+    const hasUnsavedReferenceContent =
+      referenceContent !== savedReferenceContent;
+    const hasUnsavedPackages =
+      localPackages.length !== savedPackages.length ||
+      localPackages.some((p, i) => p !== savedPackages[i]);
+
+    if (
+      !isActiveSectionReadOnly &&
+      (hasUnsavedMainContent ||
+        hasUnsavedReferenceContent ||
+        hasUnsavedPackages)
+    ) {
       setShowCloseConfirm(true);
     } else {
       onClose();
     }
-  }, [content, savedContent, onClose, isActiveSectionReadOnly]);
+  }, [
+    content,
+    savedContent,
+    referenceContent,
+    savedReferenceContent,
+    localPackages,
+    savedPackages,
+    onClose,
+    isActiveSectionReadOnly,
+  ]);
+
+  const handleCloseWithoutSaving = useCallback(() => {
+    setContent(savedContent);
+    setReferenceContent(savedReferenceContent);
+    setLocalPackages(savedPackages);
+    setPreviewEditContent(null);
+    setVersionPreview(null);
+    setShowCloseConfirm(false);
+    onClose();
+  }, [onClose, savedContent, savedReferenceContent, savedPackages]);
 
   // ESC key to close (with unsaved changes check)
   useEffect(() => {
@@ -1849,7 +3749,7 @@ export const LatexPaperEditor = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={onClose}
+              onClick={handleCloseWithoutSaving}
               className="bg-red-600 text-white hover:bg-red-700"
             >
               Close without saving
@@ -1858,150 +3758,666 @@ export const LatexPaperEditor = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Left sidebar — Files only */}
+      {/* Left sidebar */}
       {isSidebarOpen && (
         <div className="flex w-72 shrink-0 flex-col bg-[#f1f1f1] dark:bg-[#1e1e1e]">
           {/* Sidebar header */}
-          <div className="flex shrink-0 items-center border-b border-[#e5e5e5] px-3 py-2 dark:border-[#2a2a2a]">
-            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+          <div className="flex shrink-0 items-center gap-1 border-b border-[#e5e5e5] px-2 py-2 dark:border-[#2a2a2a]">
+            <button
+              type="button"
+              onClick={() => setSidebarResourceTab('packages')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                sidebarResourceTab === 'packages'
+                  ? 'bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200'
+              }`}
+            >
+              <Package className="h-3.5 w-3.5" />
+              Packages
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarResourceTab('files')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                sidebarResourceTab === 'files'
+                  ? 'bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
               Files
-            </span>
+            </button>
           </div>
 
           {/* Sidebar content */}
-          <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
-            {/* Upload button */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileSelected}
-              className="hidden"
-            />
-            {!isActiveSectionReadOnly && (
-              <button
-                type="button"
-                onClick={handleOpenFilePicker}
-                disabled={
-                  !activeSectionId || uploadSectionFileMutation.isPending
-                }
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-1.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                {uploadSectionFileMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Upload className="h-3 w-3" />
-                )}
-                {uploadSectionFileMutation.isPending
-                  ? 'Uploading…'
-                  : 'Upload Image/File'}
-              </button>
-            )}
-
-            {/* File list */}
-            {isActiveSectionReadOnly ? (
-              <p className="mt-2 text-center text-[10px] text-slate-400">
-                Read-only — files hidden.
-              </p>
-            ) : sectionFilesQuery.isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
-              </div>
-            ) : sectionFiles.length > 0 ? (
-              sectionFiles.map((fileUrl) => {
-                const name = getFileNameFromUrl(fileUrl);
-                const isImg = isImageFileUrl(fileUrl);
-                return (
-                  <div
-                    key={fileUrl}
-                    className="flex items-center gap-1.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+          <div className="flex min-h-0 flex-1 flex-col gap-1 p-2">
+            {sidebarResourceTab === 'files' ? (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelected}
+                  className="hidden"
+                />
+                {!isActiveSectionReadOnly && (
+                  <button
+                    type="button"
+                    onClick={handleOpenFilePicker}
+                    disabled={
+                      !activeSectionId || uploadSectionFileMutation.isPending
+                    }
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-1.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                   >
-                    {isImg ? (
-                      <button
-                        type="button"
-                        onClick={() => setImagePreviewUrl(fileUrl)}
-                        className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-slate-200 dark:border-slate-700"
-                        title="Preview"
-                      >
-                        <img
-                          src={fileUrl}
-                          alt={name}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
+                    {uploadSectionFileMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-                        <ImageIcon className="h-3.5 w-3.5 text-slate-400" />
-                      </div>
+                      <Upload className="h-3 w-3" />
                     )}
-                    <a
-                      href={fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="min-w-0 flex-1 truncate text-[11px] text-slate-700 hover:underline dark:text-slate-300"
-                      title={name}
-                    >
-                      {name}
-                    </a>
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      {!isActiveSectionReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => handleInsertFileUrl(fileUrl)}
-                          className="rounded-md px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700"
-                          title="Insert"
+                    {uploadSectionFileMutation.isPending
+                      ? 'Uploading…'
+                      : 'Upload Image/File'}
+                  </button>
+                )}
+
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {isActiveSectionReadOnly ? (
+                    <p className="mt-2 text-center text-[10px] text-slate-400">
+                      Read-only — files hidden.
+                    </p>
+                  ) : sectionFilesQuery.isLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+                    </div>
+                  ) : sectionFiles.length > 0 ? (
+                    sectionFiles.map((fileUrl) => {
+                      const name = getFileNameFromUrl(fileUrl);
+                      const isImg = isImageFileUrl(fileUrl);
+                      return (
+                        <div
+                          key={fileUrl}
+                          className="flex items-center gap-1.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                         >
-                          Insert
-                        </button>
-                      )}
+                          {isImg ? (
+                            <button
+                              type="button"
+                              onClick={() => setImagePreviewUrl(fileUrl)}
+                              className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-slate-200 dark:border-slate-700"
+                              title="Preview"
+                            >
+                              <img
+                                src={fileUrl}
+                                alt={name}
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
+                          ) : (
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                              <ImageIcon className="h-3.5 w-3.5 text-slate-400" />
+                            </div>
+                          )}
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="min-w-0 flex-1 truncate text-[11px] text-slate-700 hover:underline dark:text-slate-300"
+                            title={name}
+                          >
+                            {name}
+                          </a>
+                          <div className="flex shrink-0 items-center gap-0.5">
+                            {!isActiveSectionReadOnly && (
+                              <button
+                                type="button"
+                                onClick={() => handleInsertFileUrl(fileUrl)}
+                                className="rounded-md px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700"
+                                title="Insert"
+                              >
+                                Insert
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleCopyFileUrl(fileUrl)}
+                              className="flex h-5 w-5 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                              title="Copy URL"
+                            >
+                              {copiedFileUrl === fileUrl ? (
+                                <span className="text-[10px] text-green-500">
+                                  ✓
+                                </span>
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="mt-4 text-center text-[10px] text-slate-400">
+                      No files uploaded yet.
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700">
+                  <Package className="h-4 w-4 shrink-0 text-violet-500 dark:text-violet-400" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Packages
+                  </span>
+                  {localPackages.length > 0 && pkgViewTab === 'current' && (
+                    <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
+                      {localPackages.length}
+                    </span>
+                  )}
+                  {referenceSection && (
+                    <div className="ml-auto flex overflow-hidden rounded border border-slate-200 text-[10px] dark:border-slate-700">
                       <button
                         type="button"
-                        onClick={() => handleCopyFileUrl(fileUrl)}
-                        className="flex h-5 w-5 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                        title="Copy URL"
+                        onClick={() => setPkgViewTab('current')}
+                        className={`px-2 py-0.5 font-medium transition-colors ${
+                          pkgViewTab === 'current'
+                            ? 'bg-violet-500 text-white'
+                            : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`}
                       >
-                        {copiedFileUrl === fileUrl ? (
-                          <span className="text-[10px] text-green-500">✓</span>
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
+                        Current
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPkgViewTab('reference')}
+                        className={`px-2 py-0.5 font-medium transition-colors ${
+                          pkgViewTab === 'reference'
+                            ? 'bg-violet-500 text-white'
+                            : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        Reference
                       </button>
                     </div>
+                  )}
+                </div>
+                {/* Package list */}
+                {pkgViewTab === 'reference' ? (
+                  localRefPackages.length > 0 ? (
+                    <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+                      {localRefPackages.map((pkg, idx) => (
+                        <li
+                          key={idx}
+                          className="group flex items-center gap-1 font-mono text-[12px]"
+                        >
+                          {editingRefPkgIdx === idx ? (
+                            <input
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
+                              autoFocus
+                              type="text"
+                              value={editingRefPkgValue}
+                              onChange={(e) =>
+                                setEditingRefPkgValue(e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  commitRefPkgEdit(idx, editingRefPkgValue);
+                                } else if (e.key === 'Escape') {
+                                  setEditingRefPkgIdx(null);
+                                  setEditingRefPkgValue('');
+                                }
+                              }}
+                              onBlur={() =>
+                                commitRefPkgEdit(idx, editingRefPkgValue)
+                              }
+                              className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!canEditReferenceSection) return;
+                                setEditingRefPkgIdx(idx);
+                                setEditingRefPkgValue(pkg);
+                              }}
+                              title={
+                                canEditReferenceSection
+                                  ? 'Click to edit'
+                                  : undefined
+                              }
+                              className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
+                            >
+                              {pkg}
+                            </button>
+                          )}
+                          {canEditReferenceSection &&
+                            editingRefPkgIdx !== idx && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setLocalRefPackages((prev) =>
+                                    prev.filter((_, i) => i !== idx),
+                                  )
+                                }
+                                className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
+                                title="Remove package"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+                      <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                        <span className="text-violet-400 dark:text-[#c678dd]">
+                          {'% '}
+                        </span>
+                        no packages on reference section
+                      </p>
+                    </div>
+                  )
+                ) : localPackages.length > 0 ? (
+                  <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+                    {localPackages.map((pkg, idx) => (
+                      <li
+                        key={idx}
+                        className="group flex items-center gap-1 font-mono text-[12px]"
+                      >
+                        {editingPkgIdx === idx ? (
+                          <input
+                            // eslint-disable-next-line jsx-a11y/no-autofocus
+                            autoFocus
+                            type="text"
+                            value={editingPkgValue}
+                            onChange={(e) => setEditingPkgValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                commitPkgEdit(idx, editingPkgValue);
+                              } else if (e.key === 'Escape') {
+                                setEditingPkgIdx(null);
+                                setEditingPkgValue('');
+                              }
+                            }}
+                            onBlur={() => commitPkgEdit(idx, editingPkgValue)}
+                            className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isActiveSectionReadOnly) return;
+                              setEditingPkgIdx(idx);
+                              setEditingPkgValue(pkg);
+                            }}
+                            title={
+                              isActiveSectionReadOnly
+                                ? undefined
+                                : 'Click to edit'
+                            }
+                            className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
+                          >
+                            {pkg}
+                          </button>
+                        )}
+                        {!isActiveSectionReadOnly && editingPkgIdx !== idx && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLocalPackages((prev) =>
+                                prev.filter((_, i) => i !== idx),
+                              )
+                            }
+                            className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
+                            title="Remove package"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+                    <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                      <span className="text-violet-400 dark:text-[#c678dd]">
+                        {'% '}
+                      </span>
+                      no packages defined
+                    </p>
                   </div>
-                );
-              })
-            ) : (
-              <p className="mt-4 text-center text-[10px] text-slate-400">
-                No files uploaded yet.
-              </p>
+                )}
+                {/* Add package input */}
+                {!isActiveSectionReadOnly && pkgViewTab === 'current' && (
+                  <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
+                    <form
+                      className="flex gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const trimmed = newPackageInput.trim();
+                        if (!trimmed) return;
+                        setLocalPackages((prev) =>
+                          prev.includes(trimmed) ? prev : [...prev, trimmed],
+                        );
+                        setNewPackageInput('');
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={newPackageInput}
+                        onChange={(e) => setNewPackageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setNewPackageInput('');
+                        }}
+                        placeholder="package name…"
+                        autoComplete="off"
+                        className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                      />
+                      <button
+                        type="submit"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+                        disabled={!newPackageInput.trim()}
+                        title="Add package"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </form>
+                    {/* Format hint */}
+                    <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      Type directly, e.g.:{' '}
+                      <span className="font-mono text-violet-500">
+                        {'\\usepackage{amsmath}'}
+                      </span>
+                    </p>
+                    {/* Quick-add: biblatex */}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        biblatex:
+                      </span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const bibPkg =
+                            '\\usepackage[backend=bibtex]{biblatex}';
+                          setLocalPackages((prev) =>
+                            prev.some(
+                              (p) => extractPackageName(p) === 'biblatex',
+                            )
+                              ? prev
+                              : [...prev, bibPkg],
+                          );
+                          setNewPackageInput('');
+                        }}
+                        className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                      >
+                        default
+                      </button>
+                      {[
+                        {
+                          label: 'apa',
+                          pkg: '\\usepackage[backend=biber,style=apa]{biblatex}',
+                        },
+                        {
+                          label: 'ieee',
+                          pkg: '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
+                        },
+                      ].map(({ label, pkg }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocalPackages((prev) => {
+                              const filtered = prev.filter(
+                                (p) => extractPackageName(p) !== 'biblatex',
+                              );
+                              return [...filtered, pkg];
+                            });
+                            setNewPackageInput('');
+                          }}
+                          className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Custom suggestion list */}
+                    {newPackageInput.trim() &&
+                      (() => {
+                        const q = newPackageInput.trim().toLowerCase();
+                        const suggestions = KNOWN_LATEX_PACKAGES.filter(
+                          (p) =>
+                            p.toLowerCase().includes(q) &&
+                            !localPackages.includes(p) &&
+                            !localPackages.some(
+                              (lp) =>
+                                lp !== p &&
+                                extractPackageName(lp) ===
+                                  extractPackageName(p),
+                            ),
+                        );
+                        if (!suggestions.length) return null;
+                        return (
+                          <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                            {suggestions.map((p) => {
+                              const idx = p.toLowerCase().indexOf(q);
+                              return (
+                                <li key={p}>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setLocalPackages((prev) =>
+                                        prev.includes(p) ? prev : [...prev, p],
+                                      );
+                                      setNewPackageInput('');
+                                    }}
+                                    className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                  >
+                                    {idx >= 0 ? (
+                                      <>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(0, idx)}
+                                        </span>
+                                        <span className="font-bold text-violet-600 dark:text-violet-400">
+                                          {p.slice(idx, idx + q.length)}
+                                        </span>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(idx + q.length)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      p
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        );
+                      })()}
+                  </div>
+                )}
+                {/* Add package input — Reference section */}
+                {canEditReferenceSection && pkgViewTab === 'reference' && (
+                  <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
+                    <form
+                      className="flex gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const trimmed = newRefPackageInput.trim();
+                        if (!trimmed) return;
+                        setLocalRefPackages((prev) =>
+                          prev.includes(trimmed) ? prev : [...prev, trimmed],
+                        );
+                        setNewRefPackageInput('');
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={newRefPackageInput}
+                        onChange={(e) => setNewRefPackageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setNewRefPackageInput('');
+                        }}
+                        placeholder="package name\u2026"
+                        autoComplete="off"
+                        className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                      />
+                      <button
+                        type="submit"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+                        disabled={!newRefPackageInput.trim()}
+                        title="Add package"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </form>
+                    <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                      Type directly, e.g.:{' '}
+                      <span className="font-mono text-violet-500">
+                        {'\\usepackage{amsmath}'}
+                      </span>
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        biblatex:
+                      </span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const bibPkg =
+                            '\\usepackage[backend=bibtex]{biblatex}';
+                          setLocalRefPackages((prev) =>
+                            prev.some(
+                              (p) => extractPackageName(p) === 'biblatex',
+                            )
+                              ? prev
+                              : [...prev, bibPkg],
+                          );
+                          setNewRefPackageInput('');
+                        }}
+                        className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                      >
+                        default
+                      </button>
+                      {[
+                        {
+                          label: 'apa',
+                          pkg: '\\usepackage[backend=biber,style=apa]{biblatex}',
+                        },
+                        {
+                          label: 'ieee',
+                          pkg: '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
+                        },
+                      ].map(({ label, pkg }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocalRefPackages((prev) => {
+                              const filtered = prev.filter(
+                                (p) => extractPackageName(p) !== 'biblatex',
+                              );
+                              return [...filtered, pkg];
+                            });
+                            setNewRefPackageInput('');
+                          }}
+                          className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {newRefPackageInput.trim() &&
+                      (() => {
+                        const q = newRefPackageInput.trim().toLowerCase();
+                        const suggestions = KNOWN_LATEX_PACKAGES.filter(
+                          (p) =>
+                            p.toLowerCase().includes(q) &&
+                            !localRefPackages.includes(p) &&
+                            !localRefPackages.some(
+                              (lp) =>
+                                lp !== p &&
+                                extractPackageName(lp) ===
+                                  extractPackageName(p),
+                            ),
+                        );
+                        if (!suggestions.length) return null;
+                        return (
+                          <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                            {suggestions.map((p) => {
+                              const qi = p.toLowerCase().indexOf(q);
+                              return (
+                                <li key={p}>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setLocalRefPackages((prev) =>
+                                        prev.includes(p) ? prev : [...prev, p],
+                                      );
+                                      setNewRefPackageInput('');
+                                    }}
+                                    className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                  >
+                                    {qi >= 0 ? (
+                                      <>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(0, qi)}
+                                        </span>
+                                        <span className="font-bold text-violet-600 dark:text-violet-400">
+                                          {p.slice(qi, qi + q.length)}
+                                        </span>
+                                        <span className="text-slate-500 dark:text-slate-400">
+                                          {p.slice(qi + q.length)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      p
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        );
+                      })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {projectId && (
+              <div className="flex min-h-0 shrink-0 flex-col border-t border-[#e0e0de] pt-1 dark:border-[#2a2a2a]">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarRefOpen((v) => !v)}
+                  className="flex w-full items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
+                >
+                  {isSidebarRefOpen ? (
+                    <ChevronRight className="h-3 w-3 rotate-90 transition-transform" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3 transition-transform" />
+                  )}
+                  References
+                </button>
+                {isSidebarRefOpen && (
+                  <div className="max-h-[45vh] min-h-0 overflow-y-auto px-2 pb-2">
+                    <ReferencesTab
+                      sectionId={resolvedActiveSectionId ?? undefined}
+                      compact
+                      onOpenSectionInEditor={handleOpenReferenceSectionInEditor}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
-
-          {/* ── References collapsible (like Outline in Prism) ── */}
-          {projectId && (
-            <div className="shrink-0 border-t border-[#e0e0de] dark:border-[#2a2a2a]">
-              <button
-                type="button"
-                onClick={() => setIsSidebarRefOpen((v) => !v)}
-                className="flex w-full items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
-              >
-                {isSidebarRefOpen ? (
-                  <ChevronRight className="h-3 w-3 rotate-90 transition-transform" />
-                ) : (
-                  <ChevronRight className="h-3 w-3 transition-transform" />
-                )}
-                References
-              </button>
-              {isSidebarRefOpen && (
-                <div className="max-h-136 overflow-y-auto px-2 pb-2">
-                  <ReferencesTab
-                    sectionId={activeSectionId ?? undefined}
-                    compact
-                    onOpenSectionInEditor={handleOpenReferenceSectionInEditor}
-                  />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -2431,6 +4847,30 @@ export const LatexPaperEditor = ({
                 )}
               </div>
 
+              {!versionPreview &&
+                referenceSection &&
+                !isReferenceSectionActive && (
+                  <InlineReferenceSectionEditor
+                    content={referenceContent}
+                    canEdit={canEditReferenceSection}
+                    isDirty={referenceContent !== savedReferenceContent}
+                    isSaving={updateSectionMutation.isPending}
+                    onChange={(value) => setReferenceContent(value ?? '')}
+                    onSave={handleSaveReferenceSection}
+                    mode="in-use"
+                    usedReferenceContent={inUseReferenceContent}
+                    usedPaperBanks={inUsePaperBanks}
+                    isUsedReferenceLoading={isInUseReferenceLoading}
+                    availablePaperBanks={availableProjectPaperBanks}
+                    isAvailablePaperBanksLoading={projectPapersQuery.isLoading}
+                    currentPaperId={derivedPaperId}
+                    currentSectionId={activeSectionId ?? undefined}
+                    currentSectionTitle={activeSectionTitle ?? undefined}
+                    onUpdateReference={handleUpdateSectionReference}
+                    isUpdatingReference={isUpdatingReference}
+                  />
+                )}
+
               {/* Save button — bottom of editor */}
               <div className="flex shrink-0 items-center justify-between border-t border-[#e8e8e6] px-4 py-2 dark:border-[#2a2a2a]">
                 <span className="text-[10px] text-slate-400">
@@ -2670,18 +5110,33 @@ export const LatexPaperEditor = ({
                       />
                     )}
                     {toolsTab === 'comments' && (
-                      <div className="flex flex-1 flex-col overflow-hidden p-1">
-                        {activeSectionId ? (
-                          <SectionComments
-                            sectionId={activeSectionId}
-                            isReadOnly={isActiveSectionReadOnly}
-                            className="flex-1 overflow-hidden"
-                          />
-                        ) : (
-                          <p className="mt-8 text-center text-sm text-slate-400">
-                            Select a section to view comments.
-                          </p>
+                      <div className="flex flex-1 flex-col overflow-hidden">
+                        {versionPreview && (
+                          <div className="flex shrink-0 items-center gap-2 border-b border-blue-200 bg-blue-50 px-4 py-2 text-xs dark:border-blue-800 dark:bg-blue-950">
+                            <span className="text-blue-600 dark:text-blue-300">
+                              Showing comments for{' '}
+                              <strong>
+                                {versionPreview.item.isMainSection
+                                  ? 'Origin section'
+                                  : versionPreview.item.name ||
+                                    versionPreview.item.email}
+                              </strong>
+                            </span>
+                          </div>
                         )}
+                        <div className="flex flex-1 flex-col overflow-hidden p-1">
+                          {commentsSectionId ? (
+                            <SectionComments
+                              sectionId={commentsSectionId}
+                              isReadOnly={false}
+                              className="flex-1 overflow-hidden"
+                            />
+                          ) : (
+                            <p className="mt-8 text-center text-sm text-slate-400">
+                              Select a section to view comments.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                     {toolsTab === 'chat' && projectId && (

@@ -26,6 +26,75 @@ type UpdatePaperProps = {
   paper: PaperDto;
 };
 
+const BIBTEX_MONTHS = [
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec',
+];
+
+const getCitationKey = (authors: string, title: string, year: string) => {
+  // Normalize separators only for key extraction, not for author field storage.
+  const normalizedAuthors = authors.replace(/\s+and\s+/gi, ', ');
+  const firstAuthorToken = normalizedAuthors
+    .split(',')
+    .map((part) => part.trim())
+    .find(Boolean);
+  const authorToken = (firstAuthorToken || title || 'Paper')
+    .replace(/[^A-Za-z0-9]+/g, '')
+    .replace(/^([0-9])/, 'Paper$1');
+
+  return `${authorToken || 'Paper'}${year.trim()}`;
+};
+
+const buildReferenceContent = (params: {
+  authors: string;
+  title: string;
+  doi: string;
+  publisher: string;
+  number: string;
+  journalName: string;
+  pages: string;
+  volume: string;
+  publicationYear: string;
+  publicationMonth: string;
+}) => {
+  const wrap = (value: string) => (value.trim() ? `{${value.trim()}}` : '{}');
+  const monthIndex = Number(params.publicationMonth) - 1;
+  const month =
+    monthIndex >= 0 && monthIndex < BIBTEX_MONTHS.length
+      ? BIBTEX_MONTHS[monthIndex]
+      : '';
+  const key = getCitationKey(
+    params.authors,
+    params.title,
+    params.publicationYear,
+  );
+
+  return [
+    `@article{${key || 'Paper'},`,
+    `  author    = ${wrap(params.authors)},`,
+    `  title     = ${wrap(params.title)},`,
+    `  journal   = ${wrap(params.journalName)},`,
+    `  year      = ${wrap(params.publicationYear)},`,
+    ...(month ? [`  month     = ${month},`] : []),
+    `  volume    = ${wrap(params.volume)},`,
+    `  number    = ${wrap(params.number)},`,
+    `  pages     = ${wrap(params.pages)},`,
+    `  publisher = ${wrap(params.publisher)},`,
+    `  doi       = ${wrap(params.doi)}`,
+    '}',
+  ].join('\n');
+};
+
 export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const [open, setOpen] = React.useState(false);
   const initialPublicationDate = paper?.publicationDate
@@ -38,6 +107,11 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     title: paper?.title || '',
     abstract: paper?.abstract || '',
     doi: paper?.doi || '',
+    authors: paper?.authors || '',
+    publisher: paper?.publisher || '',
+    number: paper?.number || '',
+    pages: paper?.pages || '',
+    volume: paper?.volume || '',
     paperType: paper?.paperType || '',
     journalName: paper?.journalName || '',
     conferenceName: paper?.conferenceName || '',
@@ -90,6 +164,11 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         title: paper.title || '',
         abstract: paper.abstract || '',
         doi: paper.doi || '',
+        authors: paper.authors || '',
+        publisher: paper.publisher || '',
+        number: paper.number || '',
+        pages: paper.pages || '',
+        volume: paper.volume || '',
         paperType: paper.paperType || '',
         journalName: paper.journalName || '',
         conferenceName: paper.conferenceName || '',
@@ -199,6 +278,10 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.authors.trim()) {
+      toast.error('Authors is required.');
+      return;
+    }
     if (!pubYear.trim()) {
       setPubYearError('Publication year is required.');
       return;
@@ -223,10 +306,27 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         title: formData.title,
         abstract: formData.abstract,
         doi: formData.doi,
+        authors: formData.authors,
+        publisher: formData.publisher,
+        number: formData.number,
+        pages: formData.pages,
+        volume: formData.volume,
         publicationDate: composedDate,
         paperType: formData.paperType,
         journalName: formData.journalName,
         conferenceName: formData.conferenceName,
+        referenceContent: buildReferenceContent({
+          authors: formData.authors,
+          title: formData.title,
+          doi: formData.doi,
+          publisher: formData.publisher,
+          number: formData.number,
+          journalName: formData.journalName,
+          pages: formData.pages,
+          volume: formData.volume,
+          publicationYear: pubYear,
+          publicationMonth: pubMonth,
+        }),
         status: formData.status,
         tagNames: tagList,
         isAutoTagged,
@@ -311,6 +411,58 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
 
           <div className="space-y-2">
+            <label htmlFor="update-paper-doi" className="text-sm font-medium">
+              DOI
+            </label>
+            <Input
+              id="update-paper-doi"
+              value={formData.doi}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, doi: e.target.value }))
+              }
+              placeholder="Enter DOI"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="update-paper-authors"
+              className="text-sm font-medium"
+            >
+              Authors <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="update-paper-authors"
+              value={formData.authors}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, authors: e.target.value }))
+              }
+              placeholder="Enter authors"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="update-paper-publisher"
+              className="text-sm font-medium"
+            >
+              Publisher
+            </label>
+            <Input
+              id="update-paper-publisher"
+              value={formData.publisher}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  publisher: e.target.value,
+                }))
+              }
+              placeholder="Enter publisher"
+            />
+          </div>
+
+          <div className="space-y-2">
             <label
               htmlFor="update-paper-abstract"
               className="text-sm font-medium"
@@ -329,27 +481,13 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="update-paper-doi" className="text-sm font-medium">
-              DOI
-            </label>
-            <Input
-              id="update-paper-doi"
-              value={formData.doi}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, doi: e.target.value }))
-              }
-              placeholder="Enter DOI"
-            />
-          </div>
-
-          <div className="space-y-2">
             <label
               htmlFor="update-paper-pubyear"
               className="text-sm font-medium"
             >
               Publication Date <span className="text-destructive">*</span>
             </label>
-            <div className="flex gap-1.5">
+            <div className="grid grid-cols-3 gap-2">
               <Input
                 id="update-paper-pubyear"
                 type="number"
@@ -357,7 +495,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                 max={new Date().getFullYear()}
                 placeholder="YYYY"
                 value={pubYear}
-                className="w-20 min-w-0"
+                className="h-10 min-w-0 text-sm"
                 onChange={(e) => {
                   setPubYear(e.target.value);
                   setPubYearError('');
@@ -366,7 +504,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               <select
                 value={pubMonth}
                 onChange={(e) => setPubMonth(e.target.value)}
-                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-14 min-w-0 rounded-md border px-1 text-xs focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">MM</option>
                 {Array.from({ length: 12 }, (_, index) => index + 1).map(
@@ -384,7 +522,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                 max="31"
                 placeholder="DD"
                 value={pubDay}
-                className="w-14 min-w-0"
+                className="h-10 min-w-0 text-sm"
                 onChange={(e) => setPubDay(e.target.value)}
               />
             </div>
@@ -447,6 +585,58 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label
+                htmlFor="update-paper-pages"
+                className="text-sm font-medium"
+              >
+                Pages
+              </label>
+              <Input
+                id="update-paper-pages"
+                value={formData.pages}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, pages: e.target.value }))
+                }
+                placeholder="Enter pages"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="update-paper-number"
+                className="text-sm font-medium"
+              >
+                Number
+              </label>
+              <Input
+                id="update-paper-number"
+                value={formData.number}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, number: e.target.value }))
+                }
+                placeholder="Enter number"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="update-paper-volume"
+              className="text-sm font-medium"
+            >
+              Volume
+            </label>
+            <Input
+              id="update-paper-volume"
+              value={formData.volume}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, volume: e.target.value }))
+              }
+              placeholder="Enter volume"
+            />
+          </div>
+
           <div className="space-y-2">
             <label
               htmlFor="update-paper-status"
@@ -478,7 +668,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           <Button
             type="submit"
             form="update-paper-form"
-            disabled={updatePaperMutation.isPending}
+            disabled={updatePaperMutation.isPending || !formData.authors.trim()}
             className={BTN.EDIT}
           >
             {updatePaperMutation.isPending ? 'Saving...' : 'Save Changes'}

@@ -22,6 +22,10 @@ export const updatePaper = ({
   if (data.title !== undefined) formData.append('title', data.title);
   if (data.abstract !== undefined) formData.append('abstract', data.abstract);
   if (data.doi !== undefined) formData.append('doi', data.doi);
+  if (data.authors !== undefined) formData.append('authors', data.authors);
+  if (data.publisher !== undefined)
+    formData.append('publisher', data.publisher);
+  if (data.number !== undefined) formData.append('number', data.number);
   if (data.publicationDate)
     formData.append('publicationDate', data.publicationDate);
   if (data.paperType !== undefined)
@@ -30,6 +34,10 @@ export const updatePaper = ({
     formData.append('journalName', data.journalName);
   if (data.conferenceName !== undefined)
     formData.append('conferenceName', data.conferenceName);
+  if (data.pages !== undefined) formData.append('pages', data.pages);
+  if (data.volume !== undefined) formData.append('volume', data.volume);
+  if (data.referenceContent !== undefined)
+    formData.append('referenceContent', data.referenceContent);
   if (data.status !== undefined)
     formData.append('status', data.status.toString());
   if (data.tagNames) {

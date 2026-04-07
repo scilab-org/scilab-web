@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   BookOpen,
@@ -15,6 +16,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  BookMarked,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,10 +26,12 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
+  SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from '@/components/ui/sheet';
 import {
   Table,
@@ -51,14 +55,19 @@ import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
+import { getAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
+import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionMembers } from '@/features/paper-management/api/get-section-members';
 import { useAvailableSectionMembers } from '@/features/paper-management/api/get-available-section-members';
 import { useCreatePaperContributor } from '@/features/paper-management/api/create-paper-contributor';
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
+import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
+import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import {
   AssignedSection,
   AvailableSectionMember,
+  PaperSection,
   SectionMember,
 } from '@/features/paper-management/types';
 import { MarkMainSectionDialog } from '@/features/paper-management/components/mark-main-section-dialog';
@@ -103,8 +112,9 @@ const SectionMembersSheet = ({
 
   // Assign view state
   const [search, setSearch] = useState('');
-  const [selectedMember, setSelectedMember] =
-    useState<AvailableSectionMember | null>(null);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [selectedRole, setSelectedRole] = useState('section:edit');
 
   const membersQuery = useGetSectionMembers({
@@ -116,7 +126,11 @@ const SectionMembersSheet = ({
   const availableQuery = useAvailableSectionMembers({
     sectionId: sectionId || '',
     paperId,
-    queryConfig: { enabled: open && view === 'assign' && !!sectionId } as any,
+    queryConfig: {
+      enabled: open && view === 'assign' && !!sectionId,
+      staleTime: 0,
+      gcTime: 0,
+    } as any,
   });
   const availableMembers: AvailableSectionMember[] =
     availableQuery.data?.result?.items ?? [];
@@ -159,7 +173,7 @@ const SectionMembersSheet = ({
       onSuccess: () => {
         toast.success('Member assigned successfully');
         setView('members');
-        setSelectedMember(null);
+        setSelectedMemberIds(new Set());
         setSelectedRole('section:edit');
         setSearch('');
       },
@@ -168,22 +182,22 @@ const SectionMembersSheet = ({
   });
 
   const handleAssign = () => {
-    if (!selectedMember) return;
+    if (selectedMemberIds.size === 0) return;
     assignMutation.mutate({
       paperId,
       sectionId,
       markSectionId: sectionId,
-      memberId: selectedMember.memberId,
+      memberIds: Array.from(selectedMemberIds),
       sectionRole: selectedRole,
     });
   };
 
-  const canSubmit = !!selectedMember && !assignMutation.isPending;
+  const canSubmit = selectedMemberIds.size > 0 && !assignMutation.isPending;
 
   const handleClose = () => {
     setView('members');
     setConfirmDeleteId(null);
-    setSelectedMember(null);
+    setSelectedMemberIds(new Set());
     setSelectedRole('section:edit');
     setSearch('');
     onClose();
@@ -216,7 +230,11 @@ const SectionMembersSheet = ({
               <div className="flex justify-end pt-2 pb-3">
                 <Button
                   size="sm"
-                  onClick={() => setView('assign')}
+                  onClick={() => {
+                    setSelectedMemberIds(new Set());
+                    setView('assign');
+                    availableQuery.refetch();
+                  }}
                   className={cn('flex items-center gap-2', BTN.CREATE)}
                 >
                   <UserPlus className="h-4 w-4" />
@@ -368,7 +386,7 @@ const SectionMembersSheet = ({
                   </div>
                 ) : (
                   filtered.map((m) => {
-                    const isSelected = selectedMember?.memberId === m.memberId;
+                    const isSelected = selectedMemberIds.has(m.memberId);
                     return (
                       <div
                         key={m.memberId}
@@ -383,24 +401,28 @@ const SectionMembersSheet = ({
                           role="button"
                           tabIndex={0}
                           onClick={() => {
-                            if (isSelected) {
-                              setSelectedMember(null);
-                              setSelectedRole('');
-                            } else {
-                              setSelectedMember(m);
-                              setSelectedRole('section:edit');
-                            }
+                            setSelectedMemberIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(m.memberId)) {
+                                next.delete(m.memberId);
+                              } else {
+                                next.add(m.memberId);
+                              }
+                              return next;
+                            });
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              if (isSelected) {
-                                setSelectedMember(null);
-                                setSelectedRole('');
-                              } else {
-                                setSelectedMember(m);
-                                setSelectedRole('section:edit');
-                              }
+                              setSelectedMemberIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(m.memberId)) {
+                                  next.delete(m.memberId);
+                                } else {
+                                  next.add(m.memberId);
+                                }
+                                return next;
+                              });
                             }
                           }}
                           className="flex cursor-pointer items-center gap-3 px-4 py-3"
@@ -527,46 +549,21 @@ export const PaperWorkspacePage = ({
   backPath: string;
 }) => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const editorSessionKey = useMemo(
-    () => `paper-workspace:editor:${projectId}:${paperId}`,
-    [paperId, projectId],
+  const queryClient = useQueryClient();
+  const [editorState, setEditorState] = useState<EditorState>(null);
+  const [freshSections, setFreshSections] = useState<PaperSection[] | null>(
+    null,
   );
-  const [editorState, setEditorState] = useState<EditorState>(() => {
-    const querySectionId = searchParams.get('editorSectionId');
-    if (querySectionId) {
-      return {
-        initialSectionId: querySectionId,
-        readOnly: searchParams.get('editorReadOnly') === '1',
-      };
-    }
-
-    if (typeof window === 'undefined') return null;
-
-    try {
-      const raw = sessionStorage.getItem(
-        `paper-workspace:editor:${projectId}:${paperId}`,
-      );
-      if (!raw) return null;
-
-      const parsed = JSON.parse(raw) as EditorState;
-      if (
-        parsed &&
-        typeof parsed.initialSectionId === 'string' &&
-        typeof parsed.readOnly === 'boolean'
-      ) {
-        return parsed;
-      }
-
-      return null;
-    } catch {
-      return null;
-    }
-  });
   const [memberSheet, setMemberSheet] = useState<{
     id: string;
     title: string;
   } | null>(null);
+  const [guidelineSheet, setGuidelineSheet] = useState<{
+    id: string;
+    title: string;
+    description: string;
+  } | null>(null);
+  const [guidelineText, setGuidelineText] = useState('');
   const [markMainOpen, setMarkMainOpen] = useState(false);
 
   const paperQuery = useWritingPaperDetail({ paperId });
@@ -614,7 +611,8 @@ export const PaperWorkspacePage = ({
   }, [assignedSectionsQuery.data]);
 
   const workspaceSections = useMemo(() => {
-    const allItems = allSectionsQuery.data?.result?.items || [];
+    const allItems =
+      freshSections ?? allSectionsQuery.data?.result?.items ?? [];
 
     // Managers: all sections editable
     if (isManager) {
@@ -623,7 +621,9 @@ export const PaperWorkspacePage = ({
           ({
             ...s,
             paperId: s.paperId || paperId,
-            markSectionId: '',
+            // markSectionId must be stable and non-empty for version-id resolution.
+            // When not provided by backend for managers, fallback to the current id.
+            markSectionId: s.id,
             paperContributorId: '',
             memberId: '',
             sectionRole: 'project:manager',
@@ -644,16 +644,29 @@ export const PaperWorkspacePage = ({
       const assigned = assignedByIdMap.get(s.id);
       if (assigned) {
         return {
-          ...assigned,
-          paperId: assigned.paperId || paperId,
-          description:
-            (assigned as any).description || assigned.sectionSumary || '',
+          // Always trust latest section payload for content/title/structure.
+          // Assigned payload is used only for permission and member metadata.
+          ...s,
+          paperId: s.paperId || assigned.paperId || paperId,
+          markSectionId: assigned.markSectionId || '',
+          paperContributorId: assigned.paperContributorId || '',
+          memberId: assigned.memberId || '',
+          sectionRole: assigned.sectionRole || 'section:view',
+          filePath: s.filePath || null,
+          parentSectionId: s.parentSectionId || null,
+          sectionSumary: s.sectionSumary || '',
+          description: (assigned as any).description || s.sectionSumary || '',
+          content: s.content || '',
+          numbered: s.numbered,
+          displayOrder: s.displayOrder,
+          packages: assigned.packages ?? (s as any).packages ?? null,
         } as AssignedSection;
       }
       return {
         ...s,
         paperId: s.paperId || paperId,
-        markSectionId: '',
+        // Ensure non-empty markSectionId so editor can resolve newest version id via assigned-sections.
+        markSectionId: s.id,
         paperContributorId: '',
         memberId: '',
         sectionRole: 'section:view',
@@ -666,10 +679,26 @@ export const PaperWorkspacePage = ({
         displayOrder: s.displayOrder,
       } as AssignedSection;
     });
-  }, [isManager, assignedByIdMap, allSectionsQuery.data, paperId]);
+  }, [
+    freshSections,
+    isManager,
+    assignedByIdMap,
+    allSectionsQuery.data,
+    paperId,
+  ]);
 
   const paper = paperQuery.data?.result?.paper;
   const subProjectId = paper?.subProjectId || projectId;
+
+  const updateGuidelineMutation = useUpdateSectionGuideline({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Guideline updated');
+        setGuidelineSheet(null);
+      },
+      onError: () => toast.error('Failed to update guideline'),
+    },
+  });
 
   const isLoading =
     paperQuery.isLoading ||
@@ -680,7 +709,7 @@ export const PaperWorkspacePage = ({
     () =>
       workspaceSections.map((s) => ({
         id: s.id,
-        markSectionId: s.markSectionId,
+        markSectionId: s.markSectionId || s.id,
         paperId: s.paperId,
         title: stripLatex(s.title),
         content: s.content || '',
@@ -693,51 +722,10 @@ export const PaperWorkspacePage = ({
         description: (s as any).description || s.sectionSumary || '',
         createdOnUtc: s.createdOnUtc || null,
         lastModifiedOnUtc: s.lastModifiedOnUtc || null,
+        packages: s.packages ?? undefined,
       })),
     [workspaceSections],
   );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      if (editorState) {
-        sessionStorage.setItem(editorSessionKey, JSON.stringify(editorState));
-      } else {
-        sessionStorage.removeItem(editorSessionKey);
-      }
-    } catch {
-      // ignore storage failures
-    }
-  }, [editorSessionKey, editorState]);
-
-  useEffect(() => {
-    const currentSectionId = searchParams.get('editorSectionId');
-    const currentReadOnly = searchParams.get('editorReadOnly') === '1';
-
-    const expectedSectionId = editorState?.initialSectionId ?? null;
-    const expectedReadOnly = editorState?.readOnly ?? false;
-
-    const isSameState =
-      currentSectionId === expectedSectionId &&
-      (!expectedSectionId || currentReadOnly === expectedReadOnly);
-    if (isSameState) return;
-
-    const nextParams = new URLSearchParams(searchParams);
-    if (expectedSectionId) {
-      nextParams.set('editorSectionId', expectedSectionId);
-      if (expectedReadOnly) {
-        nextParams.set('editorReadOnly', '1');
-      } else {
-        nextParams.delete('editorReadOnly');
-      }
-    } else {
-      nextParams.delete('editorSectionId');
-      nextParams.delete('editorReadOnly');
-    }
-
-    setSearchParams(nextParams, { replace: true });
-  }, [editorState, searchParams, setSearchParams]);
 
   const resolvedInitialSectionId = useMemo(() => {
     if (!editorState) return undefined;
@@ -777,6 +765,74 @@ export const PaperWorkspacePage = ({
     return map;
   }, [editorSections]);
 
+  const openSectionEditor = async (sectionId: string, readOnly: boolean) => {
+    let resolvedSectionId = sectionId;
+
+    // Always resolve the latest section id from assigned-sections.
+    // Reason: backend may version sections (id changes) after updates; using the workspace id
+    // can lead to loading stale/previous versions.
+    try {
+      const assignedResponse = await getAssignedSections({
+        paperId,
+        params: { PageNumber: 1, PageSize: 1000 },
+      });
+      const assignedItems = assignedResponse.result?.items ?? [];
+
+      const workspaceSection = editorSections.find((s) => s.id === sectionId);
+      const markSectionId = workspaceSection?.markSectionId || sectionId;
+
+      const exactMatch = assignedItems.find((item) => item.id === sectionId);
+      const markMatch = assignedItems.find(
+        (item) => (item.markSectionId || item.id) === markSectionId,
+      );
+
+      resolvedSectionId = exactMatch?.id || markMatch?.id || sectionId;
+    } catch {
+      resolvedSectionId = sectionId;
+    }
+
+    try {
+      const response = await getSection(resolvedSectionId);
+      const latestSection = response.result;
+
+      setFreshSections((prev) => {
+        const baseSections = prev ?? allSectionsQuery.data?.result?.items ?? [];
+        if (baseSections.length === 0) return prev;
+
+        return baseSections.map((section) =>
+          section.id === sectionId || section.id === resolvedSectionId
+            ? {
+                ...section,
+                id: latestSection.id || resolvedSectionId,
+                title: latestSection.title,
+                content: latestSection.content,
+                numbered: latestSection.numbered,
+                displayOrder: latestSection.displayOrder,
+                sectionSumary: latestSection.sectionSumary,
+                parentSectionId: latestSection.parentSectionId,
+              }
+            : section,
+        );
+      });
+    } catch {
+      // Open the editor even if the section fetch fails; it will use current data.
+    }
+
+    setEditorState({ initialSectionId: resolvedSectionId, readOnly });
+  };
+
+  const handleEditorSave = async () => {
+    // Mark queries stale but do NOT trigger background refetches while the
+    // editor is open. The editor manages its own section state after save;
+    // a background refetch would push structural IDs into the sections prop
+    // and cause the editor to call APIs with stale/wrong section IDs.
+    // Queries will auto-refetch when the editor closes (see onClose below).
+    queryClient.invalidateQueries({
+      queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
+      refetchType: 'none',
+    });
+  };
+
   // If editor is open, render it (fixed inset-0, overlays everything)
   if (editorState) {
     return (
@@ -784,10 +840,20 @@ export const PaperWorkspacePage = ({
         readOnly={editorState.readOnly}
         paperTitle={paper?.title || 'Untitled'}
         projectId={projectId}
-        draftStorageScope={`${projectId}:${paperId}`}
         sections={editorSections}
         initialSectionId={resolvedInitialSectionId}
-        onClose={() => setEditorState(null)}
+        onSave={handleEditorSave}
+        onClose={() => {
+          setEditorState(null);
+          setFreshSections(null);
+          // Now that the editor is closed, force fresh data for the workspace.
+          queryClient.invalidateQueries({
+            queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS],
+          });
+        }}
       />
     );
   }
@@ -919,9 +985,7 @@ export const PaperWorkspacePage = ({
             {canEdit && (
               <Button
                 size="icon"
-                onClick={() =>
-                  setEditorState({ initialSectionId: s.id, readOnly: false })
-                }
+                onClick={() => void openSectionEditor(s.id, false)}
                 title="Edit"
                 className="size-9 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
               >
@@ -932,9 +996,7 @@ export const PaperWorkspacePage = ({
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() =>
-                  setEditorState({ initialSectionId: s.id, readOnly: true })
-                }
+                onClick={() => void openSectionEditor(s.id, true)}
                 title="View"
                 className="size-9"
               >
@@ -955,6 +1017,24 @@ export const PaperWorkspacePage = ({
             >
               <Users className="size-4" />
             </Button>
+            {isAuthor && (
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => {
+                  setGuidelineText(s.description || s.sectionSumary || '');
+                  setGuidelineSheet({
+                    id: s.id,
+                    title: stripLatex(s.title),
+                    description: s.description || s.sectionSumary || '',
+                  });
+                }}
+                title="Update Guideline"
+                className="size-9"
+              >
+                <BookMarked className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1076,6 +1156,66 @@ export const PaperWorkspacePage = ({
         isOpen={markMainOpen}
         onOpenChange={setMarkMainOpen}
       />
+
+      {/* Update Guideline Sheet */}
+      <Sheet
+        open={!!guidelineSheet}
+        onOpenChange={(v) => !v && setGuidelineSheet(null)}
+      >
+        <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <BookMarked className="size-5 text-violet-600" />
+              Update Guideline
+            </SheetTitle>
+            <SheetDescription className="truncate text-xs">
+              {guidelineSheet?.title}
+            </SheetDescription>
+          </SheetHeader>
+
+          <form
+            id="guideline-form"
+            className="px-4 py-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!guidelineSheet) return;
+              updateGuidelineMutation.mutate({
+                sectionId: guidelineSheet.id,
+                description: guidelineText,
+              });
+            }}
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="guideline-desc" className="text-sm font-medium">
+                Description
+              </label>
+              <textarea
+                id="guideline-desc"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-40 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={guidelineText}
+                onChange={(e) => setGuidelineText(e.target.value)}
+                placeholder="Enter writing guideline for this section..."
+              />
+            </div>
+          </form>
+
+          <SheetFooter className="px-4 pb-4">
+            <SheetClose asChild>
+              <Button type="button" variant="outline" className={BTN.CANCEL}>
+                Cancel
+              </Button>
+            </SheetClose>
+            <Button
+              type="submit"
+              form="guideline-form"
+              className={BTN.EDIT}
+              disabled={updateGuidelineMutation.isPending}
+            >
+              {updateGuidelineMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </ContentLayout>
   );
 };

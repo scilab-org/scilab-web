@@ -29,6 +29,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/paper-contributors/papers/${paperId}/contributors`,
   SECTION_BY_ID: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}`,
+  SECTION_GUIDELINE: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/guideline`,
   SECTION_REFERENCE: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/reference`,
   SECTION_HISTORY: (sectionId: string) =>

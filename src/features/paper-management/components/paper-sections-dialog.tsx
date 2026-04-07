@@ -212,7 +212,7 @@ const AssignPanel = ({
       paperId,
       sectionId: section.id,
       markSectionId: section.id,
-      memberId: selectedMember.memberId,
+      memberIds: [selectedMember.memberId],
       sectionRole: selectedRole,
     });
   };

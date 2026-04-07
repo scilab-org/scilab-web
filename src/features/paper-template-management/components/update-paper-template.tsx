@@ -31,6 +31,7 @@ type SectionRow = CreateTemplateSectionDto & { _id: string };
 const makeSectionRow = (s: CreateTemplateSectionDto): SectionRow => ({
   ...s,
   description: s.description || '',
+  packages: s.packages,
   _id: crypto.randomUUID(),
 });
 
@@ -70,6 +71,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             required: s.required,
             description: s.description || '',
             rule: s.rule || '',
+            packages: s.packages,
           }),
         ),
       );
@@ -136,7 +138,14 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
                 .join('\n');
               rule = `## ${s.title}\n${bulletPoints}`;
             }
-            return { ...s, rule };
+            return {
+              ...s,
+              packages: [
+                '\\usepackage[utf8]{inputenc}',
+                '\\usepackage[T1]{fontenc}',
+              ],
+              rule,
+            };
           }),
         },
       },
@@ -302,7 +311,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
                         }
                         placeholder="Section description (optional)..."
                         rows={2}
-                        className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-1.5 text-xs shadow-xs outline-none focus-visible:ring-[2px]"
+                        className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-1.5 text-xs shadow-xs outline-none focus-visible:ring-2"
                       />
                     </div>
                   </div>

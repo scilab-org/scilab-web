@@ -25,10 +25,84 @@ const initialFormData = {
   title: '',
   abstract: '',
   doi: '',
+  authors: '',
+  publisher: '',
+  number: '',
   paperType: '',
   journalName: '',
   conferenceName: '',
+  pages: '',
+  volume: '',
   status: 5,
+};
+
+const BIBTEX_MONTHS = [
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec',
+];
+
+const getCitationKey = (authors: string, title: string, year: string) => {
+  // Normalize separators only for key extraction, not for author field storage.
+  const normalizedAuthors = authors.replace(/\s+and\s+/gi, ', ');
+  const firstAuthorToken = normalizedAuthors
+    .split(',')
+    .map((part) => part.trim())
+    .find(Boolean);
+  const authorToken = (firstAuthorToken || title || 'Paper')
+    .replace(/[^A-Za-z0-9]+/g, '')
+    .replace(/^([0-9])/, 'Paper$1');
+
+  return `${authorToken || 'Paper'}${year.trim()}`;
+};
+
+const buildReferenceContent = (params: {
+  authors: string;
+  title: string;
+  doi: string;
+  publisher: string;
+  number: string;
+  journalName: string;
+  pages: string;
+  volume: string;
+  publicationYear: string;
+  publicationMonth: string;
+}) => {
+  const wrap = (value: string) => (value.trim() ? `{${value.trim()}}` : '{}');
+  const monthIndex = Number(params.publicationMonth) - 1;
+  const month =
+    monthIndex >= 0 && monthIndex < BIBTEX_MONTHS.length
+      ? BIBTEX_MONTHS[monthIndex]
+      : '';
+  const key = getCitationKey(
+    params.authors,
+    params.title,
+    params.publicationYear,
+  );
+
+  return [
+    `@article{${key || 'Paper'},`,
+    `  author    = ${wrap(params.authors)},`,
+    `  title     = ${wrap(params.title)},`,
+    `  journal   = ${wrap(params.journalName)},`,
+    `  year      = ${wrap(params.publicationYear)},`,
+    ...(month ? [`  month     = ${month},`] : []),
+    `  volume    = ${wrap(params.volume)},`,
+    `  number    = ${wrap(params.number)},`,
+    `  pages     = ${wrap(params.pages)},`,
+    `  publisher = ${wrap(params.publisher)},`,
+    `  doi       = ${wrap(params.doi)}`,
+    '}',
+  ].join('\n');
 };
 
 export const CreatePaper = () => {
@@ -112,19 +186,20 @@ export const CreatePaper = () => {
       ) {
         toast.info('Upload cancelled');
       } else {
-        // Reset file and parsing state on error
-        setFile(undefined);
-        setParsedText(null);
+        // Keep the file so the form can still be tested without parsed text.
+        setParsedText('');
 
         if (
           (error as any)?.code === 'ECONNABORTED' ||
           (error as any)?.response?.status === 504
         ) {
           toast.error(
-            'PDF parsing timed out. The file may be too large or complex. Please try a smaller file.',
+            'PDF parsing timed out. Continuing without parsed text for local testing.',
           );
         } else {
-          toast.error('Failed to parse the PDF file');
+          toast.warning(
+            'PDF parsing is unavailable. Continuing without parsed text.',
+          );
         }
       }
     } finally {
@@ -228,7 +303,7 @@ export const CreatePaper = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !file) return;
+    if (!formData.title.trim() || !formData.authors.trim() || !file) return;
 
     if (!pubYear.trim()) {
       setPubYearError('Publication year is required.');
@@ -255,10 +330,27 @@ export const CreatePaper = () => {
       title: formData.title,
       abstract: formData.abstract,
       doi: formData.doi,
+      authors: formData.authors,
+      publisher: formData.publisher,
+      number: formData.number,
       publicationDate: composedDate,
       paperType: formData.paperType,
       journalName: formData.journalName,
       conferenceName: formData.conferenceName,
+      pages: formData.pages,
+      volume: formData.volume,
+      referenceContent: buildReferenceContent({
+        authors: formData.authors,
+        title: formData.title,
+        doi: formData.doi,
+        publisher: formData.publisher,
+        number: formData.number,
+        journalName: formData.journalName,
+        pages: formData.pages,
+        volume: formData.volume,
+        publicationYear: pubYear,
+        publicationMonth: pubMonth,
+      }),
       file,
       parsedText: parsedText || '',
       tagNames: tagList,
@@ -437,6 +529,44 @@ export const CreatePaper = () => {
 
           <div className="space-y-1.5">
             <label
+              htmlFor="create-paper-authors"
+              className="text-sm font-medium"
+            >
+              Authors <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="create-paper-authors"
+              value={formData.authors}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, authors: e.target.value }))
+              }
+              placeholder="e.g. LeCun, Yann and Bengio, Yoshua"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="create-paper-publisher"
+              className="text-sm font-medium"
+            >
+              Publisher
+            </label>
+            <Input
+              id="create-paper-publisher"
+              value={formData.publisher}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  publisher: e.target.value,
+                }))
+              }
+              placeholder="e.g. Nature Publishing Group"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
               htmlFor="create-paper-abstract"
               className="text-sm font-medium"
             >
@@ -453,73 +583,69 @@ export const CreatePaper = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="create-paper-pubyear"
-                className="text-sm font-medium"
-              >
-                Publication Date <span className="text-destructive">*</span>
-              </label>
-              <div className="flex gap-1.5">
-                <Input
-                  id="create-paper-pubyear"
-                  type="number"
-                  min="1000"
-                  max={new Date().getFullYear()}
-                  placeholder="YYYY"
-                  value={pubYear}
-                  className="w-20 min-w-0"
-                  onChange={(e) => {
-                    setPubYear(e.target.value);
-                    setPubYearError('');
-                  }}
-                />
-                <select
-                  value={pubMonth}
-                  onChange={(e) => setPubMonth(e.target.value)}
-                  className="border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-14 min-w-0 rounded-md border px-1 text-xs focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                >
-                  <option value="">MM</option>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <option key={m} value={String(m).padStart(2, '0')}>
-                      {String(m).padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
-                <Input
-                  type="number"
-                  min="1"
-                  max="31"
-                  placeholder="DD"
-                  value={pubDay}
-                  className="w-14 min-w-0"
-                  onChange={(e) => setPubDay(e.target.value)}
-                />
-              </div>
-              {pubYearError && (
-                <p className="text-destructive text-xs">{pubYearError}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="create-paper-type"
-                className="text-sm font-medium"
-              >
-                Paper Type
-              </label>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="create-paper-pubyear"
+              className="text-sm font-medium"
+            >
+              Publication Date <span className="text-destructive">*</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
               <Input
-                id="create-paper-type"
-                value={formData.paperType}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    paperType: e.target.value,
-                  }))
-                }
-                placeholder="e.g. Research, Review"
+                id="create-paper-pubyear"
+                type="number"
+                min="1000"
+                max={new Date().getFullYear()}
+                placeholder="YYYY"
+                value={pubYear}
+                className="h-10 min-w-0 text-sm"
+                onChange={(e) => {
+                  setPubYear(e.target.value);
+                  setPubYearError('');
+                }}
+              />
+              <select
+                value={pubMonth}
+                onChange={(e) => setPubMonth(e.target.value)}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <option value="">MM</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={String(m).padStart(2, '0')}>
+                    {String(m).padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+              <Input
+                type="number"
+                min="1"
+                max="31"
+                placeholder="DD"
+                value={pubDay}
+                className="h-10 min-w-0 text-sm"
+                onChange={(e) => setPubDay(e.target.value)}
               />
             </div>
+            {pubYearError && (
+              <p className="text-destructive text-xs">{pubYearError}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="create-paper-type" className="text-sm font-medium">
+              Paper Type
+            </label>
+            <Input
+              id="create-paper-type"
+              value={formData.paperType}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paperType: e.target.value,
+                }))
+              }
+              placeholder="e.g. Research, Review"
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -559,6 +685,64 @@ export const CreatePaper = () => {
                 }))
               }
               placeholder="Enter conference name"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="create-paper-pages"
+                className="text-sm font-medium"
+              >
+                Pages
+              </label>
+              <Input
+                id="create-paper-pages"
+                value={formData.pages}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    pages: e.target.value,
+                  }))
+                }
+                placeholder="e.g. 436--444"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="create-paper-number"
+                className="text-sm font-medium"
+              >
+                Number
+              </label>
+              <Input
+                id="create-paper-number"
+                value={formData.number}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, number: e.target.value }))
+                }
+                placeholder="e.g. 7553"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="create-paper-volume"
+              className="text-sm font-medium"
+            >
+              Volume
+            </label>
+            <Input
+              id="create-paper-volume"
+              value={formData.volume}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  volume: e.target.value,
+                }))
+              }
+              placeholder="e.g. 521"
             />
           </div>
 
@@ -606,6 +790,7 @@ export const CreatePaper = () => {
             disabled={
               createPaperMutation.isPending ||
               !formData.title.trim() ||
+              !formData.authors.trim() ||
               !file ||
               isParsing
             }

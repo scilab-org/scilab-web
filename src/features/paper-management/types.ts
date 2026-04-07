@@ -3,6 +3,12 @@ export type PaperDto = {
   title: string | null;
   abstract: string | null;
   doi: string | null;
+  authors: string | null;
+  publisher: string | null;
+  number: string | null;
+  pages: string | null;
+  volume: string | null;
+  referenceContent: string | null;
   filePath: string | null;
   status: number;
   isIngested: boolean;
@@ -52,6 +58,12 @@ export type WritingPaperDto = {
   title: string | null;
   abstract: string | null;
   doi: string | null;
+  authors?: string | null;
+  publisher?: string | null;
+  number?: string | null;
+  pages?: string | null;
+  volume?: string | null;
+  referenceContent?: string | null;
   filePath: string | null;
   status: number;
   publicationDate: string | null;
@@ -81,6 +93,7 @@ export type GetWritingPaperByIdResultApiResponse = {
 
 export type GetPapersParams = {
   Title?: string;
+  Publisher?: string;
   Abstract?: string;
   Doi?: string;
   Status?: number;
@@ -89,6 +102,7 @@ export type GetPapersParams = {
   PaperType?: string;
   JournalName?: string;
   ConferenceName?: string;
+  Author?: string[];
   Tag?: string[];
   IsDeleted?: boolean;
   PageNumber?: number;
@@ -99,10 +113,16 @@ export type CreatePaperDto = {
   title: string;
   abstract: string;
   doi: string;
+  authors: string;
+  publisher: string;
+  number: string;
   publicationDate: string;
   paperType: string;
   journalName: string;
   conferenceName: string;
+  pages: string;
+  volume: string;
+  referenceContent: string;
   file: File;
   parsedText: string;
   tagNames: string[];
@@ -128,19 +148,41 @@ export type UpdatePaperDto = {
   title?: string;
   abstract?: string;
   doi?: string;
+  authors?: string;
+  publisher?: string;
+  number?: string;
   publicationDate?: string;
   paperType?: string;
   journalName?: string;
   conferenceName?: string;
+  pages?: string;
+  volume?: string;
+  referenceContent?: string;
   status?: number;
   tagNames?: string[];
   isAutoTagged?: boolean;
+};
+
+export type UpdateWritingPaperDto = {
+  context?: string;
+  abstract?: string;
+  researchGap?: string;
+  gapType?: string;
+  mainContribution?: string;
+  status?: number;
+  journal?: {
+    name: string;
+    styleName: string;
+    styleDescription: string;
+    styleRule: string;
+  } | null;
 };
 
 export type PaperSection = {
   id: string;
   title: string;
   content?: string;
+  packages?: string[];
   numbered: boolean;
   displayOrder: number;
   sectionSumary?: string;
@@ -159,12 +201,14 @@ export type UpdateSectionDto = {
   sectionSumary: string;
   parentSectionId?: string | null;
   description?: string;
+  packages?: string[];
 };
 
 export type CreateSectionDto = {
   id: string;
   title: string;
   content?: string;
+  packages?: string[];
   numbered: boolean;
   displayOrder: number;
   sectionSumary?: string;
@@ -211,6 +255,7 @@ export type AssignedSection = {
   parentSectionId: string | null;
   createdOnUtc?: string;
   lastModifiedOnUtc?: string;
+  packages?: string[] | null;
 };
 
 export type AssignedSectionsResult = {

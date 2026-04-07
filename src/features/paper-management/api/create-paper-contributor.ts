@@ -11,7 +11,7 @@ export type CreatePaperContributorDto = {
   sectionRole: string;
   paperId: string;
   sectionId: string;
-  memberId: string;
+  memberIds: string[];
   markSectionId: string;
 };
 
