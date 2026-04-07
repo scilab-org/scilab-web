@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, MessageSquare, Loader2 } from 'lucide-react';
+import { Send, MessageSquare, PenLine, Loader2 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -11,8 +11,24 @@ import { cn } from '@/utils/cn';
 import { useSendMessage } from '@/features/ai-chat/api/send-message';
 import { useSessionMessages } from '@/features/ai-chat/api/get-session-messages';
 import { useSessions } from '@/features/ai-chat/api/get-sessions';
-import type { ChatMessage } from '@/features/ai-chat/types';
+import type {
+  ChatMessage,
+  PlanningQuestion,
+  WritingOutput,
+} from '@/features/ai-chat/types';
+import {
+  CHAT_MODE,
+  WRITING_ACTION,
+  SESSION_MESSAGE_LIMIT,
+  type ChatMode,
+} from '@/features/ai-chat/constants';
+import { useGetSection } from '@/features/paper-management/api/get-section';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
+import { PlanningQnABox } from './planning-qna-box';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const MESSAGE_LIMIT = SESSION_MESSAGE_LIMIT;
 
 // ─── Compact chat message bubble for the editor side panel ────────────────────
 
@@ -90,9 +106,13 @@ const CompactMessageBubble = ({ message }: { message: ChatMessage }) => {
 const CompactChatInput = ({
   onSend,
   isSending,
+  mode,
+  onModeChange,
 }: {
   onSend: (content: string) => void;
   isSending: boolean;
+  mode: ChatMode;
+  onModeChange: (mode: ChatMode) => void;
 }) => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -120,13 +140,48 @@ const CompactChatInput = ({
 
   return (
     <div className="border-border shrink-0 border-t px-3 py-2.5">
+      {/* Mode toggle */}
+      <div className="mb-2 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onModeChange(CHAT_MODE.CHAT)}
+          className={cn(
+            'flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
+            mode === CHAT_MODE.CHAT
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:text-foreground',
+          )}
+        >
+          <MessageSquare className="h-3 w-3" />
+          Chat
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange(CHAT_MODE.WRITE)}
+          className={cn(
+            'flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
+            mode === CHAT_MODE.WRITE
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:text-foreground',
+          )}
+        >
+          <PenLine className="h-3 w-3" />
+          Write
+        </button>
+      </div>
+
+      {/* Input row */}
       <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask the assistant..."
+          placeholder={
+            mode === CHAT_MODE.WRITE
+              ? 'Describe what to write...'
+              : 'Ask the assistant...'
+          }
           rows={1}
           disabled={isSending}
           className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring w-full resize-none rounded-lg border px-3 py-2 text-xs leading-relaxed outline-none focus:ring-1 disabled:opacity-50"
@@ -152,8 +207,6 @@ const CompactChatInput = ({
 };
 
 // ─── Message list with auto-scroll ────────────────────────────────────────────
-
-const MESSAGE_LIMIT = 100;
 
 const CompactMessageList = ({
   sessionId,
@@ -245,17 +298,19 @@ const CompactMessageList = ({
 
 const SessionList = ({
   projectId,
+  sectionId,
   activeSessionId,
   onSelectSession,
   onNewChat,
 }: {
   projectId: string;
+  sectionId?: string;
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
   onNewChat: () => void;
 }) => {
   const sessionsQuery = useSessions({
-    params: { projectId, limit: 10, offset: 0 },
+    params: { projectId, sectionId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
@@ -311,31 +366,85 @@ const SessionList = ({
 
 type EditorChatPanelProps = {
   projectId: string;
+  sectionId?: string;
   sectionTitle?: string;
+  sectionContent?: string;
+  onWriteOutput?: (output: WritingOutput) => void;
 };
 
 export const EditorChatPanel = ({
   projectId,
+  sectionId,
   sectionTitle,
+  sectionContent,
+  onWriteOutput,
 }: EditorChatPanelProps) => {
   const [chatTab, setChatTab] = useState<'chat' | 'sessions'>('chat');
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [mode, setMode] = useState<ChatMode>(CHAT_MODE.CHAT);
+  const [planningQuestions, setPlanningQuestions] = useState<
+    PlanningQuestion[] | null
+  >(null);
+  // When true, suppress auto-select so the user stays on the blank "new chat" screen
+  const isNewChatRef = useRef(false);
 
   const projectPapersQuery = useProjectPapers({
     projectId,
     queryConfig: { enabled: !!projectId },
   });
 
+  const sectionQuery = useGetSection({
+    sectionId: sectionId ?? null,
+  });
+  const ruleset = sectionQuery.data?.result?.rule;
+
+  // Reset session when section changes (session-per-section scoping)
+  const prevSectionIdRef = useRef(sectionId);
+  useEffect(() => {
+    if (prevSectionIdRef.current !== sectionId) {
+      prevSectionIdRef.current = sectionId;
+      isNewChatRef.current = false;
+      setActiveSessionId(null);
+      setPlanningQuestions(null);
+      setRefreshKey((k) => k + 1);
+    }
+  }, [sectionId]);
+
+  // Auto-select the most recent session when sessions load and none is active
+  const sessionsQuery = useSessions({
+    params: { projectId, sectionId, limit: 10, offset: 0 },
+    queryConfig: { enabled: !!projectId },
+  });
+
+  useEffect(() => {
+    if (!activeSessionId && !isNewChatRef.current && sessionsQuery.data?.sessions.length) {
+      setActiveSessionId(sessionsQuery.data.sessions[0].id);
+    }
+  }, [sessionsQuery.data, activeSessionId]);
+
   const sendMessageMutation = useSendMessage({
     mutationConfig: {
       onSuccess: (data) => {
+        isNewChatRef.current = false;
         if (!activeSessionId) {
           setActiveSessionId(data.sessionId);
         }
         setPendingMessage(null);
         setRefreshKey((k) => k + 1);
+
+        // Handle write-mode responses directly from mutation result
+        const meta = data.assistantMessage.msgMetadata;
+        if (meta?.writingAction === WRITING_ACTION.PLANNING_QUESTIONS) {
+          setPlanningQuestions(
+            meta.questionSchema as PlanningQuestion[],
+          );
+        } else if (meta?.writingAction === WRITING_ACTION.SECTION_OUTPUT) {
+          const output = meta.writingOutput as WritingOutput;
+          onWriteOutput?.(output);
+          setPlanningQuestions(null);
+        }
       },
       onError: () => {
         setPendingMessage(null);
@@ -347,28 +456,80 @@ export const EditorChatPanel = ({
     (content: string) => {
       if (!projectId) return;
       setPendingMessage(content);
-      const paperIds = (
-        (projectPapersQuery.data as any)?.result?.items ?? []
-      ).map((p: { id: string }) => p.id);
-      sendMessageMutation.mutate({
-        sessionId: activeSessionId ?? undefined,
-        projectId,
-        message: content,
-        paperIds,
-      });
+
+      if (mode === CHAT_MODE.WRITE) {
+        const projectPaperIds = (
+          (projectPapersQuery.data as any)?.result?.items ?? []
+        ).map((p: { id: string }) => p.id);
+        sendMessageMutation.mutate({
+          sessionId: activeSessionId ?? undefined,
+          projectId,
+          message: content,
+          paperIds: projectPaperIds,
+          mode: 'write',
+          sectionId,
+          sectionTarget: sectionTitle,
+          writing: {
+            currentSection: sectionContent,
+            ruleset: ruleset || undefined,
+          },
+        });
+      } else {
+        const paperIds = (
+          (projectPapersQuery.data as any)?.result?.items ?? []
+        ).map((p: { id: string }) => p.id);
+        sendMessageMutation.mutate({
+          sessionId: activeSessionId ?? undefined,
+          projectId,
+          message: content,
+          paperIds,
+          sectionId,
+        });
+      }
     },
-    [projectId, activeSessionId, sendMessageMutation, projectPapersQuery.data],
+    [
+      mode,
+      projectId,
+      ruleset,
+      sectionId,
+      sectionTitle,
+      sectionContent,
+      activeSessionId,
+      sendMessageMutation,
+      projectPapersQuery.data,
+    ],
   );
 
+  const handleQnASubmit = useCallback(
+    (formattedAnswer: string) => {
+      setPlanningQuestions(null);
+      handleSend(formattedAnswer);
+    },
+    [handleSend],
+  );
+
+  const handleQnACancel = useCallback(() => {
+    setPlanningQuestions(null);
+  }, []);
+
   const handleNewChat = useCallback(() => {
+    isNewChatRef.current = true;
     setActiveSessionId(null);
+    setPlanningQuestions(null);
     setChatTab('chat');
   }, []);
 
   const handleSelectSession = useCallback((sessionId: string) => {
+    isNewChatRef.current = false;
     setActiveSessionId(sessionId);
+    setPlanningQuestions(null);
     setChatTab('chat');
     setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleModeChange = useCallback((newMode: 'chat' | 'write') => {
+    setMode(newMode);
+    setPlanningQuestions(null);
   }, []);
 
   return (
@@ -432,19 +593,32 @@ export const EditorChatPanel = ({
                   ) : (
                     'your paper'
                   )}
-                  . Your first message will create a new session.
                 </p>
               </div>
             </div>
           )}
-          <CompactChatInput
-            onSend={handleSend}
-            isSending={sendMessageMutation.isPending}
-          />
+
+          {/* Planning Q&A form (replaces input when active) */}
+          {planningQuestions ? (
+            <PlanningQnABox
+              questions={planningQuestions}
+              onSubmit={handleQnASubmit}
+              onCancel={handleQnACancel}
+              isSending={sendMessageMutation.isPending}
+            />
+          ) : (
+            <CompactChatInput
+              onSend={handleSend}
+              isSending={sendMessageMutation.isPending}
+              mode={mode}
+              onModeChange={handleModeChange}
+            />
+          )}
         </div>
       ) : (
         <SessionList
           projectId={projectId}
+          sectionId={sectionId}
           activeSessionId={activeSessionId}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}

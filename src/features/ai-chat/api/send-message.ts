@@ -14,6 +14,10 @@ export const sendMessage = (
     projectId: request.projectId,
     sessionId: request.sessionId ?? null,
     paperIds: request.paperIds ?? [],
+    mode: request.mode ?? 'chat',
+    sectionId: request.sectionId,
+    sectionTarget: request.sectionTarget,
+    writing: request.writing,
   });
 };
 

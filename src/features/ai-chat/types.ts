@@ -1,6 +1,10 @@
+import type { ChatMode, QuestionType } from './constants';
+
 export type ChatSession = {
   id: string;
   projectId: string;
+  sectionId?: string;
+  sectionTarget?: string;
   title: string;
   context: Record<string, unknown>;
   createdAt: string;
@@ -20,6 +24,7 @@ export type ChatMessage = {
 
 export type GetSessionsParams = {
   projectId: string;
+  sectionId?: string;
   limit?: number; // 1–100, default 50
   offset?: number; // >= 0, default 0
 };
@@ -49,6 +54,17 @@ export type SendMessageRequest = {
   projectId?: string; // required when sessionId is null (new session)
   sessionId?: string | null; // null or omit to create a new session
   paperIds?: string[]; // defaults to []
+  // Write-mode fields
+  mode?: ChatMode;
+  sectionId?: string;
+  sectionTarget?: string;
+  writing?: WritingPayload;
+};
+
+export type WritingPayload = {
+  currentSection?: string;
+  referencedSections?: Array<{ sectionType: string; content: string }>;
+  ruleset?: string;
 };
 
 export type SendMessageResponse = {
@@ -70,3 +86,30 @@ export type RenameSessionResponse = {
 
 // --- DELETE /sessions/{sessionId} ---
 // Returns 204 No Content — no response body
+
+// --- Writing / Planning types ---
+
+export type QuestionOption = {
+  label: string;
+  value: string;
+};
+
+export type PlanningQuestion = {
+  type: QuestionType;
+  prompt: string;
+  options?: QuestionOption[];
+  allowCustom: boolean;
+};
+
+export type WritingOutput = {
+  sectionTarget: string;
+  content: string;
+  referencedPaperIds?: string[];
+};
+
+export type ValidationSummary = {
+  iterations: number;
+  issuesFound: number;
+  issuesFixed: number;
+  scope: string;
+};
