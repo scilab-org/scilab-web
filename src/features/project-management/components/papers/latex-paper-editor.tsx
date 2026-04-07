@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   Upload,
   Image as ImageIcon,
+  Package,
   Loader2,
   Keyboard,
   Copy,
@@ -65,6 +66,7 @@ import {
 import { BTN } from '@/lib/button-styles';
 
 import {
+  getSectionReference,
   type SectionReferenceOtherItem,
   useGetSectionReference,
 } from '@/features/paper-management/api/get-section-reference';
@@ -72,7 +74,7 @@ import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constan
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
 import { useMarkSection } from '@/features/paper-management/api/get-mark-section';
-import { getAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
+import { getAssignedSectionsQueryOptions } from '@/features/paper-management/api/get-assigned-sections';
 import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
@@ -160,6 +162,8 @@ type MarkSectionItem = {
   sectionRole: string;
   isMainSection: boolean;
   content: string;
+  createdOnUtc?: string | null;
+  lastModifiedOnUtc?: string | null;
   nextVersionSectionId?: string | null;
 };
 
@@ -203,6 +207,78 @@ type SectionReferenceInUseResult = {
   paperBanks: SectionReferenceInUsePaperBank[];
 };
 
+const toReferencePaperRecord = (value: unknown): Record<string, unknown> => {
+  const record = (value ?? {}) as Record<string, unknown>;
+
+  if (record.paperBank && typeof record.paperBank === 'object') {
+    return record.paperBank as Record<string, unknown>;
+  }
+
+  if (record.paper && typeof record.paper === 'object') {
+    return record.paper as Record<string, unknown>;
+  }
+
+  return record;
+};
+
+const toInUsePaperBank = (paper: unknown): SectionReferenceInUsePaperBank => {
+  const record = toReferencePaperRecord(paper);
+
+  return {
+    id: String(record.id ?? ''),
+    title: (record.title as string | null) ?? null,
+    authors: (record.authors as string | null) ?? null,
+    journalName: (record.journalName as string | null) ?? null,
+    conferenceName: (record.conferenceName as string | null) ?? null,
+    doi: (record.doi as string | null) ?? null,
+  };
+};
+
+const buildReferenceContentFromPapers = (papers: unknown[]): string => {
+  return papers
+    .map((paper) => {
+      const record = toReferencePaperRecord(paper);
+      return typeof record.referenceContent === 'string'
+        ? record.referenceContent.trim()
+        : '';
+    })
+    .filter(Boolean)
+    .join('\n\n');
+};
+
+const hydrateReferenceContentFromPaperBanks = async (
+  papers: unknown[],
+): Promise<string> => {
+  const uniquePaperIds = Array.from(
+    new Set(
+      papers
+        .map((paper) => toReferencePaperRecord(paper))
+        .map((record) => String(record.id ?? '').trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (uniquePaperIds.length === 0) {
+    return '';
+  }
+
+  const detailResults = await Promise.allSettled(
+    uniquePaperIds.map((paperBankId) =>
+      getPaperBankDetailForEditor(paperBankId),
+    ),
+  );
+
+  return detailResults
+    .map((result) =>
+      result.status === 'fulfilled'
+        ? (result.value?.referenceContent ?? '')
+        : '',
+    )
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join('\n\n');
+};
+
 const getSectionReferenceInUseForEditor = async (
   sectionId: string,
 ): Promise<SectionReferenceInUseResult> => {
@@ -212,30 +288,46 @@ const getSectionReferenceInUseForEditor = async (
     result?: {
       referenceContent?: unknown;
       paperBanks?: unknown[];
+      items?: unknown[];
     };
   };
 
   const result = response?.result ?? {};
   const paperBanksSource = Array.isArray(result.paperBanks)
     ? result.paperBanks
-    : [];
+    : Array.isArray(result.items)
+      ? result.items
+      : [];
+
+  let referenceContent =
+    typeof result.referenceContent === 'string'
+      ? result.referenceContent
+      : buildReferenceContentFromPapers(paperBanksSource);
+
+  let paperBanks = paperBanksSource.map((paper) => toInUsePaperBank(paper));
+
+  if (!referenceContent.trim()) {
+    try {
+      const fallback = await getSectionReference(sectionId);
+      const inUsePapers = fallback.result?.inUse ?? [];
+
+      referenceContent = buildReferenceContentFromPapers(inUsePapers);
+      if (paperBanks.length === 0) {
+        paperBanks = inUsePapers.map((paper) => toInUsePaperBank(paper));
+      }
+
+      if (!referenceContent.trim()) {
+        referenceContent =
+          await hydrateReferenceContentFromPaperBanks(inUsePapers);
+      }
+    } catch {
+      // Keep the empty state if the fallback endpoint also fails.
+    }
+  }
 
   return {
-    referenceContent:
-      typeof result.referenceContent === 'string'
-        ? result.referenceContent
-        : '',
-    paperBanks: paperBanksSource.map((paper) => {
-      const record = (paper ?? {}) as Record<string, unknown>;
-      return {
-        id: String(record.id ?? ''),
-        title: (record.title as string | null) ?? null,
-        authors: (record.authors as string | null) ?? null,
-        journalName: (record.journalName as string | null) ?? null,
-        conferenceName: (record.conferenceName as string | null) ?? null,
-        doi: (record.doi as string | null) ?? null,
-      };
-    }),
+    referenceContent,
+    paperBanks,
   };
 };
 
@@ -306,10 +398,34 @@ const SectionVersionsPanel = ({
   excludeSectionId?: string;
   onViewItem: (item: MarkSectionItem) => void;
 }) => {
+  const formatVersionTimestamp = (value?: string | null) => {
+    if (!value) return 'Unavailable';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return 'Unavailable';
+
+    return parsed.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const query = useMarkSection({ markSectionId: markSectionId || null });
   const allItems: MarkSectionItem[] = query.data?.result?.items ?? [];
+  const [cachedItems, setCachedItems] = useState<MarkSectionItem[]>([]);
 
-  const items = allItems.filter((i) => {
+  useEffect(() => {
+    if (query.data?.result?.items) {
+      setCachedItems(query.data.result.items);
+    }
+  }, [query.data?.result?.items]);
+
+  const displayedItemsSource = allItems.length > 0 ? allItems : cachedItems;
+
+  const items = displayedItemsSource.filter((i) => {
     if (i.isMainSection) return true;
     if (excludeSectionId && i.sectionId === excludeSectionId) return false;
     if ((i.email || '').toLowerCase() === currentUserEmail.toLowerCase())
@@ -317,10 +433,10 @@ const SectionVersionsPanel = ({
     return true;
   });
 
-  if (query.isLoading) {
+  if (query.isLoading && items.length === 0) {
     return (
       <div className="flex items-center justify-center py-4 text-xs text-slate-400">
-        Loading contributors...
+        Loading sections...
       </div>
     );
   }
@@ -348,7 +464,12 @@ const SectionVersionsPanel = ({
   });
 
   return (
-    <div className="flex flex-col">
+    <div className="relative flex flex-col">
+      {query.isFetching && (
+        <div className="sticky top-0 z-10 flex items-center justify-center bg-white/85 py-2 text-xs text-slate-400 backdrop-blur-sm dark:bg-slate-950/85">
+          Loading sections...
+        </div>
+      )}
       {sorted.map((item, idx) => {
         const displayName = item.isMainSection
           ? 'Origin section'
@@ -369,10 +490,10 @@ const SectionVersionsPanel = ({
             key={item.sectionId}
             type="button"
             onClick={() => onViewItem(item)}
-            className="group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 hover:bg-slate-100 active:bg-slate-200 dark:hover:bg-slate-800/60 dark:active:bg-slate-800"
+            className="group mx-3 my-1.5 flex w-auto items-start gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-slate-50 hover:shadow-md active:translate-y-0 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
           >
             <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white transition-transform duration-150 group-hover:scale-105 ${
+              className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-[10px] font-bold text-white shadow-sm transition-transform duration-150 group-hover:scale-105 ${
                 item.isMainSection
                   ? 'bg-emerald-500'
                   : COLORS[idx % COLORS.length]
@@ -381,18 +502,50 @@ const SectionVersionsPanel = ({
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                  {displayName}
-                </span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {displayName}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        item.isMainSection
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      {item.isMainSection ? 'Main' : 'Contributor'}
+                    </span>
+                  </div>
+                  {!item.isMainSection && (
+                    <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
+                      {item.email}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-slate-400 dark:text-slate-600" />
               </div>
-              {!item.isMainSection && (
-                <p className="truncate text-xs text-slate-400 dark:text-slate-500">
-                  {item.email}
-                </p>
-              )}
+
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900/80">
+                  <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                    Created at
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    {formatVersionTimestamp(item.createdOnUtc)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900/80">
+                  <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                    Last modified
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    {formatVersionTimestamp(item.lastModifiedOnUtc)}
+                  </p>
+                </div>
+              </div>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-slate-400 dark:text-slate-600" />
           </button>
         );
       })}
@@ -467,12 +620,10 @@ const VersionsTabPanel = ({
 const ReferencesTab = ({
   sectionId,
   compact = false,
-  reloadToken,
   onOpenSectionInEditor,
 }: {
   sectionId?: string;
   compact?: boolean;
-  reloadToken?: number;
   onOpenSectionInEditor?: (
     section: SectionReferenceOtherItem['sections'][number],
   ) => void;
@@ -480,7 +631,6 @@ const ReferencesTab = ({
   const query = useGetSectionReference({
     sectionId: sectionId ?? null,
   });
-  const { refetch: refetchSectionReferences } = query;
   const inUse = useMemo(
     () => query.data?.result?.inUse ?? [],
     [query.data?.result?.inUse],
@@ -496,10 +646,7 @@ const ReferencesTab = ({
 
   useEffect(() => {
     setSelectedReference(null);
-    if (sectionId) {
-      void refetchSectionReferences();
-    }
-  }, [sectionId, reloadToken, refetchSectionReferences]);
+  }, [sectionId]);
 
   const handleSectionClick = useCallback(
     (section: SectionReferenceOtherItem['sections'][number]) => {
@@ -1025,7 +1172,7 @@ const InlineReferenceSectionEditor = ({
   currentPaperId?: string;
   currentSectionId?: string;
   currentSectionTitle?: string;
-  onUpdateReference?: (paperBankIds: string[]) => Promise<void>;
+  onUpdateReference?: (paperBankIds: string[]) => Promise<boolean>;
   isUpdatingReference?: boolean;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -1057,8 +1204,10 @@ const InlineReferenceSectionEditor = ({
 
   const handleSubmitUpdateReference = useCallback(async () => {
     if (!onUpdateReference) return;
-    await onUpdateReference(selectedPaperBankIds);
-    setIsUpdateDialogOpen(false);
+    const isSuccessful = await onUpdateReference(selectedPaperBankIds);
+    if (isSuccessful) {
+      setIsUpdateDialogOpen(false);
+    }
   }, [onUpdateReference, selectedPaperBankIds]);
 
   const handleOpenBankDetail = useCallback(async (paperBankId: string) => {
@@ -1920,6 +2069,7 @@ type SectionProp = {
   paperId?: string;
   title: string;
   content: string;
+  packages?: string[];
   memberId: string;
   numbered: boolean;
   sectionSumary: string;
@@ -2014,6 +2164,9 @@ export const LatexPaperEditor = ({
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarResourceTab, setSidebarResourceTab] = useState<
+    'files' | 'packages'
+  >('files');
   const [editorSections, setEditorSections] = useState<
     SectionProp[] | undefined
   >(sections);
@@ -2053,16 +2206,57 @@ export const LatexPaperEditor = ({
   );
   const cursorPositionRef = useRef<CursorPosition | null>(null);
   const previousActiveSectionIdRef = useRef<string | null>(null);
+  const previousActiveSectionInfoRef = useRef<{
+    id: string;
+    markSectionId: string;
+    memberId: string;
+    sectionRole: string;
+    title: string;
+    parentSectionId: string | null;
+  } | null>(null);
+  const prevSectionMarksRef = useRef(new Set<string>());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastReadOnlyToastRef = useRef<number>(0);
 
   useEffect(() => {
+    // Save current active section info before editorSections is replaced.
+    // The matching effect needs this when the version-specific ID is no
+    // longer present in the new (structural) sections list.
+    const currentActive = activeSectionRef.current;
+    if (currentActive) {
+      previousActiveSectionInfoRef.current = {
+        id: currentActive.id,
+        markSectionId: (currentActive.markSectionId || currentActive.id).trim(),
+        memberId: currentActive.memberId,
+        sectionRole: currentActive.sectionRole || '',
+        title: currentActive.title,
+        parentSectionId: currentActive.parentSectionId,
+      };
+    }
+
+    // Detect whether the section *structure* changed (sections added/removed)
+    // vs a simple data refresh (same set of markSectionIds).
+    const newMarks = new Set(
+      (sections ?? [])
+        .map((s) => (s.markSectionId || s.id).trim())
+        .filter(Boolean),
+    );
+    const prevMarks = prevSectionMarksRef.current;
+    const structureChanged =
+      prevMarks.size !== newMarks.size ||
+      [...newMarks].some((m) => !prevMarks.has(m)) ||
+      [...prevMarks].some((m) => !newMarks.has(m));
+    prevSectionMarksRef.current = newMarks;
+
     setEditorSections(sections);
-    // When the workspace passes a refreshed sections snapshot (e.g., after clicking Edit
-    // or after a save refresh), force the next load to re-fetch from server even if the
-    // activeSectionId hasn't changed. This prevents showing stale content due to the
-    // global React Query staleTime.
-    previousActiveSectionIdRef.current = null;
+
+    // Only force a server re-fetch when sections were genuinely added or
+    // removed. After a save-triggered refresh the markSectionIds stay the
+    // same, so the editor already has the latest content — resetting the
+    // ref here would cause an unnecessary re-fetch cascade.
+    if (structureChanged) {
+      previousActiveSectionIdRef.current = null;
+    }
   }, [sections]);
 
   useEffect(() => {
@@ -2075,9 +2269,13 @@ export const LatexPaperEditor = ({
         return prev;
       }
 
-      const previousSection = prev
-        ? editorSections?.find((section) => section.id === prev)
-        : null;
+      // Try the live editorSections first; when the version-specific ID was
+      // replaced by a structural ID (parent refresh after save), fall back
+      // to the snapshot saved before the replacement.
+      const previousSection =
+        (prev
+          ? editorSections?.find((section) => section.id === prev)
+          : null) ?? previousActiveSectionInfoRef.current;
 
       if (previousSection) {
         const previousMarkSectionId =
@@ -2093,6 +2291,9 @@ export const LatexPaperEditor = ({
         });
 
         if (matchedByMarkAndIdentity) {
+          // Sync the ref so loadLatestSectionContent does not treat the new
+          // ID as a section switch and trigger an unnecessary server fetch.
+          previousActiveSectionIdRef.current = matchedByMarkAndIdentity.id;
           return matchedByMarkAndIdentity.id;
         }
 
@@ -2102,6 +2303,7 @@ export const LatexPaperEditor = ({
         });
 
         if (matchedByMark) {
+          previousActiveSectionIdRef.current = matchedByMark.id;
           return matchedByMark.id;
         }
 
@@ -2113,6 +2315,7 @@ export const LatexPaperEditor = ({
         );
 
         if (matchedByStructure) {
+          previousActiveSectionIdRef.current = matchedByStructure.id;
           return matchedByStructure.id;
         }
       }
@@ -2175,7 +2378,16 @@ export const LatexPaperEditor = ({
   const [isInUseReferenceLoading, setIsInUseReferenceLoading] = useState(false);
   const [isUpdatingReference, setIsUpdatingReference] = useState(false);
   const [inUseReferenceReloadKey, setInUseReferenceReloadKey] = useState(0);
+  // Tracks the resolved section ID after assigned-sections lookup —
+  // used everywhere that needs the latest server-side section ID.
+  const [resolvedActiveSectionId, setResolvedActiveSectionId] = useState<
+    string | null
+  >(null);
   const queryClient = useQueryClient();
+  const assignedSectionsParams = useMemo(
+    () => ({ PageNumber: 1, PageSize: 1000 }),
+    [],
+  );
 
   // Derive paperId from sections for version history
   const derivedPaperId =
@@ -2184,6 +2396,11 @@ export const LatexPaperEditor = ({
   // Active section's markSectionId for contributor list
   const activeSectionMarkId =
     activeSection?.markSectionId || activeSectionId || '';
+
+  // Stable ref so loadInUseReferences can read the full section object
+  // without depending on the object reference (prevents re-fetch on Save Changes)
+  const activeSectionRef = useRef<SectionProp | null>(activeSection);
+  activeSectionRef.current = activeSection;
 
   // Current user for "me" badges
   const { data: currentUser } = useUser();
@@ -2219,10 +2436,26 @@ export const LatexPaperEditor = ({
     ? []
     : (sectionFilesQuery.data ?? []);
 
+  // The section ID used for the Comments tab. When a contributor version
+  // preview is open, show that contributor's comments; otherwise default
+  // to the current active section.
+  const commentsSectionId =
+    versionPreview?.item.sectionId ?? resolvedActiveSectionId ?? null;
+
   useSectionComments({
-    sectionId: activeSectionId ?? '',
+    sectionId: resolvedActiveSectionId ?? '',
     queryConfig: {
-      enabled: !!activeSectionId,
+      enabled: !!resolvedActiveSectionId,
+    },
+  });
+
+  // Pre-warm comments for the contributor section as soon as preview opens.
+  useSectionComments({
+    sectionId: versionPreview?.item.sectionId ?? '',
+    queryConfig: {
+      enabled:
+        !!versionPreview?.item.sectionId &&
+        versionPreview.item.sectionId !== resolvedActiveSectionId,
     },
   });
 
@@ -2240,42 +2473,58 @@ export const LatexPaperEditor = ({
   const updateSectionMutation = useUpdateSection({
     mutationConfig: {
       onSuccess: () => {
-        toast.success('Section saved successfully');
+        toast.success('Section saved successfully', {
+          id: 'section-save-success',
+          duration: 3000,
+        });
       },
       onError: () => {
-        toast.error('Failed to save section. Please try again.');
+        toast.error('Failed to save section. Please try again.', {
+          id: 'section-save-error',
+          duration: 3000,
+        });
       },
     },
   });
 
-  const compileAndRender = useCallback(async (latexContent: string) => {
-    setIsCompiling(true);
-    setCompileError(null);
-    try {
-      const blob = await compileLatex({ content: latexContent });
-      if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
-      const newUrl = URL.createObjectURL(blob);
-      pdfUrlRef.current = newUrl;
-      setPdfUrl(newUrl);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to compile LaTeX';
-      setCompileError(message);
-      toast.error('LaTeX compilation failed');
-    } finally {
-      setIsCompiling(false);
-    }
-  }, []);
+  const compileAndRender = useCallback(
+    async (latexContent: string, packages?: string[]) => {
+      setIsCompiling(true);
+      setCompileError(null);
+      try {
+        const blob = await compileLatex({ content: latexContent, packages });
+        if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+        const newUrl = URL.createObjectURL(blob);
+        pdfUrlRef.current = newUrl;
+        setPdfUrl(newUrl);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to compile LaTeX';
+        setCompileError(message);
+        toast.error('LaTeX compilation failed', {
+          id: 'latex-compile-error',
+          duration: 3000,
+        });
+      } finally {
+        setIsCompiling(false);
+      }
+    },
+    [],
+  );
 
   // Compile LaTeX to PDF via API
   const handleRender = useCallback(() => {
     if (versionPreview) {
-      compileAndRender(previewEditContent ?? versionPreview.item.content ?? '');
+      compileAndRender(
+        previewEditContent ?? versionPreview.item.content ?? '',
+        activeSection?.packages,
+      );
       return;
     }
     if (isActiveSectionReadOnly) return;
-    compileAndRender(content);
+    compileAndRender(content, activeSection?.packages);
   }, [
+    activeSection?.packages,
     content,
     previewEditContent,
     versionPreview,
@@ -2291,14 +2540,30 @@ export const LatexPaperEditor = ({
   }, []);
 
   const resolveLatestSectionIdFromAssignedSections = useCallback(
-    async (markSectionId: string, sectionSnapshot?: SectionProp | null) => {
+    async (
+      markSectionId: string,
+      sectionSnapshot?: SectionProp | null,
+      options?: { forceFresh?: boolean },
+    ) => {
       if (!derivedPaperId) return null;
 
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const assignedResponse = await getAssignedSections({
-            paperId: derivedPaperId,
-            params: { PageNumber: 1, PageSize: 1000 },
+          const { queryKey, queryFn } = getAssignedSectionsQueryOptions(
+            derivedPaperId,
+            assignedSectionsParams,
+          );
+
+          const shouldForceFresh = Boolean(options?.forceFresh) || attempt > 0;
+
+          if (shouldForceFresh) {
+            await queryClient.invalidateQueries({ queryKey });
+          }
+
+          const assignedResponse = await queryClient.fetchQuery({
+            queryKey,
+            queryFn,
+            staleTime: shouldForceFresh ? 0 : 15_000,
           });
           const assignedItems = assignedResponse.result?.items ?? [];
 
@@ -2330,7 +2595,7 @@ export const LatexPaperEditor = ({
 
       return null;
     },
-    [derivedPaperId],
+    [assignedSectionsParams, derivedPaperId, queryClient],
   );
 
   // When sections or activeSectionId changes, load content into editor
@@ -2361,6 +2626,20 @@ export const LatexPaperEditor = ({
             markSectionId,
             activeSection,
           )) || activeSectionId;
+
+        // Read packages from the assigned-sections cache that was just populated above.
+        // This is the authoritative source for packages (set per section by the author).
+        const cachedAssigned = queryClient.getQueryData<{
+          result: { items: Array<{ id: string; packages?: string[] | null }> };
+        }>(
+          getAssignedSectionsQueryOptions(
+            derivedPaperId ?? '',
+            assignedSectionsParams,
+          ).queryKey,
+        );
+        const packagesFromAssigned =
+          cachedAssigned?.result?.items?.find((item) => item.id === resolvedId)
+            ?.packages ?? undefined;
 
         if (disposed) return;
 
@@ -2395,6 +2674,7 @@ export const LatexPaperEditor = ({
               id: latestId,
               title: latest.title || section.title,
               content: latestContent,
+              packages: latest.packages || section.packages,
               numbered: latest.numbered,
               displayOrder: latest.displayOrder,
               sectionSumary: latest.sectionSumary || '',
@@ -2415,7 +2695,10 @@ export const LatexPaperEditor = ({
         setContent(latestContent);
         setSavedContent(latestContent);
         if (latestContent) {
-          compileAndRender(latestContent);
+          compileAndRender(
+            latestContent,
+            latest.packages || packagesFromAssigned || activeSection.packages,
+          );
         } else {
           setPdfUrl(null);
           setCompileError(null);
@@ -2426,7 +2709,7 @@ export const LatexPaperEditor = ({
         setContent(fallbackContent);
         setSavedContent(fallbackContent);
         if (fallbackContent) {
-          compileAndRender(fallbackContent);
+          compileAndRender(fallbackContent, activeSection.packages);
         } else {
           setPdfUrl(null);
           setCompileError(null);
@@ -2445,6 +2728,9 @@ export const LatexPaperEditor = ({
     activeSectionId,
     compileAndRender,
     resolveLatestSectionIdFromAssignedSections,
+    derivedPaperId,
+    assignedSectionsParams,
+    queryClient,
   ]);
 
   useEffect(() => {
@@ -2468,43 +2754,64 @@ export const LatexPaperEditor = ({
   useEffect(() => {
     let disposed = false;
 
-    if (!referenceSection) {
+    // Read from the ref so the effect doesn't depend on the activeSection object
+    // reference. This prevents a re-fetch every time editorSections is updated
+    // (e.g. after Save Changes), since the object reference changes even though
+    // the section identity (id + markSectionId) stays the same.
+    const section = activeSectionRef.current;
+
+    if (!section) {
       setInUseReferenceContent('');
       setInUsePaperBanks([]);
       setIsInUseReferenceLoading(false);
+      setResolvedActiveSectionId(null);
       return;
     }
 
     const loadInUseReferences = async () => {
+      // Only reset the resolved ID (blanking the sidebar) when the active
+      // section actually changed identity. When reloading the same section
+      // (e.g. after Save Changes / reload-key bump) keep the previous value
+      // so the sidebar stays populated during the async resolution.
+      const currentSectionIdentity = (
+        section.markSectionId || section.id
+      ).trim();
+      setResolvedActiveSectionId((prev) => {
+        // If the previous resolved ID belongs to a completely different section
+        // (neither the raw id nor the mark id matches), blank it now.
+        const sameSection =
+          prev === section.id ||
+          prev === section.markSectionId ||
+          prev === currentSectionIdentity;
+        return sameSection ? prev : null;
+      });
       setIsInUseReferenceLoading(true);
       try {
-        const markSectionId = (
-          referenceSection.markSectionId || referenceSection.id
-        ).trim();
-        const resolvedRefId =
+        const markSectionId = (section.markSectionId || section.id).trim();
+        const resolvedSectionId =
           (await resolveLatestSectionIdFromAssignedSections(
             markSectionId,
-            referenceSection,
-          )) || referenceSection.id;
+            section,
+          )) || section.id;
 
         if (disposed) return;
 
-        if (resolvedRefId !== referenceSection.id) {
+        setResolvedActiveSectionId(resolvedSectionId);
+
+        if (resolvedSectionId !== section.id) {
           setEditorSections((prev) => {
             if (!prev?.length) return prev;
-            return prev.map((section) =>
-              section.id === referenceSection.id
-                ? { ...section, id: resolvedRefId }
-                : section,
+            return prev.map((s) =>
+              s.id === section.id ? { ...s, id: resolvedSectionId } : s,
             );
           });
-          if (activeSectionId === referenceSection.id) {
+          if (activeSectionId === section.id) {
             previousActiveSectionIdRef.current = null;
-            setActiveSectionId(resolvedRefId);
+            setActiveSectionId(resolvedSectionId);
           }
         }
 
-        const data = await getSectionReferenceInUseForEditor(resolvedRefId);
+        const data = await getSectionReferenceInUseForEditor(resolvedSectionId);
         if (disposed) return;
         setInUseReferenceContent(data.referenceContent);
         setInUsePaperBanks(data.paperBanks);
@@ -2525,17 +2832,27 @@ export const LatexPaperEditor = ({
       disposed = true;
     };
   }, [
-    referenceSection,
     activeSectionId,
+    activeSectionMarkId,
     inUseReferenceReloadKey,
     resolveLatestSectionIdFromAssignedSections,
   ]);
 
-  const refreshReferenceSectionFromServer = useCallback(
-    async (fetchId?: string) => {
-      if (!referenceSection) return;
+  const refreshSectionFromServer = useCallback(
+    async (sectionIdToFetch: string, sectionSnapshot?: SectionProp | null) => {
+      const targetSection =
+        sectionSnapshot ||
+        editorSections?.find((section) => section.id === sectionIdToFetch) ||
+        null;
 
-      const sectionIdToFetch = fetchId || referenceSection.id;
+      const targetIdentity = targetSection
+        ? (targetSection.markSectionId || targetSection.id).trim()
+        : sectionIdToFetch;
+      const referenceIdentity = referenceSection
+        ? (referenceSection.markSectionId || referenceSection.id).trim()
+        : null;
+      const isRefreshingReferenceSection =
+        !!referenceIdentity && targetIdentity === referenceIdentity;
 
       try {
         const response = await getSection(sectionIdToFetch);
@@ -2548,7 +2865,7 @@ export const LatexPaperEditor = ({
 
           return prev.map((section) => {
             if (
-              section.id !== referenceSection.id &&
+              section.id !== (targetSection?.id || sectionIdToFetch) &&
               section.id !== sectionIdToFetch &&
               section.id !== latestId
             ) {
@@ -2560,6 +2877,7 @@ export const LatexPaperEditor = ({
               id: latestId,
               title: latest.title || section.title,
               content: latestContent,
+              packages: latest.packages || section.packages,
               numbered: latest.numbered,
               displayOrder: latest.displayOrder,
               sectionSumary: latest.sectionSumary || '',
@@ -2570,11 +2888,13 @@ export const LatexPaperEditor = ({
           });
         });
 
-        setReferenceContent(latestContent);
-        setSavedReferenceContent(latestContent);
+        if (isRefreshingReferenceSection) {
+          setReferenceContent(latestContent);
+          setSavedReferenceContent(latestContent);
+        }
 
         if (
-          activeSectionId === referenceSection.id ||
+          activeSectionId === (targetSection?.id || sectionIdToFetch) ||
           activeSectionId === sectionIdToFetch ||
           activeSectionId === latestId
         ) {
@@ -2590,22 +2910,25 @@ export const LatexPaperEditor = ({
             setCompileError(null);
           }
         }
+
+        return latestId;
       } catch {
         // Keep existing content if server sync fails.
+        return null;
       }
     },
-    [activeSectionId, compileAndRender, referenceSection],
+    [activeSectionId, compileAndRender, editorSections, referenceSection],
   );
 
   const handleUpdateSectionReference = useCallback(
     async (paperBankIds: string[]) => {
       if (!activeSectionId) {
         toast.error('No active section to update reference.');
-        return;
+        return false;
       }
       if (!derivedPaperId) {
         toast.error('Cannot resolve current paper id.');
-        return;
+        return false;
       }
 
       const extractUpdatedSectionId = (response: unknown): string | null => {
@@ -2641,8 +2964,6 @@ export const LatexPaperEditor = ({
           activeSectionSnapshot,
         )) || activeSectionId;
 
-      const previousSectionId = sectionIdForUpdate;
-
       try {
         setIsUpdatingReference(true);
         const updateResponse = await updateSectionReferenceForEditor({
@@ -2656,6 +2977,7 @@ export const LatexPaperEditor = ({
           await resolveLatestSectionIdFromAssignedSections(
             markSectionId,
             activeSectionSnapshot,
+            { forceFresh: true },
           );
 
         // Fallbacks: server may return the new id directly, or we can resolve via mark-section.
@@ -2664,50 +2986,46 @@ export const LatexPaperEditor = ({
         }
         // No mark-section fallback: assigned-sections is the requested source of truth.
 
-        // If the section was versioned (id changed), switch the editor to the new id.
-        if (nextSectionId && nextSectionId !== activeSectionId) {
-          previousActiveSectionIdRef.current = null;
-          setEditorSections((prev) => {
-            if (!prev?.length) return prev;
-            return prev.map((section) =>
-              section.id === activeSectionId
-                ? { ...section, id: nextSectionId }
-                : section,
-            );
-          });
-          setActiveSectionId(nextSectionId);
-        }
+        await queryClient.invalidateQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+            derivedPaperId,
+          ],
+        });
 
-        // Force refresh using the resolved id to avoid fetching by the old id via stale closure.
-        await refreshReferenceSectionFromServer(
+        await refreshSectionFromServer(
           nextSectionId || sectionIdForUpdate,
+          activeSectionSnapshot,
         );
         toast.success('Reference updated successfully.');
-        setInUseReferenceReloadKey((prev) => prev + 1);
 
-        const latestSectionIdForQuery = nextSectionId || previousSectionId;
+        // Explicitly fetch in-use reference data with the confirmed final ID.
+        // This must happen AFTER the PUT so the server returns updated data.
+        // We bypass the reload-key effect entirely for this case to avoid the
+        // race condition where the effect resolves with a stale section ID.
+        const finalSectionId = nextSectionId || sectionIdForUpdate;
+        setResolvedActiveSectionId(null); // pause ReferencesTab while we load
+        try {
+          const inUseData =
+            await getSectionReferenceInUseForEditor(finalSectionId);
+          setInUsePaperBanks(inUseData.paperBanks);
+          setInUseReferenceContent(inUseData.referenceContent);
+        } catch {
+          // keep existing in-use data if fetch fails
+        }
+        // Set the resolved ID so ReferencesTab re-queries with the correct
+        // final section ID. Invalidate so it gets fresh data.
+        setResolvedActiveSectionId(finalSectionId);
         await queryClient.invalidateQueries({
           queryKey: [
             PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
-            previousSectionId,
+            finalSectionId,
           ],
         });
-        if (latestSectionIdForQuery !== previousSectionId) {
-          await queryClient.invalidateQueries({
-            queryKey: [
-              PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
-              latestSectionIdForQuery,
-            ],
-          });
-        }
-        await queryClient.refetchQueries({
-          queryKey: [
-            PAPER_MANAGEMENT_QUERY_KEYS.SECTION_REFERENCE,
-            latestSectionIdForQuery,
-          ],
-        });
+        return true;
       } catch {
         toast.error('Failed to update reference. Please try again.');
+        return false;
       } finally {
         setIsUpdatingReference(false);
       }
@@ -2717,8 +3035,11 @@ export const LatexPaperEditor = ({
       editorSections,
       derivedPaperId,
       queryClient,
-      refreshReferenceSectionFromServer,
+      refreshSectionFromServer,
       resolveLatestSectionIdFromAssignedSections,
+      setResolvedActiveSectionId,
+      setInUsePaperBanks,
+      setInUseReferenceContent,
     ],
   );
 
@@ -2937,10 +3258,19 @@ export const LatexPaperEditor = ({
       const markSectionId =
         (currentSection.markSectionId || currentSection.id).trim() ||
         currentSection.id;
+
+      await queryClient.invalidateQueries({
+        queryKey: [
+          PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+          derivedPaperId,
+        ],
+      });
+
       const latestSectionId =
         (await resolveLatestSectionIdFromAssignedSections(
           markSectionId,
           currentSection,
+          { forceFresh: true },
         )) || activeSectionId;
       const nextSection: SectionProp = {
         ...currentSection,
@@ -2969,6 +3299,14 @@ export const LatexPaperEditor = ({
       setActiveSectionId(latestSectionId);
       setContent(contentToSave);
       setSavedContent(contentToSave);
+
+      // Keep resolvedActiveSectionId in sync with the latest id so the
+      // references sidebar doesn't flash "Select a section" after save.
+      setResolvedActiveSectionId(latestSectionId);
+
+      // Compile with the saved content directly — no need to re-fetch from
+      // server since we already have all the data (avoids double getSection call).
+      void compileAndRender(contentToSave, currentSection.packages);
       onSave?.(contentToSave, latestSectionId);
     } catch {
       // Mutation error is already handled by mutationConfig onError
@@ -2982,6 +3320,9 @@ export const LatexPaperEditor = ({
     updateSectionMutation,
     onSave,
     isActiveSectionReadOnly,
+    derivedPaperId,
+    queryClient,
+    compileAndRender,
     resolveLatestSectionIdFromAssignedSections,
   ]);
 
@@ -3122,152 +3463,220 @@ export const LatexPaperEditor = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Left sidebar — Files only */}
+      {/* Left sidebar */}
       {isSidebarOpen && (
         <div className="flex w-72 shrink-0 flex-col bg-[#f1f1f1] dark:bg-[#1e1e1e]">
           {/* Sidebar header */}
-          <div className="flex shrink-0 items-center border-b border-[#e5e5e5] px-3 py-2 dark:border-[#2a2a2a]">
-            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+          <div className="flex shrink-0 items-center gap-1 border-b border-[#e5e5e5] px-2 py-2 dark:border-[#2a2a2a]">
+            <button
+              type="button"
+              onClick={() => setSidebarResourceTab('files')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                sidebarResourceTab === 'files'
+                  ? 'bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
               Files
-            </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarResourceTab('packages')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                sidebarResourceTab === 'packages'
+                  ? 'bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200'
+              }`}
+            >
+              <Package className="h-3.5 w-3.5" />
+              Packages
+            </button>
           </div>
 
           {/* Sidebar content */}
-          <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
-            {/* Upload button */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileSelected}
-              className="hidden"
-            />
-            {!isActiveSectionReadOnly && (
-              <button
-                type="button"
-                onClick={handleOpenFilePicker}
-                disabled={
-                  !activeSectionId || uploadSectionFileMutation.isPending
-                }
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-1.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                {uploadSectionFileMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Upload className="h-3 w-3" />
+          <div className="flex min-h-0 flex-1 flex-col gap-1 p-2">
+            {sidebarResourceTab === 'files' ? (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelected}
+                  className="hidden"
+                />
+                {!isActiveSectionReadOnly && (
+                  <button
+                    type="button"
+                    onClick={handleOpenFilePicker}
+                    disabled={
+                      !activeSectionId || uploadSectionFileMutation.isPending
+                    }
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-1.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                  >
+                    {uploadSectionFileMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Upload className="h-3 w-3" />
+                    )}
+                    {uploadSectionFileMutation.isPending
+                      ? 'Uploading…'
+                      : 'Upload Image/File'}
+                  </button>
                 )}
-                {uploadSectionFileMutation.isPending
-                  ? 'Uploading…'
-                  : 'Upload Image/File'}
-              </button>
+
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {isActiveSectionReadOnly ? (
+                    <p className="mt-2 text-center text-[10px] text-slate-400">
+                      Read-only — files hidden.
+                    </p>
+                  ) : sectionFilesQuery.isLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+                    </div>
+                  ) : sectionFiles.length > 0 ? (
+                    sectionFiles.map((fileUrl) => {
+                      const name = getFileNameFromUrl(fileUrl);
+                      const isImg = isImageFileUrl(fileUrl);
+                      return (
+                        <div
+                          key={fileUrl}
+                          className="flex items-center gap-1.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                          {isImg ? (
+                            <button
+                              type="button"
+                              onClick={() => setImagePreviewUrl(fileUrl)}
+                              className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-slate-200 dark:border-slate-700"
+                              title="Preview"
+                            >
+                              <img
+                                src={fileUrl}
+                                alt={name}
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
+                          ) : (
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                              <ImageIcon className="h-3.5 w-3.5 text-slate-400" />
+                            </div>
+                          )}
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="min-w-0 flex-1 truncate text-[11px] text-slate-700 hover:underline dark:text-slate-300"
+                            title={name}
+                          >
+                            {name}
+                          </a>
+                          <div className="flex shrink-0 items-center gap-0.5">
+                            {!isActiveSectionReadOnly && (
+                              <button
+                                type="button"
+                                onClick={() => handleInsertFileUrl(fileUrl)}
+                                className="rounded-md px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700"
+                                title="Insert"
+                              >
+                                Insert
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleCopyFileUrl(fileUrl)}
+                              className="flex h-5 w-5 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                              title="Copy URL"
+                            >
+                              {copiedFileUrl === fileUrl ? (
+                                <span className="text-[10px] text-green-500">
+                                  ✓
+                                </span>
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="mt-4 text-center text-[10px] text-slate-400">
+                      No files uploaded yet.
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700">
+                  <Package className="h-4 w-4 shrink-0 text-violet-500 dark:text-violet-400" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Packages
+                  </span>
+                  {activeSection?.packages &&
+                    activeSection.packages.length > 0 && (
+                      <span className="ml-auto rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
+                        {activeSection.packages.length}
+                      </span>
+                    )}
+                </div>
+                {activeSection?.packages &&
+                activeSection.packages.length > 0 ? (
+                  <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-2.5">
+                    {activeSection.packages.map((pkg) => (
+                      <li
+                        key={pkg}
+                        className="flex items-baseline gap-0 font-mono text-[12px] leading-relaxed"
+                      >
+                        <span className="text-violet-600 dark:text-[#c678dd]">
+                          \usepackage
+                        </span>
+                        <span className="text-slate-400">{'{'}</span>
+                        <span className="text-emerald-600 dark:text-[#98c379]">
+                          {pkg}
+                        </span>
+                        <span className="text-slate-400">{'}'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+                    <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                      <span className="text-violet-400 dark:text-[#c678dd]">
+                        {'% '}
+                      </span>
+                      no packages defined
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
-            {/* File list */}
-            {isActiveSectionReadOnly ? (
-              <p className="mt-2 text-center text-[10px] text-slate-400">
-                Read-only — files hidden.
-              </p>
-            ) : sectionFilesQuery.isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
-              </div>
-            ) : sectionFiles.length > 0 ? (
-              sectionFiles.map((fileUrl) => {
-                const name = getFileNameFromUrl(fileUrl);
-                const isImg = isImageFileUrl(fileUrl);
-                return (
-                  <div
-                    key={fileUrl}
-                    className="flex items-center gap-1.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    {isImg ? (
-                      <button
-                        type="button"
-                        onClick={() => setImagePreviewUrl(fileUrl)}
-                        className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-slate-200 dark:border-slate-700"
-                        title="Preview"
-                      >
-                        <img
-                          src={fileUrl}
-                          alt={name}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ) : (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-                        <ImageIcon className="h-3.5 w-3.5 text-slate-400" />
-                      </div>
-                    )}
-                    <a
-                      href={fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="min-w-0 flex-1 truncate text-[11px] text-slate-700 hover:underline dark:text-slate-300"
-                      title={name}
-                    >
-                      {name}
-                    </a>
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      {!isActiveSectionReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => handleInsertFileUrl(fileUrl)}
-                          className="rounded-md px-1 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700"
-                          title="Insert"
-                        >
-                          Insert
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleCopyFileUrl(fileUrl)}
-                        className="flex h-5 w-5 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                        title="Copy URL"
-                      >
-                        {copiedFileUrl === fileUrl ? (
-                          <span className="text-[10px] text-green-500">✓</span>
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    </div>
+            {projectId && (
+              <div className="flex min-h-0 shrink-0 flex-col border-t border-[#e0e0de] pt-1 dark:border-[#2a2a2a]">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarRefOpen((v) => !v)}
+                  className="flex w-full items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
+                >
+                  {isSidebarRefOpen ? (
+                    <ChevronRight className="h-3 w-3 rotate-90 transition-transform" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3 transition-transform" />
+                  )}
+                  References
+                </button>
+                {isSidebarRefOpen && (
+                  <div className="max-h-[45vh] min-h-0 overflow-y-auto px-2 pb-2">
+                    <ReferencesTab
+                      sectionId={resolvedActiveSectionId ?? undefined}
+                      compact
+                      onOpenSectionInEditor={handleOpenReferenceSectionInEditor}
+                    />
                   </div>
-                );
-              })
-            ) : (
-              <p className="mt-4 text-center text-[10px] text-slate-400">
-                No files uploaded yet.
-              </p>
+                )}
+              </div>
             )}
           </div>
-
-          {/* ── References collapsible (like Outline in Prism) ── */}
-          {projectId && (
-            <div className="shrink-0 border-t border-[#e0e0de] dark:border-[#2a2a2a]">
-              <button
-                type="button"
-                onClick={() => setIsSidebarRefOpen((v) => !v)}
-                className="flex w-full items-center gap-1.5 px-3 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
-              >
-                {isSidebarRefOpen ? (
-                  <ChevronRight className="h-3 w-3 rotate-90 transition-transform" />
-                ) : (
-                  <ChevronRight className="h-3 w-3 transition-transform" />
-                )}
-                References
-              </button>
-              {isSidebarRefOpen && (
-                <div className="max-h-136 overflow-y-auto px-2 pb-2">
-                  <ReferencesTab
-                    key={`${referenceSection?.id ?? 'none'}-${inUseReferenceReloadKey}`}
-                    sectionId={referenceSection?.id ?? undefined}
-                    compact
-                    reloadToken={inUseReferenceReloadKey}
-                    onOpenSectionInEditor={handleOpenReferenceSectionInEditor}
-                  />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -3960,18 +4369,33 @@ export const LatexPaperEditor = ({
                       />
                     )}
                     {toolsTab === 'comments' && (
-                      <div className="flex flex-1 flex-col overflow-hidden p-1">
-                        {activeSectionId ? (
-                          <SectionComments
-                            sectionId={activeSectionId}
-                            isReadOnly={isActiveSectionReadOnly}
-                            className="flex-1 overflow-hidden"
-                          />
-                        ) : (
-                          <p className="mt-8 text-center text-sm text-slate-400">
-                            Select a section to view comments.
-                          </p>
+                      <div className="flex flex-1 flex-col overflow-hidden">
+                        {versionPreview && (
+                          <div className="flex shrink-0 items-center gap-2 border-b border-blue-200 bg-blue-50 px-4 py-2 text-xs dark:border-blue-800 dark:bg-blue-950">
+                            <span className="text-blue-600 dark:text-blue-300">
+                              Showing comments for{' '}
+                              <strong>
+                                {versionPreview.item.isMainSection
+                                  ? 'Origin section'
+                                  : versionPreview.item.name ||
+                                    versionPreview.item.email}
+                              </strong>
+                            </span>
+                          </div>
                         )}
+                        <div className="flex flex-1 flex-col overflow-hidden p-1">
+                          {commentsSectionId ? (
+                            <SectionComments
+                              sectionId={commentsSectionId}
+                              isReadOnly={false}
+                              className="flex-1 overflow-hidden"
+                            />
+                          ) : (
+                            <p className="mt-8 text-center text-sm text-slate-400">
+                              Select a section to view comments.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                     {toolsTab === 'chat' && projectId && (

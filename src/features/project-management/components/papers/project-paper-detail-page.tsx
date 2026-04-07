@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Plus,
@@ -19,6 +19,7 @@ import {
   Presentation,
   LayoutTemplate,
   ExternalLink,
+  Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -52,7 +53,13 @@ import { cn } from '@/utils/cn';
 import { formatPublicationDate } from '@/utils/string-utils';
 import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { useUpdateWritingPaper } from '@/features/paper-management/api/update-writing-paper';
+import {
+  PAPER_INITIALIZE_STATUS_OPTIONS,
+  PAPER_STATUS_MAP,
+} from '@/features/paper-management/constants';
+import { useJournals } from '@/features/journal-management/api/get-journals';
+import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
 import { ProjectMember } from '@/features/project-management/types';
@@ -169,6 +176,17 @@ export const ProjectPaperDetailPage = ({
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskItem | null>(null);
   const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [isEditPaperOpen, setIsEditPaperOpen] = useState(false);
+  const [editPaperForm, setEditPaperForm] = useState({
+    context: '',
+    abstract: '',
+    researchGap: '',
+    gapType: '',
+    mainContribution: '',
+    status: 1,
+    selectedJournalId: '',
+    selectedStyleName: '',
+  });
   // Drag-and-drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<number | null>(null);
@@ -211,6 +229,90 @@ export const ProjectPaperDetailPage = ({
 
   const paper = paperQuery.data?.result?.paper;
   const paperType = paper?.paperType?.trim();
+
+  const journalsQuery = useJournals({
+    params: { PageNumber: 1, PageSize: 200 },
+    queryConfig: { enabled: isEditPaperOpen } as any,
+  });
+  const journalResults: JournalDto[] = useMemo(
+    () => (journalsQuery.data as any)?.result?.items ?? [],
+    [journalsQuery.data],
+  );
+  const selectedJournal = useMemo(
+    () =>
+      journalResults.find((j) => j.id === editPaperForm.selectedJournalId) ??
+      null,
+    [journalResults, editPaperForm.selectedJournalId],
+  );
+
+  // When the journal list loads (after sheet opens), auto-select the paper's existing journal by name.
+  useEffect(() => {
+    if (!isEditPaperOpen || !journalResults.length || !paper?.journalName)
+      return;
+    const match = journalResults.find((j) => j.name === paper.journalName);
+    setEditPaperForm((prev) => ({
+      ...prev,
+      selectedJournalId: prev.selectedJournalId || match?.id || '',
+    }));
+  }, [isEditPaperOpen, journalResults, paper?.journalName]);
+
+  const updateWritingPaperMutation = useUpdateWritingPaper({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Paper updated successfully');
+        setIsEditPaperOpen(false);
+        queryClient.invalidateQueries({
+          queryKey: ['writing-paper', paperId],
+        });
+      },
+      onError: () => toast.error('Failed to update paper'),
+    },
+  });
+
+  const handleEditPaperOpen = () => {
+    if (!paper) return;
+    setEditPaperForm({
+      context: paper.context ?? '',
+      abstract: paper.abstract ?? '',
+      researchGap: paper.researchGap ?? '',
+      gapType: paper.gapType ?? '',
+      mainContribution: paper.mainContribution ?? '',
+      status: paper.status ?? 1,
+      selectedJournalId: '',
+      selectedStyleName: paper.styleName ?? '',
+    });
+    setIsEditPaperOpen(true);
+  };
+
+  const handleEditPaperSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const journal = selectedJournal
+      ? {
+          name: selectedJournal.name,
+          styleName: editPaperForm.selectedStyleName,
+          styleDescription:
+            selectedJournal.styles?.find(
+              (s) => s.name === editPaperForm.selectedStyleName,
+            )?.description ?? '',
+          styleRule:
+            selectedJournal.styles?.find(
+              (s) => s.name === editPaperForm.selectedStyleName,
+            )?.rule ?? '',
+        }
+      : null;
+    updateWritingPaperMutation.mutate({
+      paperId,
+      data: {
+        context: editPaperForm.context,
+        abstract: editPaperForm.abstract,
+        researchGap: editPaperForm.researchGap,
+        gapType: editPaperForm.gapType,
+        mainContribution: editPaperForm.mainContribution,
+        status: editPaperForm.status,
+        journal,
+      },
+    });
+  };
 
   // When the paper detail API doesn't return subProjectId, fetch from the sub-projects list
   const subProjectsQuery = useSubProjects({
@@ -550,6 +652,17 @@ export const ProjectPaperDetailPage = ({
                 </div>
               )}
               <div className="flex items-center gap-2">
+                {isAuthor && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleEditPaperOpen}
+                    className="gap-1.5"
+                  >
+                    <Pencil className="size-4" />
+                    Edit Paper
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -1594,6 +1707,218 @@ export const ProjectPaperDetailPage = ({
         open={isMembersOpen}
         onOpenChange={setIsMembersOpen}
       />
+
+      {/* ── Edit Paper Sheet (author only) ───────────────────────── */}
+      <Sheet open={isEditPaperOpen} onOpenChange={setIsEditPaperOpen}>
+        <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
+          <SheetHeader>
+            <SheetTitle>Edit Paper</SheetTitle>
+            <SheetDescription>Update the paper details below.</SheetDescription>
+          </SheetHeader>
+
+          <form
+            id="edit-paper-form"
+            onSubmit={handleEditPaperSubmit}
+            className="space-y-4 overflow-y-auto px-4 py-4"
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="ep-context" className="text-sm font-medium">
+                Context <span className="text-destructive">*</span>
+              </label>
+              <textarea
+                id="ep-context"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={editPaperForm.context}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    context: e.target.value,
+                  }))
+                }
+                placeholder="Enter paper context"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="ep-abstract" className="text-sm font-medium">
+                Abstract <span className="text-destructive">*</span>
+              </label>
+              <textarea
+                id="ep-abstract"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={editPaperForm.abstract}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    abstract: e.target.value,
+                  }))
+                }
+                placeholder="Enter abstract"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="ep-research-gap" className="text-sm font-medium">
+                Research Gap <span className="text-destructive">*</span>
+              </label>
+              <textarea
+                id="ep-research-gap"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={editPaperForm.researchGap}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    researchGap: e.target.value,
+                  }))
+                }
+                placeholder="Enter research gap"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="ep-gap-type" className="text-sm font-medium">
+                Gap Type <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="ep-gap-type"
+                value={editPaperForm.gapType}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    gapType: e.target.value,
+                  }))
+                }
+                placeholder="e.g. Methodological, Empirical"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="ep-main-contribution"
+                className="text-sm font-medium"
+              >
+                Main Contribution <span className="text-destructive">*</span>
+              </label>
+              <textarea
+                id="ep-main-contribution"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={editPaperForm.mainContribution}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    mainContribution: e.target.value,
+                  }))
+                }
+                placeholder="Enter main contribution"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="ep-status" className="text-sm font-medium">
+                Status
+              </label>
+              <select
+                id="ep-status"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={editPaperForm.status}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    status: Number(e.target.value),
+                  }))
+                }
+              >
+                {PAPER_INITIALIZE_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-sm font-medium">Journal</p>
+              <div className="space-y-1.5">
+                <label htmlFor="ep-journal-id" className="text-sm font-medium">
+                  Select Journal
+                </label>
+                <select
+                  id="ep-journal-id"
+                  className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  value={editPaperForm.selectedJournalId}
+                  onChange={(e) =>
+                    setEditPaperForm((prev) => ({
+                      ...prev,
+                      selectedJournalId: e.target.value,
+                      selectedStyleName: '',
+                    }))
+                  }
+                >
+                  <option value="">No journal</option>
+                  {journalResults.map((journal) => (
+                    <option key={journal.id} value={journal.id}>
+                      {journal.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="ep-style-name" className="text-sm font-medium">
+                  Select Style
+                </label>
+                <select
+                  id="ep-style-name"
+                  className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  value={editPaperForm.selectedStyleName}
+                  onChange={(e) =>
+                    setEditPaperForm((prev) => ({
+                      ...prev,
+                      selectedStyleName: e.target.value,
+                    }))
+                  }
+                  disabled={!selectedJournal}
+                >
+                  <option value="">No style</option>
+                  {(selectedJournal?.styles ?? []).map((style) => (
+                    <option key={style.name} value={style.name}>
+                      {style.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedJournal &&
+                  (selectedJournal.styles?.length ?? 0) === 0 && (
+                    <p className="text-muted-foreground text-xs">
+                      This journal has no styles.
+                    </p>
+                  )}
+              </div>
+            </div>
+          </form>
+
+          <SheetFooter className="px-4 pb-4">
+            <SheetClose asChild>
+              <Button type="button" variant="outline" className={BTN.CANCEL}>
+                Cancel
+              </Button>
+            </SheetClose>
+            <Button
+              type="submit"
+              form="edit-paper-form"
+              className={BTN.EDIT}
+              disabled={updateWritingPaperMutation.isPending}
+            >
+              {updateWritingPaperMutation.isPending
+                ? 'Saving...'
+                : 'Save Changes'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </ContentLayout>
   );
 };

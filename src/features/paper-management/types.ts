@@ -163,10 +163,26 @@ export type UpdatePaperDto = {
   isAutoTagged?: boolean;
 };
 
+export type UpdateWritingPaperDto = {
+  context?: string;
+  abstract?: string;
+  researchGap?: string;
+  gapType?: string;
+  mainContribution?: string;
+  status?: number;
+  journal?: {
+    name: string;
+    styleName: string;
+    styleDescription: string;
+    styleRule: string;
+  } | null;
+};
+
 export type PaperSection = {
   id: string;
   title: string;
   content?: string;
+  packages?: string[];
   numbered: boolean;
   displayOrder: number;
   sectionSumary?: string;
@@ -191,6 +207,7 @@ export type CreateSectionDto = {
   id: string;
   title: string;
   content?: string;
+  packages?: string[];
   numbered: boolean;
   displayOrder: number;
   sectionSumary?: string;
@@ -237,6 +254,7 @@ export type AssignedSection = {
   parentSectionId: string | null;
   createdOnUtc?: string;
   lastModifiedOnUtc?: string;
+  packages?: string[] | null;
 };
 
 export type AssignedSectionsResult = {

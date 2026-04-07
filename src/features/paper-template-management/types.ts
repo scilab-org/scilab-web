@@ -14,6 +14,7 @@ export type TemplateSectionDto = {
   displayOrder?: number;
   order?: number;
   latex?: string;
+  packages?: string[];
   numbered?: boolean;
   allowSubsections?: boolean;
   required?: boolean;
@@ -58,6 +59,7 @@ export type CreateTemplateSectionDto = {
   title: string;
   displayOrder: number;
   latex?: string;
+  packages?: string[];
   numbered?: boolean;
   allowSubsections?: boolean;
   required?: boolean;

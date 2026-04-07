@@ -16,6 +16,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  BookMarked,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,10 +26,12 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
+  SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from '@/components/ui/sheet';
 import {
   Table,
@@ -59,6 +62,7 @@ import { useGetSectionMembers } from '@/features/paper-management/api/get-sectio
 import { useAvailableSectionMembers } from '@/features/paper-management/api/get-available-section-members';
 import { useCreatePaperContributor } from '@/features/paper-management/api/create-paper-contributor';
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
+import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
 import { getPaperSectionsQueryOptions } from '@/features/paper-management/api/get-paper-sections';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import {
@@ -109,8 +113,9 @@ const SectionMembersSheet = ({
 
   // Assign view state
   const [search, setSearch] = useState('');
-  const [selectedMember, setSelectedMember] =
-    useState<AvailableSectionMember | null>(null);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [selectedRole, setSelectedRole] = useState('section:edit');
 
   const membersQuery = useGetSectionMembers({
@@ -122,7 +127,11 @@ const SectionMembersSheet = ({
   const availableQuery = useAvailableSectionMembers({
     sectionId: sectionId || '',
     paperId,
-    queryConfig: { enabled: open && view === 'assign' && !!sectionId } as any,
+    queryConfig: {
+      enabled: open && view === 'assign' && !!sectionId,
+      staleTime: 0,
+      gcTime: 0,
+    } as any,
   });
   const availableMembers: AvailableSectionMember[] =
     availableQuery.data?.result?.items ?? [];
@@ -165,7 +174,7 @@ const SectionMembersSheet = ({
       onSuccess: () => {
         toast.success('Member assigned successfully');
         setView('members');
-        setSelectedMember(null);
+        setSelectedMemberIds(new Set());
         setSelectedRole('section:edit');
         setSearch('');
       },
@@ -174,22 +183,22 @@ const SectionMembersSheet = ({
   });
 
   const handleAssign = () => {
-    if (!selectedMember) return;
+    if (selectedMemberIds.size === 0) return;
     assignMutation.mutate({
       paperId,
       sectionId,
       markSectionId: sectionId,
-      memberId: selectedMember.memberId,
+      memberIds: Array.from(selectedMemberIds),
       sectionRole: selectedRole,
     });
   };
 
-  const canSubmit = !!selectedMember && !assignMutation.isPending;
+  const canSubmit = selectedMemberIds.size > 0 && !assignMutation.isPending;
 
   const handleClose = () => {
     setView('members');
     setConfirmDeleteId(null);
-    setSelectedMember(null);
+    setSelectedMemberIds(new Set());
     setSelectedRole('section:edit');
     setSearch('');
     onClose();
@@ -222,7 +231,11 @@ const SectionMembersSheet = ({
               <div className="flex justify-end pt-2 pb-3">
                 <Button
                   size="sm"
-                  onClick={() => setView('assign')}
+                  onClick={() => {
+                    setSelectedMemberIds(new Set());
+                    setView('assign');
+                    availableQuery.refetch();
+                  }}
                   className={cn('flex items-center gap-2', BTN.CREATE)}
                 >
                   <UserPlus className="h-4 w-4" />
@@ -374,7 +387,7 @@ const SectionMembersSheet = ({
                   </div>
                 ) : (
                   filtered.map((m) => {
-                    const isSelected = selectedMember?.memberId === m.memberId;
+                    const isSelected = selectedMemberIds.has(m.memberId);
                     return (
                       <div
                         key={m.memberId}
@@ -389,24 +402,28 @@ const SectionMembersSheet = ({
                           role="button"
                           tabIndex={0}
                           onClick={() => {
-                            if (isSelected) {
-                              setSelectedMember(null);
-                              setSelectedRole('');
-                            } else {
-                              setSelectedMember(m);
-                              setSelectedRole('section:edit');
-                            }
+                            setSelectedMemberIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(m.memberId)) {
+                                next.delete(m.memberId);
+                              } else {
+                                next.add(m.memberId);
+                              }
+                              return next;
+                            });
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              if (isSelected) {
-                                setSelectedMember(null);
-                                setSelectedRole('');
-                              } else {
-                                setSelectedMember(m);
-                                setSelectedRole('section:edit');
-                              }
+                              setSelectedMemberIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(m.memberId)) {
+                                  next.delete(m.memberId);
+                                } else {
+                                  next.add(m.memberId);
+                                }
+                                return next;
+                              });
                             }
                           }}
                           className="flex cursor-pointer items-center gap-3 px-4 py-3"
@@ -542,6 +559,12 @@ export const PaperWorkspacePage = ({
     id: string;
     title: string;
   } | null>(null);
+  const [guidelineSheet, setGuidelineSheet] = useState<{
+    id: string;
+    title: string;
+    description: string;
+  } | null>(null);
+  const [guidelineText, setGuidelineText] = useState('');
   const [markMainOpen, setMarkMainOpen] = useState(false);
 
   const paperQuery = useWritingPaperDetail({ paperId });
@@ -637,6 +660,7 @@ export const PaperWorkspacePage = ({
           content: s.content || '',
           numbered: s.numbered,
           displayOrder: s.displayOrder,
+          packages: assigned.packages ?? (s as any).packages ?? null,
         } as AssignedSection;
       }
       return {
@@ -667,6 +691,16 @@ export const PaperWorkspacePage = ({
   const paper = paperQuery.data?.result?.paper;
   const subProjectId = paper?.subProjectId || projectId;
 
+  const updateGuidelineMutation = useUpdateSectionGuideline({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Guideline updated');
+        setGuidelineSheet(null);
+      },
+      onError: () => toast.error('Failed to update guideline'),
+    },
+  });
+
   const isLoading =
     paperQuery.isLoading ||
     allSectionsQuery.isLoading ||
@@ -689,6 +723,7 @@ export const PaperWorkspacePage = ({
         description: (s as any).description || s.sectionSumary || '',
         createdOnUtc: s.createdOnUtc || null,
         lastModifiedOnUtc: s.lastModifiedOnUtc || null,
+        packages: s.packages ?? undefined,
       })),
     [workspaceSections],
   );
@@ -792,10 +827,11 @@ export const PaperWorkspacePage = ({
       await queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
       });
-      const response = await queryClient.fetchQuery(
-        getPaperSectionsQueryOptions(paperId),
-      );
-      setFreshSections(response.result.items);
+      // Warm the cache for when the editor closes but do NOT call
+      // setFreshSections — that would change the sections prop while the
+      // editor is open, triggering a re-fetch cascade that scrambles the
+      // section state the editor just saved.
+      await queryClient.fetchQuery(getPaperSectionsQueryOptions(paperId));
     } catch {
       // Keep the current snapshot if refresh fails.
     }
@@ -978,6 +1014,24 @@ export const PaperWorkspacePage = ({
             >
               <Users className="size-4" />
             </Button>
+            {isAuthor && (
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => {
+                  setGuidelineText(s.description || s.sectionSumary || '');
+                  setGuidelineSheet({
+                    id: s.id,
+                    title: stripLatex(s.title),
+                    description: s.description || s.sectionSumary || '',
+                  });
+                }}
+                title="Update Guideline"
+                className="size-9"
+              >
+                <BookMarked className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1099,6 +1153,66 @@ export const PaperWorkspacePage = ({
         isOpen={markMainOpen}
         onOpenChange={setMarkMainOpen}
       />
+
+      {/* Update Guideline Sheet */}
+      <Sheet
+        open={!!guidelineSheet}
+        onOpenChange={(v) => !v && setGuidelineSheet(null)}
+      >
+        <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <BookMarked className="size-5 text-violet-600" />
+              Update Guideline
+            </SheetTitle>
+            <SheetDescription className="truncate text-xs">
+              {guidelineSheet?.title}
+            </SheetDescription>
+          </SheetHeader>
+
+          <form
+            id="guideline-form"
+            className="px-4 py-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!guidelineSheet) return;
+              updateGuidelineMutation.mutate({
+                sectionId: guidelineSheet.id,
+                description: guidelineText,
+              });
+            }}
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="guideline-desc" className="text-sm font-medium">
+                Description
+              </label>
+              <textarea
+                id="guideline-desc"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-40 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={guidelineText}
+                onChange={(e) => setGuidelineText(e.target.value)}
+                placeholder="Enter writing guideline for this section..."
+              />
+            </div>
+          </form>
+
+          <SheetFooter className="px-4 pb-4">
+            <SheetClose asChild>
+              <Button type="button" variant="outline" className={BTN.CANCEL}>
+                Cancel
+              </Button>
+            </SheetClose>
+            <Button
+              type="submit"
+              form="guideline-form"
+              className={BTN.EDIT}
+              disabled={updateGuidelineMutation.isPending}
+            >
+              {updateGuidelineMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </ContentLayout>
   );
 };

@@ -9,6 +9,7 @@ type SectionDetail = {
   id: string;
   title: string;
   content: string;
+  packages?: string[];
   numbered: boolean;
   displayOrder: number;
   sectionSumary: string;
@@ -39,6 +40,9 @@ const normalizeSectionDetail = (payload: unknown): GetSectionApiResponse => {
       id: String(section.id ?? ''),
       title: String(section.title ?? ''),
       content: String(section.content ?? ''),
+      packages: Array.isArray(section.packages)
+        ? section.packages.map((pkg) => String(pkg)).filter(Boolean)
+        : undefined,
       numbered: Boolean(section.numbered),
       displayOrder: Number(section.displayOrder ?? 0),
       sectionSumary: String(section.sectionSumary ?? ''),
@@ -84,17 +88,8 @@ const normalizeSectionDetail = (payload: unknown): GetSectionApiResponse => {
 export const getSection = async (
   sectionId: string,
 ): Promise<GetSectionApiResponse> => {
-  // Prefer the newer endpoint shape: GET /sections/{id}
-  try {
-    const response = await api.get(`/sections/${sectionId}`);
-    return normalizeSectionDetail(response);
-  } catch {
-    // Fallback to legacy lab-service route
-    const response = await api.get(
-      PAPER_MANAGEMENT_API.SECTION_BY_ID(sectionId),
-    );
-    return normalizeSectionDetail(response);
-  }
+  const response = await api.get(PAPER_MANAGEMENT_API.SECTION_BY_ID(sectionId));
+  return normalizeSectionDetail(response);
 };
 
 export const useGetSection = ({
