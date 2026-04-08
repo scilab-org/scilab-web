@@ -217,6 +217,8 @@ export const CreatePaperTemplate = () => {
             packages: [
               '\\usepackage[utf8]{inputenc}',
               '\\usepackage[T1]{fontenc}',
+              '\\usepackage{geometry}',
+              '\\geometry{margin=1in}',
             ],
             rule,
           };

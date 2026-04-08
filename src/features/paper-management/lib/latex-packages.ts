@@ -78,9 +78,9 @@ export const KNOWN_LATEX_PACKAGES: string[] = [
   '\\usepackage{natbib}',
   '\\usepackage{cleveref}',
   '\\usepackage{varioref}',
-  '\\usepackage[backend=bibtex]{biblatex}',
-  '\\usepackage[backend=biber,style=apa]{biblatex}',
-  '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
+  '\\usepackage{biblatex}',
+  '\\usepackage[style=apa]{biblatex}',
+  '\\usepackage[style=ieee]{biblatex}',
 
   // --- Language & Quotes ---
   '\\usepackage[english]{babel}',
@@ -161,7 +161,7 @@ export const extractPackageName = (raw: string): string => {
 const LEGACY_OPTION_MAP: Record<string, string> = {
   inputenc: '\\usepackage[utf8]{inputenc}',
   fontenc: '\\usepackage[T1]{fontenc}',
-  biblatex: '\\usepackage[backend=bibtex]{biblatex}',
+  biblatex: '\\usepackage{biblatex}',
 };
 const toLaTeX = (entry: string): string => {
   if (entry.startsWith('\\')) return entry;

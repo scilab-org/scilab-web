@@ -155,22 +155,19 @@ export const ProjectWritingPapersList = ({
           </div>
         ) : papers.length > 0 ? (
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[45%] font-semibold text-green-900 dark:text-green-200">
                     Title
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                    Type
-                  </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
                     Status
                   </TableHead>
-                  <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[25%] font-semibold text-green-900 dark:text-green-200">
                     Template
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] text-right font-semibold text-green-900 dark:text-green-200">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -181,7 +178,7 @@ export const ProjectWritingPapersList = ({
                     key={paper.id}
                     className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="overflow-hidden font-medium">
                       <button
                         type="button"
                         onClick={() => {
@@ -198,13 +195,11 @@ export const ProjectWritingPapersList = ({
                                 );
                           navigate(href);
                         }}
-                        className="text-left text-blue-600 hover:underline dark:text-blue-400"
+                        className="block w-full truncate text-left text-blue-600 hover:underline dark:text-blue-400"
+                        title={paper.title || '(Untitled)'}
                       >
                         {paper.title || '(Untitled)'}
                       </button>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {paper.paperType || '—'}
                     </TableCell>
                     <TableCell>
                       {paper.status != null ? (
