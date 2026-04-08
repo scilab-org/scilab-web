@@ -164,6 +164,7 @@ export type ProjectPaper = {
   id: string;
   subProjectId: string | null;
   title: string | null;
+  authors: string | null;
   abstract: string | null;
   doi: string | null;
   filePath: string | null;

@@ -70,6 +70,10 @@ import {
   type SectionReferenceOtherItem,
   useGetSectionReference,
 } from '@/features/paper-management/api/get-section-reference';
+import {
+  previewSectionReference,
+  type PreviewReferencePaperBank,
+} from '@/features/paper-management/api/preview-section-reference';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
@@ -1163,6 +1167,7 @@ const InlineReferenceSectionEditor = ({
   currentSectionTitle,
   onUpdateReference,
   isUpdatingReference = false,
+  onActiveReferenceContentChange,
 }: {
   content: string;
   canEdit: boolean;
@@ -1181,6 +1186,7 @@ const InlineReferenceSectionEditor = ({
   currentSectionTitle?: string;
   onUpdateReference?: (paperBankIds: string[]) => Promise<boolean>;
   isUpdatingReference?: boolean;
+  onActiveReferenceContentChange?: (content: string) => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -1193,6 +1199,16 @@ const InlineReferenceSectionEditor = ({
     [],
   );
 
+  // Review / In Use toggle state
+  const [referenceViewTab, setReferenceViewTab] = useState<'in-use' | 'review'>(
+    'in-use',
+  );
+  const [reviewReferenceContent, setReviewReferenceContent] = useState('');
+  const [reviewPaperBanks, setReviewPaperBanks] = useState<
+    PreviewReferencePaperBank[]
+  >([]);
+  const [isReviewLoading, setIsReviewLoading] = useState(false);
+
   const togglePaperBank = useCallback((paperBankId: string) => {
     setSelectedPaperBankIds((prev) =>
       prev.includes(paperBankId)
@@ -1200,14 +1216,6 @@ const InlineReferenceSectionEditor = ({
         : [...prev, paperBankId],
     );
   }, []);
-
-  const handleOpenUpdateDialog = useCallback(() => {
-    const ids = usedPaperBanks
-      .map((paper) => paper.id)
-      .filter((id): id is string => !!id);
-    setSelectedPaperBankIds(Array.from(new Set(ids)));
-    setIsUpdateDialogOpen(true);
-  }, [usedPaperBanks]);
 
   const handleSubmitUpdateReference = useCallback(async () => {
     if (!onUpdateReference) return;
@@ -1254,6 +1262,86 @@ const InlineReferenceSectionEditor = ({
     [inUseEditorHeight],
   );
 
+  // Fetch review data when switching to review tab
+  const loadReviewData = useCallback(async () => {
+    // TODO: replace with real logic (e.g. availablePaperBanks or otherReferences IDs)
+    const allIds = [
+      'bbf97430-1f65-4548-b776-cecb94669b7b',
+      '9d7fb1ae-1a4e-4e98-b2b1-33f5bda50a01',
+      '51133ee3-3dfe-46c0-bf38-6c61aaed3032',
+    ];
+    if (allIds.length === 0) {
+      setReviewReferenceContent('');
+      setReviewPaperBanks([]);
+      return;
+    }
+    setIsReviewLoading(true);
+    try {
+      const response = await previewSectionReference(allIds);
+      setReviewReferenceContent(response.result.referenceContent);
+      setReviewPaperBanks(response.result.paperBanks);
+    } catch {
+      setReviewReferenceContent('');
+      setReviewPaperBanks([]);
+      toast.error('Failed to load review references.');
+    } finally {
+      setIsReviewLoading(false);
+    }
+  }, [availablePaperBanks]);
+
+  const handleSwitchTab = useCallback(
+    (tab: 'in-use' | 'review') => {
+      setReferenceViewTab(tab);
+      if (tab === 'review') {
+        void loadReviewData();
+        // Notify parent that compile should use review content
+        onActiveReferenceContentChange?.(reviewReferenceContent);
+      } else {
+        // Switch back to in-use: notify parent to use in-use content
+        onActiveReferenceContentChange?.(usedReferenceContent);
+      }
+    },
+    [
+      loadReviewData,
+      reviewReferenceContent,
+      usedReferenceContent,
+      onActiveReferenceContentChange,
+    ],
+  );
+
+  // Notify parent whenever review reference content changes (after fetch)
+  useEffect(() => {
+    if (referenceViewTab === 'review' && reviewReferenceContent) {
+      onActiveReferenceContentChange?.(reviewReferenceContent);
+    }
+  }, [
+    referenceViewTab,
+    reviewReferenceContent,
+    onActiveReferenceContentChange,
+  ]);
+
+  // When switching back to in-use, sync parent
+  useEffect(() => {
+    if (referenceViewTab === 'in-use') {
+      onActiveReferenceContentChange?.(usedReferenceContent);
+    }
+  }, [referenceViewTab, usedReferenceContent, onActiveReferenceContentChange]);
+
+  // Auto-select review paper bank IDs in update dialog
+  const handleOpenUpdateDialog = useCallback(() => {
+    if (referenceViewTab === 'review') {
+      // Pre-select the review paper bank IDs
+      const ids = reviewPaperBanks.map((p) => p.id).filter(Boolean);
+      setSelectedPaperBankIds(Array.from(new Set(ids)));
+    } else {
+      const ids = usedPaperBanks
+        .map((paper) => paper.id)
+        .filter((id): id is string => !!id);
+      setSelectedPaperBankIds(Array.from(new Set(ids)));
+    }
+    setIsUpdateDialogOpen(true);
+  }, [referenceViewTab, reviewPaperBanks, usedPaperBanks]);
+
   return (
     <>
       <div className="relative shrink-0 border-t border-[#e8e8e6] bg-[#fafafa] dark:border-[#2a2a2a] dark:bg-[#151515]">
@@ -1290,7 +1378,35 @@ const InlineReferenceSectionEditor = ({
                 <ChevronRight className="h-3.5 w-3.5" />
               )}
             </button>
-            <span className="text-[10px] text-slate-400">SOURCE - LATEX</span>
+            {mode === 'in-use' && (
+              <div className="flex h-6 items-center rounded-md border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('in-use')}
+                  className={`h-5 rounded px-2 text-[10px] font-medium transition-colors ${
+                    referenceViewTab === 'in-use'
+                      ? 'bg-[#4f6ef7] text-white'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
+                >
+                  In Use
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchTab('review')}
+                  className={`h-5 rounded px-2 text-[10px] font-medium transition-colors ${
+                    referenceViewTab === 'review'
+                      ? 'bg-[#4f6ef7] text-white'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            )}
+            {mode !== 'in-use' && (
+              <span className="text-[10px] text-slate-400">SOURCE - LATEX</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {mode === 'in-use' ? (
@@ -1338,12 +1454,61 @@ const InlineReferenceSectionEditor = ({
         {isExpanded &&
           (mode === 'in-use' ? (
             <div className="border-t border-transparent">
-              {isUsedReferenceLoading ? (
+              {referenceViewTab === 'in-use' ? (
+                // In Use tab content
+                isUsedReferenceLoading ? (
+                  <div className="flex h-72 items-center gap-2 px-3 text-xs text-slate-500 dark:text-slate-400">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Loading reference content...
+                  </div>
+                ) : usedReferenceContent.trim() ? (
+                  <div
+                    className="overflow-hidden"
+                    style={{ height: `${inUseEditorHeight}px` }}
+                  >
+                    <Editor
+                      height="100%"
+                      defaultLanguage="latex-custom"
+                      value={usedReferenceContent}
+                      beforeMount={registerLatexLanguage}
+                      theme="latex-light"
+                      options={{
+                        readOnly: true,
+                        domReadOnly: true,
+                        fontSize: 14,
+                        lineHeight: 22,
+                        minimap: { enabled: false },
+                        wordWrap: 'on',
+                        scrollBeyondLastLine: false,
+                        padding: { top: 10, bottom: 10 },
+                        automaticLayout: true,
+                        tabSize: 2,
+                        lineNumbers: 'on',
+                        renderLineHighlight: 'line',
+                        fontFamily:
+                          "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                        fontLigatures: true,
+                        smoothScrolling: true,
+                        scrollbar: {
+                          verticalScrollbarSize: 6,
+                          horizontalScrollbarSize: 6,
+                          useShadows: false,
+                        },
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <p className="px-3 py-4 text-xs text-slate-500 dark:text-slate-400">
+                    No reference content is currently in use for this section.
+                  </p>
+                )
+              ) : // Review tab content
+              isReviewLoading ? (
                 <div className="flex h-72 items-center gap-2 px-3 text-xs text-slate-500 dark:text-slate-400">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading reference content...
+                  Loading review references...
                 </div>
-              ) : usedReferenceContent.trim() ? (
+              ) : reviewReferenceContent.trim() ? (
                 <div
                   className="overflow-hidden"
                   style={{ height: `${inUseEditorHeight}px` }}
@@ -1351,7 +1516,7 @@ const InlineReferenceSectionEditor = ({
                   <Editor
                     height="100%"
                     defaultLanguage="latex-custom"
-                    value={usedReferenceContent}
+                    value={reviewReferenceContent}
                     beforeMount={registerLatexLanguage}
                     theme="latex-light"
                     options={{
@@ -1381,7 +1546,8 @@ const InlineReferenceSectionEditor = ({
                 </div>
               ) : (
                 <p className="px-3 py-4 text-xs text-slate-500 dark:text-slate-400">
-                  No reference content is currently in use for this section.
+                  No review references available. Add paper banks to your
+                  project to preview references.
                 </p>
               )}
             </div>
@@ -2437,6 +2603,9 @@ export const LatexPaperEditor = ({
   >([]);
   const [isInUseReferenceLoading, setIsInUseReferenceLoading] = useState(false);
   const [isUpdatingReference, setIsUpdatingReference] = useState(false);
+  const [activeRefContentOverride, setActiveRefContentOverride] = useState<
+    string | null
+  >(null);
   const [inUseReferenceReloadKey, setInUseReferenceReloadKey] = useState(0);
   // Tracks the resolved section ID after assigned-sections lookup —
   // used everywhere that needs the latest server-side section ID.
@@ -2596,9 +2765,10 @@ export const LatexPaperEditor = ({
     // Compile using what is currently displayed in the UI.
     // The inline References panel (shown when the active section is NOT the
     // reference section) displays ONLY the in-use reference content.
+    // If the user switched to the Review tab, use the override content instead.
     const displayedRefContent =
       referenceSection && !isReferenceSectionActive
-        ? inUseReferenceContent
+        ? (activeRefContentOverride ?? inUseReferenceContent)
         : undefined;
 
     if (versionPreview) {
@@ -2615,6 +2785,7 @@ export const LatexPaperEditor = ({
     localPackages,
     content,
     inUseReferenceContent,
+    activeRefContentOverride,
     previewEditContent,
     versionPreview,
     compileAndRender,
@@ -4796,6 +4967,7 @@ export const LatexPaperEditor = ({
                     currentSectionTitle={activeSectionTitle ?? undefined}
                     onUpdateReference={handleUpdateSectionReference}
                     isUpdatingReference={isUpdatingReference}
+                    onActiveReferenceContentChange={setActiveRefContentOverride}
                   />
                 )}
 

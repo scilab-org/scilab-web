@@ -198,13 +198,16 @@ export const ProjectPapersList = ({
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <TableHead className="w-[25%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
                     Title
+                  </TableHead>
+                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
+                    Authors
                   </TableHead>
                   <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
                     Status
                   </TableHead>
-                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
                     DOI
                   </TableHead>
                   <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
@@ -216,7 +219,7 @@ export const ProjectPapersList = ({
                   <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[15%] text-right font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[10%] text-right font-semibold text-green-900 dark:text-green-200">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -239,6 +242,12 @@ export const ProjectPapersList = ({
                       >
                         {paper.title || '(Untitled)'}
                       </Link>
+                    </TableCell>
+                    <TableCell
+                      className="text-muted-foreground truncate text-sm"
+                      title={paper.authors || ''}
+                    >
+                      {paper.authors || '—'}
                     </TableCell>
                     <TableCell>
                       {paper.status != null ? (
