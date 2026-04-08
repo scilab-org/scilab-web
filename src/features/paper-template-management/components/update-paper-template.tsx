@@ -143,6 +143,9 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
               packages: [
                 '\\usepackage[utf8]{inputenc}',
                 '\\usepackage[T1]{fontenc}',
+                ...(s.title.toLowerCase().includes('reference')
+                  ? ['\\usepackage[backend=bibtex]{biblatex}']
+                  : []),
               ],
               rule,
             };
