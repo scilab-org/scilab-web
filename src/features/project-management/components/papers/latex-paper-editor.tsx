@@ -2467,6 +2467,8 @@ export const LatexPaperEditor = ({
   contentRef.current = content;
   const localPackagesRef = useRef(localPackages);
   localPackagesRef.current = localPackages;
+  const localRefPackagesRef = useRef(localRefPackages);
+  localRefPackagesRef.current = localRefPackages;
   const editorSectionsRef = useRef(editorSections);
   editorSectionsRef.current = editorSections;
 
@@ -2560,9 +2562,14 @@ export const LatexPaperEditor = ({
       setIsCompiling(true);
       setCompileError(null);
       try {
+        const refPkgs = localRefPackagesRef.current;
+        const mergedPackages =
+          refPkgs.length > 0
+            ? [...new Set([...(packages ?? []), ...refPkgs])]
+            : packages;
         const blob = await compileLatex({
           content: latexContent,
-          packages,
+          packages: mergedPackages,
           referenceContent: refContent,
         });
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
@@ -3357,6 +3364,7 @@ export const LatexPaperEditor = ({
           numbered: referenceSection.numbered,
           sectionSumary: referenceSection.sectionSumary || '',
           parentSectionId: referenceSection.parentSectionId,
+          referencesPackages: localRefPackages,
         },
       });
 
@@ -3400,6 +3408,7 @@ export const LatexPaperEditor = ({
     canEditReferenceSection,
     updateSectionMutation,
     referenceContent,
+    localRefPackages,
     resolveLatestSectionIdFromAssignedSections,
     activeSectionId,
     onSave,
@@ -3474,7 +3483,8 @@ export const LatexPaperEditor = ({
           numbered: currentSection.numbered,
           sectionSumary: currentSection.sectionSumary || '',
           parentSectionId: currentSection.parentSectionId,
-          packages: localPackages,
+          currentSectionPackages: localPackages,
+          referencesPackages: localRefPackages,
         },
       });
 
@@ -3611,6 +3621,7 @@ export const LatexPaperEditor = ({
     inUseReferenceContent,
     referenceContent,
     localPackages,
+    localRefPackages,
   ]);
 
   const handleClose = useCallback(() => {

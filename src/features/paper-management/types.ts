@@ -201,7 +201,8 @@ export type UpdateSectionDto = {
   sectionSumary: string;
   parentSectionId?: string | null;
   description?: string;
-  packages?: string[];
+  currentSectionPackages?: string[];
+  referencesPackages?: string[];
 };
 
 export type CreateSectionDto = {
