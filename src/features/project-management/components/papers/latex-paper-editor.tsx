@@ -2182,6 +2182,7 @@ export const LatexPaperEditor = ({
   const [pkgViewTab, setPkgViewTab] = useState<'current' | 'reference'>(
     'current',
   );
+  const [pkgPanelOpen, setPkgPanelOpen] = useState(true);
   const commitPkgEdit = (idx: number, value: string) => {
     const trimmed = value.trim();
     setEditingPkgIdx(null);
@@ -3912,19 +3913,36 @@ export const LatexPaperEditor = ({
                 </div>
               </>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+              <div
+                className={`flex flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${pkgPanelOpen ? 'min-h-0 flex-1' : 'shrink-0'}`}
+              >
                 <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700">
-                  <Package className="h-4 w-4 shrink-0 text-violet-500 dark:text-violet-400" />
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    Packages
-                  </span>
-                  {localPackages.length > 0 && pkgViewTab === 'current' && (
-                    <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
-                      {localPackages.length}
+                  <button
+                    type="button"
+                    onClick={() => setPkgPanelOpen((v) => !v)}
+                    className="flex flex-1 items-center gap-2"
+                  >
+                    <ChevronRight
+                      className={`h-3 w-3 shrink-0 text-slate-400 transition-transform dark:text-slate-500 ${pkgPanelOpen ? 'rotate-90' : ''}`}
+                    />
+                    <Package className="h-4 w-4 shrink-0 text-violet-500 dark:text-violet-400" />
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      Packages
                     </span>
-                  )}
+                    {pkgViewTab === 'current' && localPackages.length > 0 && (
+                      <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
+                        {localPackages.length}
+                      </span>
+                    )}
+                    {pkgViewTab === 'reference' &&
+                      localRefPackages.length > 0 && (
+                        <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:bg-violet-900/60 dark:text-violet-300">
+                          {localRefPackages.length}
+                        </span>
+                      )}
+                  </button>
                   {referenceSection && (
-                    <div className="ml-auto flex overflow-hidden rounded border border-slate-200 text-[10px] dark:border-slate-700">
+                    <div className="flex overflow-hidden rounded border border-slate-200 text-[10px] dark:border-slate-700">
                       <button
                         type="button"
                         onClick={() => setPkgViewTab('current')}
@@ -3950,455 +3968,369 @@ export const LatexPaperEditor = ({
                     </div>
                   )}
                 </div>
-                {/* Package list */}
-                {pkgViewTab === 'reference' ? (
-                  localRefPackages.length > 0 ? (
-                    <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
-                      {localRefPackages.map((pkg, idx) => (
-                        <li
-                          key={idx}
-                          className="group flex items-center gap-1 font-mono text-[12px]"
-                        >
-                          {editingRefPkgIdx === idx ? (
-                            <input
-                              // eslint-disable-next-line jsx-a11y/no-autofocus
-                              autoFocus
-                              type="text"
-                              value={editingRefPkgValue}
-                              onChange={(e) =>
-                                setEditingRefPkgValue(e.target.value)
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  commitRefPkgEdit(idx, editingRefPkgValue);
-                                } else if (e.key === 'Escape') {
-                                  setEditingRefPkgIdx(null);
-                                  setEditingRefPkgValue('');
-                                }
-                              }}
-                              onBlur={() =>
-                                commitRefPkgEdit(idx, editingRefPkgValue)
-                              }
-                              className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!canEditReferenceSection) return;
-                                setEditingRefPkgIdx(idx);
-                                setEditingRefPkgValue(pkg);
-                              }}
-                              title={
-                                canEditReferenceSection
-                                  ? 'Click to edit'
-                                  : undefined
-                              }
-                              className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
+                {pkgPanelOpen && (
+                  <>
+                    {/* Package list */}
+                    {pkgViewTab === 'reference' ? (
+                      localRefPackages.length > 0 ? (
+                        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+                          {localRefPackages.map((pkg, idx) => (
+                            <li
+                              key={idx}
+                              className="group flex items-center gap-1 font-mono text-[12px]"
                             >
-                              {pkg}
-                            </button>
-                          )}
-                          {canEditReferenceSection &&
-                            editingRefPkgIdx !== idx && (
+                              {editingRefPkgIdx === idx ? (
+                                <input
+                                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                                  autoFocus
+                                  type="text"
+                                  value={editingRefPkgValue}
+                                  onChange={(e) =>
+                                    setEditingRefPkgValue(e.target.value)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      commitRefPkgEdit(idx, editingRefPkgValue);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingRefPkgIdx(null);
+                                      setEditingRefPkgValue('');
+                                    }
+                                  }}
+                                  onBlur={() =>
+                                    commitRefPkgEdit(idx, editingRefPkgValue)
+                                  }
+                                  className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!canEditReferenceSection) return;
+                                    setEditingRefPkgIdx(idx);
+                                    setEditingRefPkgValue(pkg);
+                                  }}
+                                  title={
+                                    canEditReferenceSection
+                                      ? 'Click to edit'
+                                      : undefined
+                                  }
+                                  className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
+                                >
+                                  {pkg}
+                                </button>
+                              )}
+                              {canEditReferenceSection &&
+                                editingRefPkgIdx !== idx && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setLocalRefPackages((prev) =>
+                                        prev.filter((_, i) => i !== idx),
+                                      )
+                                    }
+                                    className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
+                                    title="Remove package"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                )}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+                          <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                            <span className="text-violet-400 dark:text-[#c678dd]">
+                              {'% '}
+                            </span>
+                            no packages on reference section
+                          </p>
+                        </div>
+                      )
+                    ) : localPackages.length > 0 ? (
+                      <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+                        {localPackages.map((pkg, idx) => (
+                          <li
+                            key={idx}
+                            className="group flex items-center gap-1 font-mono text-[12px]"
+                          >
+                            {editingPkgIdx === idx ? (
+                              <input
+                                // eslint-disable-next-line jsx-a11y/no-autofocus
+                                autoFocus
+                                type="text"
+                                value={editingPkgValue}
+                                onChange={(e) =>
+                                  setEditingPkgValue(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    commitPkgEdit(idx, editingPkgValue);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingPkgIdx(null);
+                                    setEditingPkgValue('');
+                                  }
+                                }}
+                                onBlur={() =>
+                                  commitPkgEdit(idx, editingPkgValue)
+                                }
+                                className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                              />
+                            ) : (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setLocalRefPackages((prev) =>
-                                    prev.filter((_, i) => i !== idx),
-                                  )
+                                onClick={() => {
+                                  if (isActiveSectionReadOnly) return;
+                                  setEditingPkgIdx(idx);
+                                  setEditingPkgValue(pkg);
+                                }}
+                                title={
+                                  isActiveSectionReadOnly
+                                    ? undefined
+                                    : 'Click to edit'
                                 }
-                                className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
-                                title="Remove package"
+                                className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
                               >
-                                <X className="h-3 w-3" />
+                                {pkg}
                               </button>
                             )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-                      <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
-                        <span className="text-violet-400 dark:text-[#c678dd]">
-                          {'% '}
-                        </span>
-                        no packages on reference section
-                      </p>
-                    </div>
-                  )
-                ) : localPackages.length > 0 ? (
-                  <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
-                    {localPackages.map((pkg, idx) => (
-                      <li
-                        key={idx}
-                        className="group flex items-center gap-1 font-mono text-[12px]"
-                      >
-                        {editingPkgIdx === idx ? (
-                          <input
-                            // eslint-disable-next-line jsx-a11y/no-autofocus
-                            autoFocus
-                            type="text"
-                            value={editingPkgValue}
-                            onChange={(e) => setEditingPkgValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                commitPkgEdit(idx, editingPkgValue);
-                              } else if (e.key === 'Escape') {
-                                setEditingPkgIdx(null);
-                                setEditingPkgValue('');
-                              }
-                            }}
-                            onBlur={() => commitPkgEdit(idx, editingPkgValue)}
-                            className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
-                          />
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (isActiveSectionReadOnly) return;
-                              setEditingPkgIdx(idx);
-                              setEditingPkgValue(pkg);
-                            }}
-                            title={
-                              isActiveSectionReadOnly
-                                ? undefined
-                                : 'Click to edit'
-                            }
-                            className="flex-1 truncate text-left text-slate-700 dark:text-slate-300"
-                          >
-                            {pkg}
-                          </button>
-                        )}
-                        {!isActiveSectionReadOnly && editingPkgIdx !== idx && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLocalPackages((prev) =>
-                                prev.filter((_, i) => i !== idx),
-                              )
-                            }
-                            className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
-                            title="Remove package"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-                    <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
-                      <span className="text-violet-400 dark:text-[#c678dd]">
-                        {'% '}
-                      </span>
-                      no packages defined
-                    </p>
-                  </div>
-                )}
-                {/* Add package input */}
-                {!isActiveSectionReadOnly && pkgViewTab === 'current' && (
-                  <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
-                    <form
-                      className="flex gap-1"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const trimmed = newPackageInput.trim();
-                        if (!trimmed) return;
-                        setLocalPackages((prev) =>
-                          prev.includes(trimmed) ? prev : [...prev, trimmed],
-                        );
-                        setNewPackageInput('');
-                      }}
-                    >
-                      <input
-                        type="text"
-                        value={newPackageInput}
-                        onChange={(e) => setNewPackageInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') setNewPackageInput('');
-                        }}
-                        placeholder="package name…"
-                        autoComplete="off"
-                        className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
-                      />
-                      <button
-                        type="submit"
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
-                        disabled={!newPackageInput.trim()}
-                        title="Add package"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
-                    </form>
-                    {/* Format hint */}
-                    <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      Type directly, e.g.:{' '}
-                      <span className="font-mono text-violet-500">
-                        {'\\usepackage{amsmath}'}
-                      </span>
-                    </p>
-                    {/* Quick-add: biblatex */}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                        biblatex:
-                      </span>
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          const bibPkg =
-                            '\\usepackage[backend=bibtex]{biblatex}';
-                          setLocalPackages((prev) =>
-                            prev.some(
-                              (p) => extractPackageName(p) === 'biblatex',
-                            )
-                              ? prev
-                              : [...prev, bibPkg],
-                          );
-                          setNewPackageInput('');
-                        }}
-                        className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
-                      >
-                        default
-                      </button>
-                      {[
-                        {
-                          label: 'apa',
-                          pkg: '\\usepackage[backend=biber,style=apa]{biblatex}',
-                        },
-                        {
-                          label: 'ieee',
-                          pkg: '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
-                        },
-                      ].map(({ label, pkg }) => (
-                        <button
-                          key={label}
-                          type="button"
-                          onMouseDown={(e) => {
+                            {!isActiveSectionReadOnly &&
+                              editingPkgIdx !== idx && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setLocalPackages((prev) =>
+                                      prev.filter((_, i) => i !== idx),
+                                    )
+                                  }
+                                  className="invisible h-4 w-4 shrink-0 rounded text-slate-400 group-hover:visible hover:text-red-500"
+                                  title="Remove package"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+                        <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                          <span className="text-violet-400 dark:text-[#c678dd]">
+                            {'% '}
+                          </span>
+                          no packages defined
+                        </p>
+                      </div>
+                    )}
+                    {/* Add package input */}
+                    {!isActiveSectionReadOnly && pkgViewTab === 'current' && (
+                      <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
+                        <form
+                          className="flex gap-1"
+                          onSubmit={(e) => {
                             e.preventDefault();
-                            setLocalPackages((prev) => {
-                              const filtered = prev.filter(
-                                (p) => extractPackageName(p) !== 'biblatex',
-                              );
-                              return [...filtered, pkg];
-                            });
+                            const trimmed = newPackageInput.trim();
+                            if (!trimmed) return;
+                            setLocalPackages((prev) =>
+                              prev.includes(trimmed)
+                                ? prev
+                                : [...prev, trimmed],
+                            );
                             setNewPackageInput('');
                           }}
-                          className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
                         >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    {/* Custom suggestion list */}
-                    {newPackageInput.trim() &&
-                      (() => {
-                        const q = newPackageInput.trim().toLowerCase();
-                        const suggestions = KNOWN_LATEX_PACKAGES.filter(
-                          (p) =>
-                            p.toLowerCase().includes(q) &&
-                            !localPackages.includes(p) &&
-                            !localPackages.some(
-                              (lp) =>
-                                lp !== p &&
-                                extractPackageName(lp) ===
-                                  extractPackageName(p),
-                            ),
-                        );
-                        if (!suggestions.length) return null;
-                        return (
-                          <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
-                            {suggestions.map((p) => {
-                              const idx = p.toLowerCase().indexOf(q);
-                              return (
-                                <li key={p}>
-                                  <button
-                                    type="button"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      setLocalPackages((prev) =>
-                                        prev.includes(p) ? prev : [...prev, p],
-                                      );
-                                      setNewPackageInput('');
-                                    }}
-                                    className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
-                                  >
-                                    {idx >= 0 ? (
-                                      <>
-                                        <span className="text-slate-500 dark:text-slate-400">
-                                          {p.slice(0, idx)}
-                                        </span>
-                                        <span className="font-bold text-violet-600 dark:text-violet-400">
-                                          {p.slice(idx, idx + q.length)}
-                                        </span>
-                                        <span className="text-slate-500 dark:text-slate-400">
-                                          {p.slice(idx + q.length)}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      p
-                                    )}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        );
-                      })()}
-                  </div>
-                )}
-                {/* Add package input — Reference section */}
-                {canEditReferenceSection && pkgViewTab === 'reference' && (
-                  <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
-                    <form
-                      className="flex gap-1"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const trimmed = newRefPackageInput.trim();
-                        if (!trimmed) return;
-                        setLocalRefPackages((prev) =>
-                          prev.includes(trimmed) ? prev : [...prev, trimmed],
-                        );
-                        setNewRefPackageInput('');
-                      }}
-                    >
-                      <input
-                        type="text"
-                        value={newRefPackageInput}
-                        onChange={(e) => setNewRefPackageInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') setNewRefPackageInput('');
-                        }}
-                        placeholder="package name\u2026"
-                        autoComplete="off"
-                        className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
-                      />
-                      <button
-                        type="submit"
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
-                        disabled={!newRefPackageInput.trim()}
-                        title="Add package"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
-                    </form>
-                    <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      Type directly, e.g.:{' '}
-                      <span className="font-mono text-violet-500">
-                        {'\\usepackage{amsmath}'}
-                      </span>
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                        biblatex:
-                      </span>
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          const bibPkg =
-                            '\\usepackage[backend=bibtex]{biblatex}';
-                          setLocalRefPackages((prev) =>
-                            prev.some(
-                              (p) => extractPackageName(p) === 'biblatex',
-                            )
-                              ? prev
-                              : [...prev, bibPkg],
-                          );
-                          setNewRefPackageInput('');
-                        }}
-                        className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
-                      >
-                        default
-                      </button>
-                      {[
-                        {
-                          label: 'apa',
-                          pkg: '\\usepackage[backend=biber,style=apa]{biblatex}',
-                        },
-                        {
-                          label: 'ieee',
-                          pkg: '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
-                        },
-                      ].map(({ label, pkg }) => (
-                        <button
-                          key={label}
-                          type="button"
-                          onMouseDown={(e) => {
+                          <input
+                            type="text"
+                            value={newPackageInput}
+                            onChange={(e) => setNewPackageInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') setNewPackageInput('');
+                            }}
+                            placeholder="package name…"
+                            autoComplete="off"
+                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                          />
+                          <button
+                            type="submit"
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+                            disabled={!newPackageInput.trim()}
+                            title="Add package"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </form>
+                        {/* Format hint */}
+                        <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                          Type directly, e.g.:{' '}
+                          <span className="font-mono text-violet-500">
+                            {'\\usepackage{amsmath}'}
+                          </span>
+                        </p>
+                        {/* Custom suggestion list */}
+                        {newPackageInput.trim() &&
+                          (() => {
+                            const q = newPackageInput.trim().toLowerCase();
+                            const suggestions = KNOWN_LATEX_PACKAGES.filter(
+                              (p) =>
+                                p.toLowerCase().includes(q) &&
+                                !localPackages.includes(p) &&
+                                !localPackages.some(
+                                  (lp) =>
+                                    lp !== p &&
+                                    extractPackageName(lp) ===
+                                      extractPackageName(p),
+                                ),
+                            );
+                            if (!suggestions.length) return null;
+                            return (
+                              <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                                {suggestions.map((p) => {
+                                  const idx = p.toLowerCase().indexOf(q);
+                                  return (
+                                    <li key={p}>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          setLocalPackages((prev) =>
+                                            prev.includes(p)
+                                              ? prev
+                                              : [...prev, p],
+                                          );
+                                          setNewPackageInput('');
+                                        }}
+                                        className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                      >
+                                        {idx >= 0 ? (
+                                          <>
+                                            <span className="text-slate-500 dark:text-slate-400">
+                                              {p.slice(0, idx)}
+                                            </span>
+                                            <span className="font-bold text-violet-600 dark:text-violet-400">
+                                              {p.slice(idx, idx + q.length)}
+                                            </span>
+                                            <span className="text-slate-500 dark:text-slate-400">
+                                              {p.slice(idx + q.length)}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          p
+                                        )}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            );
+                          })()}
+                      </div>
+                    )}
+                    {/* Add package input — Reference section */}
+                    {canEditReferenceSection && pkgViewTab === 'reference' && (
+                      <div className="relative shrink-0 border-t border-slate-200 px-2 py-2 dark:border-slate-700">
+                        <form
+                          className="flex gap-1"
+                          onSubmit={(e) => {
                             e.preventDefault();
-                            setLocalRefPackages((prev) => {
-                              const filtered = prev.filter(
-                                (p) => extractPackageName(p) !== 'biblatex',
-                              );
-                              return [...filtered, pkg];
-                            });
+                            const trimmed = newRefPackageInput.trim();
+                            if (!trimmed) return;
+                            setLocalRefPackages((prev) =>
+                              prev.includes(trimmed)
+                                ? prev
+                                : [...prev, trimmed],
+                            );
                             setNewRefPackageInput('');
                           }}
-                          className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[10px] text-violet-600 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
                         >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    {newRefPackageInput.trim() &&
-                      (() => {
-                        const q = newRefPackageInput.trim().toLowerCase();
-                        const suggestions = KNOWN_LATEX_PACKAGES.filter(
-                          (p) =>
-                            p.toLowerCase().includes(q) &&
-                            !localRefPackages.includes(p) &&
-                            !localRefPackages.some(
-                              (lp) =>
-                                lp !== p &&
-                                extractPackageName(lp) ===
-                                  extractPackageName(p),
-                            ),
-                        );
-                        if (!suggestions.length) return null;
-                        return (
-                          <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
-                            {suggestions.map((p) => {
-                              const qi = p.toLowerCase().indexOf(q);
-                              return (
-                                <li key={p}>
-                                  <button
-                                    type="button"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      setLocalRefPackages((prev) =>
-                                        prev.includes(p) ? prev : [...prev, p],
-                                      );
-                                      setNewRefPackageInput('');
-                                    }}
-                                    className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
-                                  >
-                                    {qi >= 0 ? (
-                                      <>
-                                        <span className="text-slate-500 dark:text-slate-400">
-                                          {p.slice(0, qi)}
-                                        </span>
-                                        <span className="font-bold text-violet-600 dark:text-violet-400">
-                                          {p.slice(qi, qi + q.length)}
-                                        </span>
-                                        <span className="text-slate-500 dark:text-slate-400">
-                                          {p.slice(qi + q.length)}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      p
-                                    )}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        );
-                      })()}
-                  </div>
+                          <input
+                            type="text"
+                            value={newRefPackageInput}
+                            onChange={(e) =>
+                              setNewRefPackageInput(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') setNewRefPackageInput('');
+                            }}
+                            placeholder="package name\u2026"
+                            autoComplete="off"
+                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                          />
+                          <button
+                            type="submit"
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+                            disabled={!newRefPackageInput.trim()}
+                            title="Add package"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </form>
+                        <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                          Type directly, e.g.:{' '}
+                          <span className="font-mono text-violet-500">
+                            {'\\usepackage{amsmath}'}
+                          </span>
+                        </p>
+                        {newRefPackageInput.trim() &&
+                          (() => {
+                            const q = newRefPackageInput.trim().toLowerCase();
+                            const suggestions = KNOWN_LATEX_PACKAGES.filter(
+                              (p) =>
+                                p.toLowerCase().includes(q) &&
+                                !localRefPackages.includes(p) &&
+                                !localRefPackages.some(
+                                  (lp) =>
+                                    lp !== p &&
+                                    extractPackageName(lp) ===
+                                      extractPackageName(p),
+                                ),
+                            );
+                            if (!suggestions.length) return null;
+                            return (
+                              <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                                {suggestions.map((p) => {
+                                  const qi = p.toLowerCase().indexOf(q);
+                                  return (
+                                    <li key={p}>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          setLocalRefPackages((prev) =>
+                                            prev.includes(p)
+                                              ? prev
+                                              : [...prev, p],
+                                          );
+                                          setNewRefPackageInput('');
+                                        }}
+                                        className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                      >
+                                        {qi >= 0 ? (
+                                          <>
+                                            <span className="text-slate-500 dark:text-slate-400">
+                                              {p.slice(0, qi)}
+                                            </span>
+                                            <span className="font-bold text-violet-600 dark:text-violet-400">
+                                              {p.slice(qi, qi + q.length)}
+                                            </span>
+                                            <span className="text-slate-500 dark:text-slate-400">
+                                              {p.slice(qi + q.length)}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          p
+                                        )}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            );
+                          })()}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
