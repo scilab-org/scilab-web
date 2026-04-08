@@ -2470,6 +2470,8 @@ export const LatexPaperEditor = ({
   localPackagesRef.current = localPackages;
   const localRefPackagesRef = useRef(localRefPackages);
   localRefPackagesRef.current = localRefPackages;
+  const inUseReferenceContentRef = useRef(inUseReferenceContent);
+  inUseReferenceContentRef.current = inUseReferenceContent;
   const editorSectionsRef = useRef(editorSections);
   editorSectionsRef.current = editorSections;
 
@@ -2564,13 +2566,10 @@ export const LatexPaperEditor = ({
       setCompileError(null);
       try {
         const refPkgs = localRefPackagesRef.current;
-        const mergedPackages =
-          refPkgs.length > 0
-            ? [...new Set([...(packages ?? []), ...refPkgs])]
-            : packages;
         const blob = await compileLatex({
           content: latexContent,
-          packages: mergedPackages,
+          packages,
+          referencePackages: refPkgs,
           referenceContent: refContent,
         });
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
@@ -2594,31 +2593,34 @@ export const LatexPaperEditor = ({
 
   // Compile LaTeX to PDF via API
   const handleRender = useCallback(() => {
-    // Merge in-use reference content (from linked paper banks, shown in the
-    // bottom References panel) with the editable References section content.
-    // The in-use content takes priority since it is what the user sees.
-    const mergedRefContent =
-      inUseReferenceContent || referenceContent || undefined;
+    // Compile using what is currently displayed in the UI.
+    // The inline References panel (shown when the active section is NOT the
+    // reference section) displays ONLY the in-use reference content.
+    const displayedRefContent =
+      referenceSection && !isReferenceSectionActive
+        ? inUseReferenceContent
+        : undefined;
 
     if (versionPreview) {
       compileAndRender(
         previewEditContent ?? versionPreview.item.content ?? '',
         localPackages,
-        mergedRefContent,
+        displayedRefContent,
       );
       return;
     }
     if (isActiveSectionReadOnly) return;
-    compileAndRender(content, localPackages, mergedRefContent);
+    compileAndRender(content, localPackages, displayedRefContent);
   }, [
     localPackages,
     content,
-    referenceContent,
     inUseReferenceContent,
     previewEditContent,
     versionPreview,
     compileAndRender,
     isActiveSectionReadOnly,
+    referenceSection,
+    isReferenceSectionActive,
   ]);
 
   // Clean up PDF blob URL on unmount
@@ -2817,7 +2819,7 @@ export const LatexPaperEditor = ({
           compileAndRender(
             latestContent,
             resolvedPkgs,
-            referenceContent || undefined,
+            inUseReferenceContentRef.current || undefined,
           );
         } else {
           setPdfUrl(null);
@@ -2835,7 +2837,7 @@ export const LatexPaperEditor = ({
           compileAndRender(
             fallbackContent,
             fallbackPkgs,
-            referenceContent || undefined,
+            inUseReferenceContentRef.current || undefined,
           );
         } else {
           setPdfUrl(null);
@@ -2858,7 +2860,6 @@ export const LatexPaperEditor = ({
     derivedPaperId,
     assignedSectionsParams,
     queryClient,
-    referenceContent,
   ]);
 
   useEffect(() => {
@@ -2917,6 +2918,10 @@ export const LatexPaperEditor = ({
           prev === currentSectionIdentity;
         return sameSection ? prev : null;
       });
+      // Keep compilation consistent with what the user sees in the References panel.
+      // While loading, the UI shows a loading state (and should not reuse stale content).
+      setInUseReferenceContent('');
+      setInUsePaperBanks([]);
       setIsInUseReferenceLoading(true);
       try {
         // When previousActiveSectionIdRef already matches the current section ID,
@@ -3084,7 +3089,7 @@ export const LatexPaperEditor = ({
               compileAndRender(
                 latestContent,
                 latestPackages,
-                inUseReferenceContent || referenceContent || undefined,
+                inUseReferenceContent || undefined,
               );
             } else {
               setPdfUrl(null);
@@ -3107,13 +3112,7 @@ export const LatexPaperEditor = ({
         return { id: null, content: '', packages: localPackagesRef.current };
       }
     },
-    [
-      compileAndRender,
-      editorSections,
-      inUseReferenceContent,
-      referenceContent,
-      referenceSection,
-    ],
+    [compileAndRender, editorSections, inUseReferenceContent, referenceSection],
   );
 
   const handleUpdateSectionReference = useCallback(
@@ -3583,7 +3582,7 @@ export const LatexPaperEditor = ({
       void compileAndRender(
         contentToSave,
         localPackages,
-        inUseReferenceContent || referenceContent || undefined,
+        inUseReferenceContent || undefined,
       );
 
       // Mark assigned-sections stale so next time it's needed it will be fresh
@@ -3620,7 +3619,6 @@ export const LatexPaperEditor = ({
     queryClient,
     compileAndRender,
     inUseReferenceContent,
-    referenceContent,
     localPackages,
     localRefPackages,
   ]);
@@ -4148,7 +4146,7 @@ export const LatexPaperEditor = ({
                             onKeyDown={(e) => {
                               if (e.key === 'Escape') setNewPackageInput('');
                             }}
-                            placeholder="package name…"
+                            placeholder="e.g.: \\usepackage{algorithm}"
                             autoComplete="off"
                             className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
                           />
@@ -4161,13 +4159,6 @@ export const LatexPaperEditor = ({
                             <Plus className="h-3 w-3" />
                           </button>
                         </form>
-                        {/* Format hint */}
-                        <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                          Type directly, e.g.:{' '}
-                          <span className="font-mono text-violet-500">
-                            {'\\usepackage{amsmath}'}
-                          </span>
-                        </p>
                         {/* Custom suggestion list */}
                         {newPackageInput.trim() &&
                           (() => {
@@ -4253,7 +4244,7 @@ export const LatexPaperEditor = ({
                             onKeyDown={(e) => {
                               if (e.key === 'Escape') setNewRefPackageInput('');
                             }}
-                            placeholder="package name\u2026"
+                            placeholder="Type directly, e.g.: \\usepackage{amsmath}"
                             autoComplete="off"
                             className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
                           />
@@ -4266,12 +4257,6 @@ export const LatexPaperEditor = ({
                             <Plus className="h-3 w-3" />
                           </button>
                         </form>
-                        <p className="mt-1.5 px-0.5 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                          Type directly, e.g.:{' '}
-                          <span className="font-mono text-violet-500">
-                            {'\\usepackage{amsmath}'}
-                          </span>
-                        </p>
                         {newRefPackageInput.trim() &&
                           (() => {
                             const q = newRefPackageInput.trim().toLowerCase();
