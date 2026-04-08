@@ -1,40 +1,114 @@
 // Packages are stored and displayed as raw \usepackage{…} strings.
 
 export const KNOWN_LATEX_PACKAGES: string[] = [
+  // --- Encoding & Font ---
   '\\usepackage[utf8]{inputenc}',
   '\\usepackage[T1]{fontenc}',
+  '\\usepackage{lmodern}',
+  '\\usepackage{microtype}',
+  '\\usepackage{fontawesome5}',
+  '\\usepackage{mathptmx}',
+  '\\usepackage{helvet}',
+  '\\usepackage{courier}',
+
+  // --- Math ---
   '\\usepackage{amsmath}',
   '\\usepackage{amssymb}',
   '\\usepackage{amsfonts}',
   '\\usepackage{amsthm}',
   '\\usepackage{mathtools}',
+  '\\usepackage{bm}',
+  '\\usepackage{siunitx}',
+  '\\usepackage{physics}',
+  '\\usepackage{nicefrac}',
+  '\\usepackage{cancel}',
+
+  // --- Graphics & Figures ---
   '\\usepackage{graphicx}',
   '\\usepackage{float}',
   '\\usepackage{caption}',
   '\\usepackage{subcaption}',
   '\\usepackage{wrapfig}',
+  '\\usepackage{tikz}',
+  '\\usepackage{pgfplots}',
+  '\\usepackage{svg}',
+  '\\usepackage{pdfpages}',
+  '\\usepackage{rotating}',
+  '\\usepackage{placeins}',
+
+  // --- Tables ---
   '\\usepackage{booktabs}',
   '\\usepackage{array}',
   '\\usepackage{multirow}',
   '\\usepackage{longtable}',
   '\\usepackage{tabularx}',
   '\\usepackage{colortbl}',
-  '\\usepackage{algorithm}',
-  '\\usepackage{algpseudocode}',
+  '\\usepackage{diagbox}',
+  '\\usepackage{tabularray}',
+
+  // --- Layout & Formatting ---
   '\\usepackage{geometry}',
   '\\usepackage{setspace}',
+  '\\usepackage{parskip}',
+  '\\usepackage{fancyhdr}',
+  '\\usepackage{titlesec}',
+  '\\usepackage{tocloft}',
+  '\\usepackage{appendix}',
+  '\\usepackage{pdflscape}',
+  '\\usepackage{afterpage}',
+  '\\usepackage{ragged2e}',
+
+  // --- Colors & Boxes ---
+  '\\usepackage{xcolor}',
+  '\\usepackage{tcolorbox}',
+  '\\usepackage{mdframed}',
+  '\\usepackage{framed}',
+
+  // --- Code & Algorithms ---
+  '\\usepackage{listings}',
+  '\\usepackage{minted}',
+  '\\usepackage{algorithm}',
+  '\\usepackage{algpseudocode}',
+  '\\usepackage[ruled,vlined]{algorithm2e}',
+
+  // --- References & Links ---
   '\\usepackage{hyperref}',
   '\\usepackage{url}',
   '\\usepackage{cite}',
-  '\\usepackage{enumitem}',
-  '\\usepackage{xcolor}',
-  '\\usepackage{listings}',
-  '\\usepackage{textcomp}',
-  '\\usepackage{comment}',
-  '\\usepackage{verbatim}',
+  '\\usepackage{natbib}',
+  '\\usepackage{cleveref}',
+  '\\usepackage{varioref}',
   '\\usepackage[backend=bibtex]{biblatex}',
   '\\usepackage[backend=biber,style=apa]{biblatex}',
   '\\usepackage[backend=bibtex,style=ieee]{biblatex}',
+
+  // --- Language & Quotes ---
+  '\\usepackage[english]{babel}',
+  '\\usepackage{csquotes}',
+
+  // --- Lists & Misc Text ---
+  '\\usepackage{enumitem}',
+  '\\usepackage{textcomp}',
+  '\\usepackage{comment}',
+  '\\usepackage{verbatim}',
+  '\\usepackage{soul}',
+  '\\usepackage{ulem}',
+  '\\usepackage{lipsum}',
+
+  // --- Abbreviations & Glossary ---
+  '\\usepackage{acronym}',
+  '\\usepackage[acronym]{glossaries}',
+  '\\usepackage{nomencl}',
+
+  // --- Utilities ---
+  '\\usepackage{todonotes}',
+  '\\usepackage{footmisc}',
+  '\\usepackage{chngcntr}',
+  '\\usepackage{etoolbox}',
+  '\\usepackage{calc}',
+  '\\usepackage{xparse}',
+  '\\usepackage{xspace}',
+  '\\usepackage{ifthen}',
 ];
 
 const LATEX_BASE_PACKAGES: string[] = [
