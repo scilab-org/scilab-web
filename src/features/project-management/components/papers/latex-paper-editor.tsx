@@ -1604,7 +1604,7 @@ const InlineReferenceSectionEditor = ({
               <p>Section title: {currentSectionTitle || '-'}</p>
             </div>
 
-            <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+            <div className="max-h-[50vh] w-full space-y-2 overflow-x-hidden overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
               {isAvailablePaperBanksLoading ? (
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -1616,7 +1616,7 @@ const InlineReferenceSectionEditor = ({
                   return (
                     <label
                       key={paper.id}
-                      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2.5 transition-colors ${
+                      className={`grid w-full cursor-pointer grid-cols-[auto_1fr_auto] items-start gap-x-2 rounded-lg border px-3 py-2.5 transition-colors ${
                         checked
                           ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
                           : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900'
@@ -1624,37 +1624,43 @@ const InlineReferenceSectionEditor = ({
                     >
                       <input
                         type="checkbox"
-                        className="mt-0.5 h-3.5 w-3.5"
+                        className="mt-1 h-3.5 w-3.5 shrink-0"
                         checked={checked}
                         onChange={() => togglePaperBank(paper.id)}
                       />
-                      <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
-                            {paper.title || 'Untitled paper'}
-                          </p>
-                          {(paper.journalName || paper.conferenceName) && (
-                            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
-                              {paper.journalName || paper.conferenceName}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            void handleOpenBankDetail(paper.id);
-                          }}
-                          title="View detail"
-                          aria-label="View detail"
+                      <div className="min-w-0 overflow-hidden">
+                        <p
+                          className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100"
+                          title={paper.title || 'Untitled paper'}
                         >
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
+                          {paper.title || 'Untitled paper'}
+                        </p>
+                        {(paper.journalName || paper.conferenceName) && (
+                          <p
+                            className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400"
+                            title={
+                              paper.journalName || paper.conferenceName || ''
+                            }
+                          >
+                            {paper.journalName || paper.conferenceName}
+                          </p>
+                        )}
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void handleOpenBankDetail(paper.id);
+                        }}
+                        title="View detail"
+                        aria-label="View detail"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
                     </label>
                   );
                 })
