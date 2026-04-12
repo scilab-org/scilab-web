@@ -103,6 +103,7 @@ import { useDatasets } from '@/features/dataset-management/api/get-datasets';
 import { useProjectPapers } from '@/features/project-management/api/papers/get-project-papers';
 import { useUser } from '@/lib/auth';
 import { api } from '@/lib/api-client';
+import type { WritingOutput } from '@/features/ai-chat/types';
 
 import { EditorChatPanel } from './editor-chat-panel';
 
@@ -170,6 +171,150 @@ const computeLatexStats = (latexContent: string) => {
     numMathInlines,
     numMathDisplayed,
   };
+};
+
+// ─── Write-mode diff view: line-by-line comparison ────────────────────────────
+
+type DiffLine = {
+  type: 'unchanged' | 'added' | 'removed';
+  content: string;
+  oldLineNum?: number;
+  newLineNum?: number;
+};
+
+function computeLineDiff(oldText: string, newText: string): DiffLine[] {
+  const oldLines = oldText.split('\n');
+  const newLines = newText.split('\n');
+  const result: DiffLine[] = [];
+
+  // Simple LCS-based diff for line-by-line comparison
+  const m = oldLines.length;
+  const n = newLines.length;
+
+  // Build LCS table
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    Array(n + 1).fill(0),
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Backtrack to produce diff
+  const diff: Array<{ type: 'unchanged' | 'added' | 'removed'; line: string }> =
+    [];
+  let i = m;
+  let j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      diff.push({ type: 'unchanged', line: oldLines[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      diff.push({ type: 'added', line: newLines[j - 1] });
+      j--;
+    } else {
+      diff.push({ type: 'removed', line: oldLines[i - 1] });
+      i--;
+    }
+  }
+  diff.reverse();
+
+  // Assign line numbers
+  let oldLineNum = 1;
+  let newLineNum = 1;
+  for (const d of diff) {
+    if (d.type === 'unchanged') {
+      result.push({
+        type: 'unchanged',
+        content: d.line,
+        oldLineNum: oldLineNum++,
+        newLineNum: newLineNum++,
+      });
+    } else if (d.type === 'removed') {
+      result.push({
+        type: 'removed',
+        content: d.line,
+        oldLineNum: oldLineNum++,
+      });
+    } else {
+      result.push({
+        type: 'added',
+        content: d.line,
+        newLineNum: newLineNum++,
+      });
+    }
+  }
+
+  return result;
+}
+
+const WriteDiffView = ({
+  oldText,
+  newText,
+}: {
+  oldText: string;
+  newText: string;
+}) => {
+  const diffLines = useMemo(
+    () => computeLineDiff(oldText, newText),
+    [oldText, newText],
+  );
+
+  return (
+    <div
+      className="font-mono text-xs leading-[22px]"
+      style={{ padding: '16px 0' }}
+    >
+      {diffLines.map((line, idx) => (
+        <div
+          key={idx}
+          className={
+            line.type === 'removed'
+              ? 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300'
+              : line.type === 'added'
+                ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300'
+                : 'text-foreground'
+          }
+          style={{ display: 'flex', minHeight: '22px' }}
+        >
+          {/* Gutter: old line number */}
+          <span
+            className="text-muted-foreground/50 inline-block shrink-0 select-none text-right"
+            style={{ width: '40px', paddingRight: '4px' }}
+          >
+            {line.oldLineNum ?? ''}
+          </span>
+          {/* Gutter: new line number */}
+          <span
+            className="text-muted-foreground/50 inline-block shrink-0 select-none text-right"
+            style={{ width: '40px', paddingRight: '4px' }}
+          >
+            {line.newLineNum ?? ''}
+          </span>
+          {/* Change indicator */}
+          <span
+            className="inline-block shrink-0 select-none text-center"
+            style={{ width: '20px' }}
+          >
+            {line.type === 'removed' ? '-' : line.type === 'added' ? '+' : ' '}
+          </span>
+          {/* Content */}
+          <span
+            className="whitespace-pre-wrap break-all"
+            style={{ paddingRight: '16px' }}
+          >
+            {line.content || '\u00A0'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 type MarkSectionItem = {
@@ -1178,6 +1323,7 @@ const InlineReferenceSectionEditor = ({
   isSectionContentDirty = false,
   onSaveSectionContent,
   isSavingSectionContent = false,
+  pendingReferencedPaperIds = [],
 }: {
   content: string;
   canEdit: boolean;
@@ -1200,6 +1346,8 @@ const InlineReferenceSectionEditor = ({
   isSectionContentDirty?: boolean;
   onSaveSectionContent?: () => void;
   isSavingSectionContent?: boolean;
+  /** Paper IDs returned by the writing LLM — auto-populates the Preview tab. */
+  pendingReferencedPaperIds?: string[];
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -1341,6 +1489,38 @@ const InlineReferenceSectionEditor = ({
       onActiveReferenceContentChange?.(usedReferenceContent);
     }
   }, [referenceViewTab, usedReferenceContent, onActiveReferenceContentChange]);
+
+  // When the writing LLM returns referenced paper IDs, auto-populate the
+  // Preview tab and switch to it so the user can inspect before accepting.
+  useEffect(() => {
+    if (pendingReferencedPaperIds.length === 0) return;
+
+    let cancelled = false;
+    setIsReviewLoading(true);
+    setReferenceViewTab('review');
+
+    previewSectionReference(pendingReferencedPaperIds)
+      .then((response) => {
+        if (cancelled) return;
+        setReviewReferenceContent(response.result.referenceContent);
+        setReviewPaperBanks(response.result.paperBanks);
+        onActiveReferenceContentChange?.(response.result.referenceContent);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setReviewReferenceContent('');
+        setReviewPaperBanks([]);
+        toast.error('Failed to load preview references.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsReviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingReferencedPaperIds]);
 
   // Auto-select review paper bank IDs in update dialog
   const handleOpenUpdateDialog = useCallback(() => {
@@ -2469,6 +2649,10 @@ export const LatexPaperEditor = ({
   const editorColRef = useRef<HTMLDivElement>(null);
   const widthPctRef = useRef(50);
   const [savedContent, setSavedContent] = useState(initialContent ?? '');
+  const [pendingWriteOutput, setPendingWriteOutput] = useState<string | null>(
+    null,
+  );
+  const [pendingReferencedPaperIds, setPendingReferencedPaperIds] = useState<string[]>([]);
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.editor.IStandaloneCodeEditor | null>(
@@ -2733,6 +2917,27 @@ export const LatexPaperEditor = ({
       conferenceName: (paper.conferenceName as string | null) ?? null,
     }));
   }, [projectPapersQuery.data]);
+  // ── Write-mode diff: accept/reject callbacks ──────────────────────────
+  const handleWriteOutput = useCallback((output: WritingOutput) => {
+    setPendingWriteOutput(output.content);
+    setPendingReferencedPaperIds(output.referencedPaperIds ?? []);
+  }, []);
+
+  const handleUpdateSectionReferenceRef = useRef<
+    ((paperBankIds: string[]) => Promise<boolean>) | null
+  >(null);
+
+  const handleAcceptChanges = useCallback(() => {
+    if (pendingWriteOutput !== null) {
+      setContent(pendingWriteOutput);
+      setPendingWriteOutput(null);
+    }
+  }, [pendingWriteOutput]);
+
+  const handleRejectChanges = useCallback(() => {
+    setPendingWriteOutput(null);
+    setPendingReferencedPaperIds([]);
+  }, []);
 
   // LaTeX stats computed from current content
   const latexStats = useMemo(() => computeLatexStats(content), [content]);
@@ -3487,6 +3692,9 @@ export const LatexPaperEditor = ({
       setInUseReferenceContent,
     ],
   );
+  // Keep the ref in sync so handleAcceptChanges can call this without
+  // a forward-declaration issue.
+  handleUpdateSectionReferenceRef.current = handleUpdateSectionReference;
 
   // Auto-render on first mount with the initial section content
   const hasRenderedOnce = useRef(false);
@@ -3832,6 +4040,14 @@ export const LatexPaperEditor = ({
         refetchType: 'none',
       });
 
+      // If the AI writing agent suggested references (pendingReferencedPaperIds),
+      // commit them now — alongside the content save — so that content and
+      // references are persisted atomically from the user's perspective.
+      if (pendingReferencedPaperIds.length > 0 && handleUpdateSectionReferenceRef.current) {
+        await handleUpdateSectionReferenceRef.current(pendingReferencedPaperIds);
+        setPendingReferencedPaperIds([]);
+      }
+
       // Release the lock AFTER all state updates are committed.
       // Use a microtask to ensure React has flushed the batched state updates
       // before any effect can run with stale data.
@@ -3859,6 +4075,7 @@ export const LatexPaperEditor = ({
     inUseReferenceContent,
     localPackages,
     localRefPackages,
+    pendingReferencedPaperIds,
   ]);
 
   const handleClose = useCallback(() => {
@@ -4821,6 +5038,37 @@ export const LatexPaperEditor = ({
                       )}
                     </div>
                   </>
+                ) : pendingWriteOutput !== null ? (
+                  /* ── AI Write diff view ── */
+                  <>
+                    <div className="flex h-9 shrink-0 items-center justify-between border-b border-amber-200 bg-amber-50 px-3 dark:border-amber-800 dark:bg-amber-950">
+                      <span className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                        AI has proposed changes to this section
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleRejectChanges}
+                          className="rounded px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/40"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAcceptChanges}
+                          className="rounded bg-green-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                        >
+                          Accept Changes
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      <WriteDiffView
+                        oldText={content}
+                        newText={pendingWriteOutput}
+                      />
+                    </div>
+                  </>
                 ) : (
                   // eslint-disable-next-line jsx-a11y/no-static-element-interactions
                   <div
@@ -5038,6 +5286,7 @@ export const LatexPaperEditor = ({
                     isSectionContentDirty={content !== savedContent}
                     onSaveSectionContent={handleSave}
                     isSavingSectionContent={updateSectionMutation.isPending}
+                    pendingReferencedPaperIds={pendingReferencedPaperIds}
                   />
                 )}
 
@@ -5312,7 +5561,10 @@ export const LatexPaperEditor = ({
                     {toolsTab === 'chat' && projectId && (
                       <EditorChatPanel
                         projectId={projectId}
+                        sectionId={activeSection?.id}
                         sectionTitle={activeSection?.title || paperTitle}
+                        sectionContent={content}
+                        onWriteOutput={handleWriteOutput}
                       />
                     )}
                     {toolsTab === 'datasets' && projectId && (
