@@ -2927,21 +2927,12 @@ export const LatexPaperEditor = ({
     ((paperBankIds: string[]) => Promise<boolean>) | null
   >(null);
 
-  const handleAcceptChanges = useCallback(async () => {
+  const handleAcceptChanges = useCallback(() => {
     if (pendingWriteOutput !== null) {
       setContent(pendingWriteOutput);
       setPendingWriteOutput(null);
-
-      // Commit the LLM-cited papers directly as the section's reference list.
-      // The backend returns ALL paper IDs referenced in the generated content,
-      // so we pass them as-is (no merge with existing in-use papers needed).
-      if (pendingReferencedPaperIds.length > 0 && handleUpdateSectionReferenceRef.current) {
-        await handleUpdateSectionReferenceRef.current(pendingReferencedPaperIds);
-      }
-
-      setPendingReferencedPaperIds([]);
     }
-  }, [pendingWriteOutput, pendingReferencedPaperIds]);
+  }, [pendingWriteOutput]);
 
   const handleRejectChanges = useCallback(() => {
     setPendingWriteOutput(null);
@@ -4049,6 +4040,14 @@ export const LatexPaperEditor = ({
         refetchType: 'none',
       });
 
+      // If the AI writing agent suggested references (pendingReferencedPaperIds),
+      // commit them now — alongside the content save — so that content and
+      // references are persisted atomically from the user's perspective.
+      if (pendingReferencedPaperIds.length > 0 && handleUpdateSectionReferenceRef.current) {
+        await handleUpdateSectionReferenceRef.current(pendingReferencedPaperIds);
+        setPendingReferencedPaperIds([]);
+      }
+
       // Release the lock AFTER all state updates are committed.
       // Use a microtask to ensure React has flushed the batched state updates
       // before any effect can run with stale data.
@@ -4076,6 +4075,7 @@ export const LatexPaperEditor = ({
     inUseReferenceContent,
     localPackages,
     localRefPackages,
+    pendingReferencedPaperIds,
   ]);
 
   const handleClose = useCallback(() => {
