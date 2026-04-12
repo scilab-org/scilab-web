@@ -270,11 +270,12 @@ export const CreatePaperTemplate = () => {
               <Input
                 id="pt-code"
                 value={formData.code}
-                onChange={(e) =>
-                  updateField('code', e.target.value.toUpperCase())
-                }
+                onChange={(e) => updateField('code', e.target.value)}
                 placeholder="e.g. IMRAD_STANDARD"
                 required
+                readOnly
+                onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
+                autoComplete="off"
               />
             </div>
           </div>

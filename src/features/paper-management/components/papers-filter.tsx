@@ -15,11 +15,15 @@ export const PapersFilter = () => {
   const [showMore, setShowMore] = React.useState(() => {
     return Boolean(
       searchParams.get('abstract') ||
-      searchParams.get('doi') ||
+      searchParams.get('publisher') ||
       searchParams.get('paperType') ||
       searchParams.get('journalName') ||
       searchParams.get('conferenceName') ||
-      searchParams.get('isDeleted') === 'true',
+      searchParams.get('isDeleted') === 'true' ||
+      searchParams.get('status') ||
+      searchParams.get('fromDate') ||
+      searchParams.get('toDate') ||
+      searchParams.getAll('author').length > 0,
     );
   });
 
@@ -125,8 +129,39 @@ export const PapersFilter = () => {
 
   return (
     <form onSubmit={handleApply} className="bg-muted/40 rounded-xl border p-6">
-      {/* Primary filters - always visible */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Primary filters - DOI / Keywords / Title */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* DOI */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="filter-doi"
+            className="text-muted-foreground text-xs font-medium"
+          >
+            DOI
+          </label>
+          <Input
+            id="filter-doi"
+            value={filters.doi}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, doi: e.target.value }))
+            }
+            placeholder="Search by DOI..."
+          />
+        </div>
+
+        {/* Keywords (Tags) */}
+        <div className="space-y-1.5">
+          <span className="text-muted-foreground text-xs font-medium">
+            Keywords
+          </span>
+          <TagAutocompleteInput
+            tagList={tagList}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            placeholder="Type a keyword and press Enter..."
+          />
+        </div>
+
         {/* Title */}
         <div className="space-y-1.5">
           <label
@@ -142,118 +177,6 @@ export const PapersFilter = () => {
               setFilters((prev) => ({ ...prev, title: e.target.value }))
             }
             placeholder="Search by title..."
-          />
-        </div>
-
-        {/* Publisher */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-publisher"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Publisher
-          </label>
-          <Input
-            id="filter-publisher"
-            value={filters.publisher}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, publisher: e.target.value }))
-            }
-            placeholder="Search by publisher..."
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {/* Tags */}
-        <div className="space-y-1.5">
-          <span className="text-muted-foreground text-xs font-medium">
-            Tags
-          </span>
-          <TagAutocompleteInput
-            tagList={tagList}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-            placeholder="Type a tag and press Enter..."
-          />
-        </div>
-
-        {/* Authors */}
-        <div className="space-y-1.5">
-          <span className="text-muted-foreground text-xs font-medium">
-            Authors
-          </span>
-          <MultiValueInput
-            values={authorList}
-            onAddValue={handleAddAuthor}
-            onRemoveValue={handleRemoveAuthor}
-            placeholder="Type an author and press Enter..."
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Status */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-status"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Status
-          </label>
-          <select
-            id="filter-status"
-            className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-            value={filters.status}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, status: e.target.value }))
-            }
-          >
-            <option value="">All</option>
-            {PAPER_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* From Date */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-fromDate"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Publication From
-          </label>
-          <Input
-            id="filter-fromDate"
-            type="date"
-            value={filters.fromDate}
-            onChange={(e) =>
-              setFilters((prev) => ({
-                ...prev,
-                fromDate: e.target.value,
-              }))
-            }
-          />
-        </div>
-
-        {/* To Date */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-toDate"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Publication To
-          </label>
-          <Input
-            id="filter-toDate"
-            type="date"
-            value={filters.toDate}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, toDate: e.target.value }))
-            }
           />
         </div>
       </div>
@@ -272,131 +195,195 @@ export const PapersFilter = () => {
 
       {/* Secondary filters - collapsible */}
       {showMore && (
-        <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* DOI */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="filter-doi"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              DOI
-            </label>
-            <Input
-              id="filter-doi"
-              value={filters.doi}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, doi: e.target.value }))
-              }
-              placeholder="Search by DOI..."
-            />
+        <div className="mt-4 space-y-4 border-t pt-4">
+          {/* Authors + Publisher */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <span className="text-muted-foreground text-xs font-medium">
+                Authors
+              </span>
+              <MultiValueInput
+                values={authorList}
+                onAddValue={handleAddAuthor}
+                onRemoveValue={handleRemoveAuthor}
+                placeholder="Type an author and press Enter..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-publisher"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Publisher
+              </label>
+              <Input
+                id="filter-publisher"
+                value={filters.publisher}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, publisher: e.target.value }))
+                }
+                placeholder="Search by publisher..."
+              />
+            </div>
           </div>
 
-          {/* Paper Type */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="filter-paperType"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Paper Type
-            </label>
-            <Input
-              id="filter-paperType"
-              value={filters.paperType}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  paperType: e.target.value,
-                }))
-              }
-              placeholder="Search by type..."
-            />
+          {/* Status + From Date + To Date */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-status"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Status
+              </label>
+              <select
+                id="filter-status"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, status: e.target.value }))
+                }
+              >
+                <option value="">All</option>
+                {PAPER_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-fromDate"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Publication From
+              </label>
+              <Input
+                id="filter-fromDate"
+                type="date"
+                value={filters.fromDate}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, fromDate: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-toDate"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Publication To
+              </label>
+              <Input
+                id="filter-toDate"
+                type="date"
+                value={filters.toDate}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, toDate: e.target.value }))
+                }
+              />
+            </div>
           </div>
 
-          {/* Journal Name */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="filter-journalName"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Journal Name
-            </label>
-            <Input
-              id="filter-journalName"
-              value={filters.journalName}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  journalName: e.target.value,
-                }))
-              }
-              placeholder="Search by journal..."
-            />
+          {/* Paper Type + Journal + Conference */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-paperType"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Paper Type
+              </label>
+              <Input
+                id="filter-paperType"
+                value={filters.paperType}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, paperType: e.target.value }))
+                }
+                placeholder="Search by type..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-journalName"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Journal Name
+              </label>
+              <Input
+                id="filter-journalName"
+                value={filters.journalName}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    journalName: e.target.value,
+                  }))
+                }
+                placeholder="Search by journal..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-conferenceName"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Conference Name
+              </label>
+              <Input
+                id="filter-conferenceName"
+                value={filters.conferenceName}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    conferenceName: e.target.value,
+                  }))
+                }
+                placeholder="Search by conference..."
+              />
+            </div>
           </div>
 
-          {/* Conference Name */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="filter-conferenceName"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Conference Name
-            </label>
-            <Input
-              id="filter-conferenceName"
-              value={filters.conferenceName}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  conferenceName: e.target.value,
-                }))
-              }
-              placeholder="Search by conference..."
-            />
-          </div>
-
-          {/* Abstract */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="filter-abstract"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Abstract
-            </label>
-            <Input
-              id="filter-abstract"
-              value={filters.abstract}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  abstract: e.target.value,
-                }))
-              }
-              placeholder="Search by abstract..."
-            />
-          </div>
-
-          {/* Is Deleted */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="filter-isDeleted"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Is Deleted
-            </label>
-            <select
-              id="filter-isDeleted"
-              className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              value={filters.isDeleted}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  isDeleted: e.target.value,
-                }))
-              }
-            >
-              <option value="false">False</option>
-              <option value="true">True</option>
-            </select>
+          {/* Abstract + Is Deleted */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-abstract"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Abstract
+              </label>
+              <Input
+                id="filter-abstract"
+                value={filters.abstract}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, abstract: e.target.value }))
+                }
+                placeholder="Search by abstract..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-isDeleted"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Is Deleted
+              </label>
+              <select
+                id="filter-isDeleted"
+                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={filters.isDeleted}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    isDeleted: e.target.value,
+                  }))
+                }
+              >
+                <option value="false">False</option>
+                <option value="true">True</option>
+              </select>
+            </div>
           </div>
         </div>
       )}

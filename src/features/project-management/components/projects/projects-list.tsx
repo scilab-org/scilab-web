@@ -157,14 +157,11 @@ export const ProjectsList = () => {
       <Table>
         <TableHeader>
           <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Name
-            </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="w-35 font-semibold text-green-900 dark:text-green-200">
               Code
             </TableHead>
             <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Description
+              Name
             </TableHead>
             <TableHead className="font-semibold text-green-900 dark:text-green-200">
               Status
@@ -188,6 +185,11 @@ export const ProjectsList = () => {
                 key={project.id}
                 className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
               >
+                <TableCell>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {project.code}
+                  </Badge>
+                </TableCell>
                 <TableCell className="font-medium">
                   <Link
                     to={paths.app.projectDetail.getHref(project.id)}
@@ -200,20 +202,6 @@ export const ProjectsList = () => {
                   >
                     {project.name}
                   </Link>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    {project.code}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {project.description ? (
-                    <p className="line-clamp-2 max-w-md text-sm">
-                      {project.description}
-                    </p>
-                  ) : (
-                    '—'
-                  )}
                 </TableCell>
                 <TableCell>
                   <Badge
