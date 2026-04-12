@@ -68,11 +68,11 @@ export const PaperTemplatesList = () => {
       <Table>
         <TableHeader>
           <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="w-[18%] font-semibold text-green-900 dark:text-green-200">
-              Name
-            </TableHead>
             <TableHead className="w-[13%] font-semibold text-green-900 dark:text-green-200">
               Code
+            </TableHead>
+            <TableHead className="w-[18%] font-semibold text-green-900 dark:text-green-200">
+              Name
             </TableHead>
             <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
               Description
@@ -94,10 +94,10 @@ export const PaperTemplatesList = () => {
               key={template.id}
               className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
             >
-              <TableCell className="font-medium">{template.name}</TableCell>
               <TableCell>
                 <Badge variant="outline">{template.code}</Badge>
               </TableCell>
+              <TableCell className="font-medium">{template.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">
                 {template.description || '—'}
               </TableCell>

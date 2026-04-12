@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Trash2, Loader2, Search, Plus, Download, Tags } from 'lucide-react';
+import {
+  Trash2,
+  Loader2,
+  Search,
+  Plus,
+  Download,
+  Tags,
+  ExternalLink,
+  Building2,
+  Calendar,
+} from 'lucide-react';
+import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,16 +49,45 @@ import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
 import { formatPublicationDate } from '@/utils/string-utils';
 
-const getStatusColor = (status: number | null) => {
+const getStatusVariant = (
+  status: number | null,
+): {
+  variant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline';
+  className?: string;
+} => {
   switch (status) {
-    case 1: // Draft
-      return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
-    case 4: // Released
-      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    case 5: // Sampled
-      return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+    case 1:
+      return {
+        variant: 'outline',
+        className:
+          'border-slate-300 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300',
+      };
+    case 2:
+      return {
+        variant: 'default',
+        className:
+          'bg-blue-500 text-white hover:bg-blue-600 shadow-sm shadow-blue-200 dark:shadow-blue-900/30',
+      };
+    case 3:
+      return {
+        variant: 'default',
+        className:
+          'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 dark:shadow-amber-900/30',
+      };
+    case 4:
+      return {
+        variant: 'default',
+        className:
+          'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30',
+      };
+    case 5:
+      return {
+        variant: 'default',
+        className:
+          'bg-purple-500 text-white hover:bg-purple-600 shadow-sm shadow-purple-200 dark:shadow-purple-900/30',
+      };
     default:
-      return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+      return { variant: 'outline' };
   }
 };
 
@@ -70,6 +110,27 @@ const getTagColor = (tag: string) => {
     hash = tag.charCodeAt(i) + ((hash << 5) - hash);
   }
   return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
+};
+
+const truncateAuthors = (authors: string | null): React.ReactNode => {
+  if (!authors) return <span className="text-muted-foreground text-sm">—</span>;
+  const parts = authors
+    .split(' and ')
+    .map((a) => a.trim())
+    .filter(Boolean);
+  if (parts.length <= 2) {
+    return <span className="text-sm">{parts.join(' & ')}</span>;
+  }
+  return (
+    <span className="text-sm" title={authors}>
+      {parts[0]}
+      <span className="text-muted-foreground mx-0.5">·</span>
+      {parts[parts.length - 1]}
+      <span className="text-muted-foreground ml-1 text-xs italic">
+        +{parts.length - 2} more
+      </span>
+    </span>
+  );
 };
 
 type ProjectPapersListProps = {
@@ -192,28 +253,31 @@ export const ProjectPapersList = ({
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
-                    Title
+                  <TableHead className="w-[3%] px-2 font-semibold text-green-900 dark:text-green-200">
+                    #
                   </TableHead>
-                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
-                    Authors
-                  </TableHead>
-                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
-                    Status
-                  </TableHead>
-                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[13%] px-2 font-semibold text-green-900 dark:text-green-200">
                     DOI
                   </TableHead>
-                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[20%] px-2 font-semibold text-green-900 dark:text-green-200">
+                    Title
+                  </TableHead>
+                  <TableHead className="w-[15%] px-2 font-semibold text-green-900 dark:text-green-200">
+                    Authors
+                  </TableHead>
+                  <TableHead className="w-[15%] px-2 font-semibold text-green-900 dark:text-green-200">
                     Journal / Conference
                   </TableHead>
-                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[9%] px-2 font-semibold text-green-900 dark:text-green-200">
                     Published
                   </TableHead>
-                  <TableHead className="w-[10%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[8%] px-2 font-semibold text-green-900 dark:text-green-200">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-[8%] px-2 font-semibold text-green-900 dark:text-green-200">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[10%] text-right font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[9%] px-2 text-right font-semibold text-green-900 dark:text-green-200">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -224,52 +288,99 @@ export const ProjectPapersList = ({
                     key={paper.id}
                     className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
                   >
-                    <TableCell className="overflow-hidden font-medium">
+                    {/* # */}
+                    <TableCell className="text-muted-foreground px-2 text-center text-xs">
+                      {index + 1}
+                    </TableCell>
+
+                    {/* DOI */}
+                    <TableCell className="px-2 break-all whitespace-normal">
+                      {paper.doi ? (
+                        <a
+                          href={`https://doi.org/${paper.doi}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                          title={paper.doi}
+                        >
+                          <ExternalLink className="size-3 shrink-0" />
+                          <span className="break-all">{paper.doi}</span>
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">
+                          N/A
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Title */}
+                    <TableCell className="overflow-hidden px-2 font-medium wrap-break-word whitespace-normal">
                       <Link
                         to={
                           getPaperHref
                             ? getPaperHref(projectId, paper.id)
                             : paths.app.paperManagement.paper.getHref(paper.id)
                         }
-                        className="block truncate text-blue-600 hover:underline dark:text-blue-400"
+                        className="line-clamp-3 text-blue-600 hover:underline dark:text-blue-400"
                         title={paper.title || '(Untitled)'}
                       >
                         {paper.title || '(Untitled)'}
                       </Link>
                     </TableCell>
-                    <TableCell
-                      className="text-muted-foreground truncate text-sm"
-                      title={paper.authors || ''}
-                    >
-                      {paper.authors || '—'}
+
+                    {/* Authors */}
+                    <TableCell className="px-2 wrap-break-word whitespace-normal">
+                      {truncateAuthors(paper.authors)}
                     </TableCell>
-                    <TableCell>
-                      {paper.status != null ? (
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
-                        >
-                          {PAPER_STATUS_MAP[paper.status] ?? 'Unknown'}
+
+                    {/* Venue */}
+                    <TableCell className="px-2 wrap-break-word whitespace-normal">
+                      {paper.journalName ? (
+                        <span className="line-clamp-2 text-sm">
+                          {paper.journalName}
                         </span>
+                      ) : paper.conferenceName ? (
+                        <span className="flex items-start gap-1.5 text-sm">
+                          <Building2 className="mt-0.5 size-3.5 shrink-0 text-violet-500" />
+                          <span className="line-clamp-2">
+                            {paper.conferenceName}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">
+                          —
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Published */}
+                    <TableCell className="px-2 whitespace-normal">
+                      {paper.publicationDate ? (
+                        <span className="flex flex-wrap items-center gap-1 text-sm">
+                          <Calendar className="size-3.5 text-violet-400" />
+                          {formatPublicationDate(paper.publicationDate)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">
+                          —
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell className="px-2">
+                      {paper.status != null ? (
+                        (() => {
+                          const s = getStatusVariant(paper.status);
+                          return (
+                            <Badge variant={s.variant} className={s.className}>
+                              {PAPER_STATUS_MAP[paper.status] ?? 'Unknown'}
+                            </Badge>
+                          );
+                        })()
                       ) : (
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
-                    </TableCell>
-                    <TableCell
-                      className="text-muted-foreground truncate text-sm"
-                      title={paper.doi || ''}
-                    >
-                      {paper.doi || '—'}
-                    </TableCell>
-                    <TableCell
-                      className="text-muted-foreground truncate text-sm"
-                      title={paper.journalName || paper.conferenceName || ''}
-                    >
-                      {paper.journalName || paper.conferenceName || '—'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {paper.publicationDate
-                        ? formatPublicationDate(paper.publicationDate)
-                        : '—'}
                     </TableCell>
                     <TableCell>
                       {paper.tagNames && paper.tagNames.length > 0 ? (
