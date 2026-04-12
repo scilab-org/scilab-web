@@ -121,13 +121,8 @@ export const ProjectPapersList = ({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">
-              Project Papers
+              References
             </h2>
-            {!papersQuery.isLoading && (
-              <p className="text-muted-foreground mt-1 text-sm">
-                {totalCount} paper{totalCount !== 1 ? 's' : ''} in this project
-              </p>
-            )}
           </div>
           <div className="flex items-center gap-2">
             {!!onCreatePaperClick && (

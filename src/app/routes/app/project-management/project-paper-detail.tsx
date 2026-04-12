@@ -15,6 +15,13 @@ const ProjectPaperDetailRoute = () => {
         projectId!,
         paperId!,
       )}
+      combineEditorPath={(combineId: string) =>
+        paths.app.projectPaperCombineEditor.getHref(
+          projectId!,
+          paperId!,
+          combineId,
+        )
+      }
     />
   );
 };

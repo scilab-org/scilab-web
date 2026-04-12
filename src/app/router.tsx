@@ -94,6 +94,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.projectPaperCombineEditor.path,
+          lazy: () =>
+            import('./routes/app/project-management/project-paper-combine-editor').then(
+              convert(queryClient),
+            ),
+        },
+        {
           path: paths.app.assignedProjects.list.path,
           lazy: () =>
             import('./routes/app/project-management/my-projects').then(
@@ -118,6 +125,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
           path: paths.app.assignedProjects.paperWorkspace.path,
           lazy: () =>
             import('./routes/app/project-management/my-project-paper-workspace').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.assignedProjects.paperCombineEditor.path,
+          lazy: () =>
+            import('./routes/app/project-management/my-project-paper-combine-editor').then(
               convert(queryClient),
             ),
         },

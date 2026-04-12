@@ -85,9 +85,23 @@ export type WritingPaperDto = {
   styleRule?: string | null;
 };
 
+export type CombineDto = {
+  id: string;
+  name: string;
+  content: string;
+  references: string[];
+  isSave: boolean;
+  createdBy: string | null;
+  createdOnUtc: string | null;
+  lastModifiedBy: string | null;
+  lastModifiedOnUtc: string | null;
+};
+
 export type GetWritingPaperByIdResultApiResponse = {
   result: {
-    paper: WritingPaperDto;
+    paper: WritingPaperDto & {
+      combines?: CombineDto[];
+    };
   };
 };
 
