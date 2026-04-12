@@ -1017,7 +1017,7 @@ const ReferencesTab = ({
                 <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                   <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
                     <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                      Metadata
+                      Information
                     </p>
                     <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                       <div>
@@ -1302,7 +1302,7 @@ const InlineReferenceSectionEditor = ({
     } finally {
       setIsReviewLoading(false);
     }
-  }, [availablePaperBanks]);
+  }, []);
 
   const handleSwitchTab = useCallback(
     (tab: 'in-use' | 'review') => {
@@ -1855,7 +1855,7 @@ const InlineReferenceSectionEditor = ({
                 <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                   <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
                     <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                      Metadata
+                      Information
                     </p>
                     <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                       <div>

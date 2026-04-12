@@ -89,7 +89,7 @@ export type CombineDto = {
   id: string;
   name: string;
   content: string;
-  references: string[];
+  references: string[] | null;
   isSave: boolean;
   createdBy: string | null;
   createdOnUtc: string | null;
@@ -97,10 +97,16 @@ export type CombineDto = {
   lastModifiedOnUtc: string | null;
 };
 
+export type WritingPaperReference = {
+  paperBankId: string;
+  sectionIds: string[];
+};
+
 export type GetWritingPaperByIdResultApiResponse = {
   result: {
     paper: WritingPaperDto & {
       combines?: CombineDto[];
+      references?: WritingPaperReference[];
     };
   };
 };

@@ -936,7 +936,8 @@ export const ProjectPaperDetailPage = ({
                 </p>
                 {isAuthor && (
                   <p className="text-muted-foreground mt-1 text-xs">
-                    Click "Compile Paper" to generate a combined version.
+                    Click &ldquo;Compile Paper&rdquo; to generate a combined
+                    version.
                   </p>
                 )}
               </div>

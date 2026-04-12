@@ -31,12 +31,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
-import { api } from '@/lib/api-client';
 
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
 import { useUpdateCombineVersion } from '@/features/paper-management/api/update-combine-version';
-import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
+import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
+import {
+  previewSectionReference,
+  type PreviewReferencePaperBank,
+} from '@/features/paper-management/api/preview-section-reference';
 import type { CombineDto } from '@/features/paper-management/types';
 
 import { EditorChatPanel } from './editor-chat-panel';
@@ -193,41 +196,223 @@ const computeLatexStats = (latexContent: string) => {
   };
 };
 
-// ─── Fetch reference/in-use for a single section ────────────────────────────
-const fetchSectionReferenceInUse = async (
-  sectionId: string,
-): Promise<string> => {
-  try {
-    const response = (await api.get(
-      `/lab-service/sections/${sectionId}/reference/in-use`,
-    )) as {
-      result?: { referenceContent?: unknown };
-    };
-    const content = response?.result?.referenceContent;
-    return typeof content === 'string' ? content.trim() : '';
-  } catch {
-    return '';
-  }
+// ─── Reference detail dialog ─────────────────────────────────────────────────
+const ReferenceDetailDialog = ({
+  paper,
+  index,
+  onClose,
+}: {
+  paper: PreviewReferencePaperBank;
+  index: number;
+  onClose: () => void;
+}) => {
+  const year = paper.publicationDate
+    ? new Date(paper.publicationDate).getFullYear()
+    : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
+          <div className="flex flex-1 flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                In use
+              </span>
+              {paper.tagNames.length > 0 && (
+                <span className="rounded-full border border-slate-200 px-2.5 py-0.5 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  {paper.tagNames.length} tag
+                  {paper.tagNames.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <h2 className="text-base leading-snug font-semibold text-slate-900 dark:text-slate-100">
+              {paper.title ?? `Reference [${index + 1}]`}
+            </h2>
+            <p className="text-xs text-slate-400">
+              Reference currently used in this section
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex min-h-0 flex-1 gap-4 overflow-y-auto p-5">
+          {/* Left: Abstract */}
+          <div className="flex flex-1 flex-col gap-3">
+            <div className="rounded-xl border border-slate-100 p-4 dark:border-slate-800">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                  Abstract
+                </span>
+                <span className="rounded border border-slate-200 px-2 py-0.5 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Preview
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                {paper.abstract ?? 'No abstract available.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Information */}
+          <div className="flex w-72 shrink-0 flex-col gap-3 rounded-xl border border-slate-100 p-4 dark:border-slate-800">
+            <span className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+              Information
+            </span>
+            <div className="flex flex-col gap-3 text-xs">
+              <div>
+                <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                  Authors
+                </div>
+                <div className="font-medium text-slate-700 dark:text-slate-200">
+                  {paper.authors ?? 'Not provided'}
+                </div>
+              </div>
+              <div>
+                <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                  Publisher
+                </div>
+                <div className="text-slate-600 dark:text-slate-300">
+                  {paper.publisher?.trim() || 'Not provided'}
+                </div>
+              </div>
+              <div>
+                <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                  Journal / Conference
+                </div>
+                <div className="text-slate-600 dark:text-slate-300">
+                  {paper.journalName?.trim() ||
+                    paper.conferenceName?.trim() ||
+                    'Not provided'}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    Year
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-300">
+                    {year ?? 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    Sections
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-300">0</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    Volume
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-300">
+                    {paper.volume?.trim() || 'Not provided'}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    Number
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-300">
+                    {paper.number?.trim() || 'Not provided'}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                  Pages
+                </div>
+                <div className="text-slate-600 dark:text-slate-300">
+                  {paper.pages?.trim() || 'Not provided'}
+                </div>
+              </div>
+              {paper.doi && (
+                <div>
+                  <div className="mb-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    DOI
+                  </div>
+                  <a
+                    href={`https://doi.org/${paper.doi}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-blue-500 hover:underline"
+                  >
+                    {paper.doi}
+                  </a>
+                </div>
+              )}
+              {paper.tagNames.length > 0 && (
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    Tags
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {paper.tagNames.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        {paper.filePath && (
+          <div className="border-t border-slate-100 p-4 dark:border-slate-800">
+            <a
+              href={paper.filePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              <FileText className="h-4 w-4" />
+              Open file
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
-// ─── References In-Use Panel (fetches via API like section editor) ───────────
+// ─── References Panel: extracts paperBankIds from paper.references, calls POST /sections/reference/preview
 const CombineReferencesPanel = ({ paperId }: { paperId: string }) => {
-  const [referenceContent, setReferenceContent] = useState('');
+  const [paperBanks, setPaperBanks] = useState<PreviewReferencePaperBank[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [count, setCount] = useState(0);
+  const [selectedPaper, setSelectedPaper] = useState<{
+    paper: PreviewReferencePaperBank;
+    index: number;
+  } | null>(null);
 
-  const sectionsQuery = useGetPaperSections({
+  const paperQuery = useWritingPaperDetail({
     paperId,
     queryConfig: { enabled: !!paperId },
   });
 
-  const sections = useMemo(
-    () => sectionsQuery.data?.result?.items ?? [],
-    [sectionsQuery.data],
-  );
+  const paperBankIds = useMemo(() => {
+    const refs = paperQuery.data?.result?.paper?.references ?? [];
+    return Array.from(new Set(refs.map((r) => r.paperBankId).filter(Boolean)));
+  }, [paperQuery.data]);
 
   useEffect(() => {
-    if (!sections.length) {
+    if (paperQuery.isLoading) return;
+    if (!paperBankIds.length) {
       setIsLoading(false);
       return;
     }
@@ -236,22 +421,23 @@ const CombineReferencesPanel = ({ paperId }: { paperId: string }) => {
     setIsLoading(true);
 
     (async () => {
-      const results = await Promise.all(
-        sections.map((s) => fetchSectionReferenceInUse(s.id)),
-      );
-      if (cancelled) return;
-      const merged = results.filter(Boolean);
-      setCount(merged.length);
-      setReferenceContent(merged.join('\n\n'));
+      try {
+        const result = await previewSectionReference(paperBankIds);
+        if (cancelled) return;
+        setPaperBanks(result.result.paperBanks);
+      } catch {
+        if (cancelled) return;
+        setPaperBanks([]);
+      }
       setIsLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [sections]);
+  }, [paperBankIds, paperQuery.isLoading]);
 
-  if (isLoading || sectionsQuery.isLoading) {
+  if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -260,7 +446,7 @@ const CombineReferencesPanel = ({ paperId }: { paperId: string }) => {
     );
   }
 
-  if (!referenceContent.trim()) {
+  if (!paperBanks.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
         <BookMarked className="h-7 w-7 text-slate-300 dark:text-slate-600" />
@@ -272,55 +458,46 @@ const CombineReferencesPanel = ({ paperId }: { paperId: string }) => {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex h-9 shrink-0 items-center justify-between border-b border-[#e8e8e6] bg-[#fafafa] px-3 dark:border-[#2a2a2a] dark:bg-[#151515]">
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
-            <FileText className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-            References
-          </span>
-          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-            In Use ({count})
+    <>
+      {selectedPaper && (
+        <ReferenceDetailDialog
+          paper={selectedPaper.paper}
+          index={selectedPaper.index}
+          onClose={() => setSelectedPaper(null)}
+        />
+      )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="px-4 pt-3 pb-1">
+          <span className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+            In use ({paperBanks.length})
           </span>
         </div>
+        <div className="flex flex-col gap-2 p-3">
+          {paperBanks.map((bank, i) => (
+            <button
+              key={bank.id}
+              type="button"
+              onClick={() => setSelectedPaper({ paper: bank, index: i })}
+              className="flex w-full items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900 dark:hover:bg-blue-950/30"
+            >
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {i + 1}
+              </span>
+              <div className="flex-1 overflow-hidden">
+                <p className="line-clamp-3 text-xs leading-snug font-medium text-slate-700 dark:text-slate-200">
+                  {bank.title ?? `Reference ${i + 1}`}
+                </p>
+                {(bank.journalName || bank.conferenceName) && (
+                  <p className="mt-1 truncate text-[11px] text-slate-400 italic">
+                    {bank.journalName || bank.conferenceName}
+                  </p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
-      {/* Read-only Monaco editor */}
-      <div className="min-h-0 flex-1">
-        <Editor
-          height="100%"
-          defaultLanguage="latex-custom"
-          value={referenceContent}
-          beforeMount={registerLatexLanguage}
-          theme="latex-light"
-          options={{
-            readOnly: true,
-            domReadOnly: true,
-            fontSize: 14,
-            lineHeight: 22,
-            minimap: { enabled: false },
-            wordWrap: 'on',
-            scrollBeyondLastLine: false,
-            padding: { top: 10, bottom: 10 },
-            automaticLayout: true,
-            tabSize: 2,
-            lineNumbers: 'on',
-            renderLineHighlight: 'line',
-            fontFamily:
-              "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-            fontLigatures: true,
-            smoothScrolling: true,
-            scrollbar: {
-              verticalScrollbarSize: 6,
-              horizontalScrollbarSize: 6,
-              useShadows: false,
-            },
-          }}
-        />
-      </div>
-    </div>
+    </>
   );
 };
 
@@ -361,7 +538,7 @@ export const CombineEditor = ({
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
-  const [toolsTab, setToolsTab] = useState<'chat' | 'references'>('chat');
+  const [isReferencesOpen, setIsReferencesOpen] = useState(true);
   const [editorWidthPct, setEditorWidthPct] = useState(50);
   const [pdfZoom, setPdfZoom] = useState(100);
   const isDraggingRef = useRef(false);
@@ -432,11 +609,12 @@ export const CombineEditor = ({
   }, [content]);
 
   // Auto-compile on mount
+
   useEffect(() => {
     if (combine.content?.trim()) {
       handleCompile();
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cleanup PDF URL on unmount
   useEffect(() => {
@@ -512,8 +690,34 @@ export const CombineEditor = ({
     <div className="fixed inset-0 z-50 flex">
       {/* ── Content area: same bg as section editor ────────────── */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f1f1f1] p-2 dark:bg-[#1a1a1a]">
-        {/* Single outer card wrapping editor + right panel */}
+        {/* Single outer card wrapping left sidebar + editor + right panel */}
         <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] bg-white shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+          {/* ── Left References Sidebar ────────────────────────── */}
+          {isReferencesOpen && (
+            <div className="flex w-72 shrink-0 flex-col overflow-hidden border-r border-[#e0e0de] bg-white dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+              <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#e0e0de] px-3 dark:border-[#2a2a2a]">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
+                    <BookMarked className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    References
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsReferencesOpen(false)}
+                  className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <CombineReferencesPanel paperId={paperId} />
+              </div>
+            </div>
+          )}
+
           <div
             ref={containerRef}
             className="flex min-h-0 flex-1 overflow-hidden"
@@ -564,6 +768,20 @@ export const CombineEditor = ({
                 >
                   <X className="h-3.5 w-3.5" />
                   Close
+                </button>
+
+                {/* References toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsReferencesOpen((v) => !v)}
+                  className={`mr-1 flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
+                    isReferencesOpen
+                      ? 'bg-[#4f6ef7] text-white'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <BookMarked className="h-3.5 w-3.5" />
+                  References
                 </button>
 
                 {/* Tools toggle */}
@@ -720,45 +938,19 @@ export const CombineEditor = ({
               />
 
               {isToolsOpen ? (
-                /* ── Tools panel ── */
+                /* ── Tools panel (AI only) ── */
                 <>
-                  <div className="flex h-10 shrink-0 items-center border-b border-[#e0e0de] bg-white px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-                    <button
-                      type="button"
-                      onClick={() => setToolsTab('chat')}
-                      className={cn(
-                        'flex h-full flex-1 items-center justify-center gap-1.5 text-xs font-medium transition-colors',
-                        toolsTab === 'chat'
-                          ? 'border-b-2 border-[#4f6ef7] text-[#4f6ef7]'
-                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400',
-                      )}
-                    >
-                      <MessageSquareText className="size-3.5" />
+                  <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[#e0e0de] bg-white px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+                    <MessageSquareText className="size-3.5 text-[#4f6ef7]" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       AI
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setToolsTab('references')}
-                      className={cn(
-                        'flex h-full flex-1 items-center justify-center gap-1.5 text-xs font-medium transition-colors',
-                        toolsTab === 'references'
-                          ? 'border-b-2 border-[#4f6ef7] text-[#4f6ef7]'
-                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400',
-                      )}
-                    >
-                      <BookMarked className="size-3.5" />
-                      References
-                    </button>
+                    </span>
                   </div>
                   <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-[#1e1e1e]">
-                    {toolsTab === 'chat' ? (
-                      <EditorChatPanel
-                        projectId={projectId}
-                        sectionTitle={combine.name}
-                      />
-                    ) : (
-                      <CombineReferencesPanel paperId={paperId} />
-                    )}
+                    <EditorChatPanel
+                      projectId={projectId}
+                      sectionTitle={combine.name}
+                    />
                   </div>
                 </>
               ) : (

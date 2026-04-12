@@ -112,7 +112,6 @@ export const ProjectPapersList = ({
   });
 
   const papers: ProjectPaper[] = (papersQuery.data as any)?.result?.items ?? [];
-  const totalCount: number = (papersQuery.data as any)?.result?.totalCount ?? 0;
 
   return (
     <div className="border-border rounded-xl border shadow-sm">
