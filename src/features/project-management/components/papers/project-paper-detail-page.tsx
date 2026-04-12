@@ -20,6 +20,10 @@ import {
   LayoutTemplate,
   ExternalLink,
   Pencil,
+  Layers,
+  Eye,
+  Loader2,
+  Play,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -57,7 +61,11 @@ import { useUpdateWritingPaper } from '@/features/paper-management/api/update-wr
 import {
   PAPER_INITIALIZE_STATUS_OPTIONS,
   PAPER_STATUS_MAP,
+  PAPER_MANAGEMENT_QUERY_KEYS,
 } from '@/features/paper-management/constants';
+import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
+import { getCombineVersionQueryOptions } from '@/features/paper-management/api/get-combine-version';
+import type { CombineDto } from '@/features/paper-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
@@ -160,6 +168,7 @@ export const ProjectPaperDetailPage = ({
   isManager = false,
   backPath,
   workspacePath,
+  combineEditorPath,
 }: {
   projectId: string;
   paperId: string;
@@ -167,6 +176,7 @@ export const ProjectPaperDetailPage = ({
   isManager?: boolean;
   backPath: string;
   workspacePath?: string;
+  combineEditorPath?: (combineId: string) => string;
 }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -327,6 +337,33 @@ export const ProjectPaperDetailPage = ({
 
   const paperSubProjectId =
     paper?.subProjectId || matchedSubProject?.subProjectId || '';
+
+  const combinePaperMutation = useCombinePaper({
+    mutationConfig: {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({
+          queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.WRITING_PAPER, paperId],
+        });
+        const combine = data?.value?.combine;
+        if (combine?.id && combineEditorPath) {
+          // Pre-populate the combine version cache so the editor loads instantly
+          queryClient.setQueryData(
+            getCombineVersionQueryOptions(paperId, combine.id).queryKey,
+            { result: { combine } },
+          );
+          // Pass combine in navigation state as fallback when the page is
+          // refreshed with a null-GUID (preview-only version not in DB)
+          navigate(combineEditorPath(combine.id) + '?edit=true', {
+            state: { combine },
+          });
+        }
+      },
+      onError: () => toast.error('Failed to compile paper'),
+    },
+  });
+
+  const combines: CombineDto[] = (paper as any)?.combines ?? [];
+
   const paperTasksQuery = usePaperTasks({
     paperId,
     params: {
@@ -849,6 +886,145 @@ export const ProjectPaperDetailPage = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ── Combines Panel ───────────────────────────────────────── */}
+        <div className="border-border bg-card rounded-xl border shadow-sm">
+          <div className="flex items-center gap-3 border-b px-6 py-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100/60 dark:bg-purple-900/30">
+              <Layers className="size-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <h2 className="text-foreground text-base font-semibold">
+                Combined Versions
+              </h2>
+              <p className="text-muted-foreground text-xs">
+                {combines.length} version{combines.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            {isAuthor && (
+              <Button
+                className={cn('ml-auto gap-1.5', BTN.CREATE)}
+                size="sm"
+                disabled={combinePaperMutation.isPending}
+                onClick={() => {
+                  combinePaperMutation.mutate({
+                    paperId,
+                    data: {
+                      isPreview: true,
+                      projectId: paperSubProjectId,
+                    },
+                  });
+                }}
+              >
+                {combinePaperMutation.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Play className="size-4" />
+                )}
+                Compile Paper
+              </Button>
+            )}
+          </div>
+          <div className="p-6">
+            {combines.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-10 text-center">
+                <Layers className="text-muted-foreground/40 mb-3 size-10" />
+                <p className="text-muted-foreground text-sm">
+                  No combined versions yet.
+                </p>
+                {isAuthor && (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Click &ldquo;Compile Paper&rdquo; to generate a combined
+                    version.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {combines.map((combine) => (
+                  <div
+                    key={combine.id}
+                    className="flex items-center justify-between rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-950"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-foreground truncate text-sm font-semibold">
+                        {combine.name}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        {combine.createdOnUtc && (
+                          <span>
+                            <span className="font-medium text-slate-400 dark:text-slate-500">
+                              Created{' '}
+                            </span>
+                            {new Date(combine.createdOnUtc).toLocaleString(
+                              'en-US',
+                              {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              },
+                            )}
+                          </span>
+                        )}
+                        {combine.lastModifiedOnUtc && (
+                          <span>
+                            <span className="font-medium text-slate-400 dark:text-slate-500">
+                              Last modified{' '}
+                            </span>
+                            {new Date(combine.lastModifiedOnUtc).toLocaleString(
+                              'en-US',
+                              {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              },
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isAuthor && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400"
+                          onClick={() => {
+                            if (combineEditorPath) {
+                              navigate(
+                                combineEditorPath(combine.id) + '?edit=true',
+                              );
+                            }
+                          }}
+                        >
+                          <Pencil className="size-3.5" />
+                          Edit
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          if (combineEditorPath) {
+                            navigate(combineEditorPath(combine.id));
+                          }
+                        }}
+                      >
+                        <Eye className="size-4" />
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

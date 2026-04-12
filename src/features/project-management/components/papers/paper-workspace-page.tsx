@@ -897,10 +897,14 @@ export const PaperWorkspacePage = ({
     s: (typeof editorSections)[0],
     isChild = false,
   ) => {
+    const normalizedTitle = stripLatex(s.title || '').toLowerCase();
+    const isReferencesSection =
+      normalizedTitle === 'references' || normalizedTitle === 'reference';
     const canEdit =
-      canEditSection(s.sectionRole || '') ||
-      editableSectionIds.has(s.id) ||
-      editableSectionIds.has(s.markSectionId || '');
+      !isReferencesSection &&
+      (canEditSection(s.sectionRole || '') ||
+        editableSectionIds.has(s.id) ||
+        editableSectionIds.has(s.markSectionId || ''));
     const num = sectionNumbers.get(s.id);
     return (
       <div

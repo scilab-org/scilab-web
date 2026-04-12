@@ -34,6 +34,11 @@ export const paths = {
       getHref: (projectId: string, paperId: string) =>
         `/app/projects/details/${projectId}/papers/${paperId}/workspace`,
     },
+    projectPaperCombineEditor: {
+      path: 'projects/details/:projectId/papers/:paperId/combine/:combineId',
+      getHref: (projectId: string, paperId: string, combineId: string) =>
+        `/app/projects/details/${projectId}/papers/${paperId}/combine/${combineId}`,
+    },
     settings: {
       path: 'settings',
       getHref: () => '/app/settings',
@@ -112,6 +117,11 @@ export const paths = {
         path: 'my-projects/:projectId/papers/:paperId/workspace',
         getHref: (projectId: string, paperId: string) =>
           `/app/my-projects/${projectId}/papers/${paperId}/workspace`,
+      },
+      paperCombineEditor: {
+        path: 'my-projects/:projectId/papers/:paperId/combine/:combineId',
+        getHref: (projectId: string, paperId: string, combineId: string) =>
+          `/app/my-projects/${projectId}/papers/${paperId}/combine/${combineId}`,
       },
     },
     myTasks: {

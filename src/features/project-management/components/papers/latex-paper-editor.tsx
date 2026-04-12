@@ -46,7 +46,14 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1010,7 +1017,7 @@ const ReferencesTab = ({
                 <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                   <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
                     <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                      Metadata
+                      Information
                     </p>
                     <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                       <div>
@@ -1168,6 +1175,9 @@ const InlineReferenceSectionEditor = ({
   onUpdateReference,
   isUpdatingReference = false,
   onActiveReferenceContentChange,
+  isSectionContentDirty = false,
+  onSaveSectionContent,
+  isSavingSectionContent = false,
 }: {
   content: string;
   canEdit: boolean;
@@ -1187,6 +1197,9 @@ const InlineReferenceSectionEditor = ({
   onUpdateReference?: (paperBankIds: string[]) => Promise<boolean>;
   isUpdatingReference?: boolean;
   onActiveReferenceContentChange?: (content: string) => void;
+  isSectionContentDirty?: boolean;
+  onSaveSectionContent?: () => void;
+  isSavingSectionContent?: boolean;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -1198,6 +1211,8 @@ const InlineReferenceSectionEditor = ({
   const [selectedPaperBankIds, setSelectedPaperBankIds] = useState<string[]>(
     [],
   );
+  const [showSaveBeforeUpdateDialog, setShowSaveBeforeUpdateDialog] =
+    useState(false);
 
   // Review / In Use toggle state
   const [referenceViewTab, setReferenceViewTab] = useState<'in-use' | 'review'>(
@@ -1287,7 +1302,7 @@ const InlineReferenceSectionEditor = ({
     } finally {
       setIsReviewLoading(false);
     }
-  }, [availablePaperBanks]);
+  }, []);
 
   const handleSwitchTab = useCallback(
     (tab: 'in-use' | 'review') => {
@@ -1329,6 +1344,10 @@ const InlineReferenceSectionEditor = ({
 
   // Auto-select review paper bank IDs in update dialog
   const handleOpenUpdateDialog = useCallback(() => {
+    if (isSectionContentDirty) {
+      setShowSaveBeforeUpdateDialog(true);
+      return;
+    }
     if (referenceViewTab === 'review') {
       // Pre-select the review paper bank IDs
       const ids = reviewPaperBanks.map((p) => p.id).filter(Boolean);
@@ -1340,7 +1359,12 @@ const InlineReferenceSectionEditor = ({
       setSelectedPaperBankIds(Array.from(new Set(ids)));
     }
     setIsUpdateDialogOpen(true);
-  }, [referenceViewTab, reviewPaperBanks, usedPaperBanks]);
+  }, [
+    isSectionContentDirty,
+    referenceViewTab,
+    reviewPaperBanks,
+    usedPaperBanks,
+  ]);
 
   return (
     <>
@@ -1583,6 +1607,43 @@ const InlineReferenceSectionEditor = ({
           ))}
       </div>
 
+      <Dialog
+        open={showSaveBeforeUpdateDialog}
+        onOpenChange={setShowSaveBeforeUpdateDialog}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Unsaved Changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes in the section content. Please save your
+              changes before updating the reference.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSaveBeforeUpdateDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isSavingSectionContent}
+              onClick={() => {
+                onSaveSectionContent?.();
+                setShowSaveBeforeUpdateDialog(false);
+              }}
+            >
+              {isSavingSectionContent && (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              )}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent className="max-h-[85vh] overflow-hidden pt-9 sm:max-w-2xl [&>button]:top-3 [&>button]:right-3 [&>button]:z-20">
           <div className="space-y-4">
@@ -1794,7 +1855,7 @@ const InlineReferenceSectionEditor = ({
                 <aside className="min-w-[320px] space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                   <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
                     <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                      Metadata
+                      Information
                     </p>
                     <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                       <div>
@@ -4974,6 +5035,9 @@ export const LatexPaperEditor = ({
                     onUpdateReference={handleUpdateSectionReference}
                     isUpdatingReference={isUpdatingReference}
                     onActiveReferenceContentChange={setActiveRefContentOverride}
+                    isSectionContentDirty={content !== savedContent}
+                    onSaveSectionContent={handleSave}
+                    isSavingSectionContent={updateSectionMutation.isPending}
                   />
                 )}
 
