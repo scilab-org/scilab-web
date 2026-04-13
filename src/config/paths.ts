@@ -1,7 +1,7 @@
 export const paths = {
   home: {
     path: '/',
-    getHref: () => '/app',
+    getHref: () => '/',
   },
   app: {
     root: {
@@ -38,6 +38,10 @@ export const paths = {
       path: 'projects/details/:projectId/papers/:paperId/combine/:combineId',
       getHref: (projectId: string, paperId: string, combineId: string) =>
         `/app/projects/details/${projectId}/papers/${paperId}/combine/${combineId}`,
+    },
+    profile: {
+      path: 'profile',
+      getHref: () => '/app/profile',
     },
     settings: {
       path: 'settings',

@@ -12,6 +12,7 @@ import { useUserDetail } from '../api/get-user';
 import { UpdateUser } from './update-user';
 import { DeactivateUser } from './deactivate-user';
 import { ActivateUser } from './activate-user';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { capitalize } from '@/utils/string-utils';
 
 export const UserView = ({ userId }: { userId: string }) => {
@@ -35,23 +36,12 @@ export const UserView = ({ userId }: { userId: string }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {/* Avatar */}
-          <span className="border-border relative inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-slate-200 dark:bg-slate-700">
-            {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.username ?? ''}
-                className="size-full object-cover"
-              />
-            ) : (
-              <span className="text-xl font-semibold text-slate-600 select-none dark:text-slate-300">
-                {(
-                  user.firstName?.[0] ??
-                  user.username?.[0] ??
-                  '?'
-                ).toUpperCase()}
-              </span>
-            )}
-          </span>
+          <UserAvatar
+            avatarUrl={user.avatarUrl}
+            firstName={user.firstName}
+            username={user.username}
+            size="md"
+          />
 
           <div className="flex flex-col gap-1.5">
             <Badge variant={user.enabled ? 'default' : 'destructive'}>

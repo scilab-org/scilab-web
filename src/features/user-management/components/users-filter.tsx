@@ -1,10 +1,8 @@
 import * as React from 'react';
 import { useSearchParams } from 'react-router';
-import { Search, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { BTN } from '@/lib/button-styles';
+import { FilterSelect } from '@/components/ui/filter-select';
 
 export const UsersFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -15,117 +13,91 @@ export const UsersFilter = () => {
     enabled: searchParams.get('enabled') || '',
   });
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
-
-  const handleApply = (e: React.FormEvent) => {
-    e.preventDefault();
+  const applyFilters = (next: typeof filters) => {
     const params = new URLSearchParams();
-    if (filters.search) params.set('search', filters.search);
-    if (filters.groupName) params.set('groupName', filters.groupName);
-    if (filters.enabled) params.set('enabled', filters.enabled);
+    if (next.search) params.set('search', next.search);
+    if (next.groupName) params.set('groupName', next.groupName);
+    if (next.enabled) params.set('enabled', next.enabled);
     params.set('page', '1');
     setSearchParams(params);
   };
 
-  const handleClear = () => {
-    setFilters({
-      search: '',
-      groupName: '',
-      enabled: '',
-    });
-    setSearchParams({ page: '1' });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    applyFilters(filters);
+  };
+
+  const handleSelectChange = (key: keyof typeof filters, value: string) => {
+    const next = { ...filters, [key]: value };
+    setFilters(next);
+    applyFilters(next);
+  };
+
+  const handleClearSearch = () => {
+    const next = { ...filters, search: '' };
+    setFilters(next);
+    applyFilters(next);
   };
 
   return (
-    <form onSubmit={handleApply} className="bg-muted/40 rounded-xl border p-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Search Text */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-search"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Search
-          </label>
-          <Input
-            id="filter-search"
-            value={filters.search}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            placeholder="Search by name, email..."
-          />
-        </div>
-
-        {/* Group Name */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-groupName"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Group Name
-          </label>
-          <Input
-            id="filter-groupName"
-            value={filters.groupName}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, groupName: e.target.value }))
-            }
-            placeholder="Filter by group name..."
-          />
-        </div>
-
-        {/* Enabled */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-enable"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Status
-          </label>
-          <select
-            id="filter-enable"
-            className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-            value={filters.enabled}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, enabled: e.target.value }))
-            }
-          >
-            <option value="">All</option>
-            <option value="true">Active</option>
-            <option value="false">Disabled</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="mt-4 flex items-center justify-end gap-2">
-        {activeFilterCount > 0 && (
-          <Button
+    <form
+      onSubmit={handleSubmit}
+      className="bg-background flex h-11 items-stretch overflow-hidden rounded-xl border"
+    >
+      {/* Search */}
+      <div className="flex flex-1 items-center gap-3 px-4">
+        <Search className="text-muted-foreground size-3.5 shrink-0" />
+        <input
+          value={filters.search}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, search: e.target.value }))
+          }
+          placeholder="Search protocol database..."
+          className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-mono text-[11px] tracking-widest uppercase outline-none"
+        />
+        {filters.search && (
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            className="text-muted-foreground hover:text-foreground mr-auto"
+            onClick={handleClearSearch}
+            className="text-muted-foreground hover:text-foreground"
           >
-            <X className="size-4" />
-            Clear ({activeFilterCount})
-          </Button>
+            <X className="size-3.5" />
+          </button>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleClear}
-          className={BTN.CANCEL}
-        >
-          Reset
-        </Button>
-        <Button type="submit" size="sm" className={BTN.EDIT}>
-          <Search className="size-4" />
-          Search
-        </Button>
       </div>
+
+      <div className="border-l" />
+
+      {/* Roles */}
+      <FilterSelect
+        value={filters.groupName}
+        onChange={(v) => handleSelectChange('groupName', v)}
+      >
+        <option value="">Roles</option>
+        <option value="user">User</option>
+      </FilterSelect>
+
+      <div className="border-l" />
+
+      {/* Status */}
+      <FilterSelect
+        value={filters.enabled}
+        onChange={(v) => handleSelectChange('enabled', v)}
+      >
+        <option value="">Status</option>
+        <option value="true">Active</option>
+        <option value="false">Disabled</option>
+      </FilterSelect>
+
+      <div className="border-l" />
+
+      {/* Submit */}
+      <button
+        type="submit"
+        className="text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center px-4 transition-colors"
+      >
+        <SlidersHorizontal className="size-4" />
+      </button>
     </form>
   );
 };

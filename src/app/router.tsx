@@ -3,9 +3,9 @@ import { useMemo } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 
-import { Navigate } from 'react-router';
+import { Navigate, Outlet } from 'react-router';
 
-import { ProtectedRoute, useUser } from '@/lib/auth';
+import { ProtectedRoute, PublicRoute, useUser } from '@/lib/auth';
 import { getUserGroups } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
@@ -46,7 +46,17 @@ export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: paths.home.path,
-      element: <SmartRedirect />,
+      element: (
+        <PublicRoute>
+          <Outlet />
+        </PublicRoute>
+      ),
+      children: [
+        {
+          index: true,
+          lazy: () => import('./routes/landing').then(convert(queryClient)),
+        },
+      ],
     },
     {
       path: paths.app.root.path,
@@ -146,6 +156,10 @@ export const createAppRouter = (queryClient: QueryClient) =>
           path: paths.app.aiResearch.path,
           lazy: () =>
             import('./routes/app/ai-research').then(convert(queryClient)),
+        },
+        {
+          path: paths.app.profile.path,
+          lazy: () => import('./routes/app/profile').then(convert(queryClient)),
         },
         {
           path: paths.app.settings.path,

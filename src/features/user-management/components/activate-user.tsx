@@ -1,5 +1,3 @@
-import { CheckCircle } from 'lucide-react';
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,8 +11,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
-import { BTN } from '@/lib/button-styles';
-
 import { useActivateUser } from '../api/activate-user';
 
 type ActivateUserProps = {
@@ -27,22 +23,22 @@ export const ActivateUser = ({ userId }: ActivateUserProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.SUCCESS}>
-          <CheckCircle className="size-4" />
-        </Button>
+        <Button variant="action">Enable</Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Activate User</AlertDialogTitle>
+          <AlertDialogTitle className="text-primary font-serif text-4xl font-extrabold tracking-tight">
+            Activate User
+          </AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to activate this user? They will be able to
             access the system again.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className={BTN.CANCEL}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
           <AlertDialogAction
-            className={BTN.SUCCESS}
+            variant="secondary"
             disabled={activateUserMutation.isPending}
             onClick={() => activateUserMutation.mutate({ userId })}
           >

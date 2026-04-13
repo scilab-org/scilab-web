@@ -65,30 +65,27 @@ export const TagsList = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
+    <div className="rounded-lg border shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="w-[35%] font-semibold text-green-900 dark:text-green-200">
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="text-muted-foreground w-[35%] text-xs font-medium tracking-wider uppercase">
               Name
             </TableHead>
-            <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
               Created
             </TableHead>
-            <TableHead className="w-[20%] font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
               Last Modified
             </TableHead>
-            <TableHead className="w-[25%] text-right font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[25%] text-right text-xs font-medium tracking-wider uppercase">
               Actions
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {tags.map((tag, index) => (
-            <TableRow
-              key={tag.id}
-              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
-            >
+            <TableRow key={tag.id} className="hover:bg-muted/30">
               <TableCell className="font-medium">{tag.name}</TableCell>
               <TableCell>
                 {tag.createdOnUtc
@@ -171,7 +168,7 @@ export const TagsList = () => {
                     key={item}
                     variant={item === paging.pageNumber ? 'default' : 'outline'}
                     size="icon"
-                    className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+                    className="size-8 text-xs"
                     asChild={item !== paging.pageNumber}
                   >
                     {item !== paging.pageNumber ? (

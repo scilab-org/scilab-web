@@ -489,23 +489,23 @@ export const ProjectMembersList = ({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Name
                     </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Email
                     </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Username
                     </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Role
                     </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Joined
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wider uppercase">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -591,7 +591,7 @@ export const ProjectMembersList = ({
                             item === paging.pageNumber ? 'default' : 'outline'
                           }
                           size="icon"
-                          className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+                          className="size-8 text-xs"
                           onClick={() => setPage(item)}
                         >
                           {item}

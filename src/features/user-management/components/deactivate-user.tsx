@@ -1,5 +1,3 @@
-import { Trash2 } from 'lucide-react';
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +11,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
-import { BTN } from '@/lib/button-styles';
-
 import { useDeactivateUser } from '../api/deactivate-user';
+import { Loader } from 'lucide-react';
 
 type DeactivateUserProps = {
   userId: string;
@@ -27,28 +24,26 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" className={BTN.DANGER}>
-          <Trash2 className="size-4" />
-        </Button>
+        <Button variant="action">Delete</Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+          <AlertDialogTitle className="text-primary font-serif text-4xl font-extrabold tracking-tight">
+            Deactivate User
+          </AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to deactivate this user? They will no longer
             be able to access the system.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className={BTN.CANCEL}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
           <AlertDialogAction
-            className={BTN.DANGER}
+            variant="destructive"
             disabled={deactivateUserMutation.isPending}
             onClick={() => deactivateUserMutation.mutate({ userId })}
           >
-            {deactivateUserMutation.isPending
-              ? 'Deactivating...'
-              : 'Deactivate'}
+            {deactivateUserMutation.isPending ? <Loader /> : 'DEACTIVATE'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

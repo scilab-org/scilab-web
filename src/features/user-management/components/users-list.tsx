@@ -1,11 +1,10 @@
-import { useSearchParams, useNavigate } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -16,8 +15,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
+import { cn } from '@/utils/cn';
 
 import { useUsers } from '../api/get-users';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { getUserQueryOptions } from '../api/get-user';
 import { UpdateUser } from './update-user';
 import { DeactivateUser } from './deactivate-user';
@@ -34,7 +35,6 @@ const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
 export const UsersList = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const page = +(searchParams.get('page') || 1);
   const searchText = searchParams.get('search') || undefined;
@@ -48,10 +48,10 @@ export const UsersList = () => {
   if (usersQuery.isLoading) {
     return (
       <div className="space-y-3">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
       </div>
     );
   }
@@ -62,7 +62,7 @@ export const UsersList = () => {
   if (!users || users.length === 0) {
     return (
       <div className="flex h-48 w-full items-center justify-center">
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {searchText || groupName || enabled
             ? 'No users match your search criteria.'
             : 'No users found.'}
@@ -71,86 +71,85 @@ export const UsersList = () => {
     );
   }
 
+  const rangeStart = paging ? (paging.pageNumber - 1) * 10 + 1 : 1;
+  const rangeEnd = paging
+    ? (paging.pageNumber - 1) * 10 + users.length
+    : users.length;
+
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
+    <div>
       <Table>
         <TableHeader>
-          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Username
-            </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Email
-            </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Name
-            </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Status
-            </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
-              Roles
-            </TableHead>
-            <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
-              Actions
-            </TableHead>
+          <TableRow>
+            <TableHead>Username</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Roles</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user, index) => {
+          {users.map((user) => {
+            const isAdmin = user.groups?.some(
+              (g) => g.name === GROUPS.SYSTEM_ADMIN,
+            );
             return (
-              <TableRow
-                key={user.id}
-                className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
-              >
-                <TableCell className="font-medium">
+              <TableRow key={user.id} className="border-0">
+                {/* Username + avatar */}
+                <TableCell>
                   <Link
                     to={paths.app.userManagement.user.getHref(user.id!)}
-                    className="flex items-center gap-2.5 hover:underline"
+                    className="flex items-center gap-3 underline-offset-2 hover:underline"
                     onMouseEnter={() => {
                       queryClient.prefetchQuery(getUserQueryOptions(user.id!));
                     }}
                   >
-                    <span className="relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                      {user.avatarUrl ? (
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.username ?? ''}
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs font-semibold text-slate-600 select-none dark:text-slate-300">
-                          {(
-                            user.firstName?.[0] ??
-                            user.username?.[0] ??
-                            '?'
-                          ).toUpperCase()}
-                        </span>
-                      )}
+                    <UserAvatar
+                      avatarUrl={user.avatarUrl}
+                      firstName={user.firstName}
+                      username={user.username}
+                      size="sm"
+                    />
+                    <span className="text-foreground text-base font-semibold">
+                      {user.username}
                     </span>
-                    <span className="text-primary">{user.username}</span>
                   </Link>
                 </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
+
+                {/* Email */}
+                <TableCell className="text-muted-foreground font-mono text-sm">
+                  {user.email}
+                </TableCell>
+
+                {/* Name */}
+                <TableCell className="text-foreground text-sm">
                   {capitalize(user.firstName)} {capitalize(user.lastName)}
                 </TableCell>
+
+                {/* Status — dot indicator */}
                 <TableCell>
-                  <Badge variant={user.enabled ? 'default' : 'destructive'}>
-                    {user.enabled ? 'Active' : 'Disabled'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {user.groups?.some(
-                      (g) => g.name === GROUPS.SYSTEM_ADMIN,
-                    ) ? (
-                      <Badge variant="admin">Admin</Badge>
-                    ) : (
-                      <Badge variant="user">User</Badge>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'size-2 shrink-0 rounded-full',
+                        user.enabled ? 'bg-green-500' : 'bg-destructive',
+                      )}
+                    />
+                    <span className="font-mono text-[10px] tracking-wider uppercase">
+                      {user.enabled ? 'Active' : 'Disabled'}
+                    </span>
                   </div>
                 </TableCell>
+
+                {/* Role — subtle badge */}
+                <TableCell>
+                  <Badge variant={isAdmin ? 'admin' : 'user'}>
+                    {isAdmin ? 'Admin' : 'User'}
+                  </Badge>
+                </TableCell>
+
+                {/* Actions */}
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <UpdateUser user={user} userId={user.id!} />
@@ -168,24 +167,15 @@ export const UsersList = () => {
       </Table>
 
       {paging && (
-        <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
-          <p className="text-muted-foreground text-sm">
-            Page{' '}
-            <span className="text-foreground font-medium">
-              {paging.pageNumber}
-            </span>{' '}
-            of{' '}
-            <span className="text-foreground font-medium">
-              {paging.totalPages}
-            </span>{' '}
-            &middot; {paging.totalCount} results
+        <div className="border-border/40 flex items-center justify-between px-6 py-4">
+          <p className="text-on-surface-variant font-mono text-[10px] tracking-widest uppercase">
+            Showing {rangeStart}–{rangeEnd} of {paging.totalCount} entries
           </p>
 
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
+              variant="ghost"
+              size="icon-sm"
               disabled={!paging.hasPreviousPage}
               asChild={paging.hasPreviousPage}
             >
@@ -200,49 +190,9 @@ export const UsersList = () => {
               )}
             </Button>
 
-            {Array.from({ length: paging.totalPages }, (_, i) => i + 1)
-              .filter((p) => {
-                if (paging.totalPages <= 7) return true;
-                if (p === 1 || p === paging.totalPages) return true;
-                if (Math.abs(p - paging.pageNumber) <= 1) return true;
-                return false;
-              })
-              .reduce<(number | string)[]>((acc, p, idx, arr) => {
-                if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
-                  acc.push('...');
-                }
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((item, idx) =>
-                typeof item === 'string' ? (
-                  <span
-                    key={`ellipsis-${idx}`}
-                    className="text-muted-foreground px-0.5 text-sm"
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <Button
-                    key={item}
-                    variant={item === paging.pageNumber ? 'default' : 'outline'}
-                    size="icon"
-                    className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
-                    asChild={item !== paging.pageNumber}
-                  >
-                    {item !== paging.pageNumber ? (
-                      <Link to={buildPageUrl(item, searchParams)}>{item}</Link>
-                    ) : (
-                      <span>{item}</span>
-                    )}
-                  </Button>
-                ),
-              )}
-
             <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
+              variant="ghost"
+              size="icon-sm"
               disabled={!paging.hasNextPage}
               asChild={paging.hasNextPage}
             >
@@ -256,29 +206,7 @@ export const UsersList = () => {
                 </span>
               )}
             </Button>
-
-            <div className="ml-3 flex items-center gap-1.5 border-l pl-3">
-              <span className="text-muted-foreground text-sm whitespace-nowrap">
-                Go to
-              </span>
-              <Input
-                type="number"
-                min={1}
-                max={paging.totalPages}
-                defaultValue={paging.pageNumber}
-                className="h-8 w-14 text-center text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const val = Number((e.target as HTMLInputElement).value);
-                    if (val >= 1 && val <= paging.totalPages) {
-                      navigate(buildPageUrl(val, searchParams));
-                    }
-                  }
-                }}
-              />
-            </div>
           </div>
-          <div />
         </div>
       )}
     </div>

@@ -157,27 +157,24 @@ export const ProjectWritingPapersList = ({
           <div className="overflow-x-auto">
             <Table className="table-fixed">
               <TableHeader>
-                <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <TableHead className="w-[45%] font-semibold text-green-900 dark:text-green-200">
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="text-muted-foreground w-[45%] text-xs font-medium tracking-wider uppercase">
                     Title
                   </TableHead>
-                  <TableHead className="w-[15%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
                     Status
                   </TableHead>
-                  <TableHead className="w-[25%] font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="text-muted-foreground w-[25%] text-xs font-medium tracking-wider uppercase">
                     Template
                   </TableHead>
-                  <TableHead className="w-[15%] text-right font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="text-muted-foreground w-[15%] text-right text-xs font-medium tracking-wider uppercase">
                     Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {papers.map((paper, index) => (
-                  <TableRow
-                    key={paper.id}
-                    className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
-                  >
+                  <TableRow key={paper.id} className="hover:bg-muted/30">
                     <TableCell className="overflow-hidden font-medium">
                       <button
                         type="button"

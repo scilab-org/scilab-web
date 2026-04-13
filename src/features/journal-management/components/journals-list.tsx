@@ -71,33 +71,30 @@ export const JournalsList = () => {
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-xl border shadow-sm">
+      <div className="rounded-lg border shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-linear-to-r from-blue-50 to-cyan-50 hover:from-blue-50 hover:to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
-              <TableHead className="w-[30%] font-semibold text-blue-900 dark:text-blue-200">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="text-muted-foreground w-[30%] text-xs font-medium tracking-wider uppercase">
                 Name
               </TableHead>
-              <TableHead className="w-[15%] font-semibold text-blue-900 dark:text-blue-200">
+              <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
                 Styles
               </TableHead>
-              <TableHead className="w-[20%] font-semibold text-blue-900 dark:text-blue-200">
+              <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
                 Created
               </TableHead>
-              <TableHead className="w-[20%] font-semibold text-blue-900 dark:text-blue-200">
+              <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
                 Last Modified
               </TableHead>
-              <TableHead className="w-[15%] text-right font-semibold text-blue-900 dark:text-blue-200">
+              <TableHead className="text-muted-foreground w-[15%] text-right text-xs font-medium tracking-wider uppercase">
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {journals.map((journal, index) => (
-              <TableRow
-                key={journal.id}
-                className={`transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
-              >
+            {journals.map((journal) => (
+              <TableRow key={journal.id} className="hover:bg-muted/30">
                 <TableCell className="font-medium">
                   <Link
                     to={paths.app.journalManagement.journal.getHref(journal.id)}
@@ -194,7 +191,7 @@ export const JournalsList = () => {
                         item === paging.pageNumber ? 'default' : 'outline'
                       }
                       size="icon"
-                      className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
+                      className="size-8 text-xs"
                       asChild={item !== paging.pageNumber}
                     >
                       {item !== paging.pageNumber ? (

@@ -1,20 +1,20 @@
 import * as React from 'react';
-import { Plus } from 'lucide-react';
+import { Loader, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
-import { BTN } from '@/lib/button-styles';
 import { useCreateUser } from '../api/create-user';
+import { FIELD_LABEL_CLASS } from '../constants';
 
 const initialFormData = {
   username: '',
@@ -25,6 +25,8 @@ const initialFormData = {
   temporaryPassword: true,
   avatarImage: null as File | null,
 };
+
+const fieldLabel = FIELD_LABEL_CLASS;
 
 export const CreateUser = () => {
   const [open, setOpen] = React.useState(false);
@@ -58,35 +60,35 @@ export const CreateUser = () => {
   };
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
         if (!v) resetForm();
       }}
     >
-      <SheetTrigger asChild>
-        <Button size="sm" className={BTN.CREATE}>
+      <DialogTrigger asChild>
+        <Button variant="secondary">
           <Plus className="size-4" />
           Create User
         </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create New User</SheetTitle>
-          <SheetDescription>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Create New User</DialogTitle>
+          <DialogDescription>
             Fill in the details to create a new user. Username, email, and
             password are required.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="create-user-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="space-y-5 py-2"
         >
-          <div className="space-y-1.5">
-            <label htmlFor="cu-username" className="text-sm font-medium">
+          <div className="space-y-2">
+            <label htmlFor="cu-username" className={fieldLabel}>
               Username <span className="text-destructive">*</span>
             </label>
             <Input
@@ -100,8 +102,8 @@ export const CreateUser = () => {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="cu-email" className="text-sm font-medium">
+          <div className="space-y-2">
+            <label htmlFor="cu-email" className={fieldLabel}>
               Email <span className="text-destructive">*</span>
             </label>
             <Input
@@ -116,38 +118,46 @@ export const CreateUser = () => {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="cu-firstName" className="text-sm font-medium">
-              First Name <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="cu-firstName"
-              value={formData.firstName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, firstName: e.target.value }))
-              }
-              placeholder="Enter first name"
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="cu-firstName" className={fieldLabel}>
+                First Name <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="cu-firstName"
+                value={formData.firstName}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    firstName: e.target.value,
+                  }))
+                }
+                placeholder="First name"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="cu-lastName" className={fieldLabel}>
+                Last Name <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="cu-lastName"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    lastName: e.target.value,
+                  }))
+                }
+                placeholder="Last name"
+                required
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="cu-lastName" className="text-sm font-medium">
-              Last Name <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="cu-lastName"
-              value={formData.lastName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, lastName: e.target.value }))
-              }
-              placeholder="Enter last name"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="cu-password" className="text-sm font-medium">
+          <div className="space-y-2">
+            <label htmlFor="cu-password" className={fieldLabel}>
               Initial Password <span className="text-destructive">*</span>
             </label>
             <Input
@@ -165,8 +175,8 @@ export const CreateUser = () => {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium">
+          <div className="space-y-2">
+            <label className={`flex items-center gap-2 ${fieldLabel}`}>
               <input
                 type="checkbox"
                 checked={formData.temporaryPassword}
@@ -182,8 +192,8 @@ export const CreateUser = () => {
             </label>
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="cu-avatar" className="text-sm font-medium">
+          <div className="space-y-2">
+            <label htmlFor="cu-avatar" className={fieldLabel}>
               Avatar Image
             </label>
             <Input
@@ -203,28 +213,27 @@ export const CreateUser = () => {
           </div>
         </form>
 
-        <SheetFooter>
+        <DialogFooter className="pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => {
               resetForm();
               setOpen(false);
             }}
-            className={BTN.CANCEL}
           >
-            Cancel
+            CANCEL
           </Button>
           <Button
             type="submit"
             form="create-user-form"
             disabled={createUserMutation.isPending}
-            className={BTN.CREATE}
+            variant="secondary"
           >
-            {createUserMutation.isPending ? 'Creating...' : 'Create'}
+            {createUserMutation.isPending ? <Loader /> : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

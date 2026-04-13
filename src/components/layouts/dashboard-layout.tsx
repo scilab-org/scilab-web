@@ -9,7 +9,6 @@ import {
   LayoutTemplate,
   LogOut,
   Search,
-  Settings,
   Tag,
   Users,
 } from 'lucide-react';
@@ -33,6 +32,7 @@ import {
 import { paths } from '@/config/paths';
 import { useLogout, useUser } from '@/lib/auth';
 import { cn } from '@/utils/cn';
+import { capitalize } from '@/utils/string-utils';
 
 type SideNavigationItem = {
   name: string;
@@ -42,11 +42,10 @@ type SideNavigationItem = {
 
 const Logo = () => {
   return (
-    <div className="flex items-center gap-2 overflow-hidden">
-      <img src="/Logo.svg" alt="Logo" className="size-8 shrink-0" />
-      <span className="text-foreground truncate text-base font-bold transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
-        Hyper Data Lab
-      </span>
+    <div className="flex items-center justify-center overflow-hidden">
+      <h1 className="text-foreground text-center text-lg font-bold tracking-[0.3em] uppercase transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
+        HyperDataLab
+      </h1>
     </div>
   );
 };
@@ -181,7 +180,10 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
 
   return (
     <div className="flex flex-col gap-3 overflow-hidden">
-      <div className="flex items-center gap-3">
+      <NavLink
+        to={paths.app.profile.getHref()}
+        className="hover:bg-sidebar-accent flex items-center gap-3 rounded-md p-1 transition-colors"
+      >
         <div className="bg-sidebar-accent flex size-8 shrink-0 items-center justify-center rounded-full">
           <span className="text-sidebar-accent-foreground text-xs font-medium">
             {user?.firstName?.[0]}
@@ -190,13 +192,14 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
         </div>
         <div className="grid flex-1 text-left text-sm leading-tight transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
           <span className="truncate font-semibold">
-            {user?.firstName} {user?.lastName}
+            {capitalize(user?.firstName ?? '')}{' '}
+            {capitalize(user?.lastName ?? '')}
           </span>
           <span className="text-sidebar-foreground/70 truncate text-xs">
             {roleLabel}
           </span>
         </div>
-      </div>
+      </NavLink>
       <button
         onClick={onLogout}
         className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md p-2 text-sm"
@@ -252,7 +255,7 @@ const navigation: SideNavigationItem[] = [
     to: paths.app.paperTemplateManagement.paperTemplates.getHref(),
     icon: LayoutTemplate,
   },
-  { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
+  // { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
 ];
 
 const adminNavigation = navigation.filter(

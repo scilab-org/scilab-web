@@ -9,6 +9,9 @@ export const USER_MANAGEMENT_API = {
     `${SERVICE_PREFIX}/users/${userId}/activate`,
 } as const;
 
+export const FIELD_LABEL_CLASS =
+  'text-muted-foreground text-[10px] font-bold tracking-[0.12em] uppercase';
+
 export const USER_MANAGEMENT_QUERY_KEYS = {
   USERS: 'users',
   USER: 'user',

@@ -251,6 +251,13 @@ export const AuthLoader = ({ children }: { children: React.ReactNode }) => {
 };
 
 /**
+ * Public route component - renders children regardless of auth state
+ */
+export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  return <>{children}</>;
+};
+
+/**
  * Protected route component
  */
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

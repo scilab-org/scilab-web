@@ -1,26 +1,29 @@
 import * as React from 'react';
-import { Pencil } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
-import { BTN } from '@/lib/button-styles';
 import { useUpdateUser } from '../api/update-user';
 import { UserDto } from '../types';
+import { Loader } from 'lucide-react';
+import { FIELD_LABEL_CLASS } from '../constants';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 type UpdateUserProps = {
   userId: string;
   user: UserDto;
 };
+
+const fieldLabel = FIELD_LABEL_CLASS;
 
 export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   const [open, setOpen] = React.useState(false);
@@ -41,7 +44,6 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
     },
   });
 
-  // Reset form when drawer opens
   React.useEffect(() => {
     if (open) {
       setFormData({
@@ -70,27 +72,25 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Edit User</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="action">Edit</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit User</DialogTitle>
+          <DialogDescription>
             Update information for {user.username}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="update-user-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="space-y-4 py-2"
         >
-          <div className="space-y-1.5">
-            <label htmlFor="uu-firstName" className="text-sm font-medium">
+          <div className="space-y-2">
+            <label htmlFor="uu-firstName" className={fieldLabel}>
               First Name
             </label>
             <Input
@@ -106,8 +106,8 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="uu-lastName" className="text-sm font-medium">
+          <div className="space-y-2">
+            <label htmlFor="uu-lastName" className={fieldLabel}>
               Last Name
             </label>
             <Input
@@ -123,8 +123,8 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium">
+          <div className="space-y-2">
+            <label className={`flex items-center gap-2 ${fieldLabel}`}>
               <input
                 type="checkbox"
                 checked={formData.enabled}
@@ -141,28 +141,16 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="uu-avatar" className="text-sm font-medium">
+            <label htmlFor="uu-avatar" className={fieldLabel}>
               Avatar Image
             </label>
-            {/* Current / preview */}
             <div className="flex items-center gap-4">
-              <span className="border-border relative inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-slate-200 dark:bg-slate-700">
-                {avatarPreview || user.avatarUrl ? (
-                  <img
-                    src={avatarPreview ?? user.avatarUrl!}
-                    alt={user.username ?? ''}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xl font-semibold text-slate-600 select-none dark:text-slate-300">
-                    {(
-                      user.firstName?.[0] ??
-                      user.username?.[0] ??
-                      '?'
-                    ).toUpperCase()}
-                  </span>
-                )}
-              </span>
+              <UserAvatar
+                avatarUrl={avatarPreview ?? user.avatarUrl}
+                firstName={user.firstName}
+                username={user.username}
+                size="md"
+              />
               <div className="flex-1 space-y-1">
                 <Input
                   id="uu-avatar"
@@ -188,25 +176,20 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
           </div>
         </form>
 
-        <SheetFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(false)}
-            className={BTN.CANCEL}
-          >
-            Cancel
+        <DialogFooter className="pt-2">
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            CANCEL
           </Button>
           <Button
+            variant="secondary"
             type="submit"
             form="update-user-form"
             disabled={updateUserMutation.isPending}
-            className={BTN.EDIT}
           >
-            {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+            {updateUserMutation.isPending ? <Loader /> : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
