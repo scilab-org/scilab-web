@@ -62,7 +62,7 @@ const getRoleColor = (role: string) => {
 const formatRole = (role: string): string => {
   const r = (role || '').toLowerCase();
   if (r.includes('author')) return 'Author';
-  if (r.includes('member')) return 'Member';
+  if (r.includes('member')) return 'Contributor';
   if (r.includes('manager')) return 'Manager';
   if (r.includes('admin')) return 'Admin';
   const stripped = role.replace(/^(?:paper:|project:)/i, '');
@@ -159,12 +159,12 @@ export const PaperMembersSheet = ({
     subProjectId,
     mutationConfig: {
       onSuccess: () => {
-        toast.success('Members added successfully');
+        toast.success('Users added successfully');
         setSelectedUserIds(new Set());
         setPanel('view');
       },
       onError: () => {
-        toast.error('Failed to add members. Please try again.');
+        toast.error('Failed to add users. Please try again.');
       },
     },
   });
@@ -173,8 +173,8 @@ export const PaperMembersSheet = ({
   const removeMemberMutation = useRemovePaperMembers({
     subProjectId,
     mutationConfig: {
-      onSuccess: () => toast.success('Member removed successfully'),
-      onError: () => toast.error('Failed to remove member. Please try again.'),
+      onSuccess: () => toast.success('User removed successfully'),
+      onError: () => toast.error('Failed to remove user. Please try again.'),
     },
   });
 
@@ -223,16 +223,16 @@ export const PaperMembersSheet = ({
   const selectedCount = selectedUserIds.size;
 
   const panelTitle = {
-    view: 'View Members',
-    add: isManager ? 'Add Authors to Paper' : 'Add Member to Paper',
+    view: 'View Contributors',
+    add: isManager ? 'Add Authors to Paper' : 'Add Contributor to Paper',
   }[panel];
 
   const addPanelDesc = isManager
     ? 'Select project authors to add'
-    : 'Select project members to add';
+    : 'Select project contributors to add';
 
   const panelDescription = {
-    view: 'Members assigned to this paper',
+    view: 'Contributors assigned to this paper',
     add: addPanelDesc,
   }[panel];
 
@@ -274,7 +274,7 @@ export const PaperMembersSheet = ({
                     className={`gap-1.5 ${BTN.CREATE}`}
                   >
                     <UserPlus className="h-4 w-4" />
-                    Add Member
+                    Add Contributor
                   </Button>
                 </div>
               )}
@@ -315,7 +315,7 @@ export const PaperMembersSheet = ({
                             onClick={() => setMemberToRemove(m)}
                             disabled={removeMemberMutation.isPending}
                             className="text-muted-foreground hover:text-destructive ml-1 shrink-0 transition-colors disabled:opacity-50"
-                            title="Remove member"
+                            title="Remove contributor"
                           >
                             {removeMemberMutation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -331,7 +331,7 @@ export const PaperMembersSheet = ({
                   <div className="bg-muted/30 rounded-xl py-12 text-center">
                     <Users className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
                     <p className="text-muted-foreground text-sm">
-                      No members assigned to this paper yet
+                      No contributors assigned to this paper yet
                     </p>
                   </div>
                 )}
@@ -427,8 +427,8 @@ export const PaperMembersSheet = ({
                   <div className="bg-muted/30 rounded-xl py-10 text-center">
                     <p className="text-muted-foreground text-sm">
                       {searchText
-                        ? `No ${isManager ? 'authors' : 'members'} found for "${searchText}"`
-                        : `No available ${isManager ? 'authors' : 'members'} in this project`}
+                        ? `No ${isManager ? 'authors' : 'contributors'} found for "${searchText}"`
+                        : `No available ${isManager ? 'authors' : 'contributors'} in this project`}
                     </p>
                   </div>
                 )}
@@ -486,7 +486,7 @@ export const PaperMembersSheet = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove member</AlertDialogTitle>
+            <AlertDialogTitle>Remove contributor</AlertDialogTitle>
             <AlertDialogDescription>
               Remove{' '}
               <span className="text-foreground font-semibold">

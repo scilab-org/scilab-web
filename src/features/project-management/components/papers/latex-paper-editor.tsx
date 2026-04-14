@@ -15,6 +15,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import {
   X,
   FileText,
+  FileEdit,
   Save,
   Play,
   PanelLeftOpen,
@@ -29,7 +30,6 @@ import {
   Keyboard,
   Copy,
   MessageSquareText,
-  BookOpen,
   History,
   Database,
   BookMarked,
@@ -285,28 +285,28 @@ const WriteDiffView = ({
         >
           {/* Gutter: old line number */}
           <span
-            className="text-muted-foreground/50 inline-block shrink-0 select-none text-right"
+            className="text-muted-foreground/50 inline-block shrink-0 text-right select-none"
             style={{ width: '40px', paddingRight: '4px' }}
           >
             {line.oldLineNum ?? ''}
           </span>
           {/* Gutter: new line number */}
           <span
-            className="text-muted-foreground/50 inline-block shrink-0 select-none text-right"
+            className="text-muted-foreground/50 inline-block shrink-0 text-right select-none"
             style={{ width: '40px', paddingRight: '4px' }}
           >
             {line.newLineNum ?? ''}
           </span>
           {/* Change indicator */}
           <span
-            className="inline-block shrink-0 select-none text-center"
+            className="inline-block shrink-0 text-center select-none"
             style={{ width: '20px' }}
           >
             {line.type === 'removed' ? '-' : line.type === 'added' ? '+' : ' '}
           </span>
           {/* Content */}
           <span
-            className="whitespace-pre-wrap break-all"
+            className="break-all whitespace-pre-wrap"
             style={{ paddingRight: '16px' }}
           >
             {line.content || '\u00A0'}
@@ -716,64 +716,55 @@ const SectionVersionsPanel = ({
   );
 };
 
-const VersionsTabPanel = ({
-  paperId,
-  paperTitle,
+const DraftsTabPanel = ({
   markSectionId,
   currentUserEmail,
   activeSectionId,
   onOpenVersionPreview,
 }: {
-  paperId: string;
-  paperTitle: string;
   markSectionId: string;
   currentUserEmail: string;
   activeSectionId: string | null;
   onOpenVersionPreview: (item: MarkSectionItem) => void;
 }) => {
-  const [view, setView] = useState<'old' | 'others'>('others');
-
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <select
-          value={view}
-          onChange={(e) => setView(e.target.value as 'old' | 'others')}
-          className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-        >
-          <option value="old">Old Versions</option>
-          <option value="others">Other Versions</option>
-        </select>
-      </div>
-
-      {view === 'old' ? (
-        <div className="flex flex-1 flex-col overflow-auto">
-          {paperId ? (
-            <PaperOldSectionsManager
-              paperId={paperId}
-              paperTitle={paperTitle}
-              onViewSection={onOpenVersionPreview}
-            />
-          ) : (
-            <div className="flex flex-1 items-center justify-center p-8 text-center text-xs text-slate-500 dark:text-slate-400">
-              No paper context available to load version history.
-            </div>
-          )}
-        </div>
+    <div className="flex flex-1 flex-col overflow-y-auto">
+      {markSectionId ? (
+        <SectionVersionsPanel
+          markSectionId={markSectionId}
+          currentUserEmail={currentUserEmail}
+          excludeSectionId={activeSectionId ?? undefined}
+          onViewItem={onOpenVersionPreview}
+        />
       ) : (
-        <div className="flex flex-1 flex-col overflow-y-auto">
-          {markSectionId ? (
-            <SectionVersionsPanel
-              markSectionId={markSectionId}
-              currentUserEmail={currentUserEmail}
-              excludeSectionId={activeSectionId ?? undefined}
-              onViewItem={(item) => onOpenVersionPreview(item)}
-            />
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-center text-xs text-slate-400">
-              No section context for other versions.
-            </div>
-          )}
+        <div className="flex flex-1 items-center justify-center p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+          No section context for drafts.
+        </div>
+      )}
+    </div>
+  );
+};
+
+const VersionsTabPanel = ({
+  paperId,
+  paperTitle,
+  onOpenVersionPreview,
+}: {
+  paperId: string;
+  paperTitle: string;
+  onOpenVersionPreview: (item: MarkSectionItem) => void;
+}) => {
+  return (
+    <div className="flex flex-1 flex-col overflow-auto">
+      {paperId ? (
+        <PaperOldSectionsManager
+          paperId={paperId}
+          paperTitle={paperTitle}
+          onViewSection={onOpenVersionPreview}
+        />
+      ) : (
+        <div className="flex flex-1 items-center justify-center p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+          No paper context available to load version history.
         </div>
       )}
     </div>
@@ -1519,7 +1510,7 @@ const InlineReferenceSectionEditor = ({
     return () => {
       cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingReferencedPaperIds]);
 
   // Auto-select review paper bank IDs in update dialog
@@ -2630,7 +2621,7 @@ export const LatexPaperEditor = ({
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [toolsTab, setToolsTab] = useState<
-    'chat' | 'versions' | 'comments' | 'info' | 'datasets'
+    'chat' | 'drafts' | 'versions' | 'comments' | 'datasets'
   >('chat');
   const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(true);
   const [editorWidthPct, setEditorWidthPct] = useState(50);
@@ -2652,7 +2643,9 @@ export const LatexPaperEditor = ({
   const [pendingWriteOutput, setPendingWriteOutput] = useState<string | null>(
     null,
   );
-  const [pendingReferencedPaperIds, setPendingReferencedPaperIds] = useState<string[]>([]);
+  const [pendingReferencedPaperIds, setPendingReferencedPaperIds] = useState<
+    string[]
+  >([]);
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.editor.IStandaloneCodeEditor | null>(
@@ -4043,8 +4036,13 @@ export const LatexPaperEditor = ({
       // If the AI writing agent suggested references (pendingReferencedPaperIds),
       // commit them now — alongside the content save — so that content and
       // references are persisted atomically from the user's perspective.
-      if (pendingReferencedPaperIds.length > 0 && handleUpdateSectionReferenceRef.current) {
-        await handleUpdateSectionReferenceRef.current(pendingReferencedPaperIds);
+      if (
+        pendingReferencedPaperIds.length > 0 &&
+        handleUpdateSectionReferenceRef.current
+      ) {
+        await handleUpdateSectionReferenceRef.current(
+          pendingReferencedPaperIds,
+        );
         setPendingReferencedPaperIds([]);
       }
 
@@ -5292,17 +5290,24 @@ export const LatexPaperEditor = ({
 
               {/* Save button — bottom of editor */}
               <div className="flex shrink-0 items-center justify-between border-t border-[#e8e8e6] px-4 py-2 dark:border-[#2a2a2a]">
-                <span className="text-[10px] text-slate-400">
-                  {isActiveSectionReadOnly && previewEditContent === null
-                    ? 'Read-only'
-                    : previewEditContent !== null
-                      ? previewEditContent !== content
-                        ? 'Unsaved changes'
-                        : 'Saved'
-                      : content !== savedContent
-                        ? 'Unsaved changes'
-                        : 'Saved'}
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] text-slate-400">
+                    {isActiveSectionReadOnly && previewEditContent === null
+                      ? 'Read-only'
+                      : previewEditContent !== null
+                        ? previewEditContent !== content
+                          ? 'Unsaved changes'
+                          : 'Saved'
+                        : content !== savedContent
+                          ? 'Unsaved changes'
+                          : 'Saved'}
+                  </span>
+                  <div className="flex items-center gap-3 border-l border-slate-200 pl-4 text-[10px] text-slate-500 dark:border-slate-700">
+                    <span>{latexStats.totalWords} words</span>
+                    <span>{latexStats.wordsInHeaders} header words</span>
+                    <span>{latexStats.numHeaders} headers</span>
+                  </div>
+                </div>
                 {(!isActiveSectionReadOnly || previewEditContent !== null) && (
                   <AlertDialog
                     open={showSaveConfirm}
@@ -5410,13 +5415,13 @@ export const LatexPaperEditor = ({
                                 },
                               ]
                             : []),
+                          { key: 'drafts', icon: FileEdit, label: 'Drafts' },
                           { key: 'versions', icon: History, label: 'Versions' },
                           {
                             key: 'comments',
                             icon: MessageSquareText,
                             label: 'Comments',
                           },
-                          { key: 'info', icon: BookOpen, label: 'Paper Info' },
                           ...(projectId
                             ? [
                                 {
@@ -5469,59 +5474,15 @@ export const LatexPaperEditor = ({
                   </div>
 
                   <div className="flex flex-1 flex-col overflow-hidden">
-                    {toolsTab === 'info' && (
-                      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
-                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                          Summary
-                        </h3>
-                        <div className="grid grid-cols-3 gap-3">
-                          {[
-                            { label: 'Words', value: latexStats.totalWords },
-                            {
-                              label: 'Words in Text',
-                              value: latexStats.wordsInText,
-                            },
-                            {
-                              label: 'Words in Headers',
-                              value: latexStats.wordsInHeaders,
-                            },
-                            { label: 'Words outside text', value: 0 },
-                            {
-                              label: 'Number of headers',
-                              value: latexStats.numHeaders,
-                            },
-                            {
-                              label: 'Number of figures',
-                              value: latexStats.numFigures,
-                            },
-                            {
-                              label: 'Number of math inlines',
-                              value: latexStats.numMathInlines,
-                            },
-                            {
-                              label: 'Number of math displayed',
-                              value: latexStats.numMathDisplayed,
-                            },
-                          ].map(({ label, value }) => (
-                            <div
-                              key={label}
-                              className="rounded-lg border border-slate-100 bg-white px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900"
-                            >
-                              <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                                {label}
-                              </p>
-                              <p className="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-200">
-                                {value}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     {toolsTab === 'versions' && (
                       <VersionsTabPanel
                         paperId={derivedPaperId}
                         paperTitle={paperTitle}
+                        onOpenVersionPreview={handleOpenVersionPreview}
+                      />
+                    )}
+                    {toolsTab === 'drafts' && (
+                      <DraftsTabPanel
                         markSectionId={activeSectionMarkId}
                         currentUserEmail={currentUserEmail}
                         activeSectionId={activeSectionId}

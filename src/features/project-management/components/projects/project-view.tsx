@@ -7,6 +7,10 @@ import {
   Sparkles,
   Target,
   Trash2,
+  Users,
+  FileText,
+  Database,
+  BookOpen,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +18,12 @@ import { Button } from '@/components/ui/button';
 
 import { BTN } from '@/lib/button-styles';
 import { Project } from '../../types';
+
+import { useProjectMembers } from '../../api/members/get-project-members';
+import { useProjectPapers } from '../../api/papers/get-project-papers';
+import { useSubProjects } from '../../api/papers/get-sub-projects';
+import { useDatasets } from '@/features/dataset-management/api/get-datasets';
+import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 
 type ProjectViewProps = {
   project: Project;
@@ -30,6 +40,53 @@ export const ProjectView = ({
   isDeleting = false,
   readOnly = false,
 }: ProjectViewProps) => {
+  const membersQuery = useProjectMembers({
+    projectId: project.id,
+    params: { pageNumber: 1, pageSize: 1 },
+    queryConfig: { enabled: true },
+  });
+
+  const subProjectsQuery = useSubProjects({
+    projectId: project.id,
+    params: { PageNumber: 1, PageSize: 100 },
+    queryConfig: { enabled: true },
+  });
+
+  const referencesQuery = useProjectPapers({
+    projectId: project.id,
+    params: { PageNumber: 1, PageSize: 1 },
+    queryConfig: { enabled: true },
+  });
+
+  const datasetsQuery = useDatasets({
+    params: { projectId: project.id, PageNumber: 1, PageSize: 1 },
+    queryConfig: { enabled: true },
+  });
+
+  const totalMembers = Number(
+    (membersQuery.data as any)?.result?.paging?.totalCount ?? 0,
+  );
+  const totalPapers = Number(
+    (subProjectsQuery.data as any)?.result?.paging?.totalCount ?? 0,
+  );
+  const totalReferences = Number(
+    (referencesQuery.data as any)?.result?.paging?.totalCount ?? 0,
+  );
+  const totalDatasets = Number(
+    (datasetsQuery.data as any)?.result?.paging?.totalCount ?? 0,
+  );
+
+  const papers = (subProjectsQuery.data as any)?.result?.items ?? [];
+  const statusCounts = papers.reduce(
+    (acc: any, paper: any) => {
+      if (paper.status != null) {
+        acc[paper.status] = (acc[paper.status] || 0) + 1;
+      }
+      return acc;
+    },
+    {} as Record<number, number>,
+  );
+
   const formatDate = (date: string | null | undefined) => {
     if (!date) return '—';
     const d = new Date(date);
@@ -41,60 +98,15 @@ export const ProjectView = ({
     });
   };
 
-  const getStatusText = (status: number) => {
-    switch (status) {
-      case 1:
-        return 'Draft';
-      case 2:
-        return 'Active';
-      case 3:
-        return 'Completed';
-      case 4:
-        return 'Archived';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const getStatusVariant = (
-    status: number,
-  ): {
-    variant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline';
-    className?: string;
-  } => {
-    switch (status) {
-      case 1:
-        return { variant: 'secondary' };
-      case 2:
-        return {
-          variant: 'default',
-          className: 'bg-blue-600 text-white hover:bg-blue-700',
-        };
-      case 3:
-        return {
-          variant: 'default',
-          className: 'bg-green-600 text-white hover:bg-green-700',
-        };
-      case 4:
-        return {
-          variant: 'default',
-          className: 'bg-amber-500 text-white hover:bg-amber-600',
-        };
-      default:
-        return { variant: 'outline' };
-    }
-  };
-
-  const statusVariant = getStatusVariant(project.status);
-
   const overviewCards = [
     {
-      title: 'Research Domain',
-      value: project.domain || 'Not specified',
-      description: 'Primary field and academic focus of the project.',
-      icon: Compass,
+      title: 'Key Objective',
+      value: project.keypoint || 'Not specified',
+      description:
+        'Main result, hypothesis, or outcome the team is driving toward.',
+      icon: Target,
       accent:
-        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900/40',
+        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/40',
     },
     {
       title: 'Study Context',
@@ -105,13 +117,12 @@ export const ProjectView = ({
         'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-900/40',
     },
     {
-      title: 'Key Objective',
-      value: project.keypoint || 'Not specified',
-      description:
-        'Main result, hypothesis, or outcome the team is driving toward.',
-      icon: Target,
+      title: 'Research Domain',
+      value: project.domain || 'Not specified',
+      description: 'Primary field and academic focus of the project.',
+      icon: Compass,
       accent:
-        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/40',
+        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900/40',
     },
   ];
 
@@ -147,8 +158,8 @@ export const ProjectView = ({
         </div>
       )}
 
-      <div className="bg-card overflow-hidden rounded-2xl border shadow-sm">
-        <div className="border-b bg-linear-to-r from-slate-50 via-blue-50/60 to-emerald-50/40 px-6 py-5 dark:from-slate-900/50 dark:via-blue-950/20 dark:to-emerald-950/10">
+      <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
+        <div className="border-b px-6 py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl space-y-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -156,9 +167,6 @@ export const ProjectView = ({
                   <Lightbulb className="size-5" />
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs font-semibold tracking-[0.2em] uppercase">
-                    Research Snapshot
-                  </p>
                   <h2 className="text-foreground text-2xl font-semibold tracking-tight">
                     {project.name}
                   </h2>
@@ -171,7 +179,7 @@ export const ProjectView = ({
             </div>
 
             <div className="w-full lg:w-[320px]">
-              <div className="rounded-xl border border-blue-100 bg-white/90 p-4 shadow-sm dark:border-blue-900/40 dark:bg-slate-950/40">
+              <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm dark:border-blue-900/40 dark:bg-slate-950">
                 <div className="mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">
                   <CalendarRange className="size-4" />
                   <span className="text-xs font-semibold tracking-[0.18em] uppercase">
@@ -198,97 +206,154 @@ export const ProjectView = ({
         </div>
 
         <div className="p-6">
-          <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr_0.85fr]">
+          <div className="mb-8">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-blue-100/50 p-1.5 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                      <Users className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Members
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground text-3xl font-bold">
+                      {membersQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-blue-600" />
+                      ) : (
+                        totalMembers
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-emerald-100/50 p-1.5 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                      <BookOpen className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Writing Papers
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground text-3xl font-bold">
+                      {subProjectsQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-emerald-600" />
+                      ) : (
+                        totalPapers
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-violet-100/50 p-1.5 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
+                      <FileText className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      References
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground text-3xl font-bold">
+                      {referencesQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-violet-600" />
+                      ) : (
+                        totalReferences
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-amber-100/50 p-1.5 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                      <Database className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Datasets
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground text-3xl font-bold">
+                      {datasetsQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-amber-600" />
+                      ) : (
+                        totalDatasets
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {totalPapers > 0 && (
+              <div className="bg-muted/20 mt-4 rounded-xl border p-4 dark:bg-slate-950">
+                <p className="text-muted-foreground mb-3 text-xs font-bold tracking-wider uppercase">
+                  Paper Status Breakdown
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {Object.entries(statusCounts).map(([status, count]) => (
+                    <div
+                      key={status}
+                      className="flex items-center gap-2 rounded-lg border bg-white px-3 py-1.5 shadow-sm dark:bg-slate-950"
+                    >
+                      <span className="text-foreground text-sm font-medium">
+                        {PAPER_STATUS_MAP[Number(status)] || 'Unknown'}
+                      </span>
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 px-1.5 text-xs"
+                      >
+                        {String(count)}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-4">
             {overviewCards.map((card) => {
               const Icon = card.icon;
 
               return (
                 <div
                   key={card.title}
-                  className="group rounded-2xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-950/20"
+                  className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950"
                 >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
-                        {card.title}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs leading-5">
-                        {card.description}
-                      </p>
-                    </div>
-                    <div className={`rounded-xl border p-2.5 ${card.accent}`}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div
+                      className={`flex items-center justify-center rounded-md p-1 ${card.accent.split(' ')[0]} ${card.accent.split(' ')[1]}`}
+                    >
                       <Icon className="size-4" />
                     </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      {card.title}
+                    </p>
                   </div>
-                  <p className="text-foreground text-sm leading-7 whitespace-pre-wrap">
+                  {card.description && (
+                    <p className="text-muted-foreground mb-3 text-xs leading-relaxed">
+                      {card.description}
+                    </p>
+                  )}
+                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                     {card.value}
                   </p>
                 </div>
               );
             })}
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-2xl border bg-linear-to-br from-amber-50 via-white to-orange-50 p-5 shadow-sm dark:from-amber-950/20 dark:via-slate-950/20 dark:to-orange-950/10">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-xl border border-amber-200 bg-white/80 p-2.5 text-amber-700 shadow-sm dark:border-amber-900/40 dark:bg-slate-950/40 dark:text-amber-300">
-                  <Target className="size-4" />
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
-                    Research Direction
-                  </p>
-                  <h3 className="text-foreground text-base font-semibold">
-                    What this project is trying to achieve
-                  </h3>
-                </div>
-              </div>
-              <p className="text-foreground/90 text-sm leading-7 whitespace-pre-wrap">
-                {project.keypoint ||
-                  project.description ||
-                  'Define the project objective and intended research outcome to give the team a clear execution target.'}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border bg-linear-to-br from-slate-50 via-white to-blue-50 p-5 shadow-sm dark:from-slate-900/40 dark:via-slate-950/20 dark:to-blue-950/10">
-              <p className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
-                Research Notes
-              </p>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-xl border bg-white/80 px-4 py-3 dark:bg-slate-950/30">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-                    Project Code
-                  </p>
-                  <p className="text-foreground mt-1 font-mono text-sm">
-                    {project.code}
-                  </p>
-                </div>
-                <div className="rounded-xl border bg-white/80 px-4 py-3 dark:bg-slate-950/30">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-                    Status
-                  </p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <span className="text-foreground text-sm font-medium">
-                      {getStatusText(project.status)}
-                    </span>
-                    <Badge
-                      variant={statusVariant.variant}
-                      className={statusVariant.className}
-                    >
-                      {getStatusText(project.status)}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="rounded-xl border bg-white/80 px-4 py-3 dark:bg-slate-950/30">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-                    Last Updated
-                  </p>
-                  <p className="text-foreground mt-1 text-sm font-medium">
-                    {formatDate(project.modifiedAt || project.createdAt)}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

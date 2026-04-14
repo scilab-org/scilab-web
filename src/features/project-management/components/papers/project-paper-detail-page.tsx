@@ -12,9 +12,7 @@ import {
   Target,
   BookOpen,
   Globe,
-  PenTool,
   ClipboardList,
-  Hash,
   Calendar,
   Presentation,
   LayoutTemplate,
@@ -54,7 +52,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
-import { formatPublicationDate } from '@/utils/string-utils';
 import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useUpdateWritingPaper } from '@/features/paper-management/api/update-writing-paper';
@@ -69,6 +66,7 @@ import type { CombineDto } from '@/features/paper-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
+import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
 import { ProjectMember } from '@/features/project-management/types';
 import { PaperMembersSheet } from '@/features/project-management/components/papers/paper-members-sheet';
@@ -388,6 +386,22 @@ export const ProjectPaperDetailPage = ({
     params: { pageNumber: 1, pageSize: 1000 },
     queryConfig: { enabled: !!paperSubProjectId } as any,
   });
+
+  const sectionsQuery = useGetPaperSections({
+    paperId,
+    queryConfig: { enabled: !!paperId } as any,
+  });
+
+  const totalSections = sectionsQuery.data?.result?.items?.length || 0;
+  const paperMembersList = (paperMembersQuery.data as any)?.result?.items ?? [];
+  const totalPaperMembers = paperMembersList.filter((m: any) =>
+    (m.role || '').toLowerCase().includes('member'),
+  ).length;
+  const editRoleMembers = paperMembersList.filter((m: any) => {
+    const role = (m.role || '').toLowerCase();
+    return role.includes('author');
+  }).length;
+
   const currentUsername = (user?.preferredUsername || '').trim().toLowerCase();
 
   const memberOptions = useMemo(() => {
@@ -707,7 +721,7 @@ export const ProjectPaperDetailPage = ({
                   className="gap-1.5"
                 >
                   <Users className="size-4" />
-                  Members
+                  Contributors
                 </Button>
                 {workspacePath && (
                   <Button
@@ -734,108 +748,99 @@ export const ProjectPaperDetailPage = ({
             </div>
           </div>
           {/* Paper detail grid */}
+          {/* Paper detail dashboard */}
           <div className="p-6">
-            {/* Quick info row */}
-            <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {(paper as any).doi && (
-                <div className="flex items-start gap-2">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
-                    <Hash className="size-3.5 text-violet-600 dark:text-violet-400" />
+            <div className="mb-8 grid gap-4 sm:grid-cols-3">
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-blue-100/50 p-1.5 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                      <Layers className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Sections
+                    </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-                      DOI
-                    </p>
-                    <p className="text-foreground text-sm font-medium">
-                      {(paper as any).doi}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {(paper.journalName || (paper as any).journal) && (
-                <div className="flex items-start gap-2">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-rose-100 dark:bg-rose-900/30">
-                    <BookOpen className="size-3.5 text-rose-600 dark:text-rose-400" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-                      Journal
-                    </p>
-                    <p className="text-foreground text-sm font-medium">
-                      {paper.journalName || (paper as any).journal}
+                    <p className="text-foreground text-3xl font-bold">
+                      {sectionsQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-blue-600" />
+                      ) : (
+                        totalSections
+                      )}
                     </p>
                   </div>
                 </div>
-              )}
-              {(paper as any).conferenceName && (
-                <div className="flex items-start gap-2">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-100 dark:bg-indigo-900/30">
-                    <Presentation className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-                      Conference
-                    </p>
-                    <p className="text-foreground text-sm font-medium">
-                      {(paper as any).conferenceName}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {(paper as any).publicationDate && (
-                <div className="flex items-start gap-2">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-pink-100 dark:bg-pink-900/30">
-                    <Calendar className="size-3.5 text-pink-600 dark:text-pink-400" />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-                      Published
-                    </p>
-                    <p className="text-foreground text-sm font-medium">
-                      {formatPublicationDate((paper as any).publicationDate)}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Abstract full width */}
-            <div className="bg-muted/20 mb-4 rounded-xl border p-5 transition-shadow hover:shadow-sm">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100/60 dark:bg-blue-900/30">
-                  <FileText className="size-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  Abstract
-                </h3>
               </div>
-              <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
-                {paper.abstract || 'No abstract provided.'}
-              </p>
+
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-emerald-100/50 p-1.5 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                      <Users className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Contributors
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground text-3xl font-bold">
+                      {paperMembersQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-emerald-600" />
+                      ) : (
+                        totalPaperMembers
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-violet-100/50 p-1.5 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
+                      <Pencil className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Authors
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground text-3xl font-bold">
+                      {paperMembersQuery.isLoading ? (
+                        <Loader2 className="size-6 animate-spin text-violet-600" />
+                      ) : (
+                        editRoleMembers
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Remaining metadata grid */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
+              {/* Abstract */}
               <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100/60 dark:bg-emerald-900/30">
-                    <BookOpen className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
+                    <FileText className="text-muted-foreground size-4" />
                   </div>
-                  <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    Main Contribution
+                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                    Abstract
                   </h3>
                 </div>
                 <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
-                  {paper.mainContribution || 'No main contribution listed.'}
+                  {paper.abstract || 'No abstract provided.'}
                 </p>
               </div>
 
+              {/* Context */}
               <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100/60 dark:bg-indigo-900/30">
-                    <Globe className="size-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
+                    <Globe className="text-muted-foreground size-4" />
                   </div>
-                  <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
                     Context
                   </h3>
                 </div>
@@ -844,12 +849,13 @@ export const ProjectPaperDetailPage = ({
                 </p>
               </div>
 
+              {/* Research Gap */}
               <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100/60 dark:bg-orange-900/30">
-                    <Target className="size-4 text-orange-600 dark:text-orange-400" />
+                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
+                    <Target className="text-muted-foreground size-4" />
                   </div>
-                  <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
                     Research Gap
                   </h3>
                 </div>
@@ -863,26 +869,48 @@ export const ProjectPaperDetailPage = ({
                 )}
               </div>
 
-              {(paper.styleName || paper.styleDescription) && (
+              {/* Main Contribution */}
+              <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
+                    <BookOpen className="text-muted-foreground size-4" />
+                  </div>
+                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                    Main Contribution
+                  </h3>
+                </div>
+                <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
+                  {paper.mainContribution || 'No main contribution listed.'}
+                </p>
+              </div>
+
+              {/* Journal / Conference */}
+              {((paper as any).journalName ||
+                (paper as any).journal ||
+                (paper as any).conferenceName) && (
                 <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
                   <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100/60 dark:bg-violet-900/30">
-                      <PenTool className="size-4 text-violet-600 dark:text-violet-400" />
+                    <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
+                      <Presentation className="text-muted-foreground size-4" />
                     </div>
-                    <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                      Style Guidelines
+                    <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Journal / Conference
                     </h3>
                   </div>
-                  {paper.styleName && (
-                    <p className="text-foreground text-[14px] font-medium">
-                      {paper.styleName}
-                    </p>
-                  )}
-                  {paper.styleDescription && (
-                    <p className="text-foreground/80 mt-1 text-[14px] leading-relaxed">
-                      {paper.styleDescription}
-                    </p>
-                  )}
+                  <div className="space-y-2">
+                    {((paper as any).journalName || (paper as any).journal) && (
+                      <p className="text-foreground/90 text-[14px] leading-relaxed">
+                        <span className="mr-2 font-semibold">Journal:</span>
+                        {(paper as any).journalName || (paper as any).journal}
+                      </p>
+                    )}
+                    {(paper as any).conferenceName && (
+                      <p className="text-foreground/90 text-[14px] leading-relaxed">
+                        <span className="mr-2 font-semibold">Conference:</span>
+                        {(paper as any).conferenceName}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
