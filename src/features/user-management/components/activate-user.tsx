@@ -38,7 +38,7 @@ export const ActivateUser = ({ userId }: ActivateUserProps) => {
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
           <AlertDialogAction
-            variant="secondary"
+            variant="darkRed"
             disabled={activateUserMutation.isPending}
             onClick={() => activateUserMutation.mutate({ userId })}
           >

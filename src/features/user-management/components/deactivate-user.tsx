@@ -37,7 +37,7 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
+          <AlertDialogCancel variant="ghost">CANCEL</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={deactivateUserMutation.isPending}

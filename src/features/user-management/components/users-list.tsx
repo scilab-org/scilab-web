@@ -141,7 +141,6 @@ export const UsersList = () => {
                 {/* Actions */}
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="action">VIEW</Button>
                     <UpdateUser user={user} userId={user.id!} />
                     {user.enabled ? (
                       <DeactivateUser userId={user.id!} />

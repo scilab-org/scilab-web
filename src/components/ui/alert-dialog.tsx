@@ -118,7 +118,7 @@ function AlertDialogDescription({
   );
 }
 
-type ActionVariant = 'default' | 'secondary' | 'destructive';
+type ActionVariant = 'default' | 'secondary' | 'destructive' | 'darkRed';
 
 function AlertDialogAction({
   className,

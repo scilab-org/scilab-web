@@ -181,7 +181,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
             CANCEL
           </Button>
           <Button
-            variant="secondary"
+            variant="darkRed"
             type="submit"
             form="update-user-form"
             disabled={updateUserMutation.isPending}

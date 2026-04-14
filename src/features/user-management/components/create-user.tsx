@@ -227,7 +227,7 @@ export const CreateUser = () => {
             type="submit"
             form="create-user-form"
             disabled={createUserMutation.isPending}
-            variant="secondary"
+            variant="darkRed"
           >
             {createUserMutation.isPending ? <Loader /> : 'SAVE'}
           </Button>
