@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { useSearchParams } from 'react-router';
-import { Search, ChevronDown, X } from 'lucide-react';
+import { Search, X, SlidersHorizontal } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
 import { MultiValueInput } from './multi-value-input';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
@@ -20,9 +20,9 @@ export const PapersFilter = () => {
       searchParams.get('journalName') ||
       searchParams.get('conferenceName') ||
       searchParams.get('isDeleted') === 'true' ||
-      searchParams.get('status') ||
       searchParams.get('fromDate') ||
       searchParams.get('toDate') ||
+      searchParams.get('status') ||
       searchParams.getAll('author').length > 0,
     );
   });
@@ -108,7 +108,15 @@ export const PapersFilter = () => {
     setSearchParams(params);
   };
 
-  const handleClear = () => {
+  const handleClearTitle = () => {
+    setFilters((prev) => ({ ...prev, title: '' }));
+    const params = new URLSearchParams(searchParams);
+    params.delete('title');
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleClearAll = () => {
     setFilters({
       title: '',
       publisher: '',
@@ -128,78 +136,100 @@ export const PapersFilter = () => {
   };
 
   return (
-    <form onSubmit={handleApply} className="bg-muted/40 rounded-xl border p-6">
-      {/* Primary filters - DOI / Keywords / Title */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {/* DOI */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-doi"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            DOI
-          </label>
-          <Input
-            id="filter-doi"
-            value={filters.doi}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, doi: e.target.value }))
-            }
-            placeholder="Search by DOI..."
-          />
-        </div>
-
-        {/* Keywords (Tags) */}
-        <div className="space-y-1.5">
-          <span className="text-muted-foreground text-xs font-medium">
-            Keywords
-          </span>
-          <TagAutocompleteInput
-            tagList={tagList}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-            placeholder="Type a keyword and press Enter..."
-          />
-        </div>
-
+    <form
+      onSubmit={handleApply}
+      className="flex flex-col gap-2 rounded-md border bg-[#E9E1D8] p-2"
+    >
+      <div className="flex w-full flex-wrap items-center gap-2">
         {/* Title */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-title"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Title
-          </label>
-          <Input
-            id="filter-title"
+        <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+          <Search className="text-muted-foreground size-4" />
+          <input
             value={filters.title}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, title: e.target.value }))
             }
             placeholder="Search by title..."
+            className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+          />
+          {filters.title && (
+            <button
+              type="button"
+              onClick={handleClearTitle}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+
+        {/* DOI */}
+        <div className="bg-background flex h-10 w-48 shrink-0 items-center rounded-md px-4">
+          <input
+            value={filters.doi}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, doi: e.target.value }))
+            }
+            placeholder="DOI"
+            className="text-foreground placeholder:text-muted-foreground/50 w-full bg-transparent font-sans text-sm outline-none"
           />
         </div>
-      </div>
 
-      {/* More filters toggle */}
-      <button
-        type="button"
-        onClick={() => setShowMore((prev) => !prev)}
-        className="text-muted-foreground hover:text-foreground mt-3 flex items-center gap-1 text-xs font-medium transition-colors"
-      >
-        <ChevronDown
-          className={`size-3.5 transition-transform ${showMore ? 'rotate-180' : ''}`}
-        />
-        {showMore ? 'Less filters' : 'More filters'}
-      </button>
+        {/* Keywords */}
+        <div className="w-56 shrink-0">
+          <TagAutocompleteInput
+            tagList={tagList}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            placeholder="Keywords..."
+          />
+        </div>
+
+        {/* More filters toggle */}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => setShowMore((prev) => !prev)}
+          className="border-input bg-background/50 hover:bg-background h-10 w-10 shrink-0"
+        >
+          <SlidersHorizontal className="size-4" />
+        </Button>
+
+        {/* Submit */}
+        <Button
+          type="submit"
+          variant="outline"
+          className="border-input h-10 px-6 font-sans text-sm font-medium"
+        >
+          Search
+        </Button>
+      </div>
 
       {/* Secondary filters - collapsible */}
       {showMore && (
-        <div className="mt-4 space-y-4 border-t pt-4">
-          {/* Authors + Publisher */}
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="bg-background space-y-4 rounded-md p-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
-              <span className="text-muted-foreground text-xs font-medium">
+              <label
+                htmlFor="filter-status"
+                className="text-muted-foreground font-sans text-xs font-medium"
+              >
+                Status
+              </label>
+              <FilterDropdown
+                value={filters.status}
+                onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
+                options={PAPER_STATUS_OPTIONS.map((opt) => ({
+                  label: opt.label,
+                  value: String(opt.value),
+                }))}
+                placeholder="All status"
+                className="h-10 w-full justify-between px-4 font-sans"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-muted-foreground font-sans text-xs font-medium">
                 Authors
               </span>
               <MultiValueInput
@@ -209,10 +239,13 @@ export const PapersFilter = () => {
                 placeholder="Type an author and press Enter..."
               />
             </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-publisher"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Publisher
               </label>
@@ -225,37 +258,10 @@ export const PapersFilter = () => {
                 placeholder="Search by publisher..."
               />
             </div>
-          </div>
-
-          {/* Status + From Date + To Date */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-status"
-                className="text-muted-foreground text-xs font-medium"
-              >
-                Status
-              </label>
-              <select
-                id="filter-status"
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, status: e.target.value }))
-                }
-              >
-                <option value="">All</option>
-                {PAPER_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-fromDate"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Publication From
               </label>
@@ -271,7 +277,7 @@ export const PapersFilter = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-toDate"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Publication To
               </label>
@@ -286,12 +292,11 @@ export const PapersFilter = () => {
             </div>
           </div>
 
-          {/* Paper Type + Journal + Conference */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-paperType"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Paper Type
               </label>
@@ -307,7 +312,7 @@ export const PapersFilter = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-journalName"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Journal Name
               </label>
@@ -326,7 +331,7 @@ export const PapersFilter = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-conferenceName"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Conference Name
               </label>
@@ -344,12 +349,11 @@ export const PapersFilter = () => {
             </div>
           </div>
 
-          {/* Abstract + Is Deleted */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-abstract"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Abstract
               </label>
@@ -365,57 +369,36 @@ export const PapersFilter = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="filter-isDeleted"
-                className="text-muted-foreground text-xs font-medium"
+                className="text-muted-foreground font-sans text-xs font-medium"
               >
                 Is Deleted
               </label>
-              <select
-                id="filter-isDeleted"
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+              <FilterDropdown
                 value={filters.isDeleted}
-                onChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    isDeleted: e.target.value,
-                  }))
+                onChange={(v) =>
+                  setFilters((prev) => ({ ...prev, isDeleted: v }))
                 }
-              >
-                <option value="false">False</option>
-                <option value="true">True</option>
-              </select>
+                options={[
+                  { label: 'False', value: 'false' },
+                  { label: 'True', value: 'true' },
+                ]}
+                placeholder="False"
+                className="w-full font-sans"
+              />
             </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1 font-sans text-xs font-medium"
+            >
+              <X className="size-4" /> Clear all ({activeFilterCount})
+            </button>
           </div>
         </div>
       )}
-
-      {/* Actions */}
-      <div className="mt-4 flex items-center justify-end gap-2">
-        {activeFilterCount > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            className="text-muted-foreground hover:text-foreground mr-auto"
-          >
-            <X className="size-4" />
-            Clear ({activeFilterCount})
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleClear}
-          className={BTN.CANCEL}
-        >
-          Reset
-        </Button>
-        <Button type="submit" size="sm" className={BTN.EDIT}>
-          <Search className="size-4" />
-          Search
-        </Button>
-      </div>
     </form>
   );
 };

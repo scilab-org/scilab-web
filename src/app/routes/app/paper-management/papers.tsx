@@ -63,8 +63,8 @@ export const clientLoader =
 const PapersRoute = () => {
   return (
     <ContentLayout
-      title="Paper Management"
-      description="Manage research papers"
+      title="Paper Bank Management"
+      description="Manage research paper banks"
     >
       <div className="flex justify-end">
         <CreatePaper />

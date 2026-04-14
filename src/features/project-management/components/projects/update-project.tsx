@@ -4,16 +4,15 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useUpdateProject } from '../../api/projects/update-project';
 import { Project, UpdateProjectDto } from '../../types';
 
@@ -123,14 +122,14 @@ export const UpdateProject = ({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Update Project</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Update Project</DialogTitle>
+          <DialogDescription>
             Update the project details. Fields marked with * are required.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           onSubmit={handleSubmit}
@@ -331,22 +330,22 @@ export const UpdateProject = ({
           </div>
         </form>
 
-        <SheetFooter className="gap-2">
-          <SheetClose asChild>
+        <DialogFooter className="gap-2 pt-2">
+          <DialogClose asChild>
             <Button
               type="button"
               variant="outline"
               disabled={updateMutation.isPending}
-              className={BTN.CANCEL}
+              className="border-outline text-secondary hover:bg-surface-container"
             >
               Cancel
             </Button>
-          </SheetClose>
+          </DialogClose>
           <Button
             type="submit"
             form="update-project-form"
             disabled={updateMutation.isPending}
-            className={`min-w-25 ${BTN.EDIT}`}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-25"
           >
             {updateMutation.isPending ? (
               <>
@@ -357,8 +356,8 @@ export const UpdateProject = ({
               'Update Project'
             )}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

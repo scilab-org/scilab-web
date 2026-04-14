@@ -50,10 +50,10 @@ export const HeroSection = () => {
             <div className="border-foreground/10 bg-primary relative overflow-hidden rounded-xl border">
               {/* System label bar */}
               <div className="border-primary-foreground/10 flex items-center justify-between border-b px-5 py-3">
-                <span className="text-primary-foreground/40 font-mono text-[9px] tracking-[0.2em] uppercase">
+                <span className="text-primary-foreground/40 font-sans text-[9px] tracking-[0.2em] uppercase">
                   {HERO.artifactRef}
                 </span>
-                <span className="text-primary-foreground/30 font-mono text-[9px] tracking-[0.15em] uppercase">
+                <span className="text-primary-foreground/30 font-sans text-[9px] tracking-[0.15em] uppercase">
                   {HERO.artifactSub}
                 </span>
               </div>

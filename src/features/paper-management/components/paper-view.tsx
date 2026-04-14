@@ -454,7 +454,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <pre className="border-input bg-muted/20 text-foreground min-h-40 w-full overflow-x-auto rounded-md border px-3 py-2 font-mono text-xs leading-5 whitespace-pre-wrap">
+          <pre className="border-input bg-muted/20 text-foreground min-h-40 w-full overflow-x-auto rounded-md border px-3 py-2 font-sans text-xs leading-5 whitespace-pre-wrap">
             {paper.referenceContent || 'No reference content available'}
           </pre>
         </CardContent>

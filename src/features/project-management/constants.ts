@@ -75,6 +75,9 @@ export const PROJECT_MANAGEMENT_QUERY_KEYS = {
   PAPER_MEMBERS_AVAILABLE: 'paper-members-available',
 } as const;
 
+export const FIELD_LABEL_CLASS =
+  'text-muted-foreground text-[10px] font-bold tracking-[0.12em] uppercase';
+
 export const PROJECT_STATUS_MAP: Record<number, string> = {
   1: 'Draft',
   2: 'Active',

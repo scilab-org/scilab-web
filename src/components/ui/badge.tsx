@@ -22,6 +22,11 @@ const badgeVariants = cva(
         admin: 'bg-secondary-fixed text-on-secondary-fixed-variant',
         user: 'bg-secondary-fixed text-on-secondary-fixed-variant',
         success: 'bg-green-500/15 text-green-700 border-green-200',
+        active: 'bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
+        draft: 'bg-surface-container text-secondary',
+        completed:
+          'bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
+        archived: 'border-outline text-secondary border bg-transparent',
       },
     },
     defaultVariants: {

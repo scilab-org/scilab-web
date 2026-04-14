@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useDeleteTag } from '../api/delete-tag';
 
 type DeleteTagProps = {
@@ -40,30 +38,29 @@ export const DeleteTag = ({ tagId }: DeleteTagProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" className={BTN.DANGER}>
-          <Trash2 className="size-4" />
-        </Button>
+        <Button variant="action">DELETE</Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle className="text-primary font-serif text-4xl font-extrabold tracking-tight">
+            Delete Tag
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this tag.
+            Are you sure you want to delete this tag? This action cannot be
+            undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteTagMutation.isPending}>
-            Cancel
-          </AlertDialogCancel>
+          <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            variant="destructive"
             disabled={deleteTagMutation.isPending}
             onClick={(e) => {
               e.preventDefault();
               deleteTagMutation.mutate({ tagId });
             }}
           >
-            {deleteTagMutation.isPending ? 'Deleting...' : 'Delete'}
+            {deleteTagMutation.isPending ? 'DELETING...' : 'DELETE'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

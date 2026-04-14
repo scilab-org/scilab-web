@@ -2,9 +2,8 @@ import * as React from 'react';
 import { useSearchParams } from 'react-router';
 import { Search, X } from 'lucide-react';
 
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { BTN } from '@/lib/button-styles';
 
 export const TagsFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,11 +12,6 @@ export const TagsFilter = () => {
     name: searchParams.get('name') || '',
     isDeleted: searchParams.get('isDeleted') || 'false',
   });
-
-  const activeFilterCount =
-    Object.entries(filters).filter(
-      ([key, value]) => key !== 'isDeleted' && Boolean(value),
-    ).length + (filters.isDeleted !== 'false' ? 1 : 0);
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,85 +22,63 @@ export const TagsFilter = () => {
     setSearchParams(params);
   };
 
-  const handleClear = () => {
-    setFilters({
-      name: '',
-      isDeleted: 'false',
-    });
-    setSearchParams({ page: '1' });
+  const handleClearSearch = () => {
+    setFilters((prev) => ({ ...prev, name: '' }));
+    const params = new URLSearchParams(searchParams);
+    params.delete('name');
+    params.set('page', '1');
+    setSearchParams(params);
   };
 
   return (
-    <form onSubmit={handleApply} className="bg-muted/40 rounded-xl border p-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Name */}
-        <div className="space-y-1.5 lg:col-span-2">
-          <label
-            htmlFor="filter-name"
-            className="text-muted-foreground text-xs font-medium"
+    <form
+      onSubmit={handleApply}
+      className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
+    >
+      {/* Search */}
+      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+        <Search className="text-muted-foreground size-4" />
+        <input
+          value={filters.name}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, name: e.target.value }))
+          }
+          placeholder="Search by tag name..."
+          className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+        />
+        {filters.name && (
+          <button
+            type="button"
+            onClick={handleClearSearch}
+            className="text-muted-foreground hover:text-foreground"
           >
-            Name
-          </label>
-          <Input
-            id="filter-name"
-            value={filters.name}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, name: e.target.value }))
-            }
-            placeholder="Search by tag name..."
-          />
-        </div>
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
 
-        {/* Is Deleted */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-isDeleted"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Is Deleted
-          </label>
-          <select
-            id="filter-isDeleted"
-            className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-            value={filters.isDeleted}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, isDeleted: e.target.value }))
-            }
-          >
-            <option value="false">False</option>
-            <option value="true">True</option>
-          </select>
-        </div>
+      {/* Is Deleted */}
+      <div className="bg-background h-10 w-56 rounded-md">
+        <FilterDropdown
+          value={filters.isDeleted}
+          onChange={(v) => setFilters((prev) => ({ ...prev, isDeleted: v }))}
+          options={[
+            { label: 'False', value: 'false' },
+            { label: 'True', value: 'true' },
+          ]}
+          placeholder="Is deleted"
+          className="h-10 w-full justify-between px-4 font-sans"
+        />
       </div>
 
       {/* Actions */}
-      <div className="mt-4 flex items-center justify-end gap-2">
-        {activeFilterCount > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            className="text-muted-foreground hover:text-foreground mr-auto"
-          >
-            <X className="size-4" />
-            Clear ({activeFilterCount})
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleClear}
-          className={BTN.CANCEL}
-        >
-          Reset
-        </Button>
-        <Button type="submit" size="sm" className={BTN.EDIT}>
-          <Search className="size-4" />
-          Search
-        </Button>
-      </div>
+      <Button
+        type="submit"
+        variant="outline"
+        className="border-input h-10 px-6 font-sans text-sm font-medium"
+      >
+        Search
+      </Button>
     </form>
   );
 };

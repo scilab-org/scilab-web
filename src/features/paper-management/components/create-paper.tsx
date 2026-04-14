@@ -1,24 +1,25 @@
 import * as React from 'react';
-import { Plus, Upload, X, Tags, Loader2 } from 'lucide-react';
+import { Upload, X, Tags, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+
+import { CreateButton } from '@/components/ui/create-button';
 
 import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
-import { BTN } from '@/lib/button-styles';
 import { PAPER_STATUS_OPTIONS } from '../constants';
 
 const initialFormData = {
@@ -361,25 +362,26 @@ export const CreatePaper = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button size="sm" className={BTN.CREATE}>
-          <Plus className="size-4" />
-          Create Paper
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create New Paper</SheetTitle>
-          <SheetDescription>
-            Upload a PDF file and fill in the details. Title and file are
-            required.
-          </SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <CreateButton size="sm" className="uppercase">
+          CREATE PAPER
+        </CreateButton>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Create New Paper</DialogTitle>
+            <DialogDescription>
+              Upload a PDF file and fill in the details. Title and file are
+              required.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
         <form
           id="create-paper-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-6 py-4"
         >
           {/* File upload - required, placed first */}
           <div className="space-y-1.5">
@@ -487,9 +489,9 @@ export const CreatePaper = () => {
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
-                  className={`gap-1.5 ${BTN.AUTO_TAG}`}
+                  className="gap-1.5 uppercase"
                   onClick={handleAutoTag}
                   disabled={
                     isAutoTagging ||
@@ -772,34 +774,35 @@ export const CreatePaper = () => {
             </select>
           </div>
         </form>
-        <SheetFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              resetForm();
-              setOpen(false);
-            }}
-            className={BTN.CANCEL}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            form="create-paper-form"
-            disabled={
-              createPaperMutation.isPending ||
-              !formData.title.trim() ||
-              !formData.authors.trim() ||
-              !file ||
-              isParsing
-            }
-            className={BTN.CREATE}
-          >
-            {createPaperMutation.isPending ? 'Creating...' : 'Create'}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                resetForm();
+                setOpen(false);
+              }}
+            >
+              CANCEL
+            </Button>
+            <Button
+              type="submit"
+              form="create-paper-form"
+              disabled={
+                createPaperMutation.isPending ||
+                !formData.title.trim() ||
+                !formData.authors.trim() ||
+                !file ||
+                isParsing
+              }
+              variant="secondary"
+            >
+              {createPaperMutation.isPending ? 'CREATING...' : 'SAVE'}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

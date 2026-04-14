@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, Users, Loader2 } from 'lucide-react';
+import { Search, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 
+import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,7 +26,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { usePaperMembers } from '../../api/papers/get-paper-members';
@@ -138,14 +138,13 @@ export const ProjectWritingPapersList = ({
             )}
           </div>
           {(isManager || isAuthor) && !!onCreatePaperClick && (
-            <Button
+            <CreateButton
               onClick={onCreatePaperClick}
               size="sm"
-              className="btn-create flex items-center gap-2"
+              className="flex items-center gap-2"
             >
-              <Plus className="h-4 w-4" />
               Create Paper
-            </Button>
+            </CreateButton>
           )}
         </div>
 
@@ -249,14 +248,10 @@ export const ProjectWritingPapersList = ({
                           isManager) &&
                           !readOnly && (
                             <Button
-                              variant="destructive"
-                              size="sm"
+                              variant="action"
                               onClick={() => setPaperToDelete(paper)}
-                              disabled={!paper.subProjectId}
-                              className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.DANGER}`}
-                              title="Delete Paper"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              DELETE
                             </Button>
                           )}
                       </div>

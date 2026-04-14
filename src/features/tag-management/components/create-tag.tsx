@@ -1,20 +1,19 @@
 import * as React from 'react';
-import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { CreateButton } from '@/components/ui/create-button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useCreateTag } from '../api/create-tag';
 
 const initialFormData = {
@@ -54,20 +53,17 @@ export const CreateTag = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button size="sm" className={BTN.CREATE}>
-          <Plus className="size-4" />
-          Create Tag
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create New Tag</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <CreateButton className="uppercase">CREATE TAG</CreateButton>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Create New Tag</DialogTitle>
+          <DialogDescription>
             Fill in the details below. Name is required.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <form
           id="create-tag-form"
           onSubmit={handleSubmit}
@@ -88,25 +84,26 @@ export const CreateTag = () => {
             />
           </div>
         </form>
-        <SheetFooter>
+        <DialogFooter className="pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => setOpen(false)}
-            className={BTN.CANCEL}
+            className="uppercase"
           >
-            Cancel
+            CANCEL
           </Button>
           <Button
             type="submit"
             form="create-tag-form"
             disabled={createTagMutation.isPending || !formData.name.trim()}
-            className={BTN.CREATE}
+            variant="secondary"
+            className="uppercase"
           >
-            {createTagMutation.isPending ? 'Creating...' : 'Create'}
+            {createTagMutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

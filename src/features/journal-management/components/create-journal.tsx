@@ -5,16 +5,17 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
+import { CreateButton } from '@/components/ui/create-button';
+
 import { useCreateJournal } from '../api/create-journal';
 import { JournalStyle } from '../types';
 
@@ -125,20 +126,19 @@ export const CreateJournal = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button size="sm" className={BTN.CREATE}>
-          <Plus className="size-4" />
-          Create Journal
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create New Journal</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <CreateButton size="sm" className="uppercase">
+          CREATE JOURNAL
+        </CreateButton>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Create New Journal</DialogTitle>
+          <DialogDescription>
             Fill in the journal details and add writing styles.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <form
           id="create-journal-form"
           onSubmit={handleSubmit}
@@ -280,14 +280,15 @@ export const CreateJournal = () => {
                     }))
                   }
                   placeholder="Rule"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-36 w-full rounded-md border px-3 py-2 font-mono text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-36 w-full rounded-md border px-3 py-2 font-sans text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 />
               </div>
               <div className="flex gap-2 border-t px-4 py-3">
                 <Button
                   type="button"
                   size="sm"
-                  className={`${BTN.CREATE} w-full`}
+                  variant="secondary"
+                  className="w-full uppercase"
                   onClick={
                     styleDialogMode === 'add'
                       ? handleAddStyle
@@ -295,12 +296,13 @@ export const CreateJournal = () => {
                   }
                   disabled={!editingStyle.name.trim()}
                 >
-                  {styleDialogMode === 'add' ? 'Add Style' : 'Save Style'}
+                  {styleDialogMode === 'add' ? 'ADD STYLE' : 'SAVE STYLE'}
                 </Button>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
+                  className="uppercase"
                   onClick={() => {
                     setStyleDialogOpen(false);
                     setEditingIdx(null);
@@ -311,31 +313,32 @@ export const CreateJournal = () => {
                     });
                   }}
                 >
-                  Cancel
+                  CANCEL
                 </Button>
               </div>
             </div>
           </div>
         )}
-        <SheetFooter>
+        <DialogFooter className="pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => setOpen(false)}
-            className={BTN.CANCEL}
+            className="uppercase"
           >
-            Cancel
+            CANCEL
           </Button>
           <Button
             type="submit"
             form="create-journal-form"
             disabled={createJournalMutation.isPending || !formData.name.trim()}
-            className={BTN.CREATE}
+            variant="secondary"
+            className="uppercase"
           >
-            {createJournalMutation.isPending ? 'Creating...' : 'Create'}
+            {createJournalMutation.isPending ? 'CREATING...' : 'CREATE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

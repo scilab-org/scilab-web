@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Loader, Plus } from 'lucide-react';
+import { Loader } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +12,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+
+import { CreateButton } from '@/components/ui/create-button';
 
 import { useCreateUser } from '../api/create-user';
 import { FIELD_LABEL_CLASS } from '../constants';
@@ -68,10 +70,7 @@ export const CreateUser = () => {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="secondary">
-          <Plus className="size-4" />
-          Create User
-        </Button>
+        <CreateButton>Create User</CreateButton>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>

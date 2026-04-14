@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
+import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -186,14 +187,13 @@ export const ProjectPapersList = ({
           </div>
           <div className="flex items-center gap-2">
             {!!onCreatePaperClick && (
-              <Button
+              <CreateButton
                 onClick={onCreatePaperClick}
                 size="sm"
-                className="btn-create flex items-center gap-2"
+                className="flex items-center gap-2"
               >
-                <Plus className="h-4 w-4" />
                 Create Paper
-              </Button>
+              </CreateButton>
             )}
             {!readOnly && !!onAddPapersClick && (
               <Button

@@ -115,7 +115,7 @@ export const ViewJournal = ({ journal }: ViewJournalProps) => {
                             {style.rule && (
                               <div>
                                 <p className="font-semibold">Rule:</p>
-                                <pre className="bg-background overflow-auto rounded border p-2 font-mono text-xs">
+                                <pre className="bg-background overflow-auto rounded border p-2 font-sans text-xs">
                                   {style.rule}
                                 </pre>
                               </div>

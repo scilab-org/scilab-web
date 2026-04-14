@@ -70,7 +70,7 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Template Code</p>
-                  <p className="font-mono text-xs">
+                  <p className="font-sans text-xs">
                     {template.templateStructure?.templateCode || '—'}
                   </p>
                 </div>
@@ -114,7 +114,7 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
                               key={section.key}
                               className="grid grid-cols-[3rem_1fr_auto] items-center gap-2 px-3 py-2 text-sm"
                             >
-                              <span className="text-muted-foreground font-mono text-xs">
+                              <span className="text-muted-foreground font-sans text-xs">
                                 {displayPrefix || '—'}
                               </span>
                               <div className="flex flex-col gap-0.5 py-1">

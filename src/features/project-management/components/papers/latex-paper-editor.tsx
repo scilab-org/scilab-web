@@ -268,7 +268,7 @@ const WriteDiffView = ({
 
   return (
     <div
-      className="font-mono text-xs leading-[22px]"
+      className="font-sans text-xs leading-[22px]"
       style={{ padding: '16px 0' }}
     >
       {diffLines.map((line, idx) => (
@@ -884,7 +884,7 @@ const ReferencesTab = ({
           </p>
         )}
         {!compact && paper.doi && (
-          <p className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-blue-600 dark:text-blue-400">
+          <p className="mt-0.5 inline-flex items-center gap-1 font-sans text-[10px] text-blue-600 dark:text-blue-400">
             <Link2 className="h-2.5 w-2.5" />
             {paper.doi}
           </p>
@@ -986,7 +986,7 @@ const ReferencesTab = ({
                       </p>
                     )}
                     {!compact && item.paperBank.doi && (
-                      <p className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-blue-600 dark:text-blue-400">
+                      <p className="mt-0.5 inline-flex items-center gap-1 font-sans text-[10px] text-blue-600 dark:text-blue-400">
                         <Link2 className="h-2.5 w-2.5" />
                         {item.paperBank.doi}
                       </p>
@@ -1237,7 +1237,7 @@ const ReferencesTab = ({
                             href={`https://doi.org/${activePaper.doi}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-mono break-all text-blue-600 hover:underline dark:text-blue-400"
+                            className="inline-flex items-center gap-1 font-sans break-all text-blue-600 hover:underline dark:text-blue-400"
                           >
                             <Link2 className="h-3 w-3" />
                             {activePaper.doi}
@@ -2106,7 +2106,7 @@ const InlineReferenceSectionEditor = ({
                             }
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-mono break-all text-blue-600 hover:underline dark:text-blue-400"
+                            className="inline-flex items-center gap-1 font-sans break-all text-blue-600 hover:underline dark:text-blue-400"
                           >
                             <Link2 className="h-3 w-3" />
                             {activeBankDetail.doi}
@@ -4428,7 +4428,7 @@ export const LatexPaperEditor = ({
                           {localRefPackages.map((pkg, idx) => (
                             <li
                               key={idx}
-                              className="group flex items-center gap-1 font-mono text-[12px]"
+                              className="group flex items-center gap-1 font-sans text-[12px]"
                             >
                               {editingRefPkgIdx === idx ? (
                                 <input
@@ -4451,7 +4451,7 @@ export const LatexPaperEditor = ({
                                   onBlur={() =>
                                     commitRefPkgEdit(idx, editingRefPkgValue)
                                   }
-                                  className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                                  className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-sans text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
                                 />
                               ) : (
                                 <button
@@ -4491,7 +4491,7 @@ export const LatexPaperEditor = ({
                         </ul>
                       ) : (
                         <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-                          <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                          <p className="font-sans text-[11px] text-slate-400 dark:text-slate-500">
                             <span className="text-violet-400 dark:text-[#c678dd]">
                               {'% '}
                             </span>
@@ -4504,7 +4504,7 @@ export const LatexPaperEditor = ({
                         {localPackages.map((pkg, idx) => (
                           <li
                             key={idx}
-                            className="group flex items-center gap-1 font-mono text-[12px]"
+                            className="group flex items-center gap-1 font-sans text-[12px]"
                           >
                             {editingPkgIdx === idx ? (
                               <input
@@ -4527,7 +4527,7 @@ export const LatexPaperEditor = ({
                                 onBlur={() =>
                                   commitPkgEdit(idx, editingPkgValue)
                                 }
-                                className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-mono text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                                className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-sans text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
                               />
                             ) : (
                               <button
@@ -4567,7 +4567,7 @@ export const LatexPaperEditor = ({
                       </ul>
                     ) : (
                       <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-                        <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                        <p className="font-sans text-[11px] text-slate-400 dark:text-slate-500">
                           <span className="text-violet-400 dark:text-[#c678dd]">
                             {'% '}
                           </span>
@@ -4601,7 +4601,7 @@ export const LatexPaperEditor = ({
                             }}
                             placeholder="e.g.: \\usepackage{algorithm}"
                             autoComplete="off"
-                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-sans text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
                           />
                           <button
                             type="submit"
@@ -4645,7 +4645,7 @@ export const LatexPaperEditor = ({
                                           );
                                           setNewPackageInput('');
                                         }}
-                                        className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                        className="w-full px-2 py-1 text-left font-sans text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
                                       >
                                         {idx >= 0 ? (
                                           <>
@@ -4699,7 +4699,7 @@ export const LatexPaperEditor = ({
                             }}
                             placeholder="Type directly, e.g.: \\usepackage{amsmath}"
                             autoComplete="off"
-                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-sans text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
                           />
                           <button
                             type="submit"
@@ -4742,7 +4742,7 @@ export const LatexPaperEditor = ({
                                           );
                                           setNewRefPackageInput('');
                                         }}
-                                        className="w-full px-2 py-1 text-left font-mono text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
+                                        className="w-full px-2 py-1 text-left font-sans text-[11px] hover:bg-violet-50 dark:hover:bg-violet-900/30"
                                       >
                                         {qi >= 0 ? (
                                           <>
@@ -4895,7 +4895,7 @@ export const LatexPaperEditor = ({
                             <span className="text-slate-600 dark:text-slate-400">
                               {label}
                             </span>
-                            <kbd className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                            <kbd className="rounded bg-slate-100 px-2 py-0.5 font-sans text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-300">
                               {kbd}
                             </kbd>
                           </div>
