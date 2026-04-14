@@ -175,9 +175,9 @@ export const ProjectPapersList = ({
   const papers: ProjectPaper[] = (papersQuery.data as any)?.result?.items ?? [];
 
   return (
-    <div className="border-border rounded-xl border shadow-sm">
+    <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
       {/* Header */}
-      <div className="border-border bg-muted/30 border-b px-6 py-4">
+      <div className="bg-muted/30 border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">
@@ -252,32 +252,30 @@ export const ProjectPapersList = ({
           <div className="overflow-x-auto">
             <Table className="table-fixed">
               <TableHeader>
-                <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                  <TableHead className="w-[3%] px-2 font-semibold text-green-900 dark:text-green-200">
-                    #
-                  </TableHead>
-                  <TableHead className="w-[13%] px-2 font-semibold text-green-900 dark:text-green-200">
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-[3%] px-2 font-semibold">#</TableHead>
+                  <TableHead className="w-[13%] px-2 font-semibold">
                     DOI
                   </TableHead>
-                  <TableHead className="w-[20%] px-2 font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[20%] px-2 font-semibold">
                     Title
                   </TableHead>
-                  <TableHead className="w-[15%] px-2 font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] px-2 font-semibold">
                     Authors
                   </TableHead>
-                  <TableHead className="w-[15%] px-2 font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[15%] px-2 font-semibold">
                     Journal / Conference
                   </TableHead>
-                  <TableHead className="w-[9%] px-2 font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[9%] px-2 font-semibold">
                     Published
                   </TableHead>
-                  <TableHead className="w-[8%] px-2 font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[8%] px-2 font-semibold">
                     Status
                   </TableHead>
-                  <TableHead className="w-[8%] px-2 font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[8%] px-2 font-semibold">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[9%] px-2 text-right font-semibold text-green-900 dark:text-green-200">
+                  <TableHead className="w-[9%] px-2 text-right font-semibold">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -286,7 +284,7 @@ export const ProjectPapersList = ({
                 {papers.map((paper, index) => (
                   <TableRow
                     key={paper.id}
-                    className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+                    className={`hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
                   >
                     {/* # */}
                     <TableCell className="text-muted-foreground px-2 text-center text-xs">

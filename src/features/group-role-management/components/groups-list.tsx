@@ -53,7 +53,7 @@ export const GroupsList = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {groups.map((group, index) => (
+          {groups.map((group) => (
             <TableRow key={group.id} className="hover:bg-muted/30">
               <TableCell className="font-medium">
                 <Link

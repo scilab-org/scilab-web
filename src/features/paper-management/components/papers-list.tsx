@@ -39,27 +39,6 @@ import { PAPER_STATUS_MAP } from '../constants';
 import { UpdatePaper } from './update-paper';
 import { formatPublicationDate } from '@/utils/string-utils';
 
-const TAG_COLORS = [
-  'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
-  'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800',
-  'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800',
-  'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-800',
-  'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
-  'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-800',
-  'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800',
-  'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
-  'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800',
-  'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
-];
-
-const getTagColor = (tag: string) => {
-  let hash = 0;
-  for (let i = 0; i < tag.length; i++) {
-    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
-};
-
 const truncateAuthors = (authors: string | null): React.ReactNode => {
   if (!authors) return null;
   const parts = authors
@@ -90,40 +69,26 @@ const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
 const getStatusVariant = (
   status: number,
 ): {
-  variant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline';
+  variant:
+    | 'default'
+    | 'secondary'
+    | 'destructive'
+    | 'success'
+    | 'outline'
+    | 'muted';
   className?: string;
 } => {
   switch (status) {
     case 1:
-      return {
-        variant: 'outline',
-        className:
-          'border-slate-300 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300',
-      };
+      return { variant: 'outline' };
     case 2:
-      return {
-        variant: 'default',
-        className:
-          'bg-blue-500 text-white hover:bg-blue-600 shadow-sm shadow-blue-200 dark:shadow-blue-900/30',
-      };
+      return { variant: 'default' };
     case 3:
-      return {
-        variant: 'default',
-        className:
-          'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 dark:shadow-amber-900/30',
-      };
+      return { variant: 'secondary' };
     case 4:
-      return {
-        variant: 'default',
-        className:
-          'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30',
-      };
+      return { variant: 'success' };
     case 5:
-      return {
-        variant: 'default',
-        className:
-          'bg-purple-500 text-white hover:bg-purple-600 shadow-sm shadow-purple-200 dark:shadow-purple-900/30',
-      };
+      return { variant: 'muted' };
     default:
       return { variant: 'outline' };
   }
@@ -204,46 +169,39 @@ export const PapersList = () => {
         className="w-full table-fixed"
       >
         <TableHeader>
-          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="w-[3%] px-2 text-xs leading-tight font-semibold text-green-900 dark:text-green-200">
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="text-muted-foreground w-[3%] px-2 text-xs leading-tight font-semibold tracking-wider uppercase">
               #
             </TableHead>
-            <TableHead className="w-[10%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[10%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               DOI
             </TableHead>
-            <TableHead className="w-[17%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[17%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Title
             </TableHead>
-            <TableHead className="w-[14%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[14%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Authors
             </TableHead>
-            <TableHead className="w-[15%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[15%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Journal / Conference
             </TableHead>
-            <TableHead className="w-[9%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[9%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Publication Date
             </TableHead>
-            <TableHead className="w-[8%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[8%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Status
             </TableHead>
-            <TableHead className="w-[7%] px-2 text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[7%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Tags
             </TableHead>
-            <TableHead className="w-[9%] px-2 text-center text-xs leading-tight font-semibold wrap-break-word whitespace-normal text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground w-[9%] px-2 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Actions
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {papers.map((paper, index) => (
-            <TableRow
-              key={paper.id}
-              className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${
-                index % 2 === 0
-                  ? 'bg-white dark:bg-transparent'
-                  : 'bg-slate-50/50 dark:bg-slate-900/20'
-              }`}
-            >
+            <TableRow key={paper.id} className="hover:bg-muted/30">
               {/* # STT */}
               <TableCell className="text-muted-foreground px-2 text-center text-xs">
                 {(page - 1) * 10 + index + 1}
@@ -256,7 +214,7 @@ export const PapersList = () => {
                     href={`https://doi.org/${paper.doi}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                     title={paper.doi}
                   >
                     <ExternalLink className="size-3 shrink-0" />
@@ -273,7 +231,7 @@ export const PapersList = () => {
               <TableCell className="overflow-hidden px-2 font-medium wrap-break-word whitespace-normal">
                 <Link
                   to={paths.app.paperManagement.paper.getHref(paper.id)}
-                  className="block text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                  className="block font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                   onMouseEnter={() => {
                     queryClient.prefetchQuery(getPaperQueryOptions(paper.id));
                   }}
@@ -295,7 +253,7 @@ export const PapersList = () => {
                   </span>
                 ) : paper.conferenceName ? (
                   <span className="flex items-start gap-1.5 text-sm">
-                    <Building2 className="mt-0.5 size-3.5 shrink-0 text-violet-500" />
+                    <Building2 className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
                     <span className="line-clamp-2">{paper.conferenceName}</span>
                   </span>
                 ) : (
@@ -309,7 +267,7 @@ export const PapersList = () => {
               <TableCell className="px-2 whitespace-normal">
                 {paper.publicationDate ? (
                   <span className="flex flex-wrap items-center gap-1.5 text-sm">
-                    <Calendar className="size-3.5 text-violet-400" />
+                    <Calendar className="text-muted-foreground size-3.5" />
                     {formatPublicationDate(paper.publicationDate)}
                   </span>
                 ) : (
@@ -342,7 +300,7 @@ export const PapersList = () => {
                       <Button
                         variant="outline"
                         size="xs"
-                        className="gap-1 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                        className="text-muted-foreground hover:text-foreground gap-1"
                       >
                         <Tags className="size-3" />
                         {paper.tagNames.length} tags
@@ -352,11 +310,7 @@ export const PapersList = () => {
                       <p className="mb-2 text-sm font-medium">Tags</p>
                       <div className="flex flex-wrap gap-1.5">
                         {paper.tagNames.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className={`text-xs ${getTagColor(tag)}`}
-                          >
+                          <Badge key={tag} variant="outline">
                             {tag}
                           </Badge>
                         ))}
@@ -379,7 +333,7 @@ export const PapersList = () => {
                       variant="outline"
                       size="icon"
                       asChild
-                      className="size-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                      className="text-foreground hover:bg-muted/50 size-8"
                     >
                       <a
                         href={paper.filePath}

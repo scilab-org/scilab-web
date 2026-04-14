@@ -24,25 +24,17 @@ export const PlanningQnABox = ({
   isSending,
 }: PlanningQnABoxProps) => {
   // answers keyed by question index
-  const [answers, setAnswers] = useState<Record<number, string | string[]>>(
-    {},
-  );
+  const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   // custom text inputs for "Other" option on select questions
   const [customTexts, setCustomTexts] = useState<Record<number, string>>({});
 
-  const setAnswer = useCallback(
-    (index: number, value: string | string[]) => {
-      setAnswers((prev) => ({ ...prev, [index]: value }));
-    },
-    [],
-  );
+  const setAnswer = useCallback((index: number, value: string | string[]) => {
+    setAnswers((prev) => ({ ...prev, [index]: value }));
+  }, []);
 
-  const setCustomText = useCallback(
-    (index: number, value: string) => {
-      setCustomTexts((prev) => ({ ...prev, [index]: value }));
-    },
-    [],
-  );
+  const setCustomText = useCallback((index: number, value: string) => {
+    setCustomTexts((prev) => ({ ...prev, [index]: value }));
+  }, []);
 
   const isAllAnswered = questions.every((q, i) => {
     const answer = answers[i];
@@ -50,10 +42,12 @@ export const PlanningQnABox = ({
     if (Array.isArray(answer)) {
       if (answer.length === 0) return false;
       // If __custom__ is selected, require the custom text to be filled in
-      if (answer.includes(CUSTOM_OPTION_VALUE)) return (customTexts[i] ?? '').trim().length > 0;
+      if (answer.includes(CUSTOM_OPTION_VALUE))
+        return (customTexts[i] ?? '').trim().length > 0;
       return true;
     }
-    if (answer === CUSTOM_OPTION_VALUE) return (customTexts[i] ?? '').trim().length > 0;
+    if (answer === CUSTOM_OPTION_VALUE)
+      return (customTexts[i] ?? '').trim().length > 0;
     return typeof answer === 'string' && answer.trim().length > 0;
   });
 
@@ -277,7 +271,6 @@ const SingleSelectAnswer = ({
               onChange={(e) => onCustomTextChange(e.target.value)}
               className="border-input bg-background text-foreground focus:ring-ring w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:ring-1"
               placeholder="Type your answer..."
-              autoFocus
             />
           )}
         </div>
@@ -360,7 +353,6 @@ const MultiSelectAnswer = ({
               onChange={(e) => onCustomTextChange(e.target.value)}
               className="border-input bg-background text-foreground focus:ring-ring w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:ring-1"
               placeholder="Type your answer..."
-              autoFocus
             />
           )}
         </div>

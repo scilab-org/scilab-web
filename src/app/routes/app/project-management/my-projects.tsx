@@ -159,7 +159,7 @@ const MyProjectsRoute = () => {
   return (
     <ContentLayout
       title="Assigned Projects"
-      description="Research projects you are a member of"
+      description="Research projects you are a contributor to"
     >
       {/* Toolbar */}
       <div className="mb-6 space-y-3">
@@ -196,7 +196,7 @@ const MyProjectsRoute = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border shadow-sm">
+      <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
         {projectsQuery.isLoading ? (
           <div className="space-y-2 p-6">
             <Skeleton className="h-10 w-full" />
@@ -208,25 +208,13 @@ const MyProjectsRoute = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      Code
-                    </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      Name
-                    </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      Description
-                    </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      Status
-                    </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      Start
-                    </TableHead>
-                    <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                      End
-                    </TableHead>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="font-semibold">Code</TableHead>
+                    <TableHead className="font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">Description</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Start</TableHead>
+                    <TableHead className="font-semibold">End</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -235,7 +223,7 @@ const MyProjectsRoute = () => {
                     return (
                       <TableRow
                         key={project.id}
-                        className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
+                        className={`hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
                       >
                         <TableCell className="text-muted-foreground font-mono text-sm">
                           {project.code}
@@ -407,7 +395,7 @@ const MyProjectsRoute = () => {
             <p className="text-muted-foreground mt-1 text-sm">
               {hasFilters
                 ? 'Try adjusting your search or filter'
-                : 'Projects you are added to will appear here'}
+                : 'Projects you contribute to will appear here'}
             </p>
             {hasFilters && (
               <Button

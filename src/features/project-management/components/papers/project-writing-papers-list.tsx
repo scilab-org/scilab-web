@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 
@@ -28,6 +28,7 @@ import {
 import { BTN } from '@/lib/button-styles';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
+import { usePaperMembers } from '../../api/papers/get-paper-members';
 import { SubProjectPaper } from '../../types';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { useUser } from '@/lib/auth';
@@ -48,6 +49,26 @@ const getStatusColor = (status: number | null) => {
     default:
       return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
   }
+};
+
+const PaperMembersCount = ({ subProjectId }: { subProjectId: string }) => {
+  const query = usePaperMembers({
+    subProjectId,
+    params: { pageNumber: 1, pageSize: 1 },
+  });
+
+  if (query.isLoading) {
+    return <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />;
+  }
+
+  const count = (query.data as any)?.result?.paging?.totalCount ?? 0;
+
+  return (
+    <div className="text-muted-foreground flex items-center gap-1.5 text-sm font-medium">
+      <Users className="h-4 w-4" />
+      {count}
+    </div>
+  );
 };
 
 type ProjectWritingPapersListProps = {
@@ -104,9 +125,9 @@ export const ProjectWritingPapersList = ({
     (papersQuery.data as any)?.result?.paging?.totalCount ?? papers.length;
 
   return (
-    <div className="border-border rounded-xl border shadow-sm">
+    <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
       {/* Header */}
-      <div className="border-border bg-muted/30 border-b px-6 py-4">
+      <div className="bg-muted/30 border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">Papers</h2>
@@ -158,14 +179,17 @@ export const ProjectWritingPapersList = ({
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="text-muted-foreground w-[45%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[40%] text-xs font-medium tracking-wider uppercase">
                     Title
                   </TableHead>
                   <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
                     Status
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[25%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
                     Template
+                  </TableHead>
+                  <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+                    Members
                   </TableHead>
                   <TableHead className="text-muted-foreground w-[15%] text-right text-xs font-medium tracking-wider uppercase">
                     Actions
@@ -173,7 +197,7 @@ export const ProjectWritingPapersList = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {papers.map((paper, index) => (
+                {papers.map((paper) => (
                   <TableRow key={paper.id} className="hover:bg-muted/30">
                     <TableCell className="overflow-hidden font-medium">
                       <button
@@ -211,6 +235,13 @@ export const ProjectWritingPapersList = ({
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {paper.template || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {paper.subProjectId ? (
+                        <PaperMembersCount subProjectId={paper.subProjectId} />
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

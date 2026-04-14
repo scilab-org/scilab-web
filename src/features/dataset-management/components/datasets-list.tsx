@@ -135,7 +135,7 @@ export const DatasetsList = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {datasets.map((dataset, index) => {
+                  {datasets.map((dataset) => {
                     const fileName =
                       dataset.filePath.split('/').pop() || 'Unknown';
                     const fileExtension =

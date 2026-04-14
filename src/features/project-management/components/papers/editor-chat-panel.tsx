@@ -419,7 +419,11 @@ export const EditorChatPanel = ({
   });
 
   useEffect(() => {
-    if (!activeSessionId && !isNewChatRef.current && sessionsQuery.data?.sessions.length) {
+    if (
+      !activeSessionId &&
+      !isNewChatRef.current &&
+      sessionsQuery.data?.sessions.length
+    ) {
       setActiveSessionId(sessionsQuery.data.sessions[0].id);
     }
   }, [sessionsQuery.data, activeSessionId]);
@@ -437,9 +441,7 @@ export const EditorChatPanel = ({
         // Handle write-mode responses directly from mutation result
         const meta = data.assistantMessage.msgMetadata;
         if (meta?.writingAction === WRITING_ACTION.PLANNING_QUESTIONS) {
-          setPlanningQuestions(
-            meta.questionSchema as PlanningQuestion[],
-          );
+          setPlanningQuestions(meta.questionSchema as PlanningQuestion[]);
         } else if (meta?.writingAction === WRITING_ACTION.SECTION_OUTPUT) {
           const output = meta.writingOutput as WritingOutput;
           onWriteOutput?.(output);

@@ -32,7 +32,8 @@ export const WRITING_ACTION = {
   SECTION_OUTPUT: 'section_output',
 } as const;
 
-export type WritingAction = (typeof WRITING_ACTION)[keyof typeof WRITING_ACTION];
+export type WritingAction =
+  (typeof WRITING_ACTION)[keyof typeof WRITING_ACTION];
 
 // ─── Planning question input types ────────────────────────────────────────────
 

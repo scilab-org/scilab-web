@@ -109,13 +109,14 @@ export const ProjectsList = () => {
         return {
           text: 'Completed',
           variant: 'default' as const,
-          className: 'bg-green-600 text-white hover:bg-green-700',
+          className:
+            'bg-secondary text-secondary-foreground hover:bg-secondary/90',
         };
       case 4:
         return {
           text: 'Archived',
-          variant: 'default' as const,
-          className: 'bg-amber-500 text-white hover:bg-amber-600',
+          variant: 'outline' as const,
+          className: 'border-secondary text-secondary-foreground',
         };
       default:
         return {
@@ -156,35 +157,32 @@ export const ProjectsList = () => {
     <div className="overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-            <TableHead className="w-35 font-semibold text-green-900 dark:text-green-200">
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="text-muted-foreground w-35 font-semibold tracking-wider uppercase">
               Code
             </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
               Name
             </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
               Status
             </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
               Start Date
             </TableHead>
-            <TableHead className="font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
               End Date
             </TableHead>
-            <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+            <TableHead className="text-muted-foreground text-right font-semibold tracking-wider uppercase">
               Actions
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {projects.map((project, index) => {
+          {projects.map((project) => {
             const statusConfig = getStatusConfig(project.status);
             return (
-              <TableRow
-                key={project.id}
-                className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/50 dark:bg-slate-900/20'}`}
-              >
+              <TableRow key={project.id} className="hover:bg-muted/30">
                 <TableCell>
                   <Badge variant="secondary" className="font-mono text-xs">
                     {project.code}
@@ -193,7 +191,7 @@ export const ProjectsList = () => {
                 <TableCell className="font-medium">
                   <Link
                     to={paths.app.projectDetail.getHref(project.id)}
-                    className="text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                    className="font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                     onMouseEnter={() => {
                       queryClient.prefetchQuery(
                         getProjectQueryOptions(project.id),

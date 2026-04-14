@@ -84,7 +84,7 @@ export const TagsList = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tags.map((tag, index) => (
+          {tags.map((tag) => (
             <TableRow key={tag.id} className="hover:bg-muted/30">
               <TableCell className="font-medium">{tag.name}</TableCell>
               <TableCell>
