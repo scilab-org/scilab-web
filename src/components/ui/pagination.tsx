@@ -27,7 +27,7 @@ export const Pagination = ({ paging }: PaginationProps) => {
   const navigate = useNavigate();
 
   return (
-    <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t px-4 py-4 md:flex-row">
+    <div className="flex flex-col items-center justify-between gap-4 border-t px-4 py-4 md:flex-row">
       <p className="text-muted-foreground w-full text-center text-sm md:w-1/3 md:text-left">
         Page{' '}
         <span className="text-foreground font-medium">{paging.pageNumber}</span>{' '}

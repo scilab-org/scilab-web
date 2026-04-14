@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/utils/cn';
 import {
   Dialog,
   DialogContent,
@@ -52,14 +53,14 @@ const BIBTEX_MONTHS = [
   'dec',
 ];
 
-const getCitationKey = (authors: string, title: string, year: string) => {
+const getCitationKey = (authors: string, year: string) => {
   // Normalize separators only for key extraction, not for author field storage.
   const normalizedAuthors = authors.replace(/\s+and\s+/gi, ', ');
   const firstAuthorToken = normalizedAuthors
     .split(',')
     .map((part) => part.trim())
     .find(Boolean);
-  const authorToken = (firstAuthorToken || title || 'Paper')
+  const authorToken = (firstAuthorToken || 'Paper')
     .replace(/[^A-Za-z0-9]+/g, '')
     .replace(/^([0-9])/, 'Paper$1');
 
@@ -84,26 +85,40 @@ const buildReferenceContent = (params: {
     monthIndex >= 0 && monthIndex < BIBTEX_MONTHS.length
       ? BIBTEX_MONTHS[monthIndex]
       : '';
-  const key = getCitationKey(
-    params.authors,
-    params.title,
-    params.publicationYear,
-  );
+  const key = getCitationKey(params.authors, params.publicationYear);
+  const fields: string[] = [];
+  if (params.authors.trim()) {
+    fields.push(`  author    = ${wrap(params.authors)},`);
+  }
+  if (params.title.trim()) {
+    fields.push(`  title     = ${wrap(params.title)},`);
+  }
+  if (params.journalName.trim()) {
+    fields.push(`  journal   = ${wrap(params.journalName)},`);
+  }
+  if (params.publicationYear.trim()) {
+    fields.push(`  year      = ${wrap(params.publicationYear)},`);
+  }
+  if (month) {
+    fields.push(`  month     = ${month},`);
+  }
+  if (params.volume.trim()) {
+    fields.push(`  volume    = ${wrap(params.volume)},`);
+  }
+  if (params.number.trim()) {
+    fields.push(`  number    = ${wrap(params.number)},`);
+  }
+  if (params.pages.trim()) {
+    fields.push(`  pages     = ${wrap(params.pages)},`);
+  }
+  if (params.publisher.trim()) {
+    fields.push(`  publisher = ${wrap(params.publisher)},`);
+  }
+  if (params.doi.trim()) {
+    fields.push(`  doi       = ${wrap(params.doi)}`);
+  }
 
-  return [
-    `@article{${key || 'Paper'},`,
-    `  author    = ${wrap(params.authors)},`,
-    `  title     = ${wrap(params.title)},`,
-    `  journal   = ${wrap(params.journalName)},`,
-    `  year      = ${wrap(params.publicationYear)},`,
-    ...(month ? [`  month     = ${month},`] : []),
-    `  volume    = ${wrap(params.volume)},`,
-    `  number    = ${wrap(params.number)},`,
-    `  pages     = ${wrap(params.pages)},`,
-    `  publisher = ${wrap(params.publisher)},`,
-    `  doi       = ${wrap(params.doi)}`,
-    '}',
-  ].join('\n');
+  return [`@article{${key || 'Paper'},`, ...fields, '}'].join('\n');
 };
 
 export const CreatePaper = () => {
@@ -116,6 +131,8 @@ export const CreatePaper = () => {
   const [pubMonth, setPubMonth] = React.useState('');
   const [pubDay, setPubDay] = React.useState('');
   const [pubYearError, setPubYearError] = React.useState('');
+  const [journalConferenceError, setJournalConferenceError] =
+    React.useState('');
 
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
@@ -154,7 +171,27 @@ export const CreatePaper = () => {
     setPubMonth('');
     setPubDay('');
     setPubYearError('');
+    setJournalConferenceError('');
   };
+
+  const parsedYear = Number.parseInt(pubYear, 10);
+  const parsedMonth = Number.parseInt(pubMonth, 10);
+  const maxDay =
+    Number.isInteger(parsedYear) &&
+    parsedYear >= 1000 &&
+    parsedYear <= new Date().getFullYear() &&
+    Number.isInteger(parsedMonth) &&
+    parsedMonth >= 1 &&
+    parsedMonth <= 12
+      ? new Date(parsedYear, parsedMonth, 0).getDate()
+      : 31;
+
+  React.useEffect(() => {
+    if (!pubDay) return;
+    if (Number.parseInt(pubDay, 10) > maxDay) {
+      setPubDay('');
+    }
+  }, [pubDay, maxDay]);
 
   const handleFileChange = async (selectedFile: File | undefined) => {
     if (!selectedFile) return;
@@ -305,6 +342,15 @@ export const CreatePaper = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.authors.trim() || !file) return;
+
+    const hasJournalName = formData.journalName.trim().length > 0;
+    const hasConferenceName = formData.conferenceName.trim().length > 0;
+    if (hasJournalName && hasConferenceName) {
+      setJournalConferenceError(
+        'Please fill either Journal Name or Conference Name, not both.',
+      );
+      return;
+    }
 
     if (!pubYear.trim()) {
       setPubYearError('Publication year is required.');
@@ -608,8 +654,14 @@ export const CreatePaper = () => {
               />
               <select
                 value={pubMonth}
-                onChange={(e) => setPubMonth(e.target.value)}
-                className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                onChange={(e) => {
+                  setPubMonth(e.target.value);
+                  setPubYearError('');
+                }}
+                className={cn(
+                  'border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  !pubMonth && 'text-muted-foreground',
+                )}
               >
                 <option value="">MM</option>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -618,15 +670,25 @@ export const CreatePaper = () => {
                   </option>
                 ))}
               </select>
-              <Input
-                type="number"
-                min="1"
-                max="31"
-                placeholder="DD"
+              <select
+                id="create-paper-pubday"
                 value={pubDay}
-                className="h-10 min-w-0 text-sm"
-                onChange={(e) => setPubDay(e.target.value)}
-              />
+                onChange={(e) => {
+                  setPubDay(e.target.value);
+                  setPubYearError('');
+                }}
+                className={cn(
+                  'border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  !pubDay && 'text-muted-foreground',
+                )}
+              >
+                <option value="">DD</option>
+                {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={String(d).padStart(2, '0')}>
+                    {String(d).padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
             </div>
             {pubYearError && (
               <p className="text-destructive text-xs">{pubYearError}</p>
@@ -661,12 +723,16 @@ export const CreatePaper = () => {
               id="create-paper-journal"
               value={formData.journalName}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  journalName: e.target.value,
-                }))
+                setFormData((prev) => {
+                  if (journalConferenceError) setJournalConferenceError('');
+                  return {
+                    ...prev,
+                    journalName: e.target.value,
+                  };
+                })
               }
               placeholder="Enter journal name"
+              disabled={Boolean(formData.conferenceName.trim())}
             />
           </div>
 
@@ -681,13 +747,22 @@ export const CreatePaper = () => {
               id="create-paper-conference"
               value={formData.conferenceName}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  conferenceName: e.target.value,
-                }))
+                setFormData((prev) => {
+                  if (journalConferenceError) setJournalConferenceError('');
+                  return {
+                    ...prev,
+                    conferenceName: e.target.value,
+                  };
+                })
               }
               placeholder="Enter conference name"
+              disabled={Boolean(formData.journalName.trim())}
             />
+            {journalConferenceError && (
+              <p className="text-destructive text-xs">
+                {journalConferenceError}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
