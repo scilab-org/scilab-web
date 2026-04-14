@@ -24,7 +24,9 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="action">Delete</Button>
+        <Button variant="destructive" size="action">
+          Delete
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>

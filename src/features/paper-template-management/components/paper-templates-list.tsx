@@ -108,7 +108,9 @@ export const PaperTemplatesList = () => {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1.5">
-                  <Button variant="action">VIEW</Button>
+                  <Button variant="outlineAction" size="action">
+                    VIEW
+                  </Button>
                   <UpdatePaperTemplate template={template} />
                   <DeletePaperTemplate id={template.id} name={template.name} />
                 </div>

@@ -38,7 +38,9 @@ export const DeleteTag = ({ tagId }: DeleteTagProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="action">DELETE</Button>
+        <Button variant="destructive" size="action">
+          DELETE
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>

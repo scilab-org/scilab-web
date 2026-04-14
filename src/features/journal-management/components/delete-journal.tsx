@@ -43,7 +43,9 @@ export const DeleteJournal = ({ journalId }: DeleteJournalProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="action">DELETE</Button>
+        <Button variant="destructive" size="action">
+          DELETE
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

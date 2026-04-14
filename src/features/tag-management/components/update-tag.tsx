@@ -68,7 +68,9 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="action">EDIT</Button>
+        <Button variant="outlineAction" size="action">
+          EDIT
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
@@ -81,7 +83,7 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
         <form
           id="update-tag-form"
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 overflow-y-auto px-4"
+          className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4"
         >
           <div className="space-y-2">
             <label htmlFor="update-tag-name" className="text-sm font-medium">
@@ -107,7 +109,7 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
             type="submit"
             form="update-tag-form"
             disabled={updateTagMutation.isPending || !formData.name.trim()}
-            variant="secondary"
+            variant="darkRed"
           >
             {updateTagMutation.isPending ? 'Saving...' : 'SAVE'}
           </Button>

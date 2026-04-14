@@ -80,14 +80,14 @@ const STATUS_LABEL: Record<number, string> = {
 
 const STATUS_CLASS: Record<number, string> = {
   1: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
-  2: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+  2: 'bg-[#630F0F]/10 text-[#630F0F] border-[#630F0F]/20 dark:bg-[#630F0F]/20 dark:text-[#630F0F] dark:border-[#630F0F]/40',
   3: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
   4: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
 };
 
 const BORDER_CLASS: Record<number, string> = {
   1: 'border-l-gray-400',
-  2: 'border-l-blue-500',
+  2: 'border-l-[#630F0F]',
   3: 'border-l-green-500',
   4: 'border-l-amber-500',
 };

@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Search, ChevronLeft, ChevronRight, FolderOpen } from 'lucide-react';
+import { Search, FolderOpen } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Pagination } from '@/components/ui/pagination';
 import { paths } from '@/config/paths';
 import {
   getMyProjectsQueryOptions,
@@ -263,126 +264,7 @@ const MyProjectsRoute = () => {
               </Table>
             </div>
 
-            {paging && (
-              <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
-                <p className="text-muted-foreground text-sm">
-                  Page{' '}
-                  <span className="text-foreground font-medium">
-                    {paging.pageNumber}
-                  </span>{' '}
-                  of{' '}
-                  <span className="text-foreground font-medium">
-                    {paging.totalPages}
-                  </span>{' '}
-                  &middot; {paging.totalCount} results
-                </p>
-
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-8"
-                    disabled={!paging.hasPreviousPage}
-                    onClick={() =>
-                      setSearchParams((prev) => {
-                        const next = new URLSearchParams(prev);
-                        next.set('page', String(page - 1));
-                        return next;
-                      })
-                    }
-                  >
-                    <ChevronLeft className="size-4" />
-                  </Button>
-
-                  {Array.from({ length: paging.totalPages }, (_, i) => i + 1)
-                    .filter((p) => {
-                      if (paging.totalPages <= 7) return true;
-                      if (p === 1 || p === paging.totalPages) return true;
-                      if (Math.abs(p - paging.pageNumber) <= 1) return true;
-                      return false;
-                    })
-                    .reduce<(number | string)[]>((acc, p, idx, arr) => {
-                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
-                        acc.push('...');
-                      }
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((item, idx) =>
-                      typeof item === 'string' ? (
-                        <span
-                          key={`ellipsis-${idx}`}
-                          className="text-muted-foreground px-0.5 text-sm"
-                        >
-                          ...
-                        </span>
-                      ) : (
-                        <Button
-                          key={item}
-                          variant={
-                            item === paging.pageNumber ? 'default' : 'outline'
-                          }
-                          size="icon"
-                          className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
-                          onClick={() =>
-                            setSearchParams((prev) => {
-                              const next = new URLSearchParams(prev);
-                              next.set('page', String(item));
-                              return next;
-                            })
-                          }
-                        >
-                          {item}
-                        </Button>
-                      ),
-                    )}
-
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-8"
-                    disabled={!paging.hasNextPage}
-                    onClick={() =>
-                      setSearchParams((prev) => {
-                        const next = new URLSearchParams(prev);
-                        next.set('page', String(page + 1));
-                        return next;
-                      })
-                    }
-                  >
-                    <ChevronRight className="size-4" />
-                  </Button>
-
-                  <div className="ml-3 flex items-center gap-1.5 border-l pl-3">
-                    <span className="text-muted-foreground text-sm whitespace-nowrap">
-                      Go to
-                    </span>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={paging.totalPages}
-                      defaultValue={paging.pageNumber}
-                      className="h-8 w-14 text-center text-xs"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const val = Number(
-                            (e.target as HTMLInputElement).value,
-                          );
-                          if (val >= 1 && val <= paging.totalPages) {
-                            setSearchParams((prev) => {
-                              const next = new URLSearchParams(prev);
-                              next.set('page', String(val));
-                              return next;
-                            });
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-                <div />
-              </div>
-            )}
+            {paging && <Pagination paging={paging} />}
           </>
         ) : (
           <div className="rounded-xl py-20 text-center">

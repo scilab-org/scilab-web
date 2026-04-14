@@ -247,7 +247,7 @@ export const CreatePaperTemplate = () => {
         <form
           id="create-pt-form"
           onSubmit={handleSubmit}
-          className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-4 py-4"
         >
           {/* Basic info */}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -435,7 +435,7 @@ export const CreatePaperTemplate = () => {
               !formData.name.trim() ||
               !formData.code.trim()
             }
-            variant="secondary"
+            variant="darkRed"
             className="uppercase"
           >
             {mutation.isPending ? 'CREATING...' : 'SAVE'}

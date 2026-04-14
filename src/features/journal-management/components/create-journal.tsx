@@ -142,7 +142,7 @@ export const CreateJournal = () => {
         <form
           id="create-journal-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-4"
         >
           <div className="space-y-1.5">
             <label
@@ -332,7 +332,7 @@ export const CreateJournal = () => {
             type="submit"
             form="create-journal-form"
             disabled={createJournalMutation.isPending || !formData.name.trim()}
-            variant="secondary"
+            variant="darkRed"
             className="uppercase"
           >
             {createJournalMutation.isPending ? 'CREATING...' : 'CREATE'}

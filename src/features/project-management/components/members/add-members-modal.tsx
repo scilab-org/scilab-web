@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Loader2,
   Search,
-  UserPlus,
   Users,
   Check,
   ShieldCheck,
@@ -12,20 +11,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { getUserGroups, getUserRoles } from '@/lib/auth';
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 
-import { BTN } from '@/lib/button-styles';
 import { useAvailableUsers } from '../../api/members/get-available-users';
 import { useAddManagers } from '../../api/members/add-project-manager';
 import { useAddProjectMembers } from '../../api/members/add-project-members';
@@ -331,33 +329,37 @@ export const AddMembersModal = ({
     : Object.keys(userGroupMap).length > 0;
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(o) => {
         if (!o) handleReset();
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col gap-0 sm:max-w-sm">
-        <SheetHeader className="px-1 pb-2">
-          <div className="flex items-center gap-2">
-            {isAdmin ? (
-              <ShieldCheck className="h-5 w-5" />
-            ) : (
-              <UserCog className="h-5 w-5" />
-            )}
-            <SheetTitle>{isAdmin ? 'Add Managers' : 'Add Members'}</SheetTitle>
-          </div>
-          <SheetDescription>
-            {isAdmin
-              ? 'Select users to add as project managers.'
-              : 'Select users and assign a role to each one.'}
-          </SheetDescription>
-        </SheetHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              {isAdmin ? (
+                <ShieldCheck className="h-5 w-5" />
+              ) : (
+                <UserCog className="h-5 w-5" />
+              )}
+              <DialogTitle>
+                {isAdmin ? 'Add Managers' : 'Add Members'}
+              </DialogTitle>
+            </div>
+            <DialogDescription>
+              {isAdmin
+                ? 'Select users to add as project managers.'
+                : 'Select users and assign a role to each one.'}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="mt-4 flex flex-1 flex-col gap-3 overflow-hidden px-1">
+        <div className="scrollbar-dialog flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-4">
           {/* Search bar */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               type="text"
@@ -373,7 +375,7 @@ export const AddMembersModal = ({
 
           {/* Selection summary */}
           {selectedCount > 0 && (
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2 dark:bg-blue-950/30">
+            <div className="flex shrink-0 items-center justify-between rounded-lg bg-blue-50 px-4 py-2 dark:bg-blue-950/30">
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 {selectedCount} user{selectedCount !== 1 ? 's' : ''} selected
               </p>
@@ -390,7 +392,7 @@ export const AddMembersModal = ({
           )}
 
           {/* Users list */}
-          <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+          <div className="flex-1 space-y-2">
             {usersQuery.isLoading ? (
               <>
                 <Skeleton className="h-16 w-full rounded-xl" />
@@ -433,35 +435,35 @@ export const AddMembersModal = ({
           </div>
         </div>
 
-        <SheetFooter className="mt-4 px-1">
-          <SheetClose asChild>
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                disabled={isPending}
+                className="uppercase"
+              >
+                CANCEL
+              </Button>
+            </DialogClose>
             <Button
-              variant="outline"
-              disabled={isPending}
-              className={BTN.CANCEL}
+              onClick={handleSubmit}
+              disabled={!canSubmit || isPending}
+              variant="darkRed"
+              className="uppercase"
             >
-              Cancel
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ADDING...
+                </>
+              ) : (
+                `ADD (${selectedCount})`
+              )}
             </Button>
-          </SheetClose>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || isPending}
-            className={`gap-2 ${BTN.CREATE}`}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4" />
-                {isAdmin ? 'Add Managers' : 'Add Members'} ({selectedCount})
-              </>
-            )}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

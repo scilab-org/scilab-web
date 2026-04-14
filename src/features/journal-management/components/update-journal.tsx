@@ -154,7 +154,9 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="action">EDIT</Button>
+        <Button variant="outlineAction" size="action">
+          EDIT
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
@@ -166,7 +168,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
         <form
           id="update-journal-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-4"
         >
           <div className="space-y-1.5">
             <label
@@ -355,6 +357,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
             type="submit"
             form="update-journal-form"
             disabled={updateJournalMutation.isPending || !formData.name.trim()}
+            variant="darkRed"
             className={BTN.EDIT}
           >
             {updateJournalMutation.isPending ? 'Updating...' : 'Update'}

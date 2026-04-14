@@ -115,7 +115,9 @@ export const JournalsList = () => {
                         journal.id,
                       )}
                     >
-                      <Button variant="action">VIEW</Button>
+                      <Button variant="outlineAction" size="action">
+                        VIEW
+                      </Button>
                     </Link>
                     <UpdateJournal journalId={journal.id} journal={journal} />
                     <DeleteJournal journalId={journal.id} />

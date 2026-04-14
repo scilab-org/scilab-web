@@ -336,7 +336,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="action">EDIT</Button>
+        <Button variant="outlineAction" size="action">
+          EDIT
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
@@ -349,7 +351,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         <form
           id="update-paper-form"
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 overflow-y-auto px-4"
+          className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4"
         >
           <div className="space-y-2">
             <label htmlFor="update-paper-title" className="text-sm font-medium">
@@ -666,7 +668,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             type="submit"
             form="update-paper-form"
             disabled={updatePaperMutation.isPending || !formData.authors.trim()}
-            variant="secondary"
+            variant="darkRed"
           >
             {updatePaperMutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
