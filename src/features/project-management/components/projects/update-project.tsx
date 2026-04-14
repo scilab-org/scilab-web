@@ -13,6 +13,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { useUpdateProject } from '../../api/projects/update-project';
 import { Project, UpdateProjectDto } from '../../types';
 
@@ -123,18 +131,20 @@ export const UpdateProject = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Update Project</DialogTitle>
-          <DialogDescription>
-            Update the project details. Fields marked with * are required.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Edit the project details. Fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
         <form
           onSubmit={handleSubmit}
           id="update-project-form"
-          className="flex flex-col gap-4 px-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-6 py-4"
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -184,14 +194,14 @@ export const UpdateProject = ({
               >
                 Description <span className="text-destructive">*</span>
               </label>
-              <textarea
+              <AutoResizeTextarea
                 id="update-description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Enter project description"
                 rows={3}
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
               {errors.description && (
                 <p className="text-destructive text-sm">{errors.description}</p>
@@ -205,30 +215,34 @@ export const UpdateProject = ({
               >
                 Status <span className="text-destructive">*</span>
               </label>
-              <select
-                id="update-status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
+              <Select
+                value={String(formData.status)}
+                onValueChange={(val) =>
+                  setFormData((prev) => ({ ...prev, status: Number(val) }))
+                }
                 disabled={project?.status === 4}
-                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {project?.status === 4 ? (
-                  <option value="4">Archived</option>
-                ) : project?.status === 3 ? (
-                  <>
-                    <option value="3">Completed</option>
-                    <option value="4">Archived</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="1">Draft</option>
-                    <option value="2">Active</option>
-                    <option value="3">Completed</option>
-                    <option value="4">Archived</option>
-                  </>
-                )}
-              </select>
+                <SelectTrigger className="bg-card w-full shadow-xs">
+                  <SelectValue placeholder="Select a status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {project?.status === 4 ? (
+                    <SelectItem value="4">Archived</SelectItem>
+                  ) : project?.status === 3 ? (
+                    <>
+                      <SelectItem value="3">Completed</SelectItem>
+                      <SelectItem value="4">Archived</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="1">Draft</SelectItem>
+                      <SelectItem value="2">Active</SelectItem>
+                      <SelectItem value="3">Completed</SelectItem>
+                      <SelectItem value="4">Archived</SelectItem>
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
               {project?.status === 4 && (
                 <p className="text-muted-foreground text-xs">
                   Archived projects cannot change status
@@ -299,14 +313,14 @@ export const UpdateProject = ({
               >
                 Context
               </label>
-              <textarea
+              <AutoResizeTextarea
                 id="update-context"
                 name="context"
                 value={formData.context}
                 onChange={handleChange}
                 placeholder="Enter project context"
                 rows={3}
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
             </div>
 
@@ -317,46 +331,49 @@ export const UpdateProject = ({
               >
                 Keypoint
               </label>
-              <textarea
+              <AutoResizeTextarea
                 id="update-keypoint"
                 name="keypoint"
                 value={formData.keypoint}
                 onChange={handleChange}
                 placeholder="Enter project keypoint"
                 rows={2}
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
             </div>
           </div>
         </form>
 
-        <DialogFooter className="gap-2 pt-2">
-          <DialogClose asChild>
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={updateMutation.isPending}
+                className="uppercase"
+              >
+                CANCEL
+              </Button>
+            </DialogClose>
             <Button
-              type="button"
-              variant="outline"
+              type="submit"
+              form="update-project-form"
+              variant="darkRed"
               disabled={updateMutation.isPending}
-              className="border-outline text-secondary hover:bg-surface-container"
+              className="uppercase"
             >
-              Cancel
+              {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  SAVING...
+                </>
+              ) : (
+                'SAVE'
+              )}
             </Button>
-          </DialogClose>
-          <Button
-            type="submit"
-            form="update-project-form"
-            disabled={updateMutation.isPending}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-25"
-          >
-            {updateMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              'Update Project'
-            )}
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -74,7 +74,9 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="action">Edit</Button>
+        <Button variant="outlineAction" size="action">
+          Edit
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
@@ -87,7 +89,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
         <form
           id="update-user-form"
           onSubmit={handleSubmit}
-          className="space-y-4 py-2"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-2"
         >
           <div className="space-y-2">
             <label htmlFor="uu-firstName" className={fieldLabel}>

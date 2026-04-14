@@ -67,7 +67,7 @@ export const CreateTag = () => {
         <form
           id="create-tag-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-4"
         >
           <div className="space-y-1.5">
             <label htmlFor="create-tag-name" className="text-sm font-medium">
@@ -97,7 +97,7 @@ export const CreateTag = () => {
             type="submit"
             form="create-tag-form"
             disabled={createTagMutation.isPending || !formData.name.trim()}
-            variant="secondary"
+            variant="darkRed"
             className="uppercase"
           >
             {createTagMutation.isPending ? 'SAVING...' : 'SAVE'}

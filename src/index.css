@@ -36,6 +36,7 @@
 
   /* Landing CTA hover — matched with table header #E9E1D8 */
   --color-cta-hover: #e9e1d8;
+  --color-action-outline: #2d2926;
 
   /* Shadcn semantic tokens */
   --color-background: var(--background);
@@ -56,6 +57,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-empty-state: var(--empty-state);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -144,7 +146,7 @@
   /* Page surfaces */
   --background: #f5efe4;
   --foreground: #181512;
-  --card: #f5f3f0;
+  --card: #fffaf1;
   --card-foreground: #181512;
   --popover: #f5efe4;
   --popover-foreground: #181512;
@@ -217,6 +219,7 @@
   --muted-foreground: #635e56;
   --accent: #e4e2df;
   --accent-foreground: #181512;
+  --empty-state: #eae2d4;
 
   /* Borders — tonal shifts */
   --border: #dbdad7;
@@ -258,24 +261,24 @@ code {
     source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Custom Scrollbar for Dialogs to match the #F5EFE4 background */
+/* Custom Scrollbar for Dialogs to match the #FFFAF1 background */
 .scrollbar-dialog::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .scrollbar-dialog::-webkit-scrollbar-track {
-  background-color: #f5efe4; /* --background */
+  background-color: #fffaf1; /* --card */
   border-radius: 4px;
 }
 
 .scrollbar-dialog::-webkit-scrollbar-thumb {
-  background-color: #dbdad7; /* --surface-dim */
+  background-color: #e5dfd6; /* --surface-dim */
   border-radius: 4px;
 }
 
 .scrollbar-dialog::-webkit-scrollbar-thumb:hover {
-  background-color: #cdc5c0; /* --primary-fixed-dim */
+  background-color: #d1cbc2; /* --primary-fixed-dim */
 }
 
 /* App action button styles — indigo-based for the authenticated interface */
@@ -288,27 +291,27 @@ code {
 }
 
 .btn-edit {
-  @apply bg-[oklch(0.383_0.148_264.1)] text-white shadow-sm shadow-indigo-200 hover:bg-[oklch(0.318_0.148_264.1)];
+  @apply border-foreground text-foreground hover:bg-foreground hover:text-background border bg-transparent shadow-sm;
 }
 
 .btn-edit-outline {
-  @apply bg-background border border-indigo-300 text-[oklch(0.318_0.148_264.1)] shadow-xs hover:bg-[oklch(0.944_0.022_264.1)] hover:text-[oklch(0.27_0.148_264.1)];
+  @apply border-foreground text-foreground hover:bg-foreground/10 border bg-transparent shadow-xs;
 }
 
 .btn-danger {
-  @apply bg-red-600 text-white shadow-sm shadow-red-200 hover:bg-red-700;
+  @apply bg-[#630F0F] text-white shadow-sm hover:bg-[#630F0F]/90;
 }
 
 .btn-danger-outline {
-  @apply bg-background border border-red-300 text-red-600 shadow-xs hover:bg-red-50 hover:text-red-700;
+  @apply border border-[#630F0F] bg-transparent text-[#630F0F] shadow-xs hover:bg-[#630F0F]/10;
 }
 
 .btn-cancel {
-  @apply bg-background border border-slate-300 text-slate-600 shadow-xs hover:bg-slate-100 hover:text-slate-700;
+  @apply border-foreground/30 text-foreground/70 hover:bg-foreground/5 hover:text-foreground border bg-transparent shadow-xs;
 }
 
 .btn-view-outline {
-  @apply bg-background border border-[oklch(0.318_0.148_264.1)] text-[oklch(0.318_0.148_264.1)] shadow-xs hover:bg-[oklch(0.944_0.022_264.1)] hover:text-[oklch(0.27_0.148_264.1)];
+  @apply border-foreground text-foreground hover:bg-foreground/10 border bg-transparent shadow-xs;
 }
 
 .btn-warning {
@@ -321,4 +324,21 @@ code {
 
 .btn-auto-tag {
   @apply border border-[oklch(0.85_0.05_264.1)] bg-[oklch(0.944_0.022_264.1)] text-[oklch(0.318_0.148_264.1)] hover:bg-[oklch(0.9_0.035_264.1)];
+}
+
+/* Project role chips */
+.role-manager {
+  @apply border border-[#630F0F]/20 bg-[#630F0F]/10 text-[#630F0F];
+}
+
+.role-author {
+  @apply border border-blue-200 bg-blue-100 text-blue-700;
+}
+
+.role-member {
+  @apply border border-emerald-200 bg-emerald-100 text-emerald-700;
+}
+
+.role-admin {
+  @apply border border-violet-200 bg-violet-100 text-violet-700;
 }

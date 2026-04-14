@@ -1,17 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import {
-  Trash2,
-  Loader2,
-  Search,
-  Plus,
-  Download,
-  Tags,
-  ExternalLink,
-  Building2,
-  Calendar,
-} from 'lucide-react';
-import * as React from 'react';
+import { Loader2, Search, Tags, Building2, FileText } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -42,51 +31,36 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { BTN } from '@/lib/button-styles';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { ProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
-import { formatPublicationDate } from '@/utils/string-utils';
 
 const getStatusVariant = (
   status: number | null,
 ): {
-  variant: 'default' | 'secondary' | 'destructive' | 'success' | 'outline';
+  variant:
+    | 'default'
+    | 'secondary'
+    | 'destructive'
+    | 'success'
+    | 'outline'
+    | 'muted';
   className?: string;
 } => {
+  if (status == null) return { variant: 'outline' };
   switch (status) {
     case 1:
-      return {
-        variant: 'outline',
-        className:
-          'border-slate-300 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300',
-      };
+      return { variant: 'outline' };
     case 2:
-      return {
-        variant: 'default',
-        className:
-          'bg-blue-500 text-white hover:bg-blue-600 shadow-sm shadow-blue-200 dark:shadow-blue-900/30',
-      };
+      return { variant: 'default' };
     case 3:
-      return {
-        variant: 'default',
-        className:
-          'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 dark:shadow-amber-900/30',
-      };
+      return { variant: 'secondary' };
     case 4:
-      return {
-        variant: 'default',
-        className:
-          'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30',
-      };
+      return { variant: 'success' };
     case 5:
-      return {
-        variant: 'default',
-        className:
-          'bg-purple-500 text-white hover:bg-purple-600 shadow-sm shadow-purple-200 dark:shadow-purple-900/30',
-      };
+      return { variant: 'muted' };
     default:
       return { variant: 'outline' };
   }
@@ -174,16 +148,24 @@ export const ProjectPapersList = ({
   });
 
   const papers: ProjectPaper[] = (papersQuery.data as any)?.result?.items ?? [];
+  const totalCount: number =
+    (papersQuery.data as any)?.result?.paging?.totalCount ?? papers.length;
 
   return (
     <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
       {/* Header */}
-      <div className="bg-muted/30 border-b px-6 py-4">
+      <div className="border-border bg-empty-state border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">
               References
             </h2>
+            {!papersQuery.isLoading && (
+              <p className="text-muted-foreground mt-1 text-sm">
+                {totalCount} reference{totalCount !== 1 ? 's' : ''} in this
+                project
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {!!onCreatePaperClick && (
@@ -191,19 +173,16 @@ export const ProjectPapersList = ({
                 onClick={onCreatePaperClick}
                 size="sm"
                 className="flex items-center gap-2"
-              >
-                Create Paper
-              </CreateButton>
+                label="Add Paper"
+              />
             )}
             {!readOnly && !!onAddPapersClick && (
-              <Button
+              <CreateButton
                 onClick={onAddPapersClick}
                 size="sm"
-                className="btn-create flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add References
-              </Button>
+                className="flex items-center gap-2"
+                label="Add References"
+              />
             )}
           </div>
         </div>
@@ -266,16 +245,13 @@ export const ProjectPapersList = ({
                   <TableHead className="w-[15%] px-2 font-semibold">
                     Journal / Conference
                   </TableHead>
-                  <TableHead className="w-[9%] px-2 font-semibold">
-                    Published
-                  </TableHead>
-                  <TableHead className="w-[8%] px-2 font-semibold">
+                  <TableHead className="w-[10%] px-2 font-semibold">
                     Status
                   </TableHead>
-                  <TableHead className="w-[8%] px-2 font-semibold">
+                  <TableHead className="w-[15%] px-2 font-semibold">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[9%] px-2 text-right font-semibold">
+                  <TableHead className="w-[10%] px-2 text-right font-semibold">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -298,11 +274,10 @@ export const ProjectPapersList = ({
                           href={`https://doi.org/${paper.doi}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                          className="text-foreground text-sm hover:underline"
                           title={paper.doi}
                         >
-                          <ExternalLink className="size-3 shrink-0" />
-                          <span className="break-all">{paper.doi}</span>
+                          {paper.doi}
                         </a>
                       ) : (
                         <span className="text-muted-foreground text-xs italic">
@@ -312,14 +287,14 @@ export const ProjectPapersList = ({
                     </TableCell>
 
                     {/* Title */}
-                    <TableCell className="overflow-hidden px-2 font-medium wrap-break-word whitespace-normal">
+                    <TableCell className="px-2 whitespace-normal">
                       <Link
                         to={
                           getPaperHref
                             ? getPaperHref(projectId, paper.id)
                             : paths.app.paperManagement.paper.getHref(paper.id)
                         }
-                        className="line-clamp-3 text-blue-600 hover:underline dark:text-blue-400"
+                        className="text-foreground hover:underline"
                         title={paper.title || '(Untitled)'}
                       >
                         {paper.title || '(Untitled)'}
@@ -343,20 +318,6 @@ export const ProjectPapersList = ({
                           <span className="line-clamp-2">
                             {paper.conferenceName}
                           </span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">
-                          —
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Published */}
-                    <TableCell className="px-2 whitespace-normal">
-                      {paper.publicationDate ? (
-                        <span className="flex flex-wrap items-center gap-1 text-sm">
-                          <Calendar className="size-3.5 text-violet-400" />
-                          {formatPublicationDate(paper.publicationDate)}
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-xs italic">
@@ -417,12 +378,30 @@ export const ProjectPapersList = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outlineAction"
+                          size="action"
+                          asChild
+                          title="View Paper"
+                        >
+                          <Link
+                            to={
+                              getPaperHref
+                                ? getPaperHref(projectId, paper.id)
+                                : paths.app.paperManagement.paper.getHref(
+                                    paper.id,
+                                  )
+                            }
+                          >
+                            VIEW
+                          </Link>
+                        </Button>
                         {paper.filePath && (
                           <Button
-                            variant="outline"
-                            size="sm"
+                            variant="action"
+                            size="icon"
                             asChild
-                            className={`h-8 w-8 p-0 ${BTN.VIEW_OUTLINE}`}
+                            className="size-8"
                             title="Download"
                           >
                             <a
@@ -431,24 +410,22 @@ export const ProjectPapersList = ({
                               rel="noopener noreferrer"
                               download
                             >
-                              <Download className="h-4 w-4" />
+                              <FileText className="size-4" />
                             </a>
                           </Button>
                         )}
                         {!readOnly && (
                           <Button
                             variant="destructive"
-                            size="sm"
+                            size="action"
                             onClick={() => setPendingRemovePaperId(paper.id)}
                             disabled={removingPaperId === paper.id}
-                            className={`h-8 w-8 p-0 ${BTN.DANGER}`}
                             title="Remove Paper"
                           >
                             {removingPaperId === paper.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : null}
+                            REMOVE
                           </Button>
                         )}
                       </div>
@@ -459,13 +436,13 @@ export const ProjectPapersList = ({
             </Table>
           </div>
         ) : titleDebounce || tagList.length > 0 ? (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">
               No papers found matching the current filters
             </p>
           </div>
         ) : (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">No papers added yet</p>
             <p className="text-muted-foreground mt-1 text-xs">
               Use the buttons above to add or create papers in this project

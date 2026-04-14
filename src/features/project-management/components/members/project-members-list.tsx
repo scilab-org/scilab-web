@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  UserPlus,
-  Trash2,
   Loader2,
   Search,
   ShieldCheck,
@@ -10,6 +8,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -120,15 +119,11 @@ const MemberTableRow = ({
 
   const getRoleColor = (role: string) => {
     const r = role.toLowerCase();
-    if (r.includes('author'))
-      return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
-    if (r.includes('admin'))
-      return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
-    if (r.includes('manager'))
-      return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
-    if (r.includes('member'))
-      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
+    if (r.includes('manager')) return 'role-manager';
+    if (r.includes('author')) return 'role-author';
+    if (r.includes('member')) return 'role-member';
+    if (r.includes('admin')) return 'role-admin';
+    return 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
   const formatDate = (dateString: string) =>
@@ -151,7 +146,7 @@ const MemberTableRow = ({
 
   return (
     <>
-      <TableRow>
+      <TableRow className="hover:bg-muted/30">
         <TableCell>
           <div className="font-medium">
             {member.firstName || member.lastName
@@ -172,7 +167,7 @@ const MemberTableRow = ({
         </TableCell>
         <TableCell>
           <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getRoleColor(member.role)}`}
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleColor(member.role)}`}
           >
             {formatRole(member.role)}
           </span>
@@ -186,17 +181,15 @@ const MemberTableRow = ({
             {!readOnly && viewerIsSystemAdmin && isManager && (
               <Button
                 variant="destructive"
-                size="sm"
+                size="action"
                 onClick={() => onRemoveManager(member.memberId)}
                 disabled={isRemovingManager}
-                className="h-8 w-8 p-0"
                 title="Remove Manager"
               >
                 {isRemovingManager ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                REMOVE
               </Button>
             )}
 
@@ -207,17 +200,15 @@ const MemberTableRow = ({
               !isManager && (
                 <Button
                   variant="destructive"
-                  size="sm"
+                  size="action"
                   onClick={() => onRemove(member.memberId)}
                   disabled={isRemoving}
-                  className="h-8 w-8 p-0"
                   title="Remove Member"
                 >
                   {isRemoving ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
+                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  REMOVE
                 </Button>
               )}
           </div>
@@ -248,7 +239,7 @@ const MemberTableRow = ({
               Current Role
             </p>
             <span
-              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRoleColor(member.role)}`}
+              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleColor(member.role)}`}
             >
               {formatRole(member.role)}
             </span>
@@ -421,8 +412,8 @@ export const ProjectMembersList = ({
     : [];
 
   return (
-    <div className="border-border rounded-xl border shadow-sm">
-      <div className="border-border bg-muted/30 border-b px-6 py-4">
+    <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
+      <div className="border-border bg-empty-state border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">
@@ -437,24 +428,20 @@ export const ProjectMembersList = ({
           </div>
           <div className="flex items-center gap-2">
             {viewerIsSystemAdmin && !!onAddManagersClick && (
-              <Button
+              <CreateButton
                 onClick={onAddManagersClick}
                 size="sm"
-                className={`${BTN.CREATE} flex items-center gap-2`}
-              >
-                <UserPlus className="h-4 w-4" />
-                Add Manager
-              </Button>
+                className="flex items-center gap-2"
+                label="Add Manager"
+              />
             )}
             {!readOnly && !!onAddMembersClick && (
-              <Button
+              <CreateButton
                 onClick={onAddMembersClick}
                 size="sm"
-                className={`${BTN.CREATE} flex items-center gap-2`}
-              >
-                <UserPlus className="h-4 w-4" />
-                Add Members
-              </Button>
+                className="flex items-center gap-2"
+                label="Add Members"
+              />
             )}
           </div>
         </div>
@@ -637,13 +624,13 @@ export const ProjectMembersList = ({
             )}
           </>
         ) : searchDebounce ? (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">
               No members found for &ldquo;{searchDebounce}&rdquo;
             </p>
           </div>
         ) : (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">
               No members added yet
             </p>

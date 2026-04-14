@@ -4,16 +4,15 @@ import { Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useCreateDataset } from '../api/create-dataset';
 
 type CreateDatasetProps = {
@@ -101,14 +100,14 @@ export const CreateDataset = ({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Add Dataset</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Upload Dataset</DialogTitle>
+          <DialogDescription>
             Upload a new dataset for this project. All fields are required.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           onSubmit={handleSubmit}
@@ -223,35 +222,36 @@ export const CreateDataset = ({
           </div>
         </form>
 
-        <SheetFooter className="gap-2">
-          <SheetClose asChild>
+        <DialogFooter className="gap-2">
+          <DialogClose asChild>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={resetForm}
               disabled={createMutation.isPending}
-              className={BTN.CANCEL}
+              className="uppercase"
             >
-              Cancel
+              CANCEL
             </Button>
-          </SheetClose>
+          </DialogClose>
           <Button
             type="submit"
             form="create-dataset-form"
+            variant="darkRed"
             disabled={createMutation.isPending}
-            className={`min-w-25 ${BTN.CREATE}`}
+            className="min-w-25 uppercase"
           >
             {createMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
+                UPLOADING...
               </>
             ) : (
-              'Add Dataset'
+              'UPLOAD'
             )}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

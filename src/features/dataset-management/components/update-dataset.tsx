@@ -4,14 +4,14 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import { BTN } from '@/lib/button-styles';
 import { useUpdateDataset } from '../api/update-dataset';
@@ -113,15 +113,15 @@ export const UpdateDataset = ({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Update Dataset</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Dataset</DialogTitle>
+          <DialogDescription>
             Update the dataset information. Leave file empty to keep the
             existing file.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           onSubmit={handleSubmit}
@@ -200,35 +200,36 @@ export const UpdateDataset = ({
           </div>
         </form>
 
-        <SheetFooter className="gap-2">
-          <SheetClose asChild>
+        <DialogFooter className="gap-2">
+          <DialogClose asChild>
             <Button
               type="button"
               variant="outline"
               onClick={resetForm}
               disabled={updateMutation.isPending}
-              className={BTN.CANCEL}
+              className={`uppercase ${BTN.CANCEL}`}
             >
-              Cancel
+              CANCEL
             </Button>
-          </SheetClose>
+          </DialogClose>
           <Button
             type="submit"
             form="update-dataset-form"
+            variant="darkRed"
             disabled={updateMutation.isPending}
-            className={`min-w-25 ${BTN.EDIT}`}
+            className="min-w-25 uppercase"
           >
             {updateMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                SAVING...
               </>
             ) : (
-              'Update Dataset'
+              'SAVE'
             )}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

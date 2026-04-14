@@ -23,7 +23,9 @@ export const ActivateUser = ({ userId }: ActivateUserProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="action">Enable</Button>
+        <Button variant="outlineAction" size="action">
+          Enable
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>

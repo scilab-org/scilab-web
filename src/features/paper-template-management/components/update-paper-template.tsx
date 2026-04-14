@@ -159,7 +159,9 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="action">EDIT</Button>
+        <Button variant="outlineAction" size="action">
+          EDIT
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
@@ -173,7 +175,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
         <form
           id="update-pt-form"
           onSubmit={handleSubmit}
-          className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-4 py-4"
         >
           {/* Read-only info */}
           <div className="bg-muted/40 grid gap-3 rounded-lg p-3 text-sm sm:grid-cols-2">
@@ -331,7 +333,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             type="submit"
             form="update-pt-form"
             disabled={mutation.isPending}
-            variant="secondary"
+            variant="darkRed"
           >
             {mutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>

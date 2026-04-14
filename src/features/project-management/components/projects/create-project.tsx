@@ -15,6 +15,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { useCreateProject } from '../../api/projects/create-project';
 import { CreateProjectDto } from '../../types';
 import { FIELD_LABEL_CLASS } from '../../constants';
@@ -200,14 +208,14 @@ export const CreateProject = () => {
               >
                 Description <span className="text-destructive">*</span>
               </label>
-              <textarea
+              <AutoResizeTextarea
                 id="project-description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Enter project description"
                 rows={3}
-                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
               {errors.description && (
                 <p className="text-destructive text-xs">{errors.description}</p>
@@ -218,16 +226,20 @@ export const CreateProject = () => {
               <label htmlFor="project-status" className={FIELD_LABEL_CLASS}>
                 Status
               </label>
-              <select
-                id="project-status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="border-input text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              <Select
+                value={String(formData.status)}
+                onValueChange={(val) =>
+                  setFormData((prev) => ({ ...prev, status: Number(val) }))
+                }
               >
-                <option value="1">Draft</option>
-                <option value="2">Active</option>
-              </select>
+                <SelectTrigger className="w-full bg-transparent shadow-xs">
+                  <SelectValue placeholder="Select a status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Draft</SelectItem>
+                  <SelectItem value="2">Active</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -281,14 +293,14 @@ export const CreateProject = () => {
               <label htmlFor="project-context" className={FIELD_LABEL_CLASS}>
                 Context
               </label>
-              <textarea
+              <AutoResizeTextarea
                 id="project-context"
                 name="context"
                 value={formData.context}
                 onChange={handleChange}
                 placeholder="Enter project context"
                 rows={3}
-                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
             </div>
 
@@ -296,14 +308,14 @@ export const CreateProject = () => {
               <label htmlFor="project-keypoint" className={FIELD_LABEL_CLASS}>
                 Keypoint
               </label>
-              <textarea
+              <AutoResizeTextarea
                 id="project-keypoint"
                 name="keypoint"
                 value={formData.keypoint}
                 onChange={handleChange}
                 placeholder="Enter project keypoint"
                 rows={2}
-                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
             </div>
           </div>
@@ -324,7 +336,7 @@ export const CreateProject = () => {
             </Button>
             <Button
               type="submit"
-              variant="secondary"
+              variant="darkRed"
               form="create-project-form"
               disabled={createMutation.isPending}
               className="uppercase"

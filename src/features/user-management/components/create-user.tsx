@@ -84,7 +84,7 @@ export const CreateUser = () => {
         <form
           id="create-user-form"
           onSubmit={handleSubmit}
-          className="space-y-5 py-2"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-4 py-2"
         >
           <div className="space-y-2">
             <label htmlFor="cu-username" className={fieldLabel}>

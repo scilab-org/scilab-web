@@ -196,16 +196,20 @@ export const ProjectsList = () => {
                         );
                       }}
                     >
-                      <Button variant="action">VIEW</Button>
+                      <Button variant="outlineAction" size="action">
+                        VIEW
+                      </Button>
                     </Link>
                     <Button
-                      variant="action"
+                      variant="outlineAction"
+                      size="action"
                       onClick={() => handleUpdate(project)}
                     >
                       EDIT
                     </Button>
                     <Button
-                      variant="action"
+                      variant="destructive"
+                      size="action"
                       onClick={() => handleDelete(project)}
                     >
                       DELETE
