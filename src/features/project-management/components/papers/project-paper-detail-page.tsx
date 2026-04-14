@@ -69,6 +69,7 @@ import { usePaperMembers } from '@/features/project-management/api/papers/get-pa
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
 import { ProjectMember } from '@/features/project-management/types';
+import { PaperWorkspacePage } from '@/features/project-management/components/papers/paper-workspace-page';
 import { PaperMembersSheet } from '@/features/project-management/components/papers/paper-members-sheet';
 import {
   useCreateTask,
@@ -92,50 +93,38 @@ const KANBAN_COLUMNS = [
   {
     status: 1,
     label: 'To Do',
-    dot: 'bg-slate-400',
-    headerCls:
-      'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/60',
-    bodyCls:
-      'border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/20',
-    countCls:
-      'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
-    labelCls: 'text-slate-700 dark:text-slate-300',
+    dot: 'bg-primary',
+    headerCls: 'bg-surface-container-highest',
+    bodyCls: 'bg-surface-container',
+    countCls: 'bg-surface text-primary',
+    labelCls: 'text-primary font-semibold',
   },
   {
     status: 2,
     label: 'In Progress',
-    dot: 'bg-blue-500',
-    headerCls:
-      'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30',
-    bodyCls:
-      'border-blue-200 bg-blue-50/40 dark:border-blue-800 dark:bg-blue-900/10',
-    countCls:
-      'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    labelCls: 'text-blue-700 dark:text-blue-300',
+    dot: 'bg-secondary',
+    headerCls: 'bg-surface-container-highest',
+    bodyCls: 'bg-surface-container',
+    countCls: 'bg-surface text-primary',
+    labelCls: 'text-primary font-semibold',
   },
   {
     status: 3,
     label: 'In Review',
-    dot: 'bg-amber-500',
-    headerCls:
-      'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30',
-    bodyCls:
-      'border-amber-200 bg-amber-50/40 dark:border-amber-800 dark:bg-amber-900/10',
-    countCls:
-      'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    labelCls: 'text-amber-700 dark:text-amber-300',
+    dot: 'bg-tertiary',
+    headerCls: 'bg-surface-container-highest',
+    bodyCls: 'bg-surface-container',
+    countCls: 'bg-surface text-primary',
+    labelCls: 'text-primary font-semibold',
   },
   {
     status: 4,
     label: 'Completed',
-    dot: 'bg-green-500',
-    headerCls:
-      'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/30',
-    bodyCls:
-      'border-green-200 bg-green-50/40 dark:border-green-800 dark:bg-green-900/10',
-    countCls:
-      'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-    labelCls: 'text-green-700 dark:text-green-300',
+    dot: 'bg-primary',
+    headerCls: 'bg-surface-container-highest',
+    bodyCls: 'bg-surface-container',
+    countCls: 'bg-surface text-primary',
+    labelCls: 'text-primary font-semibold',
   },
 ];
 
@@ -159,13 +148,27 @@ const toDateTimeLocalValue = (value?: string | null) => {
   return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
 };
 
+export type Tab =
+  | 'overview'
+  | 'compile-paper'
+  | 'sections'
+  | 'contributor'
+  | 'task';
+
+const TABS: { id: Tab; label: string; icon: any }[] = [
+  { id: 'overview', label: 'Overview', icon: FileText },
+  { id: 'compile-paper', label: 'Compile Paper', icon: Layers },
+  { id: 'sections', label: 'Sections', icon: BookOpen },
+  { id: 'contributor', label: 'Contributor', icon: Users },
+  { id: 'task', label: 'Task', icon: ClipboardList },
+];
+
 export const ProjectPaperDetailPage = ({
   projectId,
   paperId,
   isAuthor = false,
   isManager = false,
   backPath,
-  workspacePath,
   combineEditorPath,
 }: {
   projectId: string;
@@ -173,9 +176,9 @@ export const ProjectPaperDetailPage = ({
   isAuthor?: boolean;
   isManager?: boolean;
   backPath: string;
-  workspacePath?: string;
   combineEditorPath?: (combineId: string) => string;
 }) => {
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: user } = useUser();
@@ -642,7 +645,7 @@ export const ProjectPaperDetailPage = ({
     return (
       <ContentLayout title="Paper Not Found">
         <div className="py-12 text-center">
-          <p className="text-muted-foreground">Paper not found</p>
+          <p className="text-secondary">Paper not found</p>
           <Button onClick={() => navigate(backPath)} className="mt-4">
             Go Back
           </Button>
@@ -654,36 +657,36 @@ export const ProjectPaperDetailPage = ({
   return (
     <ContentLayout title="" description="">
       <div className="space-y-6">
-        <div className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
+        <div className="bg-surface-container-low overflow-hidden rounded-xl shadow-sm">
           {/* Card header */}
-          <div className="flex items-center justify-between border-b bg-linear-to-r from-slate-50 to-blue-50/40 px-6 py-4 dark:from-slate-900/40 dark:to-blue-950/20">
+          <div className="bg-surface flex items-center justify-between px-6 py-4">
             <div>
-              <h1 className="text-foreground text-2xl leading-tight font-bold">
+              <h1 className="text-primary font-serif text-2xl leading-tight font-extrabold tracking-tight">
                 {paper.title}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {paperType && (
-                  <Badge variant="outline" className="gap-1 text-xs">
+                  <Badge className="bg-surface-container text-primary hover:bg-surface-container-highest gap-1 border-0 text-xs shadow-none">
                     <FileText className="size-3" />
                     {paperType}
                   </Badge>
                 )}
                 <Badge
                   className={cn(
-                    'text-xs',
+                    'border-0 text-xs shadow-none',
                     paper.status === 1
-                      ? 'bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300'
+                      ? 'bg-surface-container text-primary hover:bg-surface-container-highest'
                       : paper.status === 2
-                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300'
+                        ? 'bg-surface-container text-primary hover:bg-surface-container-highest'
                         : paper.status === 3
-                          ? 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300'
-                          : 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300',
+                          ? 'bg-surface-container text-primary hover:bg-surface-container-highest'
+                          : 'bg-surface-container text-primary hover:bg-surface-container-highest',
                   )}
                 >
                   {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
                 </Badge>
                 {paper.template && (
-                  <Badge variant="secondary" className="gap-1 text-xs">
+                  <Badge className="bg-surface-container text-primary hover:bg-surface-container-highest gap-1 border-0 text-xs shadow-none">
                     <LayoutTemplate className="size-3" />
                     {paper.template}
                   </Badge>
@@ -692,11 +695,11 @@ export const ProjectPaperDetailPage = ({
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
               {paper.createdBy && (
-                <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                <div className="text-secondary flex items-center gap-1.5 font-sans text-[10px]">
                   <User className="h-3.5 w-3.5" />
                   <span>
                     Created by{' '}
-                    <span className="text-foreground font-medium">
+                    <span className="text-primary font-medium">
                       {paper.createdBy}
                     </span>
                   </span>
@@ -708,29 +711,10 @@ export const ProjectPaperDetailPage = ({
                     size="sm"
                     variant="outline"
                     onClick={handleEditPaperOpen}
-                    className="gap-1.5"
+                    className="text-primary bg-surface-container hover:bg-surface-container-highest gap-1.5 border-transparent"
                   >
                     <Pencil className="size-4" />
                     Edit Paper
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsMembersOpen(true)}
-                  className="gap-1.5"
-                >
-                  <Users className="size-4" />
-                  Contributors
-                </Button>
-                {workspacePath && (
-                  <Button
-                    size="sm"
-                    onClick={() => navigate(workspacePath)}
-                    className="gap-1.5 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-                  >
-                    <ExternalLink className="size-4" />
-                    Open Workspace
                   </Button>
                 )}
                 {paper.filePath && (
@@ -738,7 +722,7 @@ export const ProjectPaperDetailPage = ({
                     href={paper.filePath}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="bg-surface-container text-tertiary hover:bg-surface-container-highest inline-flex items-center gap-1.5 rounded-md border-0 px-2.5 py-1.5 font-sans text-xs shadow-sm transition-colors"
                   >
                     <ExternalLink className="size-3" />
                     View PDF
@@ -747,720 +731,843 @@ export const ProjectPaperDetailPage = ({
               </div>
             </div>
           </div>
-          {/* Paper detail grid */}
+
+          {/* Tab bar */}
+          <div className="bg-surface-container-low">
+            <nav className="-mb-px flex gap-1 px-4">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'text-primary bg-surface-container rounded-t-lg shadow-sm'
+                        : 'text-secondary hover:text-primary bg-transparent'
+                    }`}
+                  >
+                    <Icon className="size-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
           {/* Paper detail dashboard */}
-          <div className="p-6">
-            <div className="mb-8 grid gap-4 sm:grid-cols-3">
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-md bg-blue-100/50 p-1.5 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                      <Layers className="size-4" />
+          <div className="bg-surface-container p-6">
+            {activeTab === 'overview' && (
+              <>
+                <div className="mb-8 grid gap-4 sm:grid-cols-3">
+                  <div className="bg-surface-container-highest rounded-xl p-5 shadow-sm transition-colors">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-surface text-primary rounded-md p-1.5">
+                          <Layers className="size-4" />
+                        </div>
+                        <p className="text-secondary font-sans text-xs font-bold">
+                          Sections
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-primary font-serif text-3xl font-bold">
+                          {sectionsQuery.isLoading ? (
+                            <Loader2 className="text-tertiary size-6 animate-spin" />
+                          ) : (
+                            totalSections
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                      Sections
-                    </p>
                   </div>
-                  <div>
-                    <p className="text-foreground text-3xl font-bold">
-                      {sectionsQuery.isLoading ? (
-                        <Loader2 className="size-6 animate-spin text-blue-600" />
-                      ) : (
-                        totalSections
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-md bg-emerald-100/50 p-1.5 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                      <Users className="size-4" />
+                  <div className="bg-surface-container-highest rounded-xl p-5 shadow-sm transition-colors">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-surface text-primary rounded-md p-1.5">
+                          <Users className="size-4" />
+                        </div>
+                        <p className="text-secondary font-sans text-xs font-bold">
+                          Contributors
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-primary font-serif text-3xl font-bold">
+                          {paperMembersQuery.isLoading ? (
+                            <Loader2 className="text-tertiary size-6 animate-spin" />
+                          ) : (
+                            totalPaperMembers
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                      Contributors
-                    </p>
                   </div>
-                  <div>
-                    <p className="text-foreground text-3xl font-bold">
-                      {paperMembersQuery.isLoading ? (
-                        <Loader2 className="size-6 animate-spin text-emerald-600" />
-                      ) : (
-                        totalPaperMembers
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-md bg-violet-100/50 p-1.5 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
-                      <Pencil className="size-4" />
+                  <div className="bg-surface-container-highest rounded-xl p-5 shadow-sm transition-colors">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-surface text-primary rounded-md p-1.5">
+                          <Pencil className="size-4" />
+                        </div>
+                        <p className="text-secondary font-sans text-xs font-bold">
+                          Authors
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-primary font-serif text-3xl font-bold">
+                          {paperMembersQuery.isLoading ? (
+                            <Loader2 className="text-tertiary size-6 animate-spin" />
+                          ) : (
+                            editRoleMembers
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                      Authors
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-foreground text-3xl font-bold">
-                      {paperMembersQuery.isLoading ? (
-                        <Loader2 className="size-6 animate-spin text-violet-600" />
-                      ) : (
-                        editRoleMembers
-                      )}
-                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              {/* Abstract */}
-              <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
-                    <FileText className="text-muted-foreground size-4" />
-                  </div>
-                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    Abstract
-                  </h3>
-                </div>
-                <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
-                  {paper.abstract || 'No abstract provided.'}
-                </p>
-              </div>
-
-              {/* Context */}
-              <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
-                    <Globe className="text-muted-foreground size-4" />
-                  </div>
-                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    Context
-                  </h3>
-                </div>
-                <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
-                  {paper.context || 'No context defined.'}
-                </p>
-              </div>
-
-              {/* Research Gap */}
-              <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
-                    <Target className="text-muted-foreground size-4" />
-                  </div>
-                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    Research Gap
-                  </h3>
-                </div>
-                <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
-                  {paper.researchGap || 'No research gap explicitly stated.'}
-                </p>
-                {paper.gapType && (
-                  <span className="bg-muted/60 text-muted-foreground mt-3 inline-block rounded-md px-2.5 py-0.5 text-xs font-medium">
-                    Type: {paper.gapType}
-                  </span>
-                )}
-              </div>
-
-              {/* Main Contribution */}
-              <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
-                    <BookOpen className="text-muted-foreground size-4" />
-                  </div>
-                  <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    Main Contribution
-                  </h3>
-                </div>
-                <p className="text-foreground/90 text-[14px] leading-relaxed whitespace-pre-wrap">
-                  {paper.mainContribution || 'No main contribution listed.'}
-                </p>
-              </div>
-
-              {/* Journal / Conference */}
-              {((paper as any).journalName ||
-                (paper as any).journal ||
-                (paper as any).conferenceName) && (
-                <div className="bg-muted/20 rounded-xl border p-5 transition-shadow hover:shadow-sm">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="bg-muted/50 flex h-8 w-8 items-center justify-center rounded-lg dark:bg-slate-800">
-                      <Presentation className="text-muted-foreground size-4" />
+                <div className="space-y-4">
+                  {/* Abstract */}
+                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
+                        <FileText className="text-secondary size-4" />
+                      </div>
+                      <h3 className="text-secondary font-sans text-xs font-bold">
+                        Abstract
+                      </h3>
                     </div>
-                    <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                      Journal / Conference
-                    </h3>
+                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {paper.abstract || 'No abstract provided.'}
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    {((paper as any).journalName || (paper as any).journal) && (
-                      <p className="text-foreground/90 text-[14px] leading-relaxed">
-                        <span className="mr-2 font-semibold">Journal:</span>
-                        {(paper as any).journalName || (paper as any).journal}
-                      </p>
-                    )}
-                    {(paper as any).conferenceName && (
-                      <p className="text-foreground/90 text-[14px] leading-relaxed">
-                        <span className="mr-2 font-semibold">Conference:</span>
-                        {(paper as any).conferenceName}
-                      </p>
+
+                  {/* Context */}
+                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
+                        <Globe className="text-secondary size-4" />
+                      </div>
+                      <h3 className="text-secondary font-sans text-xs font-bold">
+                        Context
+                      </h3>
+                    </div>
+                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {paper.context || 'No context defined.'}
+                    </p>
+                  </div>
+
+                  {/* Research Gap */}
+                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
+                        <Target className="text-secondary size-4" />
+                      </div>
+                      <h3 className="text-secondary font-sans text-xs font-bold">
+                        Research Gap
+                      </h3>
+                    </div>
+                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {paper.researchGap ||
+                        'No research gap explicitly stated.'}
+                    </p>
+                    {paper.gapType && (
+                      <span className="bg-surface text-secondary mt-3 inline-block rounded-md px-2.5 py-0.5 font-sans text-[10px]">
+                        Type: {paper.gapType}
+                      </span>
                     )}
                   </div>
+
+                  {/* Main Contribution */}
+                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
+                        <BookOpen className="text-secondary size-4" />
+                      </div>
+                      <h3 className="text-secondary font-sans text-xs font-bold">
+                        Main Contribution
+                      </h3>
+                    </div>
+                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {paper.mainContribution || 'No main contribution listed.'}
+                    </p>
+                  </div>
+
+                  {/* Journal / Conference */}
+                  {((paper as any).journalName ||
+                    (paper as any).journal ||
+                    (paper as any).conferenceName) && (
+                    <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
+                          <Presentation className="text-secondary size-4" />
+                        </div>
+                        <h3 className="text-secondary font-sans text-xs font-bold">
+                          Journal / Conference
+                        </h3>
+                      </div>
+                      <div className="space-y-2">
+                        {((paper as any).journalName ||
+                          (paper as any).journal) && (
+                          <p className="text-primary text-[14px] leading-relaxed">
+                            <span className="mr-2 font-semibold">Journal:</span>
+                            {(paper as any).journalName ||
+                              (paper as any).journal}
+                          </p>
+                        )}
+                        {(paper as any).conferenceName && (
+                          <p className="text-primary text-[14px] leading-relaxed">
+                            <span className="mr-2 font-semibold">
+                              Conference:
+                            </span>
+                            {(paper as any).conferenceName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* ── Combines Panel ───────────────────────────────────────── */}
-        <div className="border-border bg-card rounded-xl border shadow-sm">
-          <div className="flex items-center gap-3 border-b px-6 py-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100/60 dark:bg-purple-900/30">
-              <Layers className="size-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <h2 className="text-foreground text-base font-semibold">
-                Combined Versions
-              </h2>
-              <p className="text-muted-foreground text-xs">
-                {combines.length} version{combines.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-            {isAuthor && (
-              <Button
-                className={cn('ml-auto gap-1.5', BTN.CREATE)}
-                size="sm"
-                disabled={combinePaperMutation.isPending}
-                onClick={() => {
-                  combinePaperMutation.mutate({
-                    paperId,
-                    data: {
-                      isPreview: true,
-                      projectId: paperSubProjectId,
-                    },
-                  });
-                }}
-              >
-                {combinePaperMutation.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Play className="size-4" />
-                )}
-                Compile Paper
-              </Button>
-            )}
-          </div>
-          <div className="p-6">
-            {combines.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-10 text-center">
-                <Layers className="text-muted-foreground/40 mb-3 size-10" />
-                <p className="text-muted-foreground text-sm">
-                  No combined versions yet.
-                </p>
-                {isAuthor && (
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Click &ldquo;Compile Paper&rdquo; to generate a combined
-                    version.
-                  </p>
-                )}
+        {activeTab === 'compile-paper' && (
+          <div className="bg-surface-container mt-6 rounded-xl shadow-sm">
+            <div className="bg-surface-container-low flex items-center gap-3 rounded-t-xl px-6 py-4">
+              <div className="bg-surface flex h-9 w-9 items-center justify-center rounded-lg">
+                <Layers className="text-primary size-5" />
               </div>
-            ) : (
-              <div className="space-y-3">
-                {combines.map((combine) => (
-                  <div
-                    key={combine.id}
-                    className="flex items-center justify-between rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-slate-950"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-foreground truncate text-sm font-semibold">
-                        {combine.name}
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        {combine.createdOnUtc && (
-                          <span>
-                            <span className="font-medium text-slate-400 dark:text-slate-500">
-                              Created{' '}
+              <div>
+                <h2 className="text-primary text-base font-semibold">
+                  Combined Versions
+                </h2>
+                <p className="text-secondary mt-1 font-sans text-[10px]">
+                  {combines.length} version{combines.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              {isAuthor && (
+                <Button
+                  variant="action"
+                  className={cn('ml-auto gap-1.5')}
+                  size="sm"
+                  disabled={combinePaperMutation.isPending}
+                  onClick={() => {
+                    combinePaperMutation.mutate({
+                      paperId,
+                      data: {
+                        isPreview: true,
+                        projectId: paperSubProjectId,
+                      },
+                    });
+                  }}
+                >
+                  {combinePaperMutation.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Play className="size-4" />
+                  )}
+                  Compile Paper
+                </Button>
+              )}
+            </div>
+            <div className="p-6">
+              {combines.length === 0 ? (
+                <div className="bg-surface-container-low flex flex-col items-center justify-center rounded-xl border border-transparent py-10 text-center">
+                  <Layers className="text-secondary mb-3 size-10 opacity-50" />
+                  <p className="text-primary text-sm font-medium">
+                    No combined versions yet.
+                  </p>
+                  {isAuthor && (
+                    <p className="text-secondary mt-1 text-xs">
+                      Click &ldquo;Compile Paper&rdquo; to generate a combined
+                      version.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {combines.map((combine) => (
+                    <div
+                      key={combine.id}
+                      className="bg-surface flex items-center justify-between rounded-lg p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-primary truncate text-sm font-semibold">
+                          {combine.name}
+                        </p>
+                        <div className="text-secondary mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-sans text-[10px]">
+                          {combine.createdOnUtc && (
+                            <span>
+                              <span className="text-secondary font-medium">
+                                Created{' '}
+                              </span>
+                              {new Date(combine.createdOnUtc).toLocaleString(
+                                'en-US',
+                                {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                },
+                              )}
                             </span>
-                            {new Date(combine.createdOnUtc).toLocaleString(
-                              'en-US',
-                              {
+                          )}
+                          {combine.lastModifiedOnUtc && (
+                            <span>
+                              <span className="text-secondary font-medium">
+                                Last modified{' '}
+                              </span>
+                              {new Date(
+                                combine.lastModifiedOnUtc,
+                              ).toLocaleString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit',
-                              },
-                            )}
-                          </span>
-                        )}
-                        {combine.lastModifiedOnUtc && (
-                          <span>
-                            <span className="font-medium text-slate-400 dark:text-slate-500">
-                              Last modified{' '}
+                              })}
                             </span>
-                            {new Date(combine.lastModifiedOnUtc).toLocaleString(
-                              'en-US',
-                              {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              },
-                            )}
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isAuthor && (
+                      <div className="flex items-center gap-2">
+                        {isAuthor && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
+                            onClick={() => {
+                              if (combineEditorPath) {
+                                navigate(
+                                  combineEditorPath(combine.id) + '?edit=true',
+                                );
+                              }
+                            }}
+                          >
+                            <Pencil className="size-3.5" />
+                            Edit
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400"
+                          className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
                           onClick={() => {
                             if (combineEditorPath) {
-                              navigate(
-                                combineEditorPath(combine.id) + '?edit=true',
-                              );
+                              navigate(combineEditorPath(combine.id));
                             }
                           }}
                         >
-                          <Pencil className="size-3.5" />
-                          Edit
+                          <Eye className="size-4" />
+                          View
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => {
-                          if (combineEditorPath) {
-                            navigate(combineEditorPath(combine.id));
-                          }
-                        }}
-                      >
-                        <Eye className="size-4" />
-                        View
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Tasks Panel ─────────────────────────────────────────────── */}
-        <div className="border-border bg-card rounded-xl border shadow-sm">
-          <div className="flex items-center gap-3 border-b px-6 py-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100/60 dark:bg-amber-900/30">
-              <ClipboardList className="size-5 text-amber-600 dark:text-amber-400" />
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
-              <h2 className="text-foreground text-base font-semibold">Tasks</h2>
-              <p className="text-muted-foreground text-xs">
-                {paperTasksQuery.data?.result?.paging?.totalCount != null
-                  ? `${paperTasksQuery.data.result.paging.totalCount} task${paperTasksQuery.data.result.paging.totalCount !== 1 ? 's' : ''}`
-                  : 'Paper tasks'}
-              </p>
-            </div>
-            <Button
-              className={cn('ml-auto', BTN.CREATE)}
-              size="sm"
-              onClick={() => {
-                if (!isAuthor && user?.preferredUsername) {
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    assignedToUserName: user.preferredUsername || '',
-                  }));
-                }
-                setIsCreateTaskOpen(true);
-              }}
-            >
-              <Plus className="size-4" />
-              Create Task
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => paperTasksQuery.refetch()}
-              disabled={paperTasksQuery.isFetching}
-              title="Refresh tasks"
-            >
-              <RefreshCw
-                className={cn(
-                  'size-4',
-                  paperTasksQuery.isFetching && 'animate-spin',
-                )}
-              />
-            </Button>
           </div>
+        )}
 
-          <div className="p-4">
-            <form
-              onSubmit={applyTaskFilters}
-              className="bg-muted/40 mb-4 rounded-xl border p-4"
-            >
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="filterAssignee"
-                    className="text-muted-foreground text-xs font-medium"
-                  >
-                    Assignee
-                  </label>
-                  <select
-                    id="filterAssignee"
-                    className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                    value={localFilters.AssignedToUserName}
-                    onChange={(e) =>
-                      handleFilterChange('AssignedToUserName', e.target.value)
-                    }
-                  >
-                    <option value="">All Assignees</option>
-                    {memberOptions.map((member) => (
-                      <option key={member.value} value={member.value}>
-                        {member.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        {/* ── Sections Panel ───────────────────────────────────────── */}
+        {activeTab === 'sections' && (
+          <div className="bg-surface-container mt-6 rounded-xl p-6 shadow-sm">
+            <PaperWorkspacePage
+              projectId={projectId}
+              paperId={paperId}
+              isAuthor={isAuthor}
+              isManager={isManager}
+              backPath={backPath}
+              embedded={true}
+            />
+          </div>
+        )}
 
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="filterStatus"
-                    className="text-muted-foreground text-xs font-medium"
-                  >
-                    Status
-                  </label>
-                  <select
-                    id="filterStatus"
-                    className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                    value={localFilters.Status}
-                    onChange={(e) =>
-                      handleFilterChange('Status', e.target.value)
-                    }
-                  >
-                    <option value="">All Status</option>
-                    {TASK_STATUS_OPTIONS.map((status) => (
-                      <option key={status.value} value={String(status.value)}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="filterDateField"
-                    className="text-muted-foreground text-xs font-medium"
-                  >
-                    Date Field
-                  </label>
-                  <select
-                    id="filterDateField"
-                    className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                    value={localFilters.DateField}
-                    onChange={(e) =>
-                      handleFilterChange('DateField', e.target.value)
-                    }
-                  >
-                    <option value="">Select Date Field</option>
-                    {DATE_TASK_FILTER_OPTIONS.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="filterFromDate"
-                    className="text-muted-foreground text-xs font-medium"
-                  >
-                    From Date
-                  </label>
-                  <Input
-                    id="filterFromDate"
-                    type="date"
-                    value={localFilters.FromDate}
-                    disabled={!isDateFieldSelected}
-                    onChange={(e) =>
-                      handleFilterChange('FromDate', e.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="filterToDate"
-                    className="text-muted-foreground text-xs font-medium"
-                  >
-                    To Date
-                  </label>
-                  <Input
-                    id="filterToDate"
-                    type="date"
-                    value={localFilters.ToDate}
-                    disabled={!isDateFieldSelected}
-                    onChange={(e) =>
-                      handleFilterChange('ToDate', e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-end gap-2">
-                {activeFilterCount > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearTaskFilters}
-                    className="text-muted-foreground hover:text-foreground mr-auto"
-                  >
-                    <X className="size-4" />
-                    Clear ({activeFilterCount})
-                  </Button>
-                )}
+        {/* ── Contributors Panel ───────────────────────────────────────── */}
+        {activeTab === 'contributor' && (
+          <div className="bg-surface-container mt-6 rounded-xl p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-primary text-base font-semibold">
+                Contributors
+              </h2>
+              {(isAuthor || isManager) && (
                 <Button
-                  type="button"
-                  variant="outline"
                   size="sm"
-                  onClick={clearTaskFilters}
-                  className={BTN.CANCEL}
+                  variant="action"
+                  onClick={() => setIsMembersOpen(true)}
+                  className="gap-1.5"
                 >
-                  Reset
+                  <Users className="size-4" />
+                  Manage Contributors
                 </Button>
-                <Button type="submit" size="sm" className={BTN.EDIT}>
-                  <Search className="size-4" />
-                  Search
-                </Button>
-              </div>
-            </form>
+              )}
+            </div>
 
-            {/* ── Kanban Board ───────────────────────────────────────── */}
-            {paperTasksQuery.isLoading ? (
-              <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="space-y-2">
-                    <Skeleton className="h-9 w-full rounded-lg" />
-                    <Skeleton className="h-24 w-full rounded-lg" />
-                    <Skeleton className="h-24 w-full rounded-lg" />
-                  </div>
-                ))}
+            {paperMembersQuery.isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : paperMembersList.length === 0 ? (
+              <div className="text-secondary py-12 text-center">
+                No contributors found.
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {KANBAN_COLUMNS.map((col) => {
-                  const allItems = paperTasksQuery.data?.result?.items ?? [];
-                  const colTasks = allItems
-                    .map((t) => ({
-                      ...t,
-                      status: localStatusOverrides[t.id] ?? t.status,
-                    }))
-                    .filter((t) => t.status === col.status);
-                  const isDragTarget = dragOverCol === col.status;
-                  return (
-                    <div key={col.status} className="flex min-w-0 flex-col">
-                      {/* Column header */}
-                      <div
-                        className={cn(
-                          'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
-                          col.headerCls,
-                        )}
+              <div className="bg-surface overflow-x-auto rounded-xl shadow-sm">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-surface-container-low text-primary">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">User</th>
+                      <th className="px-4 py-3 font-medium">Email</th>
+                      <th className="px-4 py-3 font-medium">Role</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-surface-container-highest divide-y">
+                    {paperMembersList.map((member: any) => (
+                      <tr
+                        key={member.id}
+                        className="hover:bg-surface-container-highest"
                       >
-                        <span
-                          className={cn(
-                            'size-2 shrink-0 rounded-full',
-                            col.dot,
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            'flex-1 text-sm font-semibold',
-                            col.labelCls,
-                          )}
-                        >
-                          {col.label}
-                        </span>
-                        <span
-                          className={cn(
-                            'rounded-full px-1.5 py-0.5 text-xs font-bold',
-                            col.countCls,
-                          )}
-                        >
-                          {colTasks.length}
-                        </span>
-                      </div>
-
-                      {/* Column body – drop zone */}
-                      <div
-                        className={cn(
-                          'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
-                          col.bodyCls,
-                          isDragTarget &&
-                            'ring-2 ring-blue-400 ring-inset dark:ring-blue-500',
-                        )}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                          if (dragOverCol !== col.status)
-                            setDragOverCol(col.status);
-                        }}
-                        onDragLeave={(e) => {
-                          // Only clear if leaving the column entirely
-                          if (
-                            !e.currentTarget.contains(e.relatedTarget as Node)
-                          )
-                            setDragOverCol(null);
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setDragOverCol(null);
-                          if (!draggedTaskId) return;
-                          const task = allItems.find(
-                            (t) => t.id === draggedTaskId,
-                          );
-                          if (!task) return;
-                          // Don't clear draggedTaskId here — let onDragEnd do it
-                          // so the optimistic override and drag-clear happen in the
-                          // same render, preventing a flash back to the old column
-                          handleTaskDrop(task, col.status);
-                        }}
-                      >
-                        {colTasks.length === 0 ? (
-                          <div
-                            className={cn(
-                              'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
-                              isDragTarget
-                                ? 'border-blue-400 bg-blue-50/60 dark:border-blue-600 dark:bg-blue-900/20'
-                                : 'border-transparent',
-                            )}
-                          >
-                            <p className="text-muted-foreground text-xs">
-                              {isDragTarget ? 'Drop here' : 'No tasks'}
-                            </p>
-                          </div>
-                        ) : (
-                          colTasks.map((task) => {
-                            const canEdit =
-                              isAuthor ||
-                              (currentUsername &&
-                                task.assignedToUserName.toLowerCase() ===
-                                  currentUsername);
-                            const isPending = dndMutatingRef.current.has(
-                              task.id,
-                            );
-                            return (
-                              <div
-                                key={task.id}
-                                draggable
-                                role="button"
-                                tabIndex={canEdit ? 0 : -1}
-                                onDragStart={(e) => {
-                                  setDraggedTaskId(task.id);
-                                  e.dataTransfer.effectAllowed = 'move';
-                                  // needed for Firefox
-                                  e.dataTransfer.setData('text/plain', task.id);
-                                }}
-                                onDragEnd={() => {
-                                  setDraggedTaskId(null);
-                                  setDragOverCol(null);
-                                }}
-                                onClick={() => canEdit && openUpdateTask(task)}
-                                onKeyDown={(e) => {
-                                  if (!canEdit) return;
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    openUpdateTask(task);
-                                  }
-                                }}
-                                className={cn(
-                                  'bg-card relative flex flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
-                                  canEdit && 'cursor-pointer',
-                                  isPending &&
-                                    'ring-1 ring-blue-400 dark:ring-blue-500',
-                                )}
-                              >
-                                {/* Pending indicator (while mutation is in flight) */}
-                                {isPending && (
-                                  <span className="absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full bg-blue-400" />
-                                )}
-
-                                {/* Name */}
-                                <p className="pr-4 text-sm leading-snug font-medium">
-                                  {task.name}
-                                </p>
-
-                                {/* Description */}
-                                {task.description && (
-                                  <p className="text-muted-foreground line-clamp-2 text-xs">
-                                    {task.description}
-                                  </p>
-                                )}
-
-                                {/* Assignee */}
-                                <div className="flex items-center gap-1.5">
-                                  <div className="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
-                                    {task.assignedToUserName.charAt(0)}
-                                  </div>
-                                  <span className="text-muted-foreground truncate text-xs">
-                                    {task.assignedToUserName}
-                                  </span>
-                                </div>
-
-                                {/* Dates */}
-                                {(task.startDate ||
-                                  task.nextReviewDate ||
-                                  task.completeDate) && (
-                                  <div className="space-y-0.5 border-t pt-1.5">
-                                    {task.startDate && (
-                                      <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                                        <Calendar className="size-3 shrink-0" />
-                                        <span>
-                                          Start: {formatDate(task.startDate)}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {task.nextReviewDate && (
-                                      <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                                        <Calendar className="size-3 shrink-0" />
-                                        <span>
-                                          Review:{' '}
-                                          {formatDate(task.nextReviewDate)}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {task.completeDate && (
-                                      <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                                        <Calendar className="size-3 shrink-0" />
-                                        <span>
-                                          Due: {formatDate(task.completeDate)}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                        <td className="text-primary px-4 py-3 font-medium">
+                          {member.firstName || member.lastName
+                            ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
+                            : member.username}
+                        </td>
+                        <td className="text-secondary px-4 py-3">
+                          {member.email}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge className="bg-surface-container text-primary hover:bg-surface-container-highest border-0 shadow-none">
+                            {member.role}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* ── Tasks Panel ─────────────────────────────────────────────── */}
+        {activeTab === 'task' && (
+          <div className="bg-surface-container mt-6 rounded-xl shadow-sm">
+            <div className="bg-surface-container-low flex items-center gap-3 rounded-t-xl px-6 py-4">
+              <div className="bg-surface flex h-9 w-9 items-center justify-center rounded-lg">
+                <ClipboardList className="text-primary size-5" />
+              </div>
+              <div>
+                <h2 className="text-primary text-base font-semibold">Tasks</h2>
+                <p className="text-secondary mt-1 font-sans text-[10px]">
+                  {paperTasksQuery.data?.result?.paging?.totalCount != null
+                    ? `${paperTasksQuery.data.result.paging.totalCount} task${paperTasksQuery.data.result.paging.totalCount !== 1 ? 's' : ''}`
+                    : 'Paper tasks'}
+                </p>
+              </div>
+              <Button
+                variant="action"
+                className={cn('ml-auto')}
+                size="sm"
+                onClick={() => {
+                  if (!isAuthor && user?.preferredUsername) {
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      assignedToUserName: user.preferredUsername || '',
+                    }));
+                  }
+                  setIsCreateTaskOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                Create Task
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => paperTasksQuery.refetch()}
+                disabled={paperTasksQuery.isFetching}
+                title="Refresh tasks"
+                className="bg-surface text-primary hover:bg-surface-container-highest border-transparent"
+              >
+                <RefreshCw
+                  className={cn(
+                    'size-4',
+                    paperTasksQuery.isFetching && 'animate-spin',
+                  )}
+                />
+              </Button>
+            </div>
+
+            <div className="p-4">
+              <form
+                onSubmit={applyTaskFilters}
+                className="bg-surface-container-low mb-4 rounded-xl p-4"
+              >
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="filterAssignee"
+                      className="text-secondary font-sans text-[10px]"
+                    >
+                      Assignee
+                    </label>
+                    <select
+                      id="filterAssignee"
+                      className="bg-surface border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      value={localFilters.AssignedToUserName}
+                      onChange={(e) =>
+                        handleFilterChange('AssignedToUserName', e.target.value)
+                      }
+                    >
+                      <option value="">All Assignees</option>
+                      {memberOptions.map((member) => (
+                        <option key={member.value} value={member.value}>
+                          {member.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="filterStatus"
+                      className="text-secondary font-sans text-[10px]"
+                    >
+                      Status
+                    </label>
+                    <select
+                      id="filterStatus"
+                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      value={localFilters.Status}
+                      onChange={(e) =>
+                        handleFilterChange('Status', e.target.value)
+                      }
+                    >
+                      <option value="">All Status</option>
+                      {TASK_STATUS_OPTIONS.map((status) => (
+                        <option key={status.value} value={String(status.value)}>
+                          {status.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="filterDateField"
+                      className="text-secondary font-sans text-[10px]"
+                    >
+                      Date Field
+                    </label>
+                    <select
+                      id="filterDateField"
+                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      value={localFilters.DateField}
+                      onChange={(e) =>
+                        handleFilterChange('DateField', e.target.value)
+                      }
+                    >
+                      <option value="">Select Date Field</option>
+                      {DATE_TASK_FILTER_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="filterFromDate"
+                      className="text-secondary font-sans text-[10px]"
+                    >
+                      From Date
+                    </label>
+                    <Input
+                      id="filterFromDate"
+                      type="date"
+                      value={localFilters.FromDate}
+                      disabled={!isDateFieldSelected}
+                      onChange={(e) =>
+                        handleFilterChange('FromDate', e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="filterToDate"
+                      className="text-secondary font-sans text-[10px]"
+                    >
+                      To Date
+                    </label>
+                    <Input
+                      id="filterToDate"
+                      type="date"
+                      value={localFilters.ToDate}
+                      disabled={!isDateFieldSelected}
+                      onChange={(e) =>
+                        handleFilterChange('ToDate', e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  {activeFilterCount > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearTaskFilters}
+                      className="text-secondary hover:text-primary mr-auto"
+                    >
+                      <X className="size-4" />
+                      Clear ({activeFilterCount})
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={clearTaskFilters}
+                    className={BTN.CANCEL}
+                  >
+                    Reset
+                  </Button>
+                  <Button type="submit" size="sm" className={BTN.EDIT}>
+                    <Search className="size-4" />
+                    Search
+                  </Button>
+                </div>
+              </form>
+
+              {/* ── Kanban Board ───────────────────────────────────────── */}
+              {paperTasksQuery.isLoading ? (
+                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="h-9 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {KANBAN_COLUMNS.map((col) => {
+                    const allItems = paperTasksQuery.data?.result?.items ?? [];
+                    const colTasks = allItems
+                      .map((t) => ({
+                        ...t,
+                        status: localStatusOverrides[t.id] ?? t.status,
+                      }))
+                      .filter((t) => t.status === col.status);
+                    const isDragTarget = dragOverCol === col.status;
+                    return (
+                      <div key={col.status} className="flex min-w-0 flex-col">
+                        {/* Column header */}
+                        <div
+                          className={cn(
+                            'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
+                            col.headerCls,
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'size-2 shrink-0 rounded-full',
+                              col.dot,
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              'flex-1 text-sm font-semibold',
+                              col.labelCls,
+                            )}
+                          >
+                            {col.label}
+                          </span>
+                          <span
+                            className={cn(
+                              'rounded-full px-1.5 py-0.5 text-xs font-bold',
+                              col.countCls,
+                            )}
+                          >
+                            {colTasks.length}
+                          </span>
+                        </div>
+
+                        {/* Column body – drop zone */}
+                        <div
+                          className={cn(
+                            'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
+                            col.bodyCls,
+                            isDragTarget && 'ring-tertiary ring-2 ring-inset',
+                          )}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dragOverCol !== col.status)
+                              setDragOverCol(col.status);
+                          }}
+                          onDragLeave={(e) => {
+                            // Only clear if leaving the column entirely
+                            if (
+                              !e.currentTarget.contains(e.relatedTarget as Node)
+                            )
+                              setDragOverCol(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setDragOverCol(null);
+                            if (!draggedTaskId) return;
+                            const task = allItems.find(
+                              (t) => t.id === draggedTaskId,
+                            );
+                            if (!task) return;
+                            // Don't clear draggedTaskId here — let onDragEnd do it
+                            // so the optimistic override and drag-clear happen in the
+                            // same render, preventing a flash back to the old column
+                            handleTaskDrop(task, col.status);
+                          }}
+                        >
+                          {colTasks.length === 0 ? (
+                            <div
+                              className={cn(
+                                'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
+                                isDragTarget
+                                  ? 'border-tertiary bg-surface-container-highest'
+                                  : 'border-transparent',
+                              )}
+                            >
+                              <p className="text-secondary text-xs">
+                                {isDragTarget ? 'Drop here' : 'No tasks'}
+                              </p>
+                            </div>
+                          ) : (
+                            colTasks.map((task) => {
+                              const canEdit =
+                                isAuthor ||
+                                (currentUsername &&
+                                  task.assignedToUserName.toLowerCase() ===
+                                    currentUsername);
+                              const isPending = dndMutatingRef.current.has(
+                                task.id,
+                              );
+                              return (
+                                <div
+                                  key={task.id}
+                                  draggable
+                                  role="button"
+                                  tabIndex={canEdit ? 0 : -1}
+                                  onDragStart={(e) => {
+                                    setDraggedTaskId(task.id);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    // needed for Firefox
+                                    e.dataTransfer.setData(
+                                      'text/plain',
+                                      task.id,
+                                    );
+                                  }}
+                                  onDragEnd={() => {
+                                    setDraggedTaskId(null);
+                                    setDragOverCol(null);
+                                  }}
+                                  onClick={() =>
+                                    canEdit && openUpdateTask(task)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (!canEdit) return;
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      openUpdateTask(task);
+                                    }
+                                  }}
+                                  className={cn(
+                                    'bg-card relative flex flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
+                                    canEdit && 'cursor-pointer',
+                                    isPending && 'ring-tertiary ring-1',
+                                  )}
+                                >
+                                  {/* Pending indicator (while mutation is in flight) */}
+                                  {isPending && (
+                                    <span className="bg-muted-bronze absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
+                                  )}
+
+                                  {/* Name */}
+                                  <p className="pr-4 text-sm leading-snug font-medium">
+                                    {task.name}
+                                  </p>
+
+                                  {/* Description */}
+                                  {task.description && (
+                                    <p className="text-secondary line-clamp-2 text-xs">
+                                      {task.description}
+                                    </p>
+                                  )}
+
+                                  {/* Assignee */}
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="bg-surface-container flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
+                                      {task.assignedToUserName.charAt(0)}
+                                    </div>
+                                    <span className="text-secondary truncate text-xs">
+                                      {task.assignedToUserName}
+                                    </span>
+                                  </div>
+
+                                  {/* Dates */}
+                                  {(task.startDate ||
+                                    task.nextReviewDate ||
+                                    task.completeDate) && (
+                                    <div className="space-y-0.5 border-t pt-1.5">
+                                      {task.startDate && (
+                                        <div className="text-secondary flex items-center gap-1 text-[11px]">
+                                          <Calendar className="size-3 shrink-0" />
+                                          <span>
+                                            Start: {formatDate(task.startDate)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {task.nextReviewDate && (
+                                        <div className="text-secondary flex items-center gap-1 text-[11px]">
+                                          <Calendar className="size-3 shrink-0" />
+                                          <span>
+                                            Review:{' '}
+                                            {formatDate(task.nextReviewDate)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {task.completeDate && (
+                                        <div className="text-secondary flex items-center gap-1 text-[11px]">
+                                          <Calendar className="size-3 shrink-0" />
+                                          <span>
+                                            Due: {formatDate(task.completeDate)}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <Sheet open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
@@ -1475,7 +1582,7 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskName"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Task Name
                 </label>
@@ -1492,13 +1599,13 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskDesc"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Description
                 </label>
                 <textarea
                   id="createTaskDesc"
-                  className="border-input bg-background focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.description}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
@@ -1512,14 +1619,14 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskAssignee"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Assign Username
                 </label>
                 {isAuthor ? (
                   <select
                     id="createTaskAssignee"
-                    className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                    className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                     value={createForm.assignedToUserName}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -1541,7 +1648,7 @@ export const ProjectPaperDetailPage = ({
                     id="createTaskAssignee"
                     value={createForm.assignedToUserName}
                     readOnly
-                    className="bg-muted text-muted-foreground cursor-not-allowed"
+                    className="bg-surface-container text-secondary cursor-not-allowed"
                   />
                 )}
               </div>
@@ -1549,13 +1656,13 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskStatus"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Status
                 </label>
                 <select
                   id="createTaskStatus"
-                  className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.status}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
@@ -1575,7 +1682,7 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskStart"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Start Date
                 </label>
@@ -1595,7 +1702,7 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskNextReview"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Next Review Date
                 </label>
@@ -1615,7 +1722,7 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="createTaskComplete"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Complete Date
                 </label>
@@ -1670,22 +1777,22 @@ export const ProjectPaperDetailPage = ({
               {!isAuthor && (
                 <>
                   <div className="space-y-1.5">
-                    <p className="text-muted-foreground text-xs font-medium">
+                    <p className="text-secondary font-sans text-[10px]">
                       Task Name
                     </p>
                     <Input
                       value={editingTask?.name ?? ''}
                       readOnly
-                      className="bg-muted text-muted-foreground cursor-not-allowed"
+                      className="bg-surface-container text-secondary cursor-not-allowed"
                     />
                   </div>
 
                   {editingTask?.description && (
                     <div className="space-y-1.5">
-                      <p className="text-muted-foreground text-xs font-medium">
+                      <p className="text-secondary font-sans text-[10px]">
                         Description
                       </p>
-                      <p className="text-muted-foreground bg-muted/50 rounded-md border px-3 py-2 text-sm">
+                      <p className="text-secondary bg-surface-container rounded-md border px-3 py-2 text-sm">
                         {editingTask.description}
                       </p>
                     </div>
@@ -1698,7 +1805,7 @@ export const ProjectPaperDetailPage = ({
                   <div className="space-y-1.5">
                     <label
                       htmlFor="updateTaskName"
-                      className="text-muted-foreground text-xs font-medium"
+                      className="text-secondary font-sans text-[10px]"
                     >
                       Task Name
                     </label>
@@ -1718,13 +1825,13 @@ export const ProjectPaperDetailPage = ({
                   <div className="space-y-1.5">
                     <label
                       htmlFor="updateTaskDesc"
-                      className="text-muted-foreground text-xs font-medium"
+                      className="text-secondary font-sans text-[10px]"
                     >
                       Description
                     </label>
                     <textarea
                       id="updateTaskDesc"
-                      className="border-input bg-background focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={updateForm.description}
                       onChange={(e) =>
                         setUpdateForm((prev) => ({
@@ -1738,13 +1845,13 @@ export const ProjectPaperDetailPage = ({
                   <div className="space-y-1.5">
                     <label
                       htmlFor="updateTaskAssignee"
-                      className="text-muted-foreground text-xs font-medium"
+                      className="text-secondary font-sans text-[10px]"
                     >
                       Assign Username
                     </label>
                     <select
                       id="updateTaskAssignee"
-                      className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={updateForm.assignedToUserName}
                       onChange={(e) =>
                         setUpdateForm((prev) => ({
@@ -1768,13 +1875,13 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="updateTaskStatus"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Status
                 </label>
                 <select
                   id="updateTaskStatus"
-                  className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={updateForm.status}
                   onChange={(e) =>
                     setUpdateForm((prev) => ({
@@ -1797,7 +1904,7 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="updateTaskStart"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Start Date
                 </label>
@@ -1817,7 +1924,7 @@ export const ProjectPaperDetailPage = ({
               <div className="space-y-1.5">
                 <label
                   htmlFor="updateTaskNextReview"
-                  className="text-muted-foreground text-xs font-medium"
+                  className="text-secondary font-sans text-[10px]"
                 >
                   Next Review Date
                 </label>
@@ -1931,7 +2038,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-context"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.context}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -1950,7 +2057,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-abstract"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.abstract}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -1969,7 +2076,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-research-gap"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.researchGap}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2009,7 +2116,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-main-contribution"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.mainContribution}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2028,7 +2135,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <select
                 id="ep-status"
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                 value={editPaperForm.status}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2053,7 +2160,7 @@ export const ProjectPaperDetailPage = ({
                 </label>
                 <select
                   id="ep-journal-id"
-                  className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={editPaperForm.selectedJournalId}
                   onChange={(e) =>
                     setEditPaperForm((prev) => ({
@@ -2077,7 +2184,7 @@ export const ProjectPaperDetailPage = ({
                 </label>
                 <select
                   id="ep-style-name"
-                  className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={editPaperForm.selectedStyleName}
                   onChange={(e) =>
                     setEditPaperForm((prev) => ({
@@ -2096,7 +2203,7 @@ export const ProjectPaperDetailPage = ({
                 </select>
                 {selectedJournal &&
                   (selectedJournal.styles?.length ?? 0) === 0 && (
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-secondary text-xs">
                       This journal has no styles.
                     </p>
                   )}

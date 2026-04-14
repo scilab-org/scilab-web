@@ -1,20 +1,18 @@
 import * as React from 'react';
-import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useUpdateTag } from '../api/update-tag';
 import { TagDto } from '../types';
 
@@ -68,19 +66,17 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Edit Tag</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="action">EDIT</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit Tag</DialogTitle>
+          <DialogDescription>
             Update information for &quot;{tag.name}&quot;
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="update-tag-form"
@@ -103,17 +99,20 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
           </div>
         </form>
 
-        <SheetFooter>
+        <DialogFooter className="pt-2">
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            CANCEL
+          </Button>
           <Button
             type="submit"
             form="update-tag-form"
             disabled={updateTagMutation.isPending || !formData.name.trim()}
-            className={BTN.EDIT}
+            variant="secondary"
           >
-            {updateTagMutation.isPending ? 'Saving...' : 'Save Changes'}
+            {updateTagMutation.isPending ? 'Saving...' : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

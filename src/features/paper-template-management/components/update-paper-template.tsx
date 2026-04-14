@@ -1,20 +1,19 @@
+import { Plus, Trash2 } from 'lucide-react';
 import * as React from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useUpdatePaperTemplate } from '../api/update-paper-template';
 import { PaperTemplateDto, CreateTemplateSectionDto } from '../types';
 
@@ -158,20 +157,18 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-4" />
-        </Button>
-      </SheetTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="action">EDIT</Button>
+      </DialogTrigger>
 
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Edit Template</SheetTitle>
-          <SheetDescription>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit Template</DialogTitle>
+          <DialogDescription>
             Update &quot;{template.name}&quot;
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="update-pt-form"
@@ -186,7 +183,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Code</p>
-              <p className="font-mono">{template.code}</p>
+              <p className="font-sans">{template.code}</p>
             </div>
           </div>
 
@@ -326,25 +323,20 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
           </div>
         </form>
 
-        <SheetFooter className="px-4 pb-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(false)}
-            className={BTN.CANCEL}
-          >
-            Cancel
+        <DialogFooter className="px-4 pt-2 pb-4">
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            CANCEL
           </Button>
           <Button
             type="submit"
             form="update-pt-form"
             disabled={mutation.isPending}
-            className={BTN.EDIT}
+            variant="secondary"
           >
-            {mutation.isPending ? 'Saving...' : 'Save Changes'}
+            {mutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

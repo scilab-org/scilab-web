@@ -277,7 +277,7 @@ const MyProjectDetailRoute = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <Hash className="text-muted-foreground h-3.5 w-3.5" />
-                <span className="text-muted-foreground font-mono text-sm">
+                <span className="text-muted-foreground text-sm">
                   {project.code}
                 </span>
               </div>

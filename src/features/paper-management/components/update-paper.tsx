@@ -1,25 +1,24 @@
+import { Loader2, Tags } from 'lucide-react';
 import * as React from 'react';
-import { Pencil, Tags, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 import { useUpdatePaper } from '../api/update-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
 import { PaperDto } from '../types';
 import { PAPER_STATUS_OPTIONS } from '../constants';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
-import { BTN } from '@/lib/button-styles';
 
 type UpdatePaperProps = {
   paperId: string;
@@ -335,19 +334,17 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Edit Paper</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="action">EDIT</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit Paper</DialogTitle>
+          <DialogDescription>
             Update information for &quot;{paper.title}&quot;
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="update-paper-form"
@@ -380,7 +377,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   size="sm"
                   onClick={handleAutoTag}
                   disabled={isAutoTagging || cooldownSeconds > 0}
-                  className={`h-7 gap-1 text-xs ${BTN.AUTO_TAG}`}
+                  className="h-7 gap-1 text-xs"
                 >
                   {isAutoTagging ? (
                     <>
@@ -664,17 +661,17 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
         </form>
 
-        <SheetFooter>
+        <DialogFooter className="pt-2">
           <Button
             type="submit"
             form="update-paper-form"
             disabled={updatePaperMutation.isPending || !formData.authors.trim()}
-            className={BTN.EDIT}
+            variant="secondary"
           >
-            {updatePaperMutation.isPending ? 'Saving...' : 'Save Changes'}
+            {updatePaperMutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -225,7 +225,7 @@ const MyProjectsRoute = () => {
                         key={project.id}
                         className={`hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
                       >
-                        <TableCell className="text-muted-foreground font-mono text-sm">
+                        <TableCell className="text-muted-foreground text-sm">
                           {project.code}
                         </TableCell>
                         <TableCell className="font-medium">

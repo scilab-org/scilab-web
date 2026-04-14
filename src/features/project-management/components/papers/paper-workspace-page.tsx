@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -541,12 +541,14 @@ export const PaperWorkspacePage = ({
   isManager = false,
   isAuthor = false,
   backPath,
+  embedded = false,
 }: {
   projectId: string;
   paperId: string;
   isManager?: boolean;
   isAuthor?: boolean;
   backPath: string;
+  embedded?: boolean;
 }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -699,6 +701,9 @@ export const PaperWorkspacePage = ({
       onError: () => toast.error('Failed to update guideline'),
     },
   });
+
+  const Wrapper = embedded ? React.Fragment : ContentLayout;
+  const wrapperProps = embedded ? {} : { title: 'Workspace' };
 
   const isLoading =
     paperQuery.isLoading ||
@@ -860,26 +865,28 @@ export const PaperWorkspacePage = ({
 
   if (isLoading) {
     return (
-      <ContentLayout title="Workspace">
+      <Wrapper {...(wrapperProps as any)}>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-32 w-full rounded-xl" />
           ))}
         </div>
-      </ContentLayout>
+      </Wrapper>
     );
   }
 
   if (!paper) {
     return (
-      <ContentLayout title="Workspace">
+      <Wrapper {...(wrapperProps as any)}>
         <div className="py-12 text-center">
           <p className="text-muted-foreground">Paper not found</p>
-          <Button onClick={() => navigate(backPath)} className="mt-4">
-            Go Back
-          </Button>
+          {!embedded && (
+            <Button onClick={() => navigate(backPath)} className="mt-4">
+              Go Back
+            </Button>
+          )}
         </div>
-      </ContentLayout>
+      </Wrapper>
     );
   }
 
@@ -1061,59 +1068,63 @@ export const PaperWorkspacePage = ({
   };
 
   return (
-    <ContentLayout title="Workspace">
+    <Wrapper {...(wrapperProps as any)}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(backPath)}
-              className="text-muted-foreground hover:text-foreground gap-1.5"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Paper
-            </Button>
-          </div>
-          <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
-            <LayoutList className="size-4" />
-            <span>
-              {editorSections.length} section
-              {editorSections.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-
-        {/* Paper title banner */}
-        <div className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
-          <div className="bg-linear-to-r from-blue-50 to-indigo-50/40 px-6 py-4 dark:from-blue-950/30 dark:to-indigo-950/20">
+        {!embedded && (
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-500/20">
-                <BookOpen className="size-5 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-foreground text-xl font-bold">
-                  {paper.title}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  Click Edit on any section to open the editor
-                </p>
-              </div>
-              {(isAuthor || isManager) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setMarkMainOpen(true)}
-                  className="shrink-0 gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/30"
-                >
-                  <Star className="size-4" />
-                  Mark Main Section
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(backPath)}
+                className="text-muted-foreground hover:text-foreground gap-1.5"
+              >
+                <ArrowLeft className="size-4" />
+                Back to Paper
+              </Button>
+            </div>
+            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+              <LayoutList className="size-4" />
+              <span>
+                {editorSections.length} section
+                {editorSections.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Paper title banner */}
+        {!embedded && (
+          <div className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
+            <div className="bg-linear-to-r from-blue-50 to-indigo-50/40 px-6 py-4 dark:from-blue-950/30 dark:to-indigo-950/20">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-500/20">
+                  <BookOpen className="size-5 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-foreground text-xl font-bold">
+                    {paper.title}
+                  </h1>
+                  <p className="text-muted-foreground text-sm">
+                    Click Edit on any section to open the editor
+                  </p>
+                </div>
+                {(isAuthor || isManager) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setMarkMainOpen(true)}
+                    className="shrink-0 gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                  >
+                    <Star className="size-4" />
+                    Mark Main Section
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sections list */}
         {editorSections.length === 0 ? (
@@ -1220,6 +1231,6 @@ export const PaperWorkspacePage = ({
           </SheetFooter>
         </SheetContent>
       </Sheet>
-    </ContentLayout>
+    </Wrapper>
   );
 };

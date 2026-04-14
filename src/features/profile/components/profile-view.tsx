@@ -7,8 +7,7 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { useUser } from '@/lib/auth';
 import { capitalize } from '@/utils/string-utils';
 
-const fieldLabel =
-  'text-muted-foreground font-mono text-[10px] tracking-widest uppercase';
+const fieldLabel = 'text-muted-foreground text-xs font-medium uppercase';
 
 export const ProfileView = () => {
   const { data: authUser } = useUser();
@@ -104,7 +103,7 @@ export const ProfileView = () => {
           </div>
 
           <div className="ml-auto text-right">
-            <p className="text-foreground/10 font-mono text-5xl leading-none font-bold select-none">
+            <p className="text-foreground/10 font-sans text-5xl leading-none font-bold select-none">
               {archiveRef}
             </p>
           </div>
@@ -133,7 +132,7 @@ export const ProfileView = () => {
             </div>
             <div>
               <p className={fieldLabel}>System ID</p>
-              <p className="text-muted-foreground mt-1 font-mono text-xs break-all">
+              <p className="text-muted-foreground mt-1 font-sans text-xs break-all">
                 {authUser.id}
               </p>
             </div>

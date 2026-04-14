@@ -5,16 +5,17 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
+import { CreateButton } from '@/components/ui/create-button';
+
 import { useCreatePaperTemplate } from '../api/create-paper-template';
 import { CreateTemplateSectionDto } from '../types';
 
@@ -228,21 +229,20 @@ export const CreatePaperTemplate = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <Button size="sm" className={BTN.CREATE}>
-          <Plus className="size-4" />
-          Create Template
-        </Button>
-      </SheetTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <CreateButton size="sm" className="uppercase">
+          CREATE TEMPLATE
+        </CreateButton>
+      </DialogTrigger>
 
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create Paper Template</SheetTitle>
-          <SheetDescription>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Create Paper Template</DialogTitle>
+          <DialogDescription>
             Define the template structure with sections.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="create-pt-form"
@@ -418,14 +418,14 @@ export const CreatePaperTemplate = () => {
           </div>
         </form>
 
-        <SheetFooter className="px-4 pb-4">
+        <DialogFooter className="px-4 pt-2 pb-4">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => handleOpenChange(false)}
-            className={BTN.CANCEL}
+            className="uppercase"
           >
-            Cancel
+            CANCEL
           </Button>
           <Button
             type="submit"
@@ -435,12 +435,13 @@ export const CreatePaperTemplate = () => {
               !formData.name.trim() ||
               !formData.code.trim()
             }
-            className={BTN.CREATE}
+            variant="secondary"
+            className="uppercase"
           >
-            {mutation.isPending ? 'Creating...' : 'Create'}
+            {mutation.isPending ? 'CREATING...' : 'SAVE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

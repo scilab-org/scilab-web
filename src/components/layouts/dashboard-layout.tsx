@@ -236,7 +236,7 @@ const navigation: SideNavigationItem[] = [
     icon: ClipboardList,
   },
   {
-    name: 'Papers',
+    name: 'Paper Banks',
     to: paths.app.paperManagement.papers.getHref(),
     icon: FileText,
   },

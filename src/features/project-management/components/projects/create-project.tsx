@@ -1,23 +1,23 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { Loader } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { CreateButton } from '@/components/ui/create-button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useCreateProject } from '../../api/projects/create-project';
 import { CreateProjectDto } from '../../types';
+import { FIELD_LABEL_CLASS } from '../../constants';
 
 export const CreateProject = () => {
   const [open, setOpen] = useState(false);
@@ -132,35 +132,37 @@ export const CreateProject = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button size="sm" className={BTN.CREATE}>
-          <Plus className="size-4" />
-          Create Project
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create New Project</SheetTitle>
-          <SheetDescription>
-            Fill in the details to create a new project. Fields marked with *
-            are required.
-          </SheetDescription>
-        </SheetHeader>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
+      <DialogTrigger asChild>
+        <CreateButton className="uppercase">CREATE PROJECT</CreateButton>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>
+              Fill in the details to create a new project. Fields marked with *
+              are required.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
         <form
           onSubmit={handleSubmit}
           id="create-project-form"
-          className="flex flex-col gap-4 px-4"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-6 py-4"
         >
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label
-                  htmlFor="project-name"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Name *
+                <label htmlFor="project-name" className={FIELD_LABEL_CLASS}>
+                  Name <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="project-name"
@@ -175,11 +177,8 @@ export const CreateProject = () => {
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="project-code"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Code *
+                <label htmlFor="project-code" className={FIELD_LABEL_CLASS}>
+                  Code <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="project-code"
@@ -197,9 +196,9 @@ export const CreateProject = () => {
             <div className="space-y-2">
               <label
                 htmlFor="project-description"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={FIELD_LABEL_CLASS}
               >
-                Description *
+                Description <span className="text-destructive">*</span>
               </label>
               <textarea
                 id="project-description"
@@ -208,7 +207,7 @@ export const CreateProject = () => {
                 onChange={handleChange}
                 placeholder="Enter project description"
                 rows={3}
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
               {errors.description && (
                 <p className="text-destructive text-xs">{errors.description}</p>
@@ -216,10 +215,7 @@ export const CreateProject = () => {
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="project-status"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="project-status" className={FIELD_LABEL_CLASS}>
                 Status
               </label>
               <select
@@ -227,53 +223,49 @@ export const CreateProject = () => {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               >
                 <option value="1">Draft</option>
                 <option value="2">Active</option>
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label
-                htmlFor="project-startDate"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Start Date
-              </label>
-              <Input
-                id="project-startDate"
-                type="datetime-local"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleChange}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="project-startDate"
+                  className={FIELD_LABEL_CLASS}
+                >
+                  Start Date
+                </label>
+                <Input
+                  id="project-startDate"
+                  type="datetime-local"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="project-endDate" className={FIELD_LABEL_CLASS}>
+                  End Date
+                </label>
+                <Input
+                  id="project-endDate"
+                  type="datetime-local"
+                  name="endDate"
+                  value={formData.endDate ?? ''}
+                  onChange={handleChange}
+                />
+                {errors.endDate && (
+                  <p className="text-destructive text-xs">{errors.endDate}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="project-endDate"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                End Date
-              </label>
-              <Input
-                id="project-endDate"
-                type="datetime-local"
-                name="endDate"
-                value={formData.endDate ?? ''}
-                onChange={handleChange}
-              />
-              {errors.endDate && (
-                <p className="text-destructive text-xs">{errors.endDate}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="project-domain"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="project-domain" className={FIELD_LABEL_CLASS}>
                 Domain
               </label>
               <Input
@@ -286,10 +278,7 @@ export const CreateProject = () => {
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="project-context"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="project-context" className={FIELD_LABEL_CLASS}>
                 Context
               </label>
               <textarea
@@ -299,15 +288,12 @@ export const CreateProject = () => {
                 onChange={handleChange}
                 placeholder="Enter project context"
                 rows={3}
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="project-keypoint"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="project-keypoint" className={FIELD_LABEL_CLASS}>
                 Keypoint
               </label>
               <textarea
@@ -317,40 +303,41 @@ export const CreateProject = () => {
                 onChange={handleChange}
                 placeholder="Enter project keypoint"
                 rows={2}
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
               />
             </div>
           </div>
         </form>
 
-        <SheetFooter className="gap-2">
-          <SheetClose asChild>
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter>
             <Button
               type="button"
-              variant="outline"
-              onClick={resetForm}
-              className={`min-w-25 ${BTN.CANCEL}`}
+              variant="ghost"
+              onClick={() => {
+                resetForm();
+                setOpen(false);
+              }}
+              className="uppercase"
             >
-              Cancel
+              CANCEL
             </Button>
-          </SheetClose>
-          <Button
-            type="submit"
-            form="create-project-form"
-            disabled={createMutation.isPending}
-            className={`min-w-25 ${BTN.CREATE}`}
-          >
-            {createMutation.isPending ? (
-              <>
-                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Creating...
-              </>
-            ) : (
-              'Create'
-            )}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+            <Button
+              type="submit"
+              variant="secondary"
+              form="create-project-form"
+              disabled={createMutation.isPending}
+              className="uppercase"
+            >
+              {createMutation.isPending ? (
+                <Loader className="animate-spin" />
+              ) : (
+                'SAVE'
+              )}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

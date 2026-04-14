@@ -6,13 +6,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -22,7 +22,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { BTN } from '@/lib/button-styles';
 import {
   PAPER_INITIALIZE_STATUS_OPTIONS,
   PAPER_MANAGEMENT_QUERY_KEYS,
@@ -351,21 +350,21 @@ export const CreatePaperInProject = ({
   };
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(v) => {
         onOpenChange(v);
         if (!v) resetForm();
       }}
     >
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Create New Paper</SheetTitle>
-          <SheetDescription>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Create New Paper</DialogTitle>
+          <DialogDescription>
             Select a template, fill in the details, and customize sections.
             Title and context are required.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           id="create-paper-in-project-form"
@@ -621,21 +620,22 @@ export const CreatePaperInProject = ({
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={handleResetTemplateSearch}
-                    className={BTN.CANCEL}
+                    className="uppercase"
                   >
-                    Reset
+                    RESET
                   </Button>
                   <Button
                     type="button"
                     size="sm"
-                    className={BTN.EDIT}
+                    variant="secondary"
+                    className="uppercase"
                     onClick={handleSearchTemplate}
                   >
                     <Search className="size-4" />
-                    Search
+                    SEARCH
                   </Button>
                 </div>
               </div>
@@ -860,14 +860,14 @@ export const CreatePaperInProject = ({
           </div>
         </form>
 
-        <SheetFooter>
+        <DialogFooter className="pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
-            className={BTN.CANCEL}
+            className="uppercase"
           >
-            Cancel
+            CANCEL
           </Button>
           <Button
             type="submit"
@@ -881,12 +881,13 @@ export const CreatePaperInProject = ({
               !formData.gapType.trim() ||
               !formData.mainContribution.trim()
             }
-            className={BTN.CREATE}
+            variant="secondary"
+            className="uppercase"
           >
-            {createMutation.isPending ? 'Creating...' : 'Create'}
+            {createMutation.isPending ? 'CREATING...' : 'CREATE'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

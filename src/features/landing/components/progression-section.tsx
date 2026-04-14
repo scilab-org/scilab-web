@@ -8,7 +8,7 @@ type StepColumnProps = {
 
 const StepColumn = ({ number, title, description }: StepColumnProps) => (
   <div className="border-foreground flex flex-col border-t-2 pt-6">
-    <span className="text-muted-foreground mb-4 font-mono text-[0.625rem] font-medium tracking-[0.2em]">
+    <span className="text-muted-foreground mb-4 font-sans text-[0.625rem] font-medium tracking-[0.2em]">
       {number}
     </span>
     <h3 className="text-foreground mb-3 text-sm font-medium tracking-widest uppercase">

@@ -8,7 +8,7 @@ type ModuleRowProps = {
 
 const ModuleRow = ({ ref_, title, description }: ModuleRowProps) => (
   <article className="border-foreground/10 grid grid-cols-1 gap-4 border-t py-8 md:grid-cols-12 md:gap-8">
-    <span className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.2em] uppercase md:col-span-2">
+    <span className="text-muted-foreground font-sans text-[0.625rem] tracking-[0.2em] uppercase md:col-span-2">
       {ref_}
     </span>
     <h3 className="text-foreground text-lg font-medium tracking-tight md:col-span-3">

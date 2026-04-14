@@ -20,11 +20,12 @@ const buttonVariants = cva(
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
         action:
-          'bg-surface-container text-on-surface font-mono uppercase tracking-wide hover:bg-foreground hover:text-background active:scale-[0.98]',
+          'bg-muted/50 text-foreground font-semibold uppercase hover:bg-muted hover:text-foreground active:scale-[0.98]',
       },
 
       size: {
         default: 'h-9 px-4 text-sm has-[>svg]:px-3',
+        action: 'h-7 px-3 text-[11px] tracking-wide',
         xs: "h-6 px-2 text-xs gap-1 has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: 'h-8 px-3 text-sm gap-1.5 has-[>svg]:px-2.5',
         lg: 'h-10 px-6 text-base has-[>svg]:px-4',
@@ -45,7 +46,7 @@ const buttonVariants = cva(
 function Button({
   className,
   variant = 'default',
-  size = 'default',
+  size: sizeProp,
   asChild = false,
   ...props
 }: React.ComponentProps<'button'> &
@@ -53,6 +54,7 @@ function Button({
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot.Root : 'button';
+  const size = sizeProp || (variant === 'action' ? 'action' : 'default');
 
   return (
     <Comp

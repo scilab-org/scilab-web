@@ -34,8 +34,8 @@
   --font-label: 'Space Grotesk', system-ui, sans-serif;
   --font-newsreader: 'Newsreader', Georgia, 'Times New Roman', serif;
 
-  /* Landing CTA hover — deep oxblood #630F0F */
-  --color-cta-hover: #630f0f;
+  /* Landing CTA hover — matched with table header #E9E1D8 */
+  --color-cta-hover: #e9e1d8;
 
   /* Shadcn semantic tokens */
   --color-background: var(--background);
@@ -142,11 +142,11 @@
   /* ── Archive Protocol palette — synced with prototype ── */
 
   /* Page surfaces */
-  --background: #fbf9f6;
+  --background: #f5efe4;
   --foreground: #181512;
   --card: #f5f3f0;
   --card-foreground: #181512;
-  --popover: #fbf9f6;
+  --popover: #f5efe4;
   --popover-foreground: #181512;
 
   /* Brand: charcoal ink */
@@ -231,7 +231,7 @@
   --chart-5: oklch(0.769 0.188 70.08);
 
   /* Sidebar — surface-container-low */
-  --sidebar: #f5f3f0;
+  --sidebar: #f8efe6;
   --sidebar-foreground: #635e56;
   --sidebar-primary: #181512;
   --sidebar-primary-foreground: #fbf9f6;
@@ -252,17 +252,37 @@ body {
 .font-serif {
   font-family: 'Newsreader', serif;
 }
-.font-mono {
-  font-family: 'Space Grotesk', monospace;
-}
 
 code {
   font-family:
     source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* Custom Scrollbar for Dialogs to match the #F5EFE4 background */
+.scrollbar-dialog::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-dialog::-webkit-scrollbar-track {
+  background-color: #f5efe4; /* --background */
+  border-radius: 4px;
+}
+
+.scrollbar-dialog::-webkit-scrollbar-thumb {
+  background-color: #dbdad7; /* --surface-dim */
+  border-radius: 4px;
+}
+
+.scrollbar-dialog::-webkit-scrollbar-thumb:hover {
+  background-color: #cdc5c0; /* --primary-fixed-dim */
+}
+
 /* App action button styles — indigo-based for the authenticated interface */
-.btn-create,
+.btn-create {
+  @apply bg-[#630F0F] text-white shadow-sm hover:bg-[#630F0F]/90;
+}
+
 .btn-success {
   @apply bg-[oklch(0.318_0.148_264.1)] text-white shadow-sm shadow-indigo-200 hover:bg-[oklch(0.27_0.148_264.1)];
 }

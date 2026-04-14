@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { useSearchParams } from 'react-router';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
-import { FilterSelect } from '@/components/ui/filter-select';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
+import { Button } from '@/components/ui/button';
 
 export const UsersFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,18 +43,18 @@ export const UsersFilter = () => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-background flex h-11 items-stretch overflow-hidden rounded-xl border"
+      className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
     >
       {/* Search */}
-      <div className="flex flex-1 items-center gap-3 px-4">
-        <Search className="text-muted-foreground size-3.5 shrink-0" />
+      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+        <Search className="text-muted-foreground size-4" />
         <input
           value={filters.search}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, search: e.target.value }))
           }
-          placeholder="Search protocol database..."
-          className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-mono text-[11px] tracking-widest uppercase outline-none"
+          placeholder="Search users..."
+          className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
         />
         {filters.search && (
           <button
@@ -61,43 +62,44 @@ export const UsersFilter = () => {
             onClick={handleClearSearch}
             className="text-muted-foreground hover:text-foreground"
           >
-            <X className="size-3.5" />
+            <X className="size-4" />
           </button>
         )}
       </div>
 
-      <div className="border-l" />
-
       {/* Roles */}
-      <FilterSelect
-        value={filters.groupName}
-        onChange={(v) => handleSelectChange('groupName', v)}
-      >
-        <option value="">Roles</option>
-        <option value="user">User</option>
-      </FilterSelect>
-
-      <div className="border-l" />
+      <div className="bg-background h-10 w-56 rounded-md">
+        <FilterDropdown
+          value={filters.groupName}
+          onChange={(v) => handleSelectChange('groupName', v)}
+          placeholder="All roles"
+          options={[{ label: 'User', value: 'user' }]}
+          className="h-10 w-full justify-between px-4 font-sans"
+        />
+      </div>
 
       {/* Status */}
-      <FilterSelect
-        value={filters.enabled}
-        onChange={(v) => handleSelectChange('enabled', v)}
-      >
-        <option value="">Status</option>
-        <option value="true">Active</option>
-        <option value="false">Disabled</option>
-      </FilterSelect>
-
-      <div className="border-l" />
+      <div className="bg-background h-10 w-56 rounded-md">
+        <FilterDropdown
+          value={filters.enabled}
+          onChange={(v) => handleSelectChange('enabled', v)}
+          placeholder="All status"
+          options={[
+            { label: 'Active', value: 'true' },
+            { label: 'Disabled', value: 'false' },
+          ]}
+          className="h-10 w-full justify-between px-4 font-sans"
+        />
+      </div>
 
       {/* Submit */}
-      <button
+      <Button
         type="submit"
-        className="text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center px-4 transition-colors"
+        variant="outline"
+        className="border-input h-10 px-6 font-sans text-sm font-medium"
       >
-        <SlidersHorizontal className="size-4" />
-      </button>
+        Search
+      </Button>
     </form>
   );
 };

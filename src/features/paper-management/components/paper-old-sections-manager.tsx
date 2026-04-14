@@ -408,7 +408,7 @@ export const PaperOldSectionsManager = ({
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4">
-          <pre className="min-h-50 rounded-lg bg-slate-900 p-4 font-mono text-xs wrap-break-word whitespace-pre-wrap text-green-400 dark:bg-slate-950">
+          <pre className="min-h-50 rounded-lg bg-slate-900 p-4 font-sans text-xs wrap-break-word whitespace-pre-wrap text-green-400 dark:bg-slate-950">
             {viewingItem.content || '(No content)'}
           </pre>
         </div>

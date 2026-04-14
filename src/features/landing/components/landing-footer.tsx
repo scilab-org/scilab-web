@@ -44,10 +44,10 @@ export const LandingFooter = () => {
         </div>
 
         <div className="border-foreground/10 flex flex-col items-start justify-between gap-3 border-t pt-8 md:flex-row md:items-center">
-          <p className="text-muted-foreground font-mono text-[0.625rem] tracking-[0.15em] uppercase">
+          <p className="text-muted-foreground font-sans text-[0.625rem] tracking-[0.15em] uppercase">
             © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
           </p>
-          <p className="text-muted-foreground/60 font-mono text-[0.625rem] tracking-widest uppercase">
+          <p className="text-muted-foreground/60 font-sans text-[0.625rem] tracking-widest uppercase">
             HyperDataLab v1.0
           </p>
         </div>

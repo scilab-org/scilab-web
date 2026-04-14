@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -44,9 +43,7 @@ export const DeleteJournal = ({ journalId }: DeleteJournalProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" className={BTN.DANGER}>
-          <Trash2 className="size-4" />
-        </Button>
+        <Button variant="action">DELETE</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

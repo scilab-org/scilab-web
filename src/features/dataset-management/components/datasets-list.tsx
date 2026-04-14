@@ -3,12 +3,12 @@ import {
   Download,
   Pencil,
   Trash2,
-  Plus,
   BarChart3,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 
+import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -96,14 +96,13 @@ export const DatasetsList = ({
             )}
           </div>
           {!readOnly && (
-            <Button
+            <CreateButton
               onClick={onCreateClick}
               size="sm"
-              className="btn-create flex items-center gap-2"
+              className="flex items-center gap-2"
             >
-              <Plus className="h-4 w-4" />
               Upload Dataset
-            </Button>
+            </CreateButton>
           )}
         </div>
       </div>
@@ -120,16 +119,16 @@ export const DatasetsList = ({
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                    <TableHead className="text-muted-foreground">
                       Name
                     </TableHead>
-                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                    <TableHead className="text-muted-foreground">
                       Description
                     </TableHead>
-                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                    <TableHead className="text-muted-foreground">
                       File
                     </TableHead>
-                    <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wider uppercase">
+                    <TableHead className="text-muted-foreground text-right">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -160,13 +159,14 @@ export const DatasetsList = ({
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                            <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs font-bold">
                               {fileExtension}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <Button variant="action">VIEW</Button>
                             {canViewChart(dataset.filePath) &&
                               onViewChartClick && (
                                 <Button

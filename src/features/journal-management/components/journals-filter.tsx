@@ -1,11 +1,9 @@
 import * as React from 'react';
 import { useSearchParams } from 'react-router';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
-import { Input } from '@/components/ui/input';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { Button } from '@/components/ui/button';
-
-import { BTN } from '@/lib/button-styles';
 
 export const JournalsFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,67 +22,63 @@ export const JournalsFilter = () => {
     setSearchParams(params);
   };
 
-  const handleReset = () => {
-    setFilters({ name: '', isDeleted: 'false' });
-    setSearchParams({ page: '1' });
+  const handleClearSearch = () => {
+    setFilters((prev) => ({ ...prev, name: '' }));
+    const params = new URLSearchParams(searchParams);
+    params.delete('name');
+    params.set('page', '1');
+    setSearchParams(params);
   };
 
   return (
-    <form onSubmit={handleFilter} className="bg-muted/40 rounded-xl border p-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-journal-name"
-            className="text-muted-foreground text-xs font-medium"
+    <form
+      onSubmit={handleFilter}
+      className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
+    >
+      {/* Search */}
+      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+        <Search className="text-muted-foreground size-4" />
+        <input
+          value={filters.name}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, name: e.target.value }))
+          }
+          placeholder="Search by journal name..."
+          className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+        />
+        {filters.name && (
+          <button
+            type="button"
+            onClick={handleClearSearch}
+            className="text-muted-foreground hover:text-foreground"
           >
-            Name
-          </label>
-          <Input
-            id="filter-journal-name"
-            placeholder="Search by journal name..."
-            value={filters.name}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, name: e.target.value }))
-            }
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="filter-journal-isDeleted"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Is Deleted
-          </label>
-          <select
-            id="filter-journal-isDeleted"
-            className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-            value={filters.isDeleted}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, isDeleted: e.target.value }))
-            }
-          >
-            <option value="false">False</option>
-            <option value="true">True</option>
-          </select>
-        </div>
+            <X className="size-4" />
+          </button>
+        )}
       </div>
 
-      <div className="mt-4 flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleReset}
-          className={BTN.CANCEL}
-        >
-          Reset
-        </Button>
-        <Button type="submit" size="sm" className={BTN.EDIT}>
-          <Search className="size-4" />
-          Search
-        </Button>
+      {/* Is Deleted */}
+      <div className="bg-background h-10 w-56 rounded-md">
+        <FilterDropdown
+          value={filters.isDeleted}
+          onChange={(v) => setFilters((prev) => ({ ...prev, isDeleted: v }))}
+          options={[
+            { label: 'False', value: 'false' },
+            { label: 'True', value: 'true' },
+          ]}
+          placeholder="Is deleted"
+          className="h-10 w-full justify-between px-4 font-sans"
+        />
       </div>
+
+      {/* Submit */}
+      <Button
+        type="submit"
+        variant="outline"
+        className="border-input h-10 px-6 font-sans text-sm font-medium"
+      >
+        Search
+      </Button>
     </form>
   );
 };

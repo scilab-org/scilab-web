@@ -16,7 +16,7 @@ export const FilterSelect = ({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="text-muted-foreground h-full cursor-pointer appearance-none bg-transparent pr-8 pl-4 font-mono text-[11px] tracking-widest uppercase outline-none"
+      className="text-muted-foreground h-full cursor-pointer appearance-none bg-transparent pr-8 pl-4 text-xs font-medium uppercase outline-none"
     >
       {children}
     </select>

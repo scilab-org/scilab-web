@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router';
-import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-import { BTN } from '@/lib/button-styles';
 import { useDeletePaper } from '../api/delete-paper';
 import { paths } from '@/config/paths';
 
@@ -44,9 +42,7 @@ export const DeletePaper = ({ paperId }: DeletePaperProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" className={BTN.DANGER}>
-          <Trash2 className="size-4" />
-        </Button>
+        <Button variant="action">DELETE</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

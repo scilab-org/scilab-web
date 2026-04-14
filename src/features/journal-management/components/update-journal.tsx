@@ -1,18 +1,18 @@
+import { Plus, Trash2, X } from 'lucide-react';
 import * as React from 'react';
-import { Trash2, Plus, X, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 import { BTN } from '@/lib/button-styles';
 import { useUpdateJournal } from '../api/update-journal';
@@ -152,19 +152,17 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className={BTN.EDIT_OUTLINE}>
-          <Pencil className="size-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Update Journal</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="action">EDIT</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Update Journal</DialogTitle>
+          <DialogDescription>
             Edit journal details and manage writing styles.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <form
           id="update-journal-form"
           onSubmit={handleSubmit}
@@ -306,7 +304,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
                     }))
                   }
                   placeholder="Rule"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-36 w-full rounded-md border px-3 py-2 font-mono text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-36 w-full rounded-md border px-3 py-2 font-sans text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 />
               </div>
               <div className="flex gap-2 border-t px-4 py-3">
@@ -344,7 +342,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
           </div>
         )}
 
-        <SheetFooter>
+        <DialogFooter className="pt-2">
           <Button
             type="button"
             variant="outline"
@@ -361,8 +359,8 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
           >
             {updateJournalMutation.isPending ? 'Updating...' : 'Update'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

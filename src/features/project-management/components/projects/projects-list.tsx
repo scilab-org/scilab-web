@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router';
+
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -32,17 +31,10 @@ import { getProjectQueryOptions } from '../../api/projects/get-project';
 import { useDeleteProject } from '../../api/projects/delete-project';
 import { UpdateProject } from './update-project';
 import { Project } from '../../types';
-import { BTN } from '@/lib/button-styles';
-
-const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
-  const params = new URLSearchParams(currentParams);
-  params.set('page', page.toString());
-  return `?${params.toString()}`;
-};
+import { Pagination } from '@/components/ui/pagination';
 
 export const ProjectsList = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [updateOpen, setUpdateOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -96,33 +88,27 @@ export const ProjectsList = () => {
       case 1:
         return {
           text: 'Draft',
-          variant: 'secondary' as const,
-          className: '',
+          variant: 'draft' as const,
         };
       case 2:
         return {
           text: 'Active',
-          variant: 'default' as const,
-          className: 'bg-blue-600 text-white hover:bg-blue-700',
+          variant: 'active' as const,
         };
       case 3:
         return {
           text: 'Completed',
-          variant: 'default' as const,
-          className:
-            'bg-secondary text-secondary-foreground hover:bg-secondary/90',
+          variant: 'completed' as const,
         };
       case 4:
         return {
           text: 'Archived',
-          variant: 'outline' as const,
-          className: 'border-secondary text-secondary-foreground',
+          variant: 'archived' as const,
         };
       default:
         return {
           text: 'Unknown',
           variant: 'outline' as const,
-          className: '',
         };
     }
   };
@@ -144,7 +130,7 @@ export const ProjectsList = () => {
   if (!projects || projects.length === 0) {
     return (
       <div className="flex h-48 w-full items-center justify-center">
-        <p className="text-muted-foreground">
+        <p className="text-secondary">
           {name || code || status
             ? 'No projects match your search criteria'
             : 'No research projects yet. Get started by creating your first research project.'}
@@ -156,24 +142,14 @@ export const ProjectsList = () => {
   return (
     <div className="overflow-x-auto rounded-xl border shadow-sm">
       <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="text-muted-foreground w-35 font-semibold tracking-wider uppercase">
-              Code
-            </TableHead>
-            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
-              Name
-            </TableHead>
-            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
-              Status
-            </TableHead>
-            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
-              Start Date
-            </TableHead>
-            <TableHead className="text-muted-foreground font-semibold tracking-wider uppercase">
-              End Date
-            </TableHead>
-            <TableHead className="text-muted-foreground text-right font-semibold tracking-wider uppercase">
+        <TableHeader className="[&_tr]:bg-surface-container-low [&_tr]:hover:bg-surface-container-low">
+          <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+            <TableHead className="text-muted-foreground w-35">Code</TableHead>
+            <TableHead className="text-muted-foreground">Name</TableHead>
+            <TableHead className="text-muted-foreground">Status</TableHead>
+            <TableHead className="text-muted-foreground">Start Date</TableHead>
+            <TableHead className="text-muted-foreground">End Date</TableHead>
+            <TableHead className="text-muted-foreground text-right">
               Actions
             </TableHead>
           </TableRow>
@@ -182,16 +158,14 @@ export const ProjectsList = () => {
           {projects.map((project) => {
             const statusConfig = getStatusConfig(project.status);
             return (
-              <TableRow key={project.id} className="hover:bg-muted/30">
-                <TableCell>
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    {project.code}
-                  </Badge>
+              <TableRow key={project.id}>
+                <TableCell className="text-foreground text-sm font-medium">
+                  {project.code}
                 </TableCell>
                 <TableCell className="font-medium">
                   <Link
                     to={paths.app.projectDetail.getHref(project.id)}
-                    className="font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                    className="text-foreground font-medium transition-colors"
                     onMouseEnter={() => {
                       queryClient.prefetchQuery(
                         getProjectQueryOptions(project.id),
@@ -202,10 +176,7 @@ export const ProjectsList = () => {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={statusConfig.variant}
-                    className={statusConfig.className}
-                  >
+                  <Badge variant={statusConfig.variant}>
                     {statusConfig.text}
                   </Badge>
                 </TableCell>
@@ -217,24 +188,27 @@ export const ProjectsList = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`h-8 w-8 p-0 ${BTN.EDIT_OUTLINE}`}
-                      onClick={() => handleUpdate(project)}
-                      title="Edit Project"
+                    <Link
+                      to={paths.app.projectDetail.getHref(project.id)}
+                      onMouseEnter={() => {
+                        queryClient.prefetchQuery(
+                          getProjectQueryOptions(project.id),
+                        );
+                      }}
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Button variant="action">VIEW</Button>
+                    </Link>
+                    <Button
+                      variant="action"
+                      onClick={() => handleUpdate(project)}
+                    >
+                      EDIT
                     </Button>
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      className={`h-8 w-8 p-0 ${BTN.DANGER}`}
+                      variant="action"
                       onClick={() => handleDelete(project)}
-                      disabled={deleteMutation.isPending}
-                      title="Delete Project"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      DELETE
                     </Button>
                   </div>
                 </TableCell>
@@ -244,120 +218,7 @@ export const ProjectsList = () => {
         </TableBody>
       </Table>
 
-      {paging && (
-        <div className="mt-6 grid grid-cols-3 items-center border-t px-4 pt-4 pb-4">
-          <p className="text-muted-foreground text-sm">
-            Page{' '}
-            <span className="text-foreground font-medium">
-              {paging.pageNumber}
-            </span>{' '}
-            of{' '}
-            <span className="text-foreground font-medium">
-              {paging.totalPages}
-            </span>{' '}
-            &middot; {paging.totalCount} results
-          </p>
-
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              disabled={!paging.hasPreviousPage}
-              asChild={paging.hasPreviousPage}
-            >
-              {paging.hasPreviousPage ? (
-                <Link to={buildPageUrl(paging.pageNumber - 1, searchParams)}>
-                  <ChevronLeft className="size-4" />
-                </Link>
-              ) : (
-                <span>
-                  <ChevronLeft className="size-4" />
-                </span>
-              )}
-            </Button>
-
-            {Array.from({ length: paging.totalPages }, (_, i) => i + 1)
-              .filter((p) => {
-                if (paging.totalPages <= 7) return true;
-                if (p === 1 || p === paging.totalPages) return true;
-                if (Math.abs(p - paging.pageNumber) <= 1) return true;
-                return false;
-              })
-              .reduce<(number | string)[]>((acc, p, idx, arr) => {
-                if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
-                  acc.push('...');
-                }
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((item, idx) =>
-                typeof item === 'string' ? (
-                  <span
-                    key={`ellipsis-${idx}`}
-                    className="text-muted-foreground px-0.5 text-sm"
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <Button
-                    key={item}
-                    variant={item === paging.pageNumber ? 'default' : 'outline'}
-                    size="icon"
-                    className={`size-8 text-xs ${item === paging.pageNumber ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}`}
-                    asChild={item !== paging.pageNumber}
-                  >
-                    {item !== paging.pageNumber ? (
-                      <Link to={buildPageUrl(item, searchParams)}>{item}</Link>
-                    ) : (
-                      <span>{item}</span>
-                    )}
-                  </Button>
-                ),
-              )}
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              disabled={!paging.hasNextPage}
-              asChild={paging.hasNextPage}
-            >
-              {paging.hasNextPage ? (
-                <Link to={buildPageUrl(paging.pageNumber + 1, searchParams)}>
-                  <ChevronRight className="size-4" />
-                </Link>
-              ) : (
-                <span>
-                  <ChevronRight className="size-4" />
-                </span>
-              )}
-            </Button>
-
-            <div className="ml-3 flex items-center gap-1.5 border-l pl-3">
-              <span className="text-muted-foreground text-sm whitespace-nowrap">
-                Go to
-              </span>
-              <Input
-                type="number"
-                min={1}
-                max={paging.totalPages}
-                defaultValue={paging.pageNumber}
-                className="h-8 w-14 text-center text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const val = Number((e.target as HTMLInputElement).value);
-                    if (val >= 1 && val <= paging.totalPages) {
-                      navigate(buildPageUrl(val, searchParams));
-                    }
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div />
-        </div>
-      )}
+      {paging && <Pagination paging={paging} />}
 
       <UpdateProject
         project={selectedProject}
@@ -374,7 +235,7 @@ export const ProjectsList = () => {
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete project{' '}
-              <span className="text-foreground font-semibold">
+              <span className="text-primary font-semibold">
                 &ldquo;{pendingDeleteProject?.name}&rdquo;
               </span>
               ? This action cannot be undone.

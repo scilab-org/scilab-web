@@ -1,9 +1,8 @@
+import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -25,12 +24,7 @@ import { DeactivateUser } from './deactivate-user';
 import { ActivateUser } from './activate-user';
 import { capitalize } from '@/utils/string-utils';
 import { GROUPS } from '@/lib/authorization';
-
-const buildPageUrl = (page: number, currentParams: URLSearchParams) => {
-  const params = new URLSearchParams(currentParams);
-  params.set('page', page.toString());
-  return `?${params.toString()}`;
-};
+import { Pagination } from '@/components/ui/pagination';
 
 export const UsersList = () => {
   const [searchParams] = useSearchParams();
@@ -70,11 +64,6 @@ export const UsersList = () => {
       </div>
     );
   }
-
-  const rangeStart = paging ? (paging.pageNumber - 1) * 10 + 1 : 1;
-  const rangeEnd = paging
-    ? (paging.pageNumber - 1) * 10 + users.length
-    : users.length;
 
   return (
     <div>
@@ -118,7 +107,7 @@ export const UsersList = () => {
                 </TableCell>
 
                 {/* Email */}
-                <TableCell className="text-muted-foreground font-mono text-sm">
+                <TableCell className="text-muted-foreground text-sm">
                   {user.email}
                 </TableCell>
 
@@ -136,7 +125,7 @@ export const UsersList = () => {
                         user.enabled ? 'bg-green-500' : 'bg-destructive',
                       )}
                     />
-                    <span className="font-mono text-[10px] tracking-wider uppercase">
+                    <span className="text-xs font-medium">
                       {user.enabled ? 'Active' : 'Disabled'}
                     </span>
                   </div>
@@ -152,6 +141,7 @@ export const UsersList = () => {
                 {/* Actions */}
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    <Button variant="action">VIEW</Button>
                     <UpdateUser user={user} userId={user.id!} />
                     {user.enabled ? (
                       <DeactivateUser userId={user.id!} />
@@ -166,49 +156,7 @@ export const UsersList = () => {
         </TableBody>
       </Table>
 
-      {paging && (
-        <div className="border-border/40 flex items-center justify-between px-6 py-4">
-          <p className="text-on-surface-variant font-mono text-[10px] tracking-widest uppercase">
-            Showing {rangeStart}–{rangeEnd} of {paging.totalCount} entries
-          </p>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={!paging.hasPreviousPage}
-              asChild={paging.hasPreviousPage}
-            >
-              {paging.hasPreviousPage ? (
-                <Link to={buildPageUrl(paging.pageNumber - 1, searchParams)}>
-                  <ChevronLeft className="size-4" />
-                </Link>
-              ) : (
-                <span>
-                  <ChevronLeft className="size-4" />
-                </span>
-              )}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={!paging.hasNextPage}
-              asChild={paging.hasNextPage}
-            >
-              {paging.hasNextPage ? (
-                <Link to={buildPageUrl(paging.pageNumber + 1, searchParams)}>
-                  <ChevronRight className="size-4" />
-                </Link>
-              ) : (
-                <span>
-                  <ChevronRight className="size-4" />
-                </span>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
+      {paging && <Pagination paging={paging} />}
     </div>
   );
 };
