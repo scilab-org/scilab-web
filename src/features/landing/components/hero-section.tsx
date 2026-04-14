@@ -5,10 +5,19 @@ import { paths } from '@/config/paths';
 
 import { HERO } from '../constants';
 import heroImage from '../assets/images/image.png';
+import heroBg from '../assets/hero-bg.svg';
 
 export const HeroSection = () => {
   return (
-    <section className="bg-background px-8 pt-20 pb-0 lg:pt-32">
+    <section
+      className="px-8 pt-20 pb-0 lg:pt-32"
+      style={{
+        backgroundImage: `url(${heroBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       <div className="mx-auto max-w-7xl">
         {/* Asymmetric editorial grid — 3:2 content:visual */}
         <div className="grid grid-cols-1 items-start gap-16 lg:grid-cols-12">

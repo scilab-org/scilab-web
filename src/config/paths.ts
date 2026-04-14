@@ -3,6 +3,12 @@ export const paths = {
     path: '/',
     getHref: () => '/',
   },
+  auth: {
+    login: {
+      path: '/auth/login',
+      getHref: () => '/auth/login',
+    },
+  },
   app: {
     root: {
       path: '/app',

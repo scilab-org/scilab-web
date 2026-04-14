@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Base warm grey gradient -->
+    <linearGradient id="base" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%"   stop-color="#eeebe5"/>
+      <stop offset="50%"  stop-color="#e8e4dc"/>
+      <stop offset="100%" stop-color="#ddd8ce"/>
+    </linearGradient>
+
+    <!-- Left readability overlay -->
+    <linearGradient id="textOverlay" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#eeebe5" stop-opacity="0.70"/>
+      <stop offset="60%"  stop-color="#eeebe5" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#eeebe5" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glow filter for nodes -->
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ── Base ──────────────────────────────────────────────── -->
+  <rect width="720" height="900" fill="url(#base)"/>
+
+  <!-- ── Fine grid lines ───────────────────────────────────── -->
+  <!-- Horizontal -->
+  <g stroke="#6b5b42" stroke-opacity="0.09" stroke-width="0.5">
+    <line x1="0" y1="45"  x2="720" y2="45"/>
+    <line x1="0" y1="90"  x2="720" y2="90"/>
+    <line x1="0" y1="135" x2="720" y2="135"/>
+    <line x1="0" y1="180" x2="720" y2="180"/>
+    <line x1="0" y1="225" x2="720" y2="225"/>
+    <line x1="0" y1="270" x2="720" y2="270"/>
+    <line x1="0" y1="315" x2="720" y2="315"/>
+    <line x1="0" y1="360" x2="720" y2="360"/>
+    <line x1="0" y1="405" x2="720" y2="405"/>
+    <line x1="0" y1="450" x2="720" y2="450"/>
+    <line x1="0" y1="495" x2="720" y2="495"/>
+    <line x1="0" y1="540" x2="720" y2="540"/>
+    <line x1="0" y1="585" x2="720" y2="585"/>
+    <line x1="0" y1="630" x2="720" y2="630"/>
+    <line x1="0" y1="675" x2="720" y2="675"/>
+    <line x1="0" y1="720" x2="720" y2="720"/>
+    <line x1="0" y1="765" x2="720" y2="765"/>
+    <line x1="0" y1="810" x2="720" y2="810"/>
+    <line x1="0" y1="855" x2="720" y2="855"/>
+  </g>
+  <!-- Vertical -->
+  <g stroke="#6b5b42" stroke-opacity="0.07" stroke-width="0.5">
+    <line x1="45"  y1="0" x2="45"  y2="900"/>
+    <line x1="90"  y1="0" x2="90"  y2="900"/>
+    <line x1="135" y1="0" x2="135" y2="900"/>
+    <line x1="180" y1="0" x2="180" y2="900"/>
+    <line x1="225" y1="0" x2="225" y2="900"/>
+    <line x1="270" y1="0" x2="270" y2="900"/>
+    <line x1="315" y1="0" x2="315" y2="900"/>
+    <line x1="360" y1="0" x2="360" y2="900"/>
+    <line x1="405" y1="0" x2="405" y2="900"/>
+    <line x1="450" y1="0" x2="450" y2="900"/>
+    <line x1="495" y1="0" x2="495" y2="900"/>
+    <line x1="540" y1="0" x2="540" y2="900"/>
+    <line x1="585" y1="0" x2="585" y2="900"/>
+    <line x1="630" y1="0" x2="630" y2="900"/>
+    <line x1="675" y1="0" x2="675" y2="900"/>
+  </g>
+  <!-- Accent grid (heavier cadence) -->
+  <g stroke="#5a4a30" stroke-opacity="0.13" stroke-width="0.8">
+    <line x1="0" y1="0"   x2="720" y2="0"/>
+    <line x1="0" y1="225" x2="720" y2="225"/>
+    <line x1="0" y1="450" x2="720" y2="450"/>
+    <line x1="0" y1="675" x2="720" y2="675"/>
+    <line x1="0" y1="900" x2="720" y2="900"/>
+    <line x1="0"   y1="0" x2="0"   y2="900"/>
+    <line x1="180" y1="0" x2="180" y2="900"/>
+    <line x1="360" y1="0" x2="360" y2="900"/>
+    <line x1="540" y1="0" x2="540" y2="900"/>
+    <line x1="720" y1="0" x2="720" y2="900"/>
+  </g>
+
+  <!-- ── Large watermark geometry (DNA helix motif, centre-right) ─ -->
+  <!-- Backbone strands -->
+  <g fill="none" stroke="#4a6b5a" stroke-opacity="0.10" stroke-width="1.2">
+    <path d="M 480,120 Q 560,200 480,300 Q 400,400 480,500 Q 560,600 480,700 Q 400,800 480,860"/>
+    <path d="M 560,120 Q 480,220 560,320 Q 640,420 560,520 Q 480,620 560,720 Q 640,820 560,860"/>
+    <!-- Cross-links (base pairs) -->
+    <line x1="484" y1="148" x2="556" y2="152"/>
+    <line x1="488" y1="178" x2="552" y2="182"/>
+    <line x1="480" y1="210" x2="560" y2="210"/>
+    <line x1="476" y1="244" x2="564" y2="240"/>
+    <line x1="480" y1="278" x2="560" y2="274"/>
+    <line x1="486" y1="310" x2="554" y2="312"/>
+    <line x1="498" y1="344" x2="542" y2="348"/>
+    <line x1="508" y1="374" x2="532" y2="378"/>
+    <line x1="504" y1="406" x2="536" y2="402"/>
+    <line x1="492" y1="440" x2="548" y2="436"/>
+    <line x1="480" y1="474" x2="560" y2="470"/>
+    <line x1="476" y1="508" x2="564" y2="512"/>
+    <line x1="480" y1="542" x2="560" y2="538"/>
+    <line x1="488" y1="576" x2="552" y2="580"/>
+    <line x1="500" y1="608" x2="540" y2="612"/>
+    <line x1="510" y1="640" x2="530" y2="644"/>
+    <line x1="504" y1="672" x2="536" y2="676"/>
+    <line x1="492" y1="706" x2="548" y2="702"/>
+    <line x1="480" y1="740" x2="560" y2="744"/>
+    <line x1="476" y1="772" x2="564" y2="768"/>
+    <line x1="480" y1="806" x2="560" y2="810"/>
+    <line x1="488" y1="838" x2="552" y2="842"/>
+  </g>
+
+  <!-- ── Molecular network (lower-right area) ──────────────── -->
+  <g stroke="#3d6b55" stroke-opacity="0.16" stroke-width="0.8" fill="none">
+    <line x1="560" y1="680" x2="610" y2="700"/>
+    <line x1="610" y1="700" x2="660" y2="680"/>
+    <line x1="610" y1="700" x2="615" y2="755"/>
+    <line x1="660" y1="680" x2="695" y2="710"/>
+    <line x1="615" y1="755" x2="580" y2="785"/>
+    <line x1="615" y1="755" x2="660" y2="780"/>
+    <line x1="695" y1="710" x2="700" y2="760"/>
+    <line x1="700" y1="760" x2="660" y2="780"/>
+    <line x1="700" y1="760" x2="715" y2="800"/>
+    <line x1="580" y1="785" x2="590" y2="835"/>
+    <line x1="660" y1="780" x2="655" y2="830"/>
+  </g>
+  <g filter="url(#glow)">
+    <circle cx="610" cy="700" r="4"   fill="#3a7a60" fill-opacity="0.45"/>
+    <circle cx="660" cy="680" r="3"   fill="#5a9a70" fill-opacity="0.38"/>
+    <circle cx="615" cy="755" r="3.5" fill="#3a7a60" fill-opacity="0.40"/>
+    <circle cx="695" cy="710" r="2.5" fill="#5a9a70" fill-opacity="0.35"/>
+    <circle cx="700" cy="760" r="3"   fill="#3a7a60" fill-opacity="0.38"/>
+    <circle cx="580" cy="785" r="2.5" fill="#5a9a70" fill-opacity="0.32"/>
+    <circle cx="660" cy="780" r="2.5" fill="#5a9a70" fill-opacity="0.32"/>
+    <circle cx="560" cy="680" r="2"   fill="#4a8a68" fill-opacity="0.28"/>
+    <circle cx="715" cy="800" r="2"   fill="#4a8a68" fill-opacity="0.28"/>
+    <circle cx="590" cy="835" r="2"   fill="#4a8a68" fill-opacity="0.25"/>
+    <circle cx="655" cy="830" r="2"   fill="#4a8a68" fill-opacity="0.25"/>
+  </g>
+
+  <!-- ── Data scatter (upper-right quadrant) ───────────────── -->
+  <g fill-opacity="0.28">
+    <circle cx="580" cy="140" r="2.5" fill="#2a6050"/>
+    <circle cx="610" cy="118" r="2"   fill="#2a6050"/>
+    <circle cx="638" cy="155" r="2"   fill="#5a8a70"/>
+    <circle cx="660" cy="130" r="2.5" fill="#2a6050"/>
+    <circle cx="688" cy="112" r="2"   fill="#5a8a70"/>
+    <circle cx="700" cy="148" r="2"   fill="#2a6050"/>
+    <circle cx="594" cy="170" r="1.5" fill="#5a8a70"/>
+    <circle cx="625" cy="185" r="2"   fill="#2a6050"/>
+    <circle cx="670" cy="168" r="1.5" fill="#5a8a70"/>
+    <circle cx="706" cy="178" r="1.5" fill="#2a6050"/>
+    <!-- Axis lines -->
+    <line x1="568" y1="200" x2="715" y2="200" stroke="#3d5a48" stroke-opacity="0.22" stroke-width="0.8"/>
+    <line x1="568" y1="200" x2="568" y2="100" stroke="#3d5a48" stroke-opacity="0.22" stroke-width="0.8"/>
+    <!-- Regression line -->
+    <line x1="575" y1="195" x2="710" y2="108" stroke="#2a6050" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="5 3"/>
+  </g>
+
+  <!-- ── Manuscript column marks (centre of panel) ─────────── -->
+  <g fill="none" stroke="#3d3020" stroke-opacity="0.10">
+    <!-- Section A label line -->
+    <line x1="80" y1="480" x2="160" y2="480" stroke-width="3" stroke-linecap="round"/>
+    <!-- Body text lines -->
+    <line x1="80" y1="494" x2="280" y2="494" stroke-width="1.5"/>
+    <line x1="80" y1="505" x2="270" y2="505" stroke-width="1.5"/>
+    <line x1="80" y1="516" x2="285" y2="516" stroke-width="1.5"/>
+    <line x1="80" y1="527" x2="255" y2="527" stroke-width="1.5"/>
+    <line x1="80" y1="538" x2="278" y2="538" stroke-width="1.5"/>
+    <line x1="80" y1="549" x2="268" y2="549" stroke-width="1.5"/>
+    <!-- Section B -->
+    <line x1="80" y1="566" x2="175" y2="566" stroke-width="3" stroke-linecap="round" stroke-opacity="0.14"/>
+    <line x1="80" y1="580" x2="282" y2="580" stroke-width="1.5"/>
+    <line x1="80" y1="591" x2="265" y2="591" stroke-width="1.5"/>
+    <line x1="80" y1="602" x2="276" y2="602" stroke-width="1.5"/>
+    <!-- Divider -->
+    <line x1="80" y1="618" x2="130" y2="618" stroke-width="0.8" stroke-opacity="0.12"/>
+    <!-- Notes -->
+    <line x1="80" y1="630" x2="240" y2="630" stroke-width="1"/>
+    <line x1="80" y1="639" x2="230" y2="639" stroke-width="1"/>
+  </g>
+
+  <!-- ── Data flow arcs (background visual rhythm) ─────────── -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M 200,320 C 280,290 370,310 450,360" stroke="#4a6b5a" stroke-opacity="0.12" stroke-width="1.2"/>
+    <path d="M 150,400 C 230,370 330,390 420,440" stroke="#2a5040" stroke-opacity="0.10" stroke-width="1"/>
+    <path d="M 200,560 C 300,530 410,545 510,580" stroke="#4a6b5a" stroke-opacity="0.10" stroke-width="1"/>
+  </g>
+
+  <!-- ── Corner marks ───────────────────────────────────────── -->
+  <g stroke="#5a4a30" stroke-opacity="0.18" stroke-width="0.8" fill="none">
+    <path d="M 700,10 L 700,35 L 675,35"/>
+    <path d="M 675,10 L 700,10"/>
+    <path d="M 700,890 L 700,865 L 675,865"/>
+    <path d="M 675,890 L 700,890"/>
+    <path d="M 20,890 L 20,865 L 45,865"/>
+    <path d="M 20,890 L 45,890"/>
+  </g>
+
+  <!-- ── Readability overlay (left to right fade) ──────────── -->
+  <rect width="720" height="900" fill="url(#textOverlay)"/>
+</svg>

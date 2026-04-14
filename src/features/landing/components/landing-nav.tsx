@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { paths } from '@/config/paths';
-import { login, useUser } from '@/lib/auth';
+import { useUser } from '@/lib/auth';
 import { cn } from '@/utils/cn';
 
 import { BRAND, NAV_LINKS } from '../constants';
@@ -46,8 +46,8 @@ export const LandingNav = ({ className }: LandingNavProps) => {
             <Link to={paths.app.root.getHref()}>Go to Portal</Link>
           </Button>
         ) : (
-          <Button size="sm" className="hover:bg-cta-hover" onClick={login}>
-            Sign In
+          <Button asChild size="sm" className="hover:bg-cta-hover">
+            <Link to={paths.auth.login.getHref()}>Sign In</Link>
           </Button>
         )}
       </div>
