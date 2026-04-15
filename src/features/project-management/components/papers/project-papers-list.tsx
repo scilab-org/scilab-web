@@ -251,7 +251,7 @@ export const ProjectPapersList = ({
                   <TableHead className="w-[15%] px-2 font-semibold">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[10%] px-2 text-right font-semibold">
+                  <TableHead className="w-[10%] px-2 text-center font-semibold">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -376,8 +376,8 @@ export const ProjectPapersList = ({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
                         {paper.filePath && (
                           <Button
                             variant="action"

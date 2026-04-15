@@ -268,7 +268,7 @@ const SectionMembersSheet = ({
                           Role
                         </TableHead>
                         {isAuthor && (
-                          <TableHead className="w-28 text-right font-semibold text-green-900 dark:text-green-200">
+                          <TableHead className="w-28 text-center font-semibold text-green-900 dark:text-green-200">
                             Actions
                           </TableHead>
                         )}
@@ -324,7 +324,7 @@ const SectionMembersSheet = ({
                               </span>
                             </TableCell>
                             {isAuthor && (
-                              <TableCell className="text-right">
+                              <TableCell className="text-center">
                                 {!isProjectRole && (
                                   <Button
                                     size="sm"

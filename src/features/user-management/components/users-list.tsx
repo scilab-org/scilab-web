@@ -74,7 +74,7 @@ export const UsersList = () => {
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Roles</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,8 +138,8 @@ export const UsersList = () => {
                 </TableCell>
 
                 {/* Actions */}
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                <TableCell className="text-center">
+                  <div className="flex justify-center gap-2">
                     <UpdateUser user={user} userId={user.id!} />
                     {user.enabled ? (
                       <DeactivateUser userId={user.id!} />

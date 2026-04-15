@@ -2,12 +2,15 @@ import * as React from 'react';
 import { X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/utils/cn';
 
 type MultiValueInputProps = {
   values: string[];
   onAddValue: (value: string) => void;
   onRemoveValue: (value: string) => void;
   placeholder?: string;
+  className?: string;
+  inputClassName?: string;
 };
 
 export const MultiValueInput = ({
@@ -15,6 +18,8 @@ export const MultiValueInput = ({
   onAddValue,
   onRemoveValue,
   placeholder = 'Type a value and press Enter...',
+  className,
+  inputClassName,
 }: MultiValueInputProps) => {
   const [inputValue, setInputValue] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -46,7 +51,12 @@ export const MultiValueInput = ({
   };
 
   return (
-    <div className="border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1">
+    <div
+      className={cn(
+        'focus-within:border-outline border-input bg-background flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-none transition-[color,box-shadow]',
+        className,
+      )}
+    >
       {values.map((value) => (
         <Badge key={value} variant="secondary" className="gap-1 pr-1 text-xs">
           {value}
@@ -66,7 +76,10 @@ export const MultiValueInput = ({
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={values.length === 0 ? placeholder : ''}
-        className="placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none"
+        className={cn(
+          'placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none',
+          inputClassName,
+        )}
       />
     </div>
   );

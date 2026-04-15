@@ -179,26 +179,23 @@ export const CreatePaperInProject = ({
       | PaperTemplateDto
       | undefined;
     if (!detail) return;
-    const rawSections = detail.templateStructure?.sections ?? [];
+    const rawSections = detail.sections ?? [];
     setSections(
       rawSections.map((s, i) => {
         const sectionId = generateGuid();
-        const sectionPackages =
-          s.packages ?? (s as { Packages?: string[] }).Packages ?? undefined;
-
         return {
           _id: `tpl-${sectionId}`,
           id: sectionId,
           title: s.title,
-          latex: s.latex ?? toLatex(s.title, false),
+          latex: toLatex(s.title, false),
           content: '',
-          packages: sectionPackages ?? ['inputenc', 'fontenc'],
-          numbered: s.numbered ?? true,
-          displayOrder: s.displayOrder ?? s.order ?? i,
+          packages: ['inputenc', 'fontenc'],
+          numbered: true,
+          displayOrder: s.displayOrder ?? i,
           sectionSumary: '',
-          description: s.description ?? '',
-          rule: s.rule ?? '',
-          allowSubsections: s.allowSubsections,
+          description: s.sectionRule ?? '',
+          rule: s.sectionRule ?? '',
+          allowSubsections: undefined,
         };
       }),
     );
@@ -541,9 +538,9 @@ export const CreatePaperInProject = ({
             {selectedTemplate ? (
               <div className="bg-muted/50 flex items-center justify-between rounded-lg border p-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{selectedTemplate.name}</p>
+                  <p className="text-sm font-medium">{selectedTemplate.code}</p>
                   <p className="text-muted-foreground text-xs">
-                    Code: {selectedTemplate.code}
+                    {selectedTemplate.description || 'No description'}
                   </p>
                 </div>
                 <Button
@@ -597,9 +594,9 @@ export const CreatePaperInProject = ({
                               >
                                 <Check className="text-primary invisible size-3.5" />
                                 <div className="min-w-0">
-                                  <p className="font-medium">{tpl.name}</p>
+                                  <p className="font-medium">{tpl.code}</p>
                                   <p className="text-muted-foreground text-xs">
-                                    {tpl.code}
+                                    {tpl.description || 'No description'}
                                   </p>
                                 </div>
                               </button>
@@ -704,7 +701,7 @@ export const CreatePaperInProject = ({
                                 />
                               </TableCell>
                               <TableCell className="py-2">
-                                <div className="flex items-center justify-end gap-0.5">
+                                <div className="flex items-center justify-center gap-0.5">
                                   {mainSection.allowSubsections !== false && (
                                     <Button
                                       type="button"
@@ -799,7 +796,7 @@ export const CreatePaperInProject = ({
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="flex justify-end">
+                                  <div className="flex justify-center">
                                     <Button
                                       type="button"
                                       variant="ghost"

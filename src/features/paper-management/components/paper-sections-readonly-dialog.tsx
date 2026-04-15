@@ -155,7 +155,7 @@ export const PaperSectionsReadOnlyDialog = ({
                           <TableHead className="font-semibold text-green-900 dark:text-green-200">
                             Section Title
                           </TableHead>
-                          <TableHead className="w-20 text-right font-semibold text-green-900 dark:text-green-200">
+                          <TableHead className="w-20 text-center font-semibold text-green-900 dark:text-green-200">
                             Action
                           </TableHead>
                         </TableRow>
@@ -196,7 +196,7 @@ export const PaperSectionsReadOnlyDialog = ({
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-center">
                                 <button
                                   type="button"
                                   onClick={() => setViewSectionId(node.id)}

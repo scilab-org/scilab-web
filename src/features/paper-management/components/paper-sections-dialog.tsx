@@ -675,7 +675,7 @@ const ViewMembersPanel = ({
                     Role
                   </TableHead>
                   {isAuthor && (
-                    <TableHead className="w-36 text-right font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="w-36 text-center font-semibold text-green-900 dark:text-green-200">
                       Actions
                     </TableHead>
                   )}
@@ -748,10 +748,10 @@ const ViewMembersPanel = ({
                         )}
                       </TableCell>
                       {isAuthor && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-center">
                           {!isProjectRole &&
                             (editingId === m.id ? (
-                              <div className="flex items-center justify-end gap-1">
+                              <div className="flex items-center justify-center gap-1">
                                 <Button
                                   size="sm"
                                   onClick={() =>
@@ -1065,7 +1065,7 @@ export const PaperSectionsDialog = ({
                                 <TableHead className="font-semibold text-green-900 dark:text-green-200">
                                   Section Title
                                 </TableHead>
-                                <TableHead className="w-52 text-right font-semibold text-green-900 dark:text-green-200">
+                                <TableHead className="w-52 text-center font-semibold text-green-900 dark:text-green-200">
                                   Action
                                 </TableHead>
                               </TableRow>
@@ -1139,9 +1139,9 @@ export const PaperSectionsDialog = ({
                                           )}
                                         </div>
                                       </TableCell>
-                                      <TableCell className="text-right">
+                                      <TableCell className="text-center">
                                         {isLeaf && (
-                                          <div className="flex items-center justify-end gap-1">
+                                          <div className="flex items-center justify-center gap-1">
                                             {isAuthor && (
                                               <Button
                                                 size="sm"

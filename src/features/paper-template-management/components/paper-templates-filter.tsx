@@ -43,14 +43,14 @@ export const PaperTemplatesFilter = () => {
       className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
     >
       {/* Search Name */}
-      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
         <Search className="text-muted-foreground size-4" />
         <input
           value={filters.name}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, name: e.target.value }))
           }
-          placeholder="Search by name..."
+          placeholder="Search by description..."
           className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
         />
         {filters.name && (
@@ -65,7 +65,7 @@ export const PaperTemplatesFilter = () => {
       </div>
 
       {/* Search Code */}
-      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
         <Search className="text-muted-foreground size-4" />
         <input
           value={filters.code}

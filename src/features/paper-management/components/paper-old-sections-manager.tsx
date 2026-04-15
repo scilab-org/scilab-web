@@ -223,7 +223,7 @@ const ExpandedVersionRows = ({
             {/* Contributors (empty for sub-rows) */}
             <TableCell />
             {/* Action */}
-            <TableCell className="text-right">
+            <TableCell className="text-center">
               {onViewSection && (
                 <button
                   type="button"
@@ -525,7 +525,7 @@ export const PaperOldSectionsManager = ({
                 <TableHead className="w-32 font-semibold text-green-900 dark:text-green-200">
                   Contributors
                 </TableHead>
-                <TableHead className="w-24 text-right font-semibold text-green-900 dark:text-green-200">
+                <TableHead className="w-24 text-center font-semibold text-green-900 dark:text-green-200">
                   Action
                 </TableHead>
               </TableRow>
@@ -596,7 +596,7 @@ export const PaperOldSectionsManager = ({
                         <TableCell>
                           <ContributorCell markSectionId={markId} />
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-center">
                           <Button
                             size="sm"
                             variant="outline"

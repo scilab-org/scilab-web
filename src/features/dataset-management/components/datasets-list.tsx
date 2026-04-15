@@ -119,7 +119,7 @@ export const DatasetsList = ({
                     <TableHead className="text-muted-foreground">
                       File
                     </TableHead>
-                    <TableHead className="text-muted-foreground text-right">
+                    <TableHead className="text-muted-foreground text-center">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -155,8 +155,8 @@ export const DatasetsList = ({
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
                             {canViewChart(dataset.filePath) &&
                               onViewChartClick && (
                                 <Button

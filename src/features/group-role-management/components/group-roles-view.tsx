@@ -69,7 +69,7 @@ export const GroupRolesView = ({ groupId }: { groupId: string }) => {
                     <TableHead className="font-semibold text-green-900 dark:text-green-200">
                       Type
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-center font-semibold text-green-900 dark:text-green-200">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -99,7 +99,7 @@ export const GroupRolesView = ({ groupId }: { groupId: string }) => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         <RemoveRolesFromGroup
                           groupId={groupId}
                           roleNames={[role.name!]}
