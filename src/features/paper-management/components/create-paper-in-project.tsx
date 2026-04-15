@@ -31,7 +31,7 @@ import { usePaperTemplates } from '@/features/paper-template-management/api/get-
 import { usePaperTemplate } from '@/features/paper-template-management/api/get-paper-template';
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
-import { JournalDto, JournalStyle } from '@/features/journal-management/types';
+import { JournalDto } from '@/features/journal-management/types';
 import { useCreatePaperInProject } from '../api/initialize-paper';
 import { CreatePaperInProjectDto, PaperSection } from '../types';
 
@@ -149,23 +149,11 @@ export const CreatePaperInProject = ({
     [journalResults, formData.selectedJournalId],
   );
 
-  const selectedStyle = React.useMemo<JournalStyle | null>(
-    () =>
-      selectedJournal?.styles?.find(
-        (s) => s.name === formData.selectedStyleName,
-      ) ?? null,
-    [selectedJournal, formData.selectedStyleName],
-  );
-
   React.useEffect(() => {
-    if (!selectedJournal) return;
-    const hasStyle = selectedJournal.styles?.some(
-      (s) => s.name === formData.selectedStyleName,
-    );
-    if (!hasStyle) {
+    if (!selectedJournal) {
       setFormData((prev) => ({ ...prev, selectedStyleName: '' }));
     }
-  }, [selectedJournal, formData.selectedStyleName]);
+  }, [selectedJournal]);
 
   // Fetch template detail when one is selected
   const templateDetailQuery = usePaperTemplate({
@@ -317,15 +305,14 @@ export const CreatePaperInProject = ({
       gapType: formData.gapType || undefined,
       mainContribution: formData.mainContribution || undefined,
       status: formData.status,
-      journal:
-        selectedJournal && selectedStyle
-          ? {
-              name: selectedJournal.name,
-              styleName: selectedStyle.name,
-              styleDescription: selectedStyle.description || undefined,
-              styleRule: selectedStyle.rule || undefined,
-            }
-          : undefined,
+      journal: selectedJournal
+        ? {
+            name: selectedJournal.name,
+            styleName: selectedJournal.style ?? '',
+            styleDescription: '',
+            styleRule: '',
+          }
+        : undefined,
       ...(selectedTemplate?.code && { template: selectedTemplate.code }),
       sections: sections.map((sec) => {
         return {
@@ -502,31 +489,9 @@ export const CreatePaperInProject = ({
               <label htmlFor="cpp-style-name" className="text-sm font-medium">
                 Select Style
               </label>
-              <select
-                id="cpp-style-name"
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                value={formData.selectedStyleName}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    selectedStyleName: e.target.value,
-                  }))
-                }
-                disabled={!selectedJournal}
-              >
-                <option value="">No style</option>
-                {(selectedJournal?.styles ?? []).map((style) => (
-                  <option key={style.name} value={style.name}>
-                    {style.name}
-                  </option>
-                ))}
-              </select>
-              {selectedJournal &&
-                (selectedJournal.styles?.length ?? 0) === 0 && (
-                  <p className="text-muted-foreground text-xs">
-                    This journal has no styles.
-                  </p>
-                )}
+              <p className="border-input bg-muted/50 flex h-9 w-full items-center rounded-md border px-3 text-sm">
+                {selectedJournal?.style || 'No style'}
+              </p>
             </div>
           </div>
 
@@ -657,7 +622,7 @@ export const CreatePaperInProject = ({
                   Loading sections...
                 </div>
               ) : sections.length > 0 ? (
-                <div className="min-h-[400px] rounded-xl border shadow-sm">
+                <div className="min-h-100 rounded-xl border shadow-sm">
                   <Table>
                     <TableHeader>
                       <TableRow>

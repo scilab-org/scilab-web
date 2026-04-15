@@ -104,7 +104,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden rounded-xl border py-0 shadow-sm">
+      <Card className="overflow-hidden rounded-md border py-0 shadow-sm">
         <CardContent className="space-y-6 bg-[#fffaf1] p-6">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -175,7 +175,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
 
           <div className="bg-border/60 h-px" />
 
-          <div className="bg-card space-y-4 rounded-xl border p-5">
+          <div className="bg-card space-y-4 rounded-md border p-5">
             <h2 className="text-xl font-semibold">Publication Info</h2>
             <div className="grid gap-4 border-t pt-4 md:grid-cols-4">
               {publicationInfo.map((field) => (
@@ -192,7 +192,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
-            <div className="bg-card space-y-4 rounded-xl border p-5 md:col-span-2">
+            <div className="bg-card space-y-4 rounded-md border p-5 md:col-span-2">
               <h2 className="text-xl font-semibold">Abstract</h2>
               <div className="border-t pt-4">
                 <p className="text-foreground text-base leading-relaxed whitespace-pre-wrap">
@@ -201,7 +201,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
               </div>
             </div>
 
-            <div className="bg-card space-y-4 rounded-xl border p-5 md:col-span-1">
+            <div className="bg-card space-y-4 rounded-md border p-5 md:col-span-1">
               <h2 className="text-xl font-semibold">Authors & Identifiers</h2>
               <div className="grid gap-4 border-t pt-4">
                 {authorAndIdentifiers.map((field) => (

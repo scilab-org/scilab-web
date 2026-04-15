@@ -300,15 +300,9 @@ export const ProjectPaperDetailPage = ({
     const journal = selectedJournal
       ? {
           name: selectedJournal.name,
-          styleName: editPaperForm.selectedStyleName,
-          styleDescription:
-            selectedJournal.styles?.find(
-              (s) => s.name === editPaperForm.selectedStyleName,
-            )?.description ?? '',
-          styleRule:
-            selectedJournal.styles?.find(
-              (s) => s.name === editPaperForm.selectedStyleName,
-            )?.rule ?? '',
+          styleName: selectedJournal.style ?? '',
+          styleDescription: '',
+          styleRule: '',
         }
       : null;
     updateWritingPaperMutation.mutate({
@@ -2182,31 +2176,9 @@ export const ProjectPaperDetailPage = ({
                 <label htmlFor="ep-style-name" className="text-sm font-medium">
                   Select Style
                 </label>
-                <select
-                  id="ep-style-name"
-                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                  value={editPaperForm.selectedStyleName}
-                  onChange={(e) =>
-                    setEditPaperForm((prev) => ({
-                      ...prev,
-                      selectedStyleName: e.target.value,
-                    }))
-                  }
-                  disabled={!selectedJournal}
-                >
-                  <option value="">No style</option>
-                  {(selectedJournal?.styles ?? []).map((style) => (
-                    <option key={style.name} value={style.name}>
-                      {style.name}
-                    </option>
-                  ))}
-                </select>
-                {selectedJournal &&
-                  (selectedJournal.styles?.length ?? 0) === 0 && (
-                    <p className="text-secondary text-xs">
-                      This journal has no styles.
-                    </p>
-                  )}
+                <p className="border-surface-container-highest bg-surface flex h-9 w-full items-center rounded-md border px-3 text-sm">
+                  {selectedJournal?.style || 'No style'}
+                </p>
               </div>
             </div>
           </form>

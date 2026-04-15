@@ -21,7 +21,6 @@ import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
-import { PAPER_STATUS_OPTIONS } from '../constants';
 
 const initialFormData = {
   title: '',
@@ -133,6 +132,7 @@ export const CreatePaper = () => {
   const [pubYearError, setPubYearError] = React.useState('');
   const [journalConferenceError, setJournalConferenceError] =
     React.useState('');
+  const [pagesError, setPagesError] = React.useState('');
 
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
@@ -172,6 +172,7 @@ export const CreatePaper = () => {
     setPubDay('');
     setPubYearError('');
     setJournalConferenceError('');
+    setPagesError('');
   };
 
   const parsedYear = Number.parseInt(pubYear, 10);
@@ -345,11 +346,27 @@ export const CreatePaper = () => {
 
     const hasJournalName = formData.journalName.trim().length > 0;
     const hasConferenceName = formData.conferenceName.trim().length > 0;
+    if (!hasJournalName && !hasConferenceName) {
+      setJournalConferenceError(
+        'Please fill at least one of Journal Name or Conference Name.',
+      );
+      return;
+    }
     if (hasJournalName && hasConferenceName) {
       setJournalConferenceError(
         'Please fill either Journal Name or Conference Name, not both.',
       );
       return;
+    }
+
+    if (formData.pages.trim()) {
+      const pagesPattern = /^\d+--\d+$/;
+      if (!pagesPattern.test(formData.pages.trim())) {
+        setPagesError(
+          'Pages must be in the format Number--Number (e.g. 436--444).',
+        );
+        return;
+      }
     }
 
     if (!pubYear.trim()) {
@@ -415,10 +432,9 @@ export const CreatePaper = () => {
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
         <div className="shrink-0 px-6 pt-6">
           <DialogHeader>
-            <DialogTitle>Create New Paper</DialogTitle>
+            <DialogTitle>Add Paper</DialogTitle>
             <DialogDescription>
-              Upload a PDF file and fill in the details. Title and file are
-              required.
+              Upload a PDF file and fill in the details.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -527,6 +543,7 @@ export const CreatePaper = () => {
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
               placeholder="Type a tag and press Enter..."
+              className="dark:bg-input/30 bg-transparent"
             />
             {/* Auto Tag button */}
             {file && (
@@ -620,12 +637,12 @@ export const CreatePaper = () => {
             </label>
             <textarea
               id="create-paper-abstract"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.abstract}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, abstract: e.target.value }))
               }
-              placeholder="Enter abstract"
+              placeholder="e.g. The effects of..."
             />
           </div>
 
@@ -657,7 +674,7 @@ export const CreatePaper = () => {
                   setPubYearError('');
                 }}
                 className={cn(
-                  'border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  'border-input dark:bg-input/30 ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   !pubMonth && 'text-muted-foreground',
                 )}
               >
@@ -676,7 +693,7 @@ export const CreatePaper = () => {
                   setPubYearError('');
                 }}
                 className={cn(
-                  'border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  'border-input dark:bg-input/30 ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   !pubDay && 'text-muted-foreground',
                 )}
               >
@@ -715,7 +732,7 @@ export const CreatePaper = () => {
               htmlFor="create-paper-journal"
               className="text-sm font-medium"
             >
-              Journal Name
+              Journal Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="create-paper-journal"
@@ -729,7 +746,7 @@ export const CreatePaper = () => {
                   };
                 })
               }
-              placeholder="Enter journal name"
+              placeholder="e.g. Nature"
               disabled={Boolean(formData.conferenceName.trim())}
             />
           </div>
@@ -739,7 +756,7 @@ export const CreatePaper = () => {
               htmlFor="create-paper-conference"
               className="text-sm font-medium"
             >
-              Conference Name
+              Conference Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="create-paper-conference"
@@ -753,7 +770,7 @@ export const CreatePaper = () => {
                   };
                 })
               }
-              placeholder="Enter conference name"
+              placeholder="e.g. NeurIPS"
               disabled={Boolean(formData.journalName.trim())}
             />
             {journalConferenceError && (
@@ -774,14 +791,18 @@ export const CreatePaper = () => {
               <Input
                 id="create-paper-pages"
                 value={formData.pages}
-                onChange={(e) =>
+                onChange={(e) => {
+                  if (pagesError) setPagesError('');
                   setFormData((prev) => ({
                     ...prev,
                     pages: e.target.value,
-                  }))
-                }
+                  }));
+                }}
                 placeholder="e.g. 436--444"
               />
+              {pagesError && (
+                <p className="text-destructive text-xs">{pagesError}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label
@@ -819,32 +840,6 @@ export const CreatePaper = () => {
               }
               placeholder="e.g. 521"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <label
-              htmlFor="create-paper-status"
-              className="text-sm font-medium"
-            >
-              Status
-            </label>
-            <select
-              id="create-paper-status"
-              className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              value={formData.status}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  status: Number(e.target.value),
-                }))
-              }
-            >
-              {PAPER_STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
           </div>
         </form>
         <div className="shrink-0 px-6 pt-2 pb-6">

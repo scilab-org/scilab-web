@@ -58,7 +58,7 @@ export const PaperTemplatesList = () => {
 
   return (
     <div>
-      <div className="rounded-lg border shadow-sm">
+      <div className="rounded-md border shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
@@ -89,7 +89,9 @@ export const PaperTemplatesList = () => {
                         template.id,
                       )}
                     >
-                      <Button variant="action">VIEW</Button>
+                      <Button variant="outlineAction" size="action">
+                        VIEW
+                      </Button>
                     </Link>
                     <UpdatePaperTemplate template={template} />
                     <DeletePaperTemplate

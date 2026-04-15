@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { MultiValueInput } from './multi-value-input';
@@ -11,9 +10,6 @@ import { TagAutocompleteInput } from './tag-autocomplete-input';
 
 export const PapersFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const filterInputClassName =
-    'border-input bg-background text-foreground placeholder:text-muted-foreground/50 h-10 rounded-md border px-4 font-sans text-sm shadow-none focus:border-outline focus:ring-0 focus:ring-offset-0 focus-visible:border-outline focus-visible:ring-0 focus-visible:ring-offset-0';
-
   const [showMore, setShowMore] = React.useState(() => {
     return Boolean(
       searchParams.get('abstract') ||
@@ -122,6 +118,14 @@ export const PapersFilter = () => {
     setSearchParams(params);
   };
 
+  const handleClearDoi = () => {
+    setFilters((prev) => ({ ...prev, doi: '' }));
+    const params = new URLSearchParams(searchParams);
+    params.delete('doi');
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
   const handleClearAll = () => {
     setFilters({
       title: '',
@@ -147,7 +151,7 @@ export const PapersFilter = () => {
     >
       <div className="flex w-full flex-wrap items-center gap-2">
         {/* Title */}
-        <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
+        <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
           <Search className="text-muted-foreground size-4" />
           <input
             value={filters.title}
@@ -169,24 +173,33 @@ export const PapersFilter = () => {
         </div>
 
         {/* DOI */}
-        <div className="bg-background flex h-10 w-48 shrink-0 items-center rounded-md px-4">
+        <div className="bg-background flex h-10 w-48 shrink-0 items-center gap-3 rounded-md px-4 shadow-xs">
           <input
             value={filters.doi}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, doi: e.target.value }))
             }
             placeholder="Search by DOI..."
-            className="text-foreground placeholder:text-muted-foreground/50 w-full bg-transparent font-sans text-sm outline-none"
+            className="text-foreground placeholder:text-muted-foreground/50 min-w-0 flex-1 bg-transparent font-sans text-sm outline-none"
           />
+          {filters.doi && (
+            <button
+              type="button"
+              onClick={handleClearDoi}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
 
-        {/* Keywords */}
+        {/* Tags */}
         <div className="w-56 shrink-0">
           <TagAutocompleteInput
             tagList={tagList}
             onAddTag={handleAddTag}
             onRemoveTag={handleRemoveTag}
-            placeholder="Search by keywords..."
+            placeholder="Search by tags..."
             className="border-input bg-background focus-within:ring-ring/50 h-10 rounded-md border px-4 py-0 shadow-none focus-within:ring-1"
             inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans"
           />
@@ -227,65 +240,108 @@ export const PapersFilter = () => {
                 inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans text-sm"
               />
             </div>
-            <div>
-              <Input
-                id="filter-paperType"
+            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <input
                 value={filters.paperType}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, paperType: e.target.value }))
                 }
                 placeholder="Search by type..."
-                className={filterInputClassName}
+                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
               />
+              {filters.paperType && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, paperType: '' }))
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
             <div>
               <div className="grid grid-cols-2 gap-2">
-                <Input
-                  id="filter-fromDate"
-                  type={fromDateInputType}
-                  value={filters.fromDate}
-                  onFocus={() => setIsFromDateFocused(true)}
-                  onBlur={() => setIsFromDateFocused(false)}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      fromDate: e.target.value,
-                    }))
-                  }
-                  placeholder="Search by from date..."
-                  className={filterInputClassName}
-                />
-                <Input
-                  id="filter-toDate"
-                  type={toDateInputType}
-                  value={filters.toDate}
-                  onFocus={() => setIsToDateFocused(true)}
-                  onBlur={() => setIsToDateFocused(false)}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      toDate: e.target.value,
-                    }))
-                  }
-                  placeholder="Search by to date..."
-                  className={filterInputClassName}
-                />
+                <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                  <input
+                    type={fromDateInputType}
+                    value={filters.fromDate}
+                    onFocus={() => setIsFromDateFocused(true)}
+                    onBlur={() => setIsFromDateFocused(false)}
+                    onChange={(e) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        fromDate: e.target.value,
+                      }))
+                    }
+                    placeholder="From date..."
+                    className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                  />
+                  {filters.fromDate && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFilters((prev) => ({ ...prev, fromDate: '' }))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                  <input
+                    type={toDateInputType}
+                    value={filters.toDate}
+                    onFocus={() => setIsToDateFocused(true)}
+                    onBlur={() => setIsToDateFocused(false)}
+                    onChange={(e) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        toDate: e.target.value,
+                      }))
+                    }
+                    placeholder="To date..."
+                    className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                  />
+                  {filters.toDate && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFilters((prev) => ({ ...prev, toDate: '' }))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-            <div>
-              <Input
-                id="filter-publisher"
+            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <input
                 value={filters.publisher}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, publisher: e.target.value }))
                 }
                 placeholder="Search by publisher..."
-                className={filterInputClassName}
+                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
               />
+              {filters.publisher && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, publisher: '' }))
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
-            <div>
-              <Input
-                id="filter-journalName"
+            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <input
                 value={filters.journalName}
                 onChange={(e) =>
                   setFilters((prev) => ({
@@ -294,12 +350,22 @@ export const PapersFilter = () => {
                   }))
                 }
                 placeholder="Search by journal..."
-                className={filterInputClassName}
+                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
               />
+              {filters.journalName && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, journalName: '' }))
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
-            <div>
-              <Input
-                id="filter-conferenceName"
+            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <input
                 value={filters.conferenceName}
                 onChange={(e) =>
                   setFilters((prev) => ({
@@ -308,19 +374,45 @@ export const PapersFilter = () => {
                   }))
                 }
                 placeholder="Search by conference..."
-                className={filterInputClassName}
+                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
               />
+              {filters.conferenceName && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, conferenceName: '' }))
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
             <div className="sm:col-span-2 lg:col-span-2">
-              <Input
-                id="filter-abstract"
-                value={filters.abstract}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, abstract: e.target.value }))
-                }
-                placeholder="Search by abstract..."
-                className={filterInputClassName}
-              />
+              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                <input
+                  value={filters.abstract}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      abstract: e.target.value,
+                    }))
+                  }
+                  placeholder="Search by abstract..."
+                  className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                />
+                {filters.abstract && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFilters((prev) => ({ ...prev, abstract: '' }))
+                    }
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
             </div>
             <div>
               <FilterDropdown

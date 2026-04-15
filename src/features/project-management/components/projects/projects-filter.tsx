@@ -50,7 +50,7 @@ export const ProjectsFilter = () => {
       className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
     >
       {/* Search Name */}
-      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
         <Search className="text-muted-foreground size-4" />
         <input
           value={filters.name}
@@ -72,8 +72,7 @@ export const ProjectsFilter = () => {
       </div>
 
       {/* Search Code */}
-      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
-        <Search className="text-muted-foreground size-4" />
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
         <input
           value={filters.code}
           onChange={(e) =>
@@ -94,7 +93,7 @@ export const ProjectsFilter = () => {
       </div>
 
       {/* Status */}
-      <div className="bg-background h-10 w-48 rounded-md">
+      <div className="bg-background h-10 w-48 rounded-md shadow-xs">
         <FilterDropdown
           value={filters.status}
           onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
@@ -107,16 +106,16 @@ export const ProjectsFilter = () => {
         />
       </div>
 
-      {/* Is Deleted */}
-      <div className="bg-background h-10 w-48 rounded-md">
+      {/* Status */}
+      <div className="bg-background h-10 w-48 rounded-md shadow-xs">
         <FilterDropdown
           value={filters.isDeleted}
           onChange={(v) => setFilters((prev) => ({ ...prev, isDeleted: v }))}
           options={[
-            { label: 'False', value: 'false' },
-            { label: 'True', value: 'true' },
+            { label: 'Active', value: 'false' },
+            { label: 'Inactive', value: 'true' },
           ]}
-          placeholder="Is deleted"
+          placeholder="Status"
           className="h-10 w-full justify-between px-4 font-sans"
         />
       </div>

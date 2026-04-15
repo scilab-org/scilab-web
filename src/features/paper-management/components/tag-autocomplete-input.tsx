@@ -127,12 +127,12 @@ export const TagAutocompleteInput = ({
     <Popover open={showSuggestions && suggestions.length > 0}>
       <div
         className={cn(
-          'border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1',
+          'border-input bg-background focus-within:border-ring focus-within:ring-ring/50 flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-[color,box-shadow] focus-within:ring-[3px]',
           className,
         )}
       >
         {tagList.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
+          <Badge key={tag} variant="outline" className="gap-1 pr-1 text-xs">
             {tag}
             <button
               type="button"
@@ -169,6 +169,20 @@ export const TagAutocompleteInput = ({
             )}
           />
         </PopoverAnchor>
+        {tagInput && (
+          <button
+            type="button"
+            onClick={() => {
+              setTagInput('');
+              setShowSuggestions(false);
+              setSelectedIndex(-1);
+              inputRef.current?.focus();
+            }}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        )}
       </div>
       <PopoverContent
         className="w-(--radix-popover-trigger-width) p-0"
