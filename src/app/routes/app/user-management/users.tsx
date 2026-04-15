@@ -40,17 +40,17 @@ const UsersRoute = () => {
     <>
       <Head title="User Management" />
       <ContentLayout title="User Management" description="Manage system users">
-      <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          <CreateUser />
+        <div className="space-y-4">
+          <div className="flex items-center justify-end">
+            <CreateUser />
+          </div>
+          <UsersFilter />
         </div>
-        <UsersFilter />
-      </div>
 
-      <div className="mt-4">
-        <UsersList />
-      </div>
-    </ContentLayout>
+        <div className="mt-4">
+          <UsersList />
+        </div>
+      </ContentLayout>
     </>
   );
 };

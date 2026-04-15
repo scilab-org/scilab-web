@@ -132,79 +132,79 @@ const DashboardRoute = () => {
         title="Dashboard Overview"
         description="Welcome back, here's what's happening today."
       >
-      {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Total Students"
-          value="1,240"
-          icon={Users}
-          badge={{ text: '↗ +5%', variant: 'success' }}
-        />
-        <StatCard title="Active Courses" value="34" icon={ClipboardList} />
-        <StatCard
-          title="Pending Assignments"
-          value="128"
-          icon={ClipboardList}
-          badge={{ text: 'Needs Review', variant: 'warning' }}
-        />
-      </div>
+        {/* Stats Cards */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Total Students"
+            value="1,240"
+            icon={Users}
+            badge={{ text: '↗ +5%', variant: 'success' }}
+          />
+          <StatCard title="Active Courses" value="34" icon={ClipboardList} />
+          <StatCard
+            title="Pending Assignments"
+            value="128"
+            icon={ClipboardList}
+            badge={{ text: 'Needs Review', variant: 'warning' }}
+          />
+        </div>
 
-      {/* New Semester Setup */}
-      <Card className="mt-4">
-        <CardContent className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
-          <div>
-            <CardTitle className="text-lg">New Semester Setup</CardTitle>
-            <CardDescription className="mt-1">
-              Prepare the curriculum and student lists for the upcoming term.
-            </CardDescription>
-          </div>
-          <Button className={BTN.CREATE}>
-            <Plus className="size-4" />
-            Create New Course
-          </Button>
-        </CardContent>
-      </Card>
+        {/* New Semester Setup */}
+        <Card className="mt-4">
+          <CardContent className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
+            <div>
+              <CardTitle className="text-lg">New Semester Setup</CardTitle>
+              <CardDescription className="mt-1">
+                Prepare the curriculum and student lists for the upcoming term.
+              </CardDescription>
+            </div>
+            <Button className={BTN.CREATE}>
+              <Plus className="size-4" />
+              Create New Course
+            </Button>
+          </CardContent>
+        </Card>
 
-      {/* Recent Activity */}
-      <Card className="mt-4">
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-lg">Recent Activity</CardTitle>
-          <Button
-            variant="link"
-            size="sm"
-            className="text-sm text-blue-600 dark:text-blue-400"
-          >
-            View All
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Action</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentActivity.map((activity) => (
-                <TableRow key={activity.id}>
-                  <TableCell className="font-medium">
-                    {activity.action}
-                  </TableCell>
-                  <TableCell>{activity.user}</TableCell>
-                  <TableCell>{activity.date}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={activity.status} />
-                  </TableCell>
+        {/* Recent Activity */}
+        <Card className="mt-4">
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <Button
+              variant="link"
+              size="sm"
+              className="text-sm text-blue-600 dark:text-blue-400"
+            >
+              View All
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </ContentLayout>
+              </TableHeader>
+              <TableBody>
+                {recentActivity.map((activity) => (
+                  <TableRow key={activity.id}>
+                    <TableCell className="font-medium">
+                      {activity.action}
+                    </TableCell>
+                    <TableCell>{activity.user}</TableCell>
+                    <TableCell>{activity.date}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={activity.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </ContentLayout>
     </>
   );
 };

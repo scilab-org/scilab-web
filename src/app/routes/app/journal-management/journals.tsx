@@ -48,17 +48,17 @@ const JournalsRoute = () => {
         title="Journals"
         description="Manage and organize journal templates and writing styles"
       >
-      <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          <CreateJournal />
+        <div className="space-y-4">
+          <div className="flex items-center justify-end">
+            <CreateJournal />
+          </div>
+          <JournalsFilter />
         </div>
-        <JournalsFilter />
-      </div>
 
-      <div className="mt-4">
-        <JournalsList />
-      </div>
-    </ContentLayout>
+        <div className="mt-4">
+          <JournalsList />
+        </div>
+      </ContentLayout>
     </>
   );
 };

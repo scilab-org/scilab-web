@@ -45,17 +45,17 @@ const ProjectsRoute = () => {
         title="Research Projects"
         description="Manage and track your scientific research projects"
       >
-      <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          <CreateProject />
+        <div className="space-y-4">
+          <div className="flex items-center justify-end">
+            <CreateProject />
+          </div>
+          <ProjectsFilter />
         </div>
-        <ProjectsFilter />
-      </div>
 
-      <div className="mt-4">
-        <ProjectsList />
-      </div>
-    </ContentLayout>
+        <div className="mt-4">
+          <ProjectsList />
+        </div>
+      </ContentLayout>
     </>
   );
 };

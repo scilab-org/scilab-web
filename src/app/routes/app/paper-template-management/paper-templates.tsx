@@ -41,16 +41,16 @@ const PaperTemplatesRoute = () => {
         title="Paper Templates"
         description="Manage paper structure templates"
       >
-      <div className="flex justify-end">
-        <CreatePaperTemplate />
-      </div>
-      <div className="mt-4">
-        <PaperTemplatesFilter />
-      </div>
-      <div className="mt-4">
-        <PaperTemplatesList />
-      </div>
-    </ContentLayout>
+        <div className="flex justify-end">
+          <CreatePaperTemplate />
+        </div>
+        <div className="mt-4">
+          <PaperTemplatesFilter />
+        </div>
+        <div className="mt-4">
+          <PaperTemplatesList />
+        </div>
+      </ContentLayout>
     </>
   );
 };
