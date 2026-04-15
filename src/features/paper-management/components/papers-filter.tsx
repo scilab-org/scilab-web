@@ -227,185 +227,39 @@ export const PapersFilter = () => {
       </div>
 
       {/* Secondary filters - collapsible */}
-      {showMore && (
-        <div className="bg-background rounded-md p-4">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <MultiValueInput
-                values={authorList}
-                onAddValue={handleAddAuthor}
-                onRemoveValue={handleRemoveAuthor}
-                placeholder="Search by author..."
-                className="h-10 px-4 py-1"
-                inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans text-sm"
-              />
-            </div>
-            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
-              <input
-                value={filters.paperType}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, paperType: e.target.value }))
-                }
-                placeholder="Search by type..."
-                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-              />
-              {filters.paperType && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, paperType: '' }))
-                  }
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
-                  <input
-                    type={fromDateInputType}
-                    value={filters.fromDate}
-                    onFocus={() => setIsFromDateFocused(true)}
-                    onBlur={() => setIsFromDateFocused(false)}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        fromDate: e.target.value,
-                      }))
-                    }
-                    placeholder="From date..."
-                    className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-                  />
-                  {filters.fromDate && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, fromDate: '' }))
-                      }
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
-                  <input
-                    type={toDateInputType}
-                    value={filters.toDate}
-                    onFocus={() => setIsToDateFocused(true)}
-                    onBlur={() => setIsToDateFocused(false)}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        toDate: e.target.value,
-                      }))
-                    }
-                    placeholder="To date..."
-                    className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-                  />
-                  {filters.toDate && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, toDate: '' }))
-                      }
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  )}
-                </div>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
+        <div className="overflow-hidden">
+          <div className="bg-background rounded-md p-4">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <MultiValueInput
+                  values={authorList}
+                  onAddValue={handleAddAuthor}
+                  onRemoveValue={handleRemoveAuthor}
+                  placeholder="Search by author..."
+                  className="h-10 px-4 py-1"
+                  inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans text-sm"
+                />
               </div>
-            </div>
-            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
-              <input
-                value={filters.publisher}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, publisher: e.target.value }))
-                }
-                placeholder="Search by publisher..."
-                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-              />
-              {filters.publisher && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, publisher: '' }))
-                  }
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
-              <input
-                value={filters.journalName}
-                onChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    journalName: e.target.value,
-                  }))
-                }
-                placeholder="Search by journal..."
-                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-              />
-              {filters.journalName && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, journalName: '' }))
-                  }
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
-              <input
-                value={filters.conferenceName}
-                onChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    conferenceName: e.target.value,
-                  }))
-                }
-                placeholder="Search by conference..."
-                className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-              />
-              {filters.conferenceName && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, conferenceName: '' }))
-                  }
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div className="sm:col-span-2 lg:col-span-2">
               <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
                 <input
-                  value={filters.abstract}
+                  value={filters.paperType}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
-                      abstract: e.target.value,
+                      paperType: e.target.value,
                     }))
                   }
-                  placeholder="Search by abstract..."
+                  placeholder="Search by type..."
                   className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
                 />
-                {filters.abstract && (
+                {filters.paperType && (
                   <button
                     type="button"
                     onClick={() =>
-                      setFilters((prev) => ({ ...prev, abstract: '' }))
+                      setFilters((prev) => ({ ...prev, paperType: '' }))
                     }
                     className="text-muted-foreground hover:text-foreground"
                   >
@@ -413,35 +267,191 @@ export const PapersFilter = () => {
                   </button>
                 )}
               </div>
+              <div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                    <input
+                      type={fromDateInputType}
+                      value={filters.fromDate}
+                      onFocus={() => setIsFromDateFocused(true)}
+                      onBlur={() => setIsFromDateFocused(false)}
+                      onChange={(e) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          fromDate: e.target.value,
+                        }))
+                      }
+                      placeholder="From date..."
+                      className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                    />
+                    {filters.fromDate && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFilters((prev) => ({ ...prev, fromDate: '' }))
+                        }
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                    <input
+                      type={toDateInputType}
+                      value={filters.toDate}
+                      onFocus={() => setIsToDateFocused(true)}
+                      onBlur={() => setIsToDateFocused(false)}
+                      onChange={(e) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          toDate: e.target.value,
+                        }))
+                      }
+                      placeholder="To date..."
+                      className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                    />
+                    {filters.toDate && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFilters((prev) => ({ ...prev, toDate: '' }))
+                        }
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                <input
+                  value={filters.publisher}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      publisher: e.target.value,
+                    }))
+                  }
+                  placeholder="Search by publisher..."
+                  className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                />
+                {filters.publisher && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFilters((prev) => ({ ...prev, publisher: '' }))
+                    }
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                <input
+                  value={filters.journalName}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      journalName: e.target.value,
+                    }))
+                  }
+                  placeholder="Search by journal..."
+                  className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                />
+                {filters.journalName && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFilters((prev) => ({ ...prev, journalName: '' }))
+                    }
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                <input
+                  value={filters.conferenceName}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      conferenceName: e.target.value,
+                    }))
+                  }
+                  placeholder="Search by conference..."
+                  className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                />
+                {filters.conferenceName && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFilters((prev) => ({ ...prev, conferenceName: '' }))
+                    }
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+              <div className="sm:col-span-2 lg:col-span-2">
+                <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                  <input
+                    value={filters.abstract}
+                    onChange={(e) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        abstract: e.target.value,
+                      }))
+                    }
+                    placeholder="Search by abstract..."
+                    className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
+                  />
+                  {filters.abstract && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFilters((prev) => ({ ...prev, abstract: '' }))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <FilterDropdown
+                  value={filters.isDeleted}
+                  onChange={(v) =>
+                    setFilters((prev) => ({ ...prev, isDeleted: v }))
+                  }
+                  options={[
+                    { label: 'Active', value: 'false' },
+                    { label: 'Inactive', value: 'true' },
+                  ]}
+                  placeholder="Search by status..."
+                  variant="outline"
+                  className="focus:border-outline focus-visible:border-outline h-10 w-full justify-between px-4 font-sans focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
             </div>
-            <div>
-              <FilterDropdown
-                value={filters.isDeleted}
-                onChange={(v) =>
-                  setFilters((prev) => ({ ...prev, isDeleted: v }))
-                }
-                options={[
-                  { label: 'Active', value: 'false' },
-                  { label: 'Inactive', value: 'true' },
-                ]}
-                placeholder="Search by status..."
-                variant="outline"
-                className="focus:border-outline focus-visible:border-outline h-10 w-full justify-between px-4 font-sans focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-            </div>
-          </div>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="button"
-              onClick={handleClearAll}
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1 font-sans text-xs font-medium"
-            >
-              <X className="size-4" /> Clear all ({activeFilterCount})
-            </button>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="text-muted-foreground hover:text-foreground flex items-center gap-1 font-sans text-xs font-medium"
+              >
+                <X className="size-4" /> Clear all ({activeFilterCount})
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </form>
   );
 };

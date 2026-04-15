@@ -1,4 +1,6 @@
 import { useParams } from 'react-router';
+
+import { Head } from '@/components/seo';
 import { ProjectPaperDetailPage } from '@/features/project-management/components/papers/project-paper-detail-page';
 import { paths } from '@/config/paths';
 import { useMyProjectRole } from '@/features/project-management/api/projects/get-my-role';
@@ -17,20 +19,23 @@ const MyProjectPaperDetailRoute = () => {
   const isAuthor = roleQuery.data?.result === 'project:author';
 
   return (
-    <ProjectPaperDetailPage
-      projectId={projectId!}
-      paperId={paperId!}
-      isManager={isManager}
-      isAuthor={isAuthor}
-      backPath={paths.app.assignedProjects.detail.getHref(projectId!)}
-      combineEditorPath={(combineId: string) =>
-        paths.app.assignedProjects.paperCombineEditor.getHref(
-          projectId!,
-          paperId!,
-          combineId,
-        )
-      }
-    />
+    <>
+      <Head title="Paper Details" />
+      <ProjectPaperDetailPage
+        projectId={projectId!}
+        paperId={paperId!}
+        isManager={isManager}
+        isAuthor={isAuthor}
+        backPath={paths.app.assignedProjects.detail.getHref(projectId!)}
+        combineEditorPath={(combineId: string) =>
+          paths.app.assignedProjects.paperCombineEditor.getHref(
+            projectId!,
+            paperId!,
+            combineId,
+          )
+        }
+      />
+    </>
   );
 };
 

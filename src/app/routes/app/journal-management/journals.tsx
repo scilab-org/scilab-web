@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { getJournalsQueryOptions } from '@/features/journal-management/api/get-journals';
 import { CreateJournal } from '@/features/journal-management/components/create-journal';
 import { JournalsFilter } from '@/features/journal-management/components/journals-filter';
@@ -41,10 +42,12 @@ export const clientLoader =
 
 const JournalsRoute = () => {
   return (
-    <ContentLayout
-      title="Journals"
-      description="Manage and organize journal templates and writing styles"
-    >
+    <>
+      <Head title="Journals" />
+      <ContentLayout
+        title="Journals"
+        description="Manage and organize journal templates and writing styles"
+      >
       <div className="space-y-4">
         <div className="flex items-center justify-end">
           <CreateJournal />
@@ -56,6 +59,7 @@ const JournalsRoute = () => {
         <JournalsList />
       </div>
     </ContentLayout>
+    </>
   );
 };
 

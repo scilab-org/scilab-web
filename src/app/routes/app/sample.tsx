@@ -1,4 +1,5 @@
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { useUser } from '@/lib/auth';
 
 type EntryProps = {
@@ -21,10 +22,12 @@ const SampleRoute = () => {
   if (!user) return null;
 
   return (
-    <ContentLayout
-      title="Sample Page"
-      description="This is a sample page using the content layout"
-    >
+    <>
+      <Head title="Sample" />
+      <ContentLayout
+        title="Sample Page"
+        description="This is a sample page using the content layout"
+      >
       <div className="bg-card border-border overflow-hidden rounded-lg border shadow">
         <div className="border-border border-b px-4 py-5 sm:px-6">
           <div className="flex items-center justify-between">
@@ -46,6 +49,7 @@ const SampleRoute = () => {
         </div>
       </div>
     </ContentLayout>
+    </>
   );
 };
 

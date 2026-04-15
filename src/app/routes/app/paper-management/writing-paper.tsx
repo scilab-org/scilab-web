@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useWritingPaperDetail,
@@ -55,9 +56,12 @@ const WritingPaperRoute = () => {
   }
 
   return (
-    <ContentLayout title={paper.title || 'Paper Details'}>
-      <WritingPaperView paperId={paperId} />
-    </ContentLayout>
+    <>
+      <Head title="Paper Details" />
+      <ContentLayout title={paper.title || 'Paper Details'}>
+        <WritingPaperView paperId={paperId} />
+      </ContentLayout>
+    </>
   );
 };
 

@@ -7,6 +7,7 @@ import {
 import { useEffect } from 'react';
 import { QueryClient } from '@tanstack/react-query';
 
+import { Head } from '@/components/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useWritingPaperDetail,
@@ -119,21 +120,27 @@ const MyProjectPaperCombineEditorRoute = () => {
   }
 
   return (
-    <CombineEditor
-      paperId={paperId!}
-      combineId={combineId!}
-      projectId={projectId!}
-      subProjectId={subProjectId}
-      combine={combine}
-      paperTitle={paper.title || 'Paper'}
-      isAuthor={isAuthor}
-      initialEditMode={isEditMode}
-      onClose={() =>
-        navigate(
-          paths.app.assignedProjects.paperDetail.getHref(projectId!, paperId!),
-        )
-      }
-    />
+    <>
+      <Head title="Paper Editor" />
+      <CombineEditor
+        paperId={paperId!}
+        combineId={combineId!}
+        projectId={projectId!}
+        subProjectId={subProjectId}
+        combine={combine}
+        paperTitle={paper.title || 'Paper'}
+        isAuthor={isAuthor}
+        initialEditMode={isEditMode}
+        onClose={() =>
+          navigate(
+            paths.app.assignedProjects.paperDetail.getHref(
+              projectId!,
+              paperId!,
+            ),
+          )
+        }
+      />
+    </>
   );
 };
 

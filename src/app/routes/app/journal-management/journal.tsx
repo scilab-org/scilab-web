@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useJournal,
@@ -56,9 +57,12 @@ const JournalRoute = () => {
   }
 
   return (
-    <ContentLayout title={journal.name || 'Journal Details'}>
-      <ViewJournal journal={journal} projects={projects} />
-    </ContentLayout>
+    <>
+      <Head title="Journal Details" />
+      <ContentLayout title={journal.name || 'Journal Details'}>
+        <ViewJournal journal={journal} projects={projects} />
+      </ContentLayout>
+    </>
   );
 };
 

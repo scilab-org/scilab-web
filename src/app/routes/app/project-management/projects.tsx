@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { getProjectsQueryOptions } from '@/features/project-management/api/projects/get-projects';
 import { CreateProject } from '@/features/project-management/components/projects/create-project';
 import { ProjectsList } from '@/features/project-management/components/projects/projects-list';
@@ -38,10 +39,12 @@ export const clientLoader =
 
 const ProjectsRoute = () => {
   return (
-    <ContentLayout
-      title="Research Projects"
-      description="Manage and track your scientific research projects"
-    >
+    <>
+      <Head title="Research Projects" />
+      <ContentLayout
+        title="Research Projects"
+        description="Manage and track your scientific research projects"
+      >
       <div className="space-y-4">
         <div className="flex items-center justify-end">
           <CreateProject />
@@ -53,6 +56,7 @@ const ProjectsRoute = () => {
         <ProjectsList />
       </div>
     </ContentLayout>
+    </>
   );
 };
 

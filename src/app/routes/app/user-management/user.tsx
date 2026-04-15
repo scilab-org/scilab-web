@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useUserDetail,
@@ -57,15 +58,18 @@ const UserRoute = () => {
   }
   console.log(user);
   return (
-    <ContentLayout
-      title={`${capitalize(user.firstName)} ${capitalize(user.lastName)} ${
-        user.groups?.some((g) => g.name === GROUPS.SYSTEM_ADMIN)
-          ? '(Admin)'
-          : '(User)'
-      }`}
-    >
-      <UserView userId={userId} />
-    </ContentLayout>
+    <>
+      <Head title="User Details" />
+      <ContentLayout
+        title={`${capitalize(user.firstName)} ${capitalize(user.lastName)} ${
+          user.groups?.some((g) => g.name === GROUPS.SYSTEM_ADMIN)
+            ? '(Admin)'
+            : '(User)'
+        }`}
+      >
+        <UserView userId={userId} />
+      </ContentLayout>
+    </>
   );
 };
 

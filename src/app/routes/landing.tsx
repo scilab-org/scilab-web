@@ -1,3 +1,4 @@
+import { Head } from '@/components/seo';
 import { FeaturesSection } from '@/features/landing/components/features-section';
 import { HeroSection } from '@/features/landing/components/hero-section';
 import { LandingFooter } from '@/features/landing/components/landing-footer';
@@ -7,7 +8,9 @@ import { QuoteSection } from '@/features/landing/components/quote-section';
 
 const LandingRoute = () => {
   return (
-    <div className="bg-background text-foreground min-h-screen">
+    <>
+      <Head description="HyperDataLab — scientific research collaboration platform" />
+      <div className="bg-background text-foreground min-h-screen">
       <LandingNav />
       <main>
         <HeroSection />
@@ -17,6 +20,7 @@ const LandingRoute = () => {
       </main>
       <LandingFooter />
     </div>
+    </>
   );
 };
 

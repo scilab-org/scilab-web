@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getGroupRolesQueryOptions } from '@/features/group-role-management/api/get-group-roles';
 import {
@@ -50,12 +51,15 @@ const GroupRoute = () => {
   const group = groupsQuery.data?.result?.find((g) => g.id === groupId);
 
   return (
-    <ContentLayout
-      title={group ? `Group: ${group.name}` : 'Group Details'}
-      description="Manage role assignments for this group"
-    >
-      <GroupRolesView groupId={groupId} />
-    </ContentLayout>
+    <>
+      <Head title="Group Details" />
+      <ContentLayout
+        title={group ? `Group: ${group.name}` : 'Group Details'}
+        description="Manage role assignments for this group"
+      >
+        <GroupRolesView groupId={groupId} />
+      </ContentLayout>
+    </>
   );
 };
 

@@ -227,17 +227,6 @@ export const LoginPage = () => {
         <p className="text-muted-foreground font-mono text-[8px] tracking-[0.18em] uppercase">
           © {new Date().getFullYear()} HyperDataLab
         </p>
-        <nav className="flex items-center gap-5">
-          {['Privacy', 'Terms', 'Security'].map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="text-muted-foreground/60 hover:text-muted-foreground font-mono text-[8px] tracking-[0.15em] uppercase transition-colors"
-            >
-              {item}
-            </button>
-          ))}
-        </nav>
       </footer>
     </div>
   );

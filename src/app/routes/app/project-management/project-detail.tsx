@@ -20,6 +20,7 @@ import { UpdateProject } from '@/features/project-management/components/projects
 import { getUserGroups } from '@/lib/auth';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -279,6 +280,8 @@ const ProjectDetailRoute = () => {
   const borderClass = BORDER_CLASS[project.status] ?? BORDER_CLASS[1];
 
   return (
+    <>
+      <Head title="Project Details" />
     <div className="min-h-[101vh]">
       <ContentLayout title="" description="">
         <div className="space-y-5">
@@ -484,6 +487,7 @@ const ProjectDetailRoute = () => {
         </AlertDialog>
       </ContentLayout>
     </div>
+    </>
   );
 };
 

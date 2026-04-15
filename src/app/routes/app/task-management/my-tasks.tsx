@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 
 import { Button } from '@/components/ui/button';
 import { CreateButton } from '@/components/ui/create-button';
@@ -442,10 +443,12 @@ const MyTasksRoute = () => {
   };
 
   return (
-    <ContentLayout
-      title="My Task"
-      description="Track, filter and manage your paper tasks"
-    >
+    <>
+      <Head title="My Tasks" />
+      <ContentLayout
+        title="My Task"
+        description="Track, filter and manage your paper tasks"
+      >
       <div className="mb-4 flex items-center justify-end">
         <CreateButton
           className="uppercase"
@@ -1203,6 +1206,7 @@ const MyTasksRoute = () => {
         </AlertDialogContent>
       </AlertDialog>
     </ContentLayout>
+    </>
   );
 };
 
