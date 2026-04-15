@@ -190,7 +190,7 @@ export const ProjectWritingPapersList = ({
                   <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
                     Members
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[15%] text-right text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[15%] text-center text-xs font-medium tracking-wider uppercase">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -242,8 +242,8 @@ export const ProjectWritingPapersList = ({
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
                         {isAuthor && !readOnly && (
                           <Button
                             variant="outline"

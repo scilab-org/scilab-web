@@ -657,7 +657,7 @@ export const CreatePaperInProject = ({
                   Loading sections...
                 </div>
               ) : sections.length > 0 ? (
-                <div className="rounded-xl border shadow-sm">
+                <div className="min-h-[400px] rounded-xl border shadow-sm">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -701,7 +701,7 @@ export const CreatePaperInProject = ({
                                 />
                               </TableCell>
                               <TableCell className="py-2">
-                                <div className="flex items-center justify-end gap-0.5">
+                                <div className="flex items-center justify-center gap-0.5">
                                   {mainSection.allowSubsections !== false && (
                                     <Button
                                       type="button"
@@ -796,7 +796,7 @@ export const CreatePaperInProject = ({
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="flex justify-end">
+                                  <div className="flex justify-center">
                                     <Button
                                       type="button"
                                       variant="ghost"

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
 
@@ -39,6 +39,7 @@ export const useProjectPapers = ({
   return useQuery({
     queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.PROJECT_PAPERS, projectId, params],
     queryFn: () => getProjectPapers(projectId, params),
+    placeholderData: keepPreviousData,
     ...queryConfig,
   });
 };

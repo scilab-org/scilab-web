@@ -80,7 +80,7 @@ export const JournalsList = () => {
               <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
                 Last Modified
               </TableHead>
-              <TableHead className="text-muted-foreground w-[15%] text-right text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[15%] text-center text-xs font-medium tracking-wider uppercase">
                 Actions
               </TableHead>
             </TableRow>
@@ -108,8 +108,8 @@ export const JournalsList = () => {
                     ? new Date(journal.lastModifiedOnUtc).toLocaleDateString()
                     : 'N/A'}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-2">
                     <Link
                       to={paths.app.journalManagement.journal.getHref(
                         journal.id,

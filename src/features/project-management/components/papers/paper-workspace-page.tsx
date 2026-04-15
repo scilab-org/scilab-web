@@ -257,7 +257,7 @@ const SectionMembersSheet = ({
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border shadow-sm">
+                <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
@@ -268,7 +268,7 @@ const SectionMembersSheet = ({
                           Role
                         </TableHead>
                         {isAuthor && (
-                          <TableHead className="w-28 text-right font-semibold text-green-900 dark:text-green-200">
+                          <TableHead className="w-28 text-center font-semibold text-green-900 dark:text-green-200">
                             Actions
                           </TableHead>
                         )}
@@ -324,7 +324,7 @@ const SectionMembersSheet = ({
                               </span>
                             </TableCell>
                             {isAuthor && (
-                              <TableCell className="text-right">
+                              <TableCell className="text-center">
                                 {!isProjectRole && (
                                   <Button
                                     size="sm"

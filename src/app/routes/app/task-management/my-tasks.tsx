@@ -1,36 +1,25 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Calendar,
-  Plus,
-  Search,
-  Trash2,
-  X,
-  ChevronDown,
-  Check,
-} from 'lucide-react';
+import { Calendar, Trash2, X } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { ContentLayout } from '@/components/layouts';
 
 import { Button } from '@/components/ui/button';
+import { CreateButton } from '@/components/ui/create-button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
@@ -114,50 +103,38 @@ const KANBAN_COLUMNS = [
   {
     status: 1,
     label: 'To Do',
-    dot: 'bg-slate-400',
-    headerCls:
-      'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/60',
-    bodyCls:
-      'border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/20',
-    countCls:
-      'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
-    labelCls: 'text-slate-700 dark:text-slate-300',
+    dot: 'bg-slate-500',
+    headerCls: 'bg-slate-100 border-slate-200',
+    bodyCls: 'bg-slate-50 border-slate-200',
+    countCls: 'bg-slate-200 text-slate-700',
+    labelCls: 'text-slate-700 font-semibold',
   },
   {
     status: 2,
     label: 'In Progress',
     dot: 'bg-blue-500',
-    headerCls:
-      'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30',
-    bodyCls:
-      'border-blue-200 bg-blue-50/40 dark:border-blue-800 dark:bg-blue-900/10',
-    countCls:
-      'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    labelCls: 'text-blue-700 dark:text-blue-300',
+    headerCls: 'bg-blue-50 border-blue-200',
+    bodyCls: 'bg-blue-50/50 border-blue-200',
+    countCls: 'bg-blue-200 text-blue-700',
+    labelCls: 'text-blue-700 font-semibold',
   },
   {
     status: 3,
     label: 'In Review',
     dot: 'bg-amber-500',
-    headerCls:
-      'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30',
-    bodyCls:
-      'border-amber-200 bg-amber-50/40 dark:border-amber-800 dark:bg-amber-900/10',
-    countCls:
-      'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    labelCls: 'text-amber-700 dark:text-amber-300',
+    headerCls: 'bg-amber-50 border-amber-200',
+    bodyCls: 'bg-amber-50/50 border-amber-200',
+    countCls: 'bg-amber-200 text-amber-800',
+    labelCls: 'text-amber-800 font-semibold',
   },
   {
     status: 4,
     label: 'Completed',
     dot: 'bg-green-500',
-    headerCls:
-      'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/30',
-    bodyCls:
-      'border-green-200 bg-green-50/40 dark:border-green-800 dark:bg-green-900/10',
-    countCls:
-      'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-    labelCls: 'text-green-700 dark:text-green-300',
+    headerCls: 'bg-green-50 border-green-200',
+    bodyCls: 'bg-green-50/50 border-green-200',
+    countCls: 'bg-green-200 text-green-800',
+    labelCls: 'text-green-800 font-semibold',
   },
 ];
 
@@ -195,8 +172,6 @@ const MyTasksRoute = () => {
   const [updateForm, setUpdateForm] = useState<TaskFormState>(
     createInitialTaskForm,
   );
-  const [paperFilterSearch, setPaperFilterSearch] = useState('');
-  const [paperFilterOpen, setPaperFilterOpen] = useState(false);
   // Drag-and-drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<number | null>(null);
@@ -234,20 +209,14 @@ const MyTasksRoute = () => {
     [assignedPapersQuery.data?.result?.items],
   );
   const isDateFieldSelected = Boolean(localFilters.DateField);
-  const selectedPaperLabel = useMemo(() => {
-    if (!localFilters.PaperId) return 'All Papers';
-    return (
-      assignedPapers.find((paper) => paper.id === localFilters.PaperId)
-        ?.title || 'All Papers'
-    );
-  }, [assignedPapers, localFilters.PaperId]);
-  const filteredPaperOptions = useMemo(() => {
-    const keyword = paperFilterSearch.trim().toLowerCase();
-    if (!keyword) return assignedPapers;
-    return assignedPapers.filter((paper) =>
-      paper.title.toLowerCase().includes(keyword),
-    );
-  }, [assignedPapers, paperFilterSearch]);
+  const paperFilterOptions = useMemo(
+    () =>
+      assignedPapers.map((paper) => ({
+        label: paper.title,
+        value: paper.id,
+      })),
+    [assignedPapers],
+  );
 
   const queryParams: GetMyTasksParams = {
     PageNumber: 1,
@@ -272,7 +241,18 @@ const MyTasksRoute = () => {
         setIsCreateOpen(false);
         setCreateForm(createInitialTaskForm());
       },
-      onError: () => toast.error('Failed to create task'),
+      onError: (error: any) => {
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.detail ||
+          error?.response?.data?.code ||
+          '';
+        if (errorMessage.includes('PAPER_CONTRIBUTOR_NOT_FOUND')) {
+          toast.error('You have not been assigned to this section yet.');
+        } else {
+          toast.error('Failed to create task');
+        }
+      },
     },
   });
 
@@ -467,163 +447,89 @@ const MyTasksRoute = () => {
       description="Track, filter and manage your paper tasks"
     >
       <div className="mb-4 flex items-center justify-end">
-        <Button className={BTN.CREATE} onClick={() => setIsCreateOpen(true)}>
-          <Plus className="size-4" />
-          Create Task
-        </Button>
+        <CreateButton
+          className="uppercase"
+          onClick={() => setIsCreateOpen(true)}
+        >
+          CREATE TASK
+        </CreateButton>
       </div>
 
       <form
         onSubmit={applyFilters}
-        className="bg-muted/40 mb-6 rounded-xl border p-6"
+        className="mb-6 flex flex-wrap items-end gap-2 rounded-md border bg-[#E9E1D8] p-2"
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12">
-          <div className="space-y-1.5 xl:col-span-4">
-            <p className="text-muted-foreground text-xs font-medium">
-              Paper Name
-            </p>
-            <Popover open={paperFilterOpen} onOpenChange={setPaperFilterOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9 w-full justify-between px-3 py-1 text-sm font-normal"
-                >
-                  <span className="truncate">{selectedPaperLabel}</span>
-                  <ChevronDown className="size-4 opacity-60" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                className="w-(--radix-popover-trigger-width) p-2"
-              >
-                <Input
-                  placeholder="Type to filter paper..."
-                  value={paperFilterSearch}
-                  onChange={(e) => setPaperFilterSearch(e.target.value)}
-                  className="mb-2 h-8"
-                />
-                <div className="max-h-56 overflow-y-auto">
-                  <button
-                    type="button"
-                    className={`hover:bg-accent flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${localFilters.PaperId === '' ? 'bg-accent' : ''}`}
-                    onClick={() => {
-                      handleFilterChange('PaperId', '');
-                      setPaperFilterOpen(false);
-                    }}
-                  >
-                    <span>All Papers</span>
-                    {localFilters.PaperId === '' && (
-                      <Check className="size-4" />
-                    )}
-                  </button>
-                  {filteredPaperOptions.length > 0 ? (
-                    filteredPaperOptions.map((paper) => (
-                      <button
-                        key={paper.id}
-                        type="button"
-                        className={`hover:bg-accent flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm ${localFilters.PaperId === paper.id ? 'bg-accent' : ''}`}
-                        onClick={() => {
-                          handleFilterChange('PaperId', paper.id);
-                          setPaperFilterOpen(false);
-                        }}
-                      >
-                        <span className="truncate">{paper.title}</span>
-                        {localFilters.PaperId === paper.id && (
-                          <Check className="size-4 shrink-0" />
-                        )}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground px-2 py-1.5 text-sm">
-                      No papers found
-                    </p>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="space-y-1.5 xl:col-span-2">
-            <p className="text-muted-foreground text-xs font-medium">Status</p>
-            <select
-              className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              value={localFilters.Status}
-              onChange={(e) => handleFilterChange('Status', e.target.value)}
-            >
-              <option value="">All Status</option>
-              {TASK_STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={String(s.value)}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5 xl:col-span-2">
-            <p className="text-muted-foreground text-xs font-medium">
-              Date Field
-            </p>
-            <select
-              className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              value={localFilters.DateField}
-              onChange={(e) => handleFilterChange('DateField', e.target.value)}
-            >
-              <option value="">Select Date Field</option>
-              {DATE_TASK_FILTER_OPTIONS.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5 xl:col-span-2">
-            <p className="text-muted-foreground text-xs font-medium">
-              From Date
-            </p>
-            <Input
-              type="date"
-              value={localFilters.FromDate}
-              disabled={!isDateFieldSelected}
-              onChange={(e) => handleFilterChange('FromDate', e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5 xl:col-span-2">
-            <p className="text-muted-foreground text-xs font-medium">To Date</p>
-            <Input
-              type="date"
-              value={localFilters.ToDate}
-              disabled={!isDateFieldSelected}
-              onChange={(e) => handleFilterChange('ToDate', e.target.value)}
-            />
-          </div>
+        <div className="bg-background h-10 min-w-[220px] flex-1 rounded-md">
+          <FilterDropdown
+            value={localFilters.PaperId}
+            onChange={(value) => handleFilterChange('PaperId', value)}
+            options={paperFilterOptions}
+            placeholder="All Papers"
+            variant="outline"
+            className="h-10 w-full justify-between px-4 font-sans"
+          />
         </div>
+        <div className="bg-background h-10 w-48 rounded-md">
+          <FilterDropdown
+            value={localFilters.Status}
+            onChange={(value) => handleFilterChange('Status', value)}
+            options={TASK_STATUS_OPTIONS.map((s) => ({
+              label: s.label,
+              value: String(s.value),
+            }))}
+            placeholder="All status"
+            variant="outline"
+            className="h-10 w-full justify-between px-4 font-sans"
+          />
+        </div>
+        <div className="bg-background h-10 w-52 rounded-md">
+          <FilterDropdown
+            value={localFilters.DateField}
+            onChange={(value) => handleFilterChange('DateField', value)}
+            options={DATE_TASK_FILTER_OPTIONS.map((f) => ({
+              label: f.label,
+              value: f.value,
+            }))}
+            placeholder="Select Date Field"
+            variant="outline"
+            className="h-10 w-full justify-between px-4 font-sans"
+          />
+        </div>
+        <Input
+          type="date"
+          value={localFilters.FromDate}
+          disabled={!isDateFieldSelected}
+          onChange={(e) => handleFilterChange('FromDate', e.target.value)}
+          className="bg-background h-10 w-[170px]"
+        />
+        <Input
+          type="date"
+          value={localFilters.ToDate}
+          disabled={!isDateFieldSelected}
+          onChange={(e) => handleFilterChange('ToDate', e.target.value)}
+          className="bg-background h-10 w-[170px]"
+        />
 
-        <div className="mt-4 flex items-center justify-end gap-2">
-          {activeFilterCount > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="text-muted-foreground hover:text-foreground mr-auto"
-            >
-              <X className="size-4" />
-              Clear ({activeFilterCount})
-            </Button>
-          )}
+        {activeFilterCount > 0 && (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={clearFilters}
-            className={BTN.CANCEL}
+            className="text-muted-foreground hover:text-foreground h-10 px-3"
           >
-            Reset
+            <X className="size-4" />
+            Clear ({activeFilterCount})
           </Button>
-          <Button type="submit" size="sm" className={BTN.EDIT}>
-            <Search className="size-4" />
-            Search
-          </Button>
-        </div>
+        )}
+
+        <Button
+          type="submit"
+          variant="outline"
+          className="border-input h-10 px-6 font-sans text-sm font-medium"
+        >
+          Search
+        </Button>
       </form>
 
       {/* ── Kanban Board ───────────────────────────────────────── */}
@@ -679,8 +585,7 @@ const MyTasksRoute = () => {
                   className={cn(
                     'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
                     col.bodyCls,
-                    isDragTarget &&
-                      'ring-2 ring-blue-400 ring-inset dark:ring-blue-500',
+                    isDragTarget && 'ring-primary/40 ring-2 ring-inset',
                   )}
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -705,7 +610,7 @@ const MyTasksRoute = () => {
                       className={cn(
                         'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
                         isDragTarget
-                          ? 'border-blue-400 bg-blue-50/60 dark:border-blue-600 dark:bg-blue-900/20'
+                          ? 'border-primary/40 bg-primary/5'
                           : 'border-transparent',
                       )}
                     >
@@ -744,13 +649,12 @@ const MyTasksRoute = () => {
                           tabIndex={0}
                           className={cn(
                             'group bg-card relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
-                            isPending &&
-                              'ring-1 ring-blue-400 dark:ring-blue-500',
+                            isPending && 'ring-primary/40 ring-1',
                           )}
                         >
                           {/* Pending indicator */}
                           {isPending && (
-                            <span className="absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full bg-blue-400" />
+                            <span className="bg-primary absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
                           )}
 
                           {/* Name + delete action */}
@@ -840,192 +744,195 @@ const MyTasksRoute = () => {
         </div>
       )}
 
-      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="overflow-y-auto sm:max-w-sm">
-          <SheetHeader>
-            <SheetTitle>Create New Task</SheetTitle>
-            <SheetDescription>
+      <Dialog
+        open={isCreateOpen}
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) setCreateForm(createInitialTaskForm());
+        }}
+      >
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+            <DialogDescription>
               Fill in the details to create a new task. Fields marked with * are
               required.
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form
             id="create-task-form"
             onSubmit={handleCreate}
-            className="flex flex-col gap-4 px-4"
+            className="scrollbar-dialog grid flex-1 gap-4 overflow-y-auto px-4 py-2 sm:grid-cols-2"
           >
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-paper-id"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Paper Name *
-                </label>
-                <select
-                  id="create-paper-id"
-                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  value={createForm.paperId}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      paperId: e.target.value,
-                    }))
-                  }
-                >
-                  <option value="">Select paper</option>
-                  {assignedPapers.map((paper) => (
-                    <option key={paper.id} value={paper.id}>
-                      {paper.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label
+                htmlFor="create-paper-id"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Paper Name *
+              </label>
+              <select
+                id="create-paper-id"
+                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                value={createForm.paperId}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    paperId: e.target.value,
+                  }))
+                }
+              >
+                <option value="">Select paper</option>
+                {assignedPapers.map((paper) => (
+                  <option key={paper.id} value={paper.id}>
+                    {paper.title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-assignee"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Assigned To
-                </label>
-                <Input
-                  id="create-assignee"
-                  placeholder="Assigned to (You)"
-                  value={createForm.assignedToUserName}
-                  readOnly
-                  className="bg-muted text-muted-foreground cursor-not-allowed"
-                />
-              </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="create-assignee"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Assigned To
+              </label>
+              <Input
+                id="create-assignee"
+                placeholder="Assigned to (You)"
+                value={createForm.assignedToUserName}
+                readOnly
+                className="bg-muted text-muted-foreground cursor-not-allowed"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-name"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Task Name *
-                </label>
-                <Input
-                  id="create-name"
-                  placeholder="Enter task name"
-                  value={createForm.name}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                />
-              </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label
+                htmlFor="create-name"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Task Name *
+              </label>
+              <Input
+                id="create-name"
+                placeholder="Enter task name"
+                value={createForm.name}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-desc"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="create-desc"
-                  className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  placeholder="Enter task description"
-                  value={createForm.description}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label
+                htmlFor="create-desc"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Description
+              </label>
+              <textarea
+                id="create-desc"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                placeholder="Enter task description"
+                value={createForm.description}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-status"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Status
-                </label>
-                <select
-                  id="create-status"
-                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  value={createForm.status}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      status: e.target.value,
-                    }))
-                  }
-                >
-                  {TASK_STATUS_OPTIONS.map((s) => (
-                    <option key={s.value} value={String(s.value)}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="create-status"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Status
+              </label>
+              <select
+                id="create-status"
+                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                value={createForm.status}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    status: e.target.value,
+                  }))
+                }
+              >
+                {TASK_STATUS_OPTIONS.map((s) => (
+                  <option key={s.value} value={String(s.value)}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="create-start"
-                    className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Start Date
-                  </label>
-                  <Input
-                    id="create-start"
-                    type="datetime-local"
-                    value={createForm.startDate}
-                    onChange={(e) =>
-                      setCreateForm((prev) => ({
-                        ...prev,
-                        startDate: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="create-review"
-                    className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Next Review
-                  </label>
-                  <Input
-                    id="create-review"
-                    type="datetime-local"
-                    value={createForm.nextReviewDate}
-                    onChange={(e) =>
-                      setCreateForm((prev) => ({
-                        ...prev,
-                        nextReviewDate: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="create-start"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Start Date
+              </label>
+              <Input
+                id="create-start"
+                type="datetime-local"
+                value={createForm.startDate}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    startDate: e.target.value,
+                  }))
+                }
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-complete"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Complete Date
-                </label>
-                <Input
-                  id="create-complete"
-                  type="datetime-local"
-                  value={createForm.completeDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      completeDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="create-review"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Next Review
+              </label>
+              <Input
+                id="create-review"
+                type="datetime-local"
+                value={createForm.nextReviewDate}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    nextReviewDate: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <label
+                htmlFor="create-complete"
+                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Complete Date
+              </label>
+              <Input
+                id="create-complete"
+                type="datetime-local"
+                value={createForm.completeDate}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    completeDate: e.target.value,
+                  }))
+                }
+              />
             </div>
           </form>
-          <SheetFooter className="gap-2">
-            <SheetClose asChild>
+          <DialogFooter className="gap-2 px-4 pb-2">
+            <DialogClose asChild>
               <Button
                 type="button"
                 variant="outline"
@@ -1034,34 +941,34 @@ const MyTasksRoute = () => {
               >
                 Cancel
               </Button>
-            </SheetClose>
+            </DialogClose>
             <Button
               type="submit"
               form="create-task-form"
               className={`min-w-25 ${BTN.CREATE}`}
               disabled={createTaskMutation.isPending}
             >
-              {createTaskMutation.isPending ? 'Creating...' : 'Create'}
+              {createTaskMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <Sheet
+      <Dialog
         open={!!editingTask}
         onOpenChange={(open) => !open && setEditingTask(null)}
       >
-        <SheetContent className="overflow-y-auto sm:max-w-sm">
-          <SheetHeader>
-            <SheetTitle>Edit Task</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>
               Update task details and schedule.
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <form
             id="edit-task-form"
             onSubmit={handleUpdate}
-            className="flex flex-col gap-4 px-4"
+            className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-2"
           >
             {(() => {
               const isOwnedTask =
@@ -1235,8 +1142,8 @@ const MyTasksRoute = () => {
               );
             })()}
           </form>
-          <SheetFooter className="gap-2">
-            <SheetClose asChild>
+          <DialogFooter className="gap-2 px-4 pb-2">
+            <DialogClose asChild>
               <Button
                 type="button"
                 variant="outline"
@@ -1245,7 +1152,7 @@ const MyTasksRoute = () => {
               >
                 Cancel
               </Button>
-            </SheetClose>
+            </DialogClose>
             <Button
               type="submit"
               form="edit-task-form"
@@ -1254,9 +1161,9 @@ const MyTasksRoute = () => {
             >
               {updateTaskMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={!!deletingTask}

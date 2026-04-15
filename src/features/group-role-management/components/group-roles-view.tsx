@@ -56,7 +56,7 @@ export const GroupRolesView = ({ groupId }: { groupId: string }) => {
               No roles assigned to this group.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border shadow-sm">
+            <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
@@ -69,7 +69,7 @@ export const GroupRolesView = ({ groupId }: { groupId: string }) => {
                     <TableHead className="font-semibold text-green-900 dark:text-green-200">
                       Type
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-green-900 dark:text-green-200">
+                    <TableHead className="text-center font-semibold text-green-900 dark:text-green-200">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -99,7 +99,7 @@ export const GroupRolesView = ({ groupId }: { groupId: string }) => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         <RemoveRolesFromGroup
                           groupId={groupId}
                           roleNames={[role.name!]}

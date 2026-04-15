@@ -140,7 +140,7 @@ export const ProjectsList = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
+    <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader className="[&_tr]:bg-surface-container-low [&_tr]:hover:bg-surface-container-low">
           <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
@@ -149,7 +149,7 @@ export const ProjectsList = () => {
             <TableHead className="text-muted-foreground">Status</TableHead>
             <TableHead className="text-muted-foreground">Start Date</TableHead>
             <TableHead className="text-muted-foreground">End Date</TableHead>
-            <TableHead className="text-muted-foreground text-right">
+            <TableHead className="text-muted-foreground text-center">
               Actions
             </TableHead>
           </TableRow>
@@ -186,8 +186,8 @@ export const ProjectsList = () => {
                 <TableCell>
                   {project.endDate ? formatDate(project.endDate) : '—'}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                <TableCell className="text-center">
+                  <div className="flex justify-center gap-2">
                     <Link
                       to={paths.app.projectDetail.getHref(project.id)}
                       onMouseEnter={() => {

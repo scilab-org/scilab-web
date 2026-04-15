@@ -1,10 +1,12 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { Search, FolderOpen } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Search, X, FolderOpen } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -21,6 +23,7 @@ import {
   getMyProjectsQueryOptions,
   useMyProjects,
 } from '@/features/project-management/api/projects/get-my-projects';
+import { PROJECT_STATUS_OPTIONS } from '@/features/project-management/constants';
 import { Project } from '@/features/project-management/types';
 
 export const clientLoader =
@@ -29,12 +32,14 @@ export const clientLoader =
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') || 1);
     const name = url.searchParams.get('name') || undefined;
+    const code = url.searchParams.get('code') || undefined;
     const status = url.searchParams.get('status') || undefined;
 
     const query = getMyProjectsQueryOptions({
       PageNumber: page,
       PageSize: 10,
       Name: name,
+      Code: code,
       Status: status,
     });
 
@@ -49,47 +54,31 @@ export const clientLoader =
   };
 
 type StatusConfig = {
-  label: string;
-  badgeClass: string;
-  borderClass: string;
-  iconBg: string;
+  text: string;
+  variant: 'draft' | 'active' | 'completed' | 'archived' | 'outline';
 };
 
 const STATUS_MAP: Record<number, StatusConfig> = {
   1: {
-    label: 'Draft',
-    badgeClass:
-      'border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300',
-    borderClass: 'border-l-gray-400',
-    iconBg: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+    text: 'Draft',
+    variant: 'draft',
   },
   2: {
-    label: 'Active',
-    badgeClass:
-      'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-    borderClass: 'border-l-blue-500',
-    iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
+    text: 'Active',
+    variant: 'active',
   },
   3: {
-    label: 'Completed',
-    badgeClass:
-      'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300',
-    borderClass: 'border-l-green-500',
-    iconBg:
-      'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300',
+    text: 'Completed',
+    variant: 'completed',
   },
   4: {
-    label: 'Archived',
-    badgeClass:
-      'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-    borderClass: 'border-l-amber-500',
-    iconBg:
-      'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300',
+    text: 'Archived',
+    variant: 'archived',
   },
 };
 
 const getStatusConfig = (status: number): StatusConfig =>
-  STATUS_MAP[status] ?? STATUS_MAP[1];
+  STATUS_MAP[status] ?? { text: 'Unknown', variant: 'outline' };
 
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('en-US', {
@@ -98,50 +87,45 @@ const formatDate = (dateString: string) =>
     day: 'numeric',
   });
 
-const STATUS_FILTERS = [
-  { label: 'All', value: '' },
-  { label: 'Draft', value: '1' },
-  { label: 'Active', value: '2' },
-  { label: 'Completed', value: '3' },
-  { label: 'Archived', value: '4' },
-];
-
 const MyProjectsRoute = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const page = Number(searchParams.get('page') || 1);
   const name = searchParams.get('name') || '';
+  const code = searchParams.get('code') || '';
   const status = searchParams.get('status') || '';
 
-  const [searchText, setSearchText] = useState(name);
+  const [filters, setFilters] = useState({
+    name,
+    code,
+    status,
+  });
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        if (searchText) {
-          next.set('name', searchText);
-        } else {
-          next.delete('name');
-        }
-        next.set('page', '1');
-        return next;
-      });
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [searchText, setSearchParams]);
+  const handleApply = (e: FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (filters.name) params.set('name', filters.name);
+    if (filters.code) params.set('code', filters.code);
+    if (filters.status) params.set('status', filters.status);
+    params.set('page', '1');
+    setSearchParams(params);
+  };
 
-  const setStatus = (val: string) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (val) {
-        next.set('status', val);
-      } else {
-        next.delete('status');
-      }
-      next.set('page', '1');
-      return next;
-    });
+  const handleClearName = () => {
+    setFilters((prev) => ({ ...prev, name: '' }));
+    const params = new URLSearchParams(searchParams);
+    params.delete('name');
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleClearCode = () => {
+    setFilters((prev) => ({ ...prev, code: '' }));
+    const params = new URLSearchParams(searchParams);
+    params.delete('code');
+    params.set('page', '1');
+    setSearchParams(params);
   };
 
   const projectsQuery = useMyProjects({
@@ -149,55 +133,90 @@ const MyProjectsRoute = () => {
       PageNumber: page,
       PageSize: 10,
       Name: name || undefined,
+      Code: code || undefined,
       Status: status || undefined,
     },
   });
 
   const projects: Project[] = (projectsQuery.data as any)?.result?.items ?? [];
   const paging = (projectsQuery.data as any)?.result?.paging;
-  const hasFilters = !!(name || status);
+  const hasFilters = !!(name || code || status);
 
   return (
     <ContentLayout
       title="Assigned Projects"
       description="Research projects you are a contributor to"
     >
-      {/* Toolbar */}
-      <div className="mb-6 space-y-3">
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+      <form
+        onSubmit={handleApply}
+        className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
+      >
+        <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+          <Search className="text-muted-foreground size-4" />
           <Input
+            className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
             placeholder="Search by project name..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.preventDefault();
-            }}
-            className="pl-10"
+            value={filters.name}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, name: e.target.value }))
+            }
+          />
+          {filters.name && (
+            <button
+              type="button"
+              onClick={handleClearName}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+          <Search className="text-muted-foreground size-4" />
+          <Input
+            className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
+            placeholder="Search by code..."
+            value={filters.code}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, code: e.target.value }))
+            }
+          />
+          {filters.code && (
+            <button
+              type="button"
+              onClick={handleClearCode}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="bg-background h-10 w-48 rounded-md">
+          <FilterDropdown
+            value={filters.status}
+            onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
+            options={PROJECT_STATUS_OPTIONS.map((opt) => ({
+              label: opt.label,
+              value: String(opt.value),
+            }))}
+            placeholder="All status"
+            className="h-10 w-full justify-between px-4 font-sans"
           />
         </div>
 
-        {/* Status filter pills */}
-        <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatus(f.value)}
-              className={`rounded-full border px-3.5 py-1 text-xs font-semibold transition-all ${
-                status === f.value
-                  ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                  : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+        <Button
+          type="submit"
+          variant="outline"
+          className="border-input h-10 px-6 font-sans text-sm font-medium"
+        >
+          Search
+        </Button>
+      </form>
 
       {/* Table */}
-      <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
+      <div className="mt-4 overflow-x-auto rounded-xl border shadow-sm">
         {projectsQuery.isLoading ? (
           <div className="space-y-2 p-6">
             <Skeleton className="h-10 w-full" />
@@ -209,53 +228,70 @@ const MyProjectsRoute = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="font-semibold">Code</TableHead>
-                    <TableHead className="font-semibold">Name</TableHead>
-                    <TableHead className="font-semibold">Description</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Start</TableHead>
-                    <TableHead className="font-semibold">End</TableHead>
+                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+                    <TableHead className="text-muted-foreground w-35">
+                      Code
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Name
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Start Date
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      End Date
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-right">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projects.map((project, index) => {
+                  {projects.map((project) => {
                     const cfg = getStatusConfig(project.status);
                     return (
                       <TableRow
                         key={project.id}
-                        className={`hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
+                        className="cursor-pointer"
+                        onClick={() =>
+                          navigate(
+                            paths.app.assignedProjects.detail.getHref(
+                              project.id,
+                            ),
+                          )
+                        }
                       >
-                        <TableCell className="text-muted-foreground text-sm">
+                        <TableCell className="text-foreground text-sm font-medium">
                           {project.code}
                         </TableCell>
                         <TableCell className="font-medium">
-                          <Link
-                            to={paths.app.assignedProjects.detail.getHref(
-                              project.id,
-                            )}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {project.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
-                          {project.description || '—'}
+                          {project.name}
                         </TableCell>
                         <TableCell>
-                          <span
-                            className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${cfg.badgeClass}`}
-                          >
-                            {cfg.label}
-                          </span>
+                          <Badge variant={cfg.variant}>{cfg.text}</Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
+                        <TableCell>
                           {project.startDate
                             ? formatDate(project.startDate)
                             : '—'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
+                        <TableCell>
                           {project.endDate ? formatDate(project.endDate) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link
+                            to={paths.app.assignedProjects.detail.getHref(
+                              project.id,
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button variant="outlineAction" size="action">
+                              VIEW
+                            </Button>
+                          </Link>
                         </TableCell>
                       </TableRow>
                     );
@@ -285,7 +321,7 @@ const MyProjectsRoute = () => {
                 size="sm"
                 className="mt-4"
                 onClick={() => {
-                  setSearchText('');
+                  setFilters({ name: '', code: '', status: '' });
                   setSearchParams({});
                 }}
               >

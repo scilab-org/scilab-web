@@ -251,7 +251,7 @@ export const ProjectPapersList = ({
                   <TableHead className="w-[15%] px-2 font-semibold">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[10%] px-2 text-right font-semibold">
+                  <TableHead className="w-[10%] px-2 text-center font-semibold">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -346,9 +346,9 @@ export const ProjectPapersList = ({
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
-                              variant="outline"
+                              variant="secondary"
                               size="xs"
-                              className="gap-1 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                              className="gap-1"
                             >
                               <Tags className="size-3" />
                               {paper.tagNames.length} tags
@@ -376,26 +376,8 @@ export const ProjectPapersList = ({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outlineAction"
-                          size="action"
-                          asChild
-                          title="View Paper"
-                        >
-                          <Link
-                            to={
-                              getPaperHref
-                                ? getPaperHref(projectId, paper.id)
-                                : paths.app.paperManagement.paper.getHref(
-                                    paper.id,
-                                  )
-                            }
-                          >
-                            VIEW
-                          </Link>
-                        </Button>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
                         {paper.filePath && (
                           <Button
                             variant="action"
@@ -414,6 +396,24 @@ export const ProjectPapersList = ({
                             </a>
                           </Button>
                         )}
+                        <Button
+                          variant="outlineAction"
+                          size="action"
+                          asChild
+                          title="View Paper"
+                        >
+                          <Link
+                            to={
+                              getPaperHref
+                                ? getPaperHref(projectId, paper.id)
+                                : paths.app.paperManagement.paper.getHref(
+                                    paper.id,
+                                  )
+                            }
+                          >
+                            VIEW
+                          </Link>
+                        </Button>
                         {!readOnly && (
                           <Button
                             variant="destructive"

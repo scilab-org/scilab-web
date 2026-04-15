@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
 
@@ -60,6 +60,7 @@ export const useProjectMembers = ({
 }: UseProjectMembersOptions) => {
   return useQuery({
     ...getProjectMembersQueryOptions(projectId, params),
+    placeholderData: keepPreviousData,
     ...queryConfig,
   });
 };

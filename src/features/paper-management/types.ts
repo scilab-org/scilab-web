@@ -77,6 +77,7 @@ export type WritingPaperDto = {
   lastModifiedOnUtc?: string | null;
   lastModifiedBy?: string | null;
   researchGap?: string | null;
+  researchAim?: string | null;
   mainContribution?: string | null;
   rule?: string | null;
   gapType?: string | null;
@@ -188,6 +189,7 @@ export type UpdateWritingPaperDto = {
   context?: string;
   abstract?: string;
   researchGap?: string;
+  researchAim?: string;
   gapType?: string;
   mainContribution?: string;
   status?: number;

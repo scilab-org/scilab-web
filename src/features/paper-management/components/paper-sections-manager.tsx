@@ -672,7 +672,7 @@ const SectionExpandedView = ({
             </TableCell>
 
             {/* Actions */}
-            <TableCell className="w-52 border-none py-3 text-right">
+            <TableCell className="w-52 border-none py-3 text-center">
               <div className="ml-auto flex items-center justify-end gap-1">
                 {showEdit && (
                   <button
@@ -811,7 +811,7 @@ const ViewMembersPanel = ({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border shadow-sm">
+            <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
@@ -822,7 +822,7 @@ const ViewMembersPanel = ({
                       Role
                     </TableHead>
                     {isAuthor && (
-                      <TableHead className="w-36 text-right font-semibold text-green-900 dark:text-green-200">
+                      <TableHead className="w-36 text-center font-semibold text-green-900 dark:text-green-200">
                         Actions
                       </TableHead>
                     )}
@@ -880,10 +880,10 @@ const ViewMembersPanel = ({
                           )}
                         </TableCell>
                         {isAuthor && (
-                          <TableCell className="text-right">
+                          <TableCell className="text-center">
                             {!isProjectRole &&
                               (editingId === m.id ? (
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center justify-center gap-1">
                                   <Button
                                     size="sm"
                                     onClick={() =>
@@ -1205,7 +1205,7 @@ export const PaperSectionsManager = ({
                       <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
                         Last Modified
                       </TableHead>
-                      <TableHead className="w-52 text-right font-semibold text-green-900 dark:text-green-200">
+                      <TableHead className="w-52 text-center font-semibold text-green-900 dark:text-green-200">
                         Action
                       </TableHead>
                     </TableRow>
@@ -1293,9 +1293,9 @@ export const PaperSectionsManager = ({
                             <TableCell className="text-muted-foreground text-sm">
                               {formatDisplayDate(node.lastModifiedOnUtc)}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-center">
                               {isLeaf && (
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center justify-center gap-1">
                                   {isAuthor && (
                                     <Button
                                       size="sm"

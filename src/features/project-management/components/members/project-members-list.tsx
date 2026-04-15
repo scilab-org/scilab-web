@@ -175,8 +175,8 @@ const MemberTableRow = ({
         <TableCell className="text-muted-foreground text-sm">
           {member.joinedAt ? formatDate(member.joinedAt) : '—'}
         </TableCell>
-        <TableCell className="text-right">
-          <div className="flex items-center justify-end gap-2">
+        <TableCell className="text-center">
+          <div className="flex items-center justify-center gap-2">
             {/* System admin: Remove only for manager members */}
             {!readOnly && viewerIsSystemAdmin && isManager && (
               <Button
@@ -492,7 +492,7 @@ export const ProjectMembersList = ({
                     <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Joined
                     </TableHead>
-                    <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wider uppercase">
+                    <TableHead className="text-muted-foreground text-center text-xs font-medium tracking-wider uppercase">
                       Actions
                     </TableHead>
                   </TableRow>

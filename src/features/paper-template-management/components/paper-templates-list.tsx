@@ -82,8 +82,8 @@ export const PaperTemplatesList = () => {
                 <TableCell className="text-muted-foreground text-sm">
                   {template.description || '—'}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-2">
                     <Link
                       to={paths.app.paperTemplateManagement.paperTemplate.getHref(
                         template.id,
