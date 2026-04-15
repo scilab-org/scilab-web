@@ -63,7 +63,7 @@ export const TagsList = () => {
             <TableHead className="w-[35%]">Name</TableHead>
             <TableHead className="w-[20%]">Created</TableHead>
             <TableHead className="w-[20%]">Last Modified</TableHead>
-            <TableHead className="w-[25%] text-right">Actions</TableHead>
+            <TableHead className="w-[25%] text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -118,54 +118,50 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
       <Card className="overflow-hidden rounded-xl border py-0 shadow-sm">
         <CardContent className="space-y-6 bg-[#fffaf1] p-6">
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant={getStatusVariant(paper.status).variant}
-                className={`h-7 px-3 text-[11px] tracking-wide uppercase ${getStatusVariant(paper.status).className || ''}`}
-              >
-                {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
-              </Badge>
-              {paper.filePath && (
-                <Button variant="action" asChild>
-                  <a
-                    href={paper.filePath}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View PDF
-                  </a>
-                </Button>
-              )}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="action">Tag</Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-64 space-y-2">
-                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    Tags ({paper.tagNames?.length || 0})
-                  </p>
-                  {paper.tagNames && paper.tagNames.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {paper.tagNames.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="outline"
-                          className={`px-2.5 py-1 text-xs font-medium ${getTagColor(tag)}`}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">No tags.</p>
-                  )}
-                </PopoverContent>
-              </Popover>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {paper.filePath && (
+                  <Button variant="action" asChild>
+                    <a
+                      href={paper.filePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View PDF
+                    </a>
+                  </Button>
+                )}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="action">Tag</Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-64 space-y-2">
+                    <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                      Tags ({paper.tagNames?.length || 0})
+                    </p>
+                    {paper.tagNames && paper.tagNames.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {paper.tagNames.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className={`px-2.5 py-1 text-xs font-medium ${getTagColor(tag)}`}
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">No tags.</p>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
               {isAdmin && (
-                <>
+                <div className="flex items-center gap-2">
                   <UpdatePaper paperId={paperId} paper={paper} />
                   <DeletePaper paperId={paperId} />
-                </>
+                </div>
               )}
             </div>
           </div>

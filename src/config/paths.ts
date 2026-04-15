@@ -102,6 +102,10 @@ export const paths = {
         path: 'paper-templates',
         getHref: () => '/app/paper-templates',
       },
+      paperTemplate: {
+        path: 'paper-templates/:templateId',
+        getHref: (templateId: string) => `/app/paper-templates/${templateId}`,
+      },
     },
     assignedProjects: {
       list: {

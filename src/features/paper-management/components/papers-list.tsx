@@ -117,16 +117,16 @@ export const PapersList = () => {
             <TableHead className="w-[12%] px-8 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               DOI
             </TableHead>
-            <TableHead className="w-[32%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[28%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Title
             </TableHead>
-            <TableHead className="w-[22%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[18%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Authors
             </TableHead>
             <TableHead className="w-[18%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Journal / Conference
             </TableHead>
-            <TableHead className="w-[16%] px-8 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[24%] px-8 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Actions
             </TableHead>
           </TableRow>
@@ -155,9 +155,12 @@ export const PapersList = () => {
               </TableCell>
 
               {/* Title */}
-              <TableCell className="overflow-hidden px-3 font-medium wrap-break-word whitespace-normal">
-                <span className="text-foreground block font-medium transition-colors">
-                  <span className="line-clamp-3">{paper.title || 'N/A'}</span>
+              <TableCell className="overflow-hidden px-3 font-medium">
+                <span
+                  className="text-foreground block truncate font-medium transition-colors"
+                  title={paper.title || 'N/A'}
+                >
+                  {paper.title || 'N/A'}
                 </span>
               </TableCell>
 

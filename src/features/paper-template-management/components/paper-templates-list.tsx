@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -16,6 +16,7 @@ import { usePaperTemplates } from '../api/get-paper-templates';
 import { DeletePaperTemplate } from './delete-paper-template';
 import { UpdatePaperTemplate } from './update-paper-template';
 import { Pagination } from '@/components/ui/pagination';
+import { paths } from '@/config/paths';
 
 export const PaperTemplatesList = () => {
   const [searchParams] = useSearchParams();
@@ -28,7 +29,7 @@ export const PaperTemplatesList = () => {
     params: {
       PageNumber: page,
       PageSize: 10,
-      Name: name,
+      Description: name,
       Code: code,
     },
   });
@@ -56,69 +57,54 @@ export const PaperTemplatesList = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-            <TableHead className="w-[13%]">Code</TableHead>
-            <TableHead className="w-[18%]">Name</TableHead>
-            <TableHead className="w-[20%]">Description</TableHead>
-            <TableHead className="w-[25%]">Sections</TableHead>
-            <TableHead className="w-[12%]">Created</TableHead>
-            <TableHead className="w-[12%] text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {templates.map((template) => (
-            <TableRow
-              key={template.id}
-              className="hover:bg-surface-container-low bg-white transition-colors"
-            >
-              <TableCell>
-                <Badge variant="outline">{template.code}</Badge>
-              </TableCell>
-              <TableCell className="font-medium">{template.name}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {template.description || '—'}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {template.templateStructure?.sections
-                    ?.slice(0, 4)
-                    .map((section) => (
-                      <Badge
-                        key={section.key}
-                        variant="secondary"
-                        className="text-xs"
-                      >
-                        {section.title}
-                      </Badge>
-                    ))}
-                  {(template.templateStructure?.sections?.length ?? 0) > 4 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{template.templateStructure.sections.length - 4} more
-                    </Badge>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="text-sm">
-                {template.createdOnUtc
-                  ? new Date(template.createdOnUtc).toLocaleDateString()
-                  : '—'}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1.5">
-                  <Button variant="action">VIEW</Button>
-                  <UpdatePaperTemplate template={template} />
-                  <DeletePaperTemplate id={template.id} name={template.name} />
-                </div>
-              </TableCell>
+    <div>
+      <div className="rounded-lg border shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+              <TableHead className="w-[20%] text-xs font-semibold tracking-wider uppercase">
+                Code
+              </TableHead>
+              <TableHead className="w-[65%] text-xs font-semibold tracking-wider uppercase">
+                Description
+              </TableHead>
+              <TableHead className="w-[15%] text-center text-xs font-semibold tracking-wider uppercase">
+                Actions
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {templates.map((template) => (
+              <TableRow key={template.id} className="hover:bg-muted/30">
+                <TableCell>
+                  <Badge variant="outline">{template.code}</Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {template.description || '—'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
+                      to={paths.app.paperTemplateManagement.paperTemplate.getHref(
+                        template.id,
+                      )}
+                    >
+                      <Button variant="action">VIEW</Button>
+                    </Link>
+                    <UpdatePaperTemplate template={template} />
+                    <DeletePaperTemplate
+                      id={template.id}
+                      name={template.code}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-      {paging && <Pagination paging={paging} />}
+        {paging && <Pagination paging={paging} />}
+      </div>
     </div>
   );
 };

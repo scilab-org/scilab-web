@@ -179,26 +179,23 @@ export const CreatePaperInProject = ({
       | PaperTemplateDto
       | undefined;
     if (!detail) return;
-    const rawSections = detail.templateStructure?.sections ?? [];
+    const rawSections = detail.sections ?? [];
     setSections(
       rawSections.map((s, i) => {
         const sectionId = generateGuid();
-        const sectionPackages =
-          s.packages ?? (s as { Packages?: string[] }).Packages ?? undefined;
-
         return {
           _id: `tpl-${sectionId}`,
           id: sectionId,
           title: s.title,
-          latex: s.latex ?? toLatex(s.title, false),
+          latex: toLatex(s.title, false),
           content: '',
-          packages: sectionPackages ?? ['inputenc', 'fontenc'],
-          numbered: s.numbered ?? true,
-          displayOrder: s.displayOrder ?? s.order ?? i,
+          packages: ['inputenc', 'fontenc'],
+          numbered: true,
+          displayOrder: s.displayOrder ?? i,
           sectionSumary: '',
-          description: s.description ?? '',
-          rule: s.rule ?? '',
-          allowSubsections: s.allowSubsections,
+          description: s.sectionRule ?? '',
+          rule: s.sectionRule ?? '',
+          allowSubsections: undefined,
         };
       }),
     );

@@ -17,103 +17,111 @@ import {
 import { CreateButton } from '@/components/ui/create-button';
 
 import { useCreatePaperTemplate } from '../api/create-paper-template';
-import { CreateTemplateSectionDto } from '../types';
+import { CreateTemplateSectionInput } from '../types';
 
-const DEFAULT_SECTIONS: CreateTemplateSectionDto[] = [
+const DEFAULT_SECTIONS: CreateTemplateSectionInput[] = [
   {
-    key: 'abstract',
     title: 'Abstract',
+    sectionRule:
+      '- Provide a clear and concise summary of the entire paper.\n' +
+      '- Include purpose, scope, and key findings.\n' +
+      '- Mention methodology if relevant.\n' +
+      '- Ensure the abstract is self-contained and easy to read.\n' +
+      '- Highlight main contributions without unnecessary detail.\n' +
+      '- Keep concise (150–250 words).\n' +
+      '- Context setting should not exceed 25% of the abstract; prioritize new information.\n' +
+      '- Do not begin with cliché phrases such as "This paper deals with..." or "The aim of this paper..."; go straight to the point.\n' +
+      '- Avoid including references, citations, or detailed mathematical equations in the abstract.\n' +
+      '- Ensure the reader can immediately understand the contribution and significance of the work.',
     displayOrder: 1,
-    latex: '\\section{Abstract}',
-    numbered: false,
-    required: true,
-    allowSubsections: false,
   },
   {
-    key: 'background',
-    title: 'Background & Summary',
+    title: 'Introduction',
+    sectionRule:
+      '- Provide a clear roadmap for understanding the motivation and significance of your experiments.\n' +
+      '- State the research problem and objectives clearly in the first few paragraphs.\n' +
+      '- Define technical terms, notation, and key words here so the reader has the tools to understand the paper.\n' +
+      '- Keep background information focused; include only what is necessary for the reader to understand why you are asking your specific research questions.\n' +
+      '- Differentiate from the Abstract; do not simply cut and paste text from the Abstract into the Introduction.\n' +
+      '- Use the "present simple" for established knowledge and the "past simple" or "present simple" when stating your specific findings or explanations.',
     displayOrder: 2,
-    latex: '\\section{Background \\& Summary}',
-    numbered: true,
-    required: true,
-    allowSubsections: true,
   },
   {
-    key: 'methods',
-    title: 'Methods',
+    title: 'Review of the Literature',
+    sectionRule:
+      '- Systematically elaborate on achievements and limitations of previous studies to motivate your research.\n' +
+      '- Identify the knowledge gap that your work intends to fill.\n' +
+      '- Show progress through the years by structuring the review chronologically or by subtopic.\n' +
+      '- Avoid unnecessary redundancy; do not use long phrases like "It has been reported in the literature that..." when a simple citation is sufficient.\n' +
+      '- Be constructive and diplomatic when discussing the limitations of others\' work to maintain "face saving" for fellow researchers.\n' +
+      '- Use the "present perfect" to refer to ongoing research situations and the "past simple" for specific finished experiments or results.',
     displayOrder: 3,
-    latex: '\\section{Methods}',
-    numbered: true,
-    required: true,
-    allowSubsections: true,
   },
   {
-    key: 'data_records',
-    title: 'Data Records',
+    title: 'Methodology',
+    sectionRule:
+      '- Provide sufficient detail to allow other researchers to replicate your work exactly.\n' +
+      '- Organize the section chronologically, following the order in which you conducted the experiments.\n' +
+      '- Avoid writing the section as a step-by-step protocol or a series of lists; it should read as a natural narrative of what was performed.\n' +
+      '- Limit information density; generally include no more than two actions or steps in a single sentence.\n' +
+      '- Use the "past simple" and the "passive form" typically, as the focus is on what was done rather than who did it.\n' +
+      "- Be precise with quantifications (temperature, weight, time, etc.) and follow the journal's guidelines for using digits versus words for numbers.",
     displayOrder: 4,
-    latex: '\\section{Data Records}',
-    numbered: true,
-    required: true,
-    allowSubsections: true,
   },
   {
-    key: 'technical_validation',
-    title: 'Technical Validation',
+    title: 'Results',
+    sectionRule:
+      '- Present representative findings simply and clearly, typically without interpretation or discussion if it is a separate section.\n' +
+      '- Include important negative data; finding that something does not work is still useful information.\n' +
+      '- Sequence your findings to follow the same order as the procedures described in your Methods section.\n' +
+      '- Use figures and tables to summarize data; the text should highlight trends and key results rather than repeating every value found in the tables.\n' +
+      '- Comment on the meaning of figures, not just their existence; for example, "Abundances were inversely related (Figure 4)" is better than "Figure 4 shows the relationship...".\n' +
+      '- Use the "past simple" to report what you found during your experiments.',
     displayOrder: 5,
-    latex: '\\section{Technical Validation}',
-    numbered: true,
-    required: false,
-    allowSubsections: true,
   },
   {
-    key: 'usage_notes',
-    title: 'Usage Notes',
+    title: 'Discussion',
+    sectionRule:
+      '- Interpret your results and relate them to the literature without merely repeating the data from the Results section.\n' +
+      '- Address whether your data support your original hypotheses and discuss any alternative interpretations.\n' +
+      '- Be upfront about limitations and potential bias; admitting what went wrong can actually increase your credibility as a researcher.\n' +
+      '- Clearly distinguish your work from others by using "we" or "our" versus "they" or the names of other authors.\n' +
+      '- Balance "highlighting" and "hedging"; use dynamic language to show achievements but cautious language (e.g., "suggests", "may", "appears") for propositions that are not 100% proven.\n' +
+      '- End with a summary of main points, recommendations, and suggestions for future research.',
     displayOrder: 6,
-    latex: '\\section{Usage Notes}',
-    numbered: true,
-    required: false,
-    allowSubsections: true,
   },
   {
-    key: 'code_availability',
-    title: 'Code Availability',
+    title: 'Conclusion',
+    sectionRule:
+      '- Provide a high-impact "take-home message" that summarizes the most important findings and their significance.\n' +
+      '- Do not merely repeat the Abstract or Introduction; this section is for a reader who has already processed the rest of the paper.\n' +
+      '- Cover practical applications and recommendations for policy changes or future work.\n' +
+      '- Keep it brief, generally not exceeding one or two paragraphs.\n' +
+      '- Avoid cliché openings like "In this study it is concluded that..."; go straight to the main topic.\n' +
+      '- Use the "present perfect" for what you have done in the paper (e.g., "We have described...") and the "past simple" for what you did in the laboratory or field.',
     displayOrder: 7,
-    latex: '\\section{Code Availability}',
-    numbered: true,
-    required: false,
-    allowSubsections: false,
   },
   {
-    key: 'references',
-    title: 'References',
+    title: 'Reference',
+    sectionRule:
+      '- Include all cited works.\n' +
+      '- Ensure references are accurate.\n' +
+      '- Follow a consistent citation format.\n' +
+      '- Match references with in-text citations.\n' +
+      '- Keep only relevant sources.',
     displayOrder: 8,
-    latex: '',
-    numbered: false,
-    required: true,
-    allowSubsections: false,
   },
 ];
 
-const titleToKey = (title: string): string =>
-  title
-    .toLowerCase()
-    .replace(/^\d+\.\s*/, '') // strip leading "1. "
-    .trim()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_|_$/g, '');
-
 const initialFormData = {
-  name: '',
   code: '',
   description: '',
 };
 
-type SectionRow = CreateTemplateSectionDto & { _id: string };
+type SectionRow = CreateTemplateSectionInput & { _id: string };
 
-const makeSectionRow = (s: CreateTemplateSectionDto): SectionRow => ({
+const makeSectionRow = (s: CreateTemplateSectionInput): SectionRow => ({
   ...s,
-  description: s.description || '',
-  packages: s.packages,
   _id: crypto.randomUUID(),
 });
 
@@ -153,20 +161,11 @@ export const CreatePaperTemplate = () => {
 
   const updateSection = (
     id: string,
-    field: keyof CreateTemplateSectionDto,
-    value: string | boolean | number,
+    field: keyof CreateTemplateSectionInput,
+    value: string,
   ) => {
     setSections((prev) =>
-      prev.map((s) => {
-        if (s._id !== id) return s;
-        const updated = { ...s, [field]: value };
-        // auto-regenerate key and latex when title changes
-        if (field === 'title') {
-          updated.key = titleToKey(value as string);
-          updated.latex = `\\section{\\textbf{${value}}}`;
-        }
-        return updated;
-      }),
+      prev.map((s) => (s._id !== id ? s : { ...s, [field]: value })),
     );
   };
 
@@ -174,13 +173,9 @@ export const CreatePaperTemplate = () => {
     setSections((prev) => [
       ...prev,
       makeSectionRow({
-        key: '',
         title: '',
+        sectionRule: '',
         displayOrder: prev.length + 1,
-        numbered: false,
-        allowSubsections: true,
-        required: false,
-        description: '',
       }),
     ]);
   };
@@ -192,39 +187,43 @@ export const CreatePaperTemplate = () => {
     });
   };
 
+  const dragItemRef = React.useRef<number | null>(null);
+  const dragOverItemRef = React.useRef<number | null>(null);
+
+  const handleDragStart = (idx: number) => {
+    dragItemRef.current = idx;
+  };
+
+  const handleDragEnter = (idx: number) => {
+    dragOverItemRef.current = idx;
+  };
+
+  const handleDrop = () => {
+    const from = dragItemRef.current;
+    const to = dragOverItemRef.current;
+    if (from === null || to === null || from === to) {
+      dragItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+    setSections((prev) => {
+      const updated = [...prev];
+      const [dragged] = updated.splice(from, 1);
+      updated.splice(to, 0, dragged);
+      return updated.map((s, i) => ({ ...s, displayOrder: i + 1 }));
+    });
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.code.trim()) return;
+    if (!formData.code.trim()) return;
 
     mutation.mutate({
-      name: formData.name.trim(),
       code: formData.code.trim(),
       description: formData.description.trim(),
-      templateStructure: {
-        templateCode: formData.code.trim(),
-        sections: sections.map(({ _id, ...s }) => {
-          let rule = s.rule || '';
-          if (s.description && !s.rule) {
-            const bulletPoints = s.description
-              .split('\n')
-              .map((line) => line.trim())
-              .filter((line) => line.length > 0)
-              .map((line) => (line.startsWith('-') ? line : `- ${line}`))
-              .join('\n');
-            rule = `## ${s.title}\n${bulletPoints}`;
-          }
-          return {
-            ...s,
-            packages: [
-              '\\usepackage[utf8]{inputenc}',
-              '\\usepackage[T1]{fontenc}',
-              '\\usepackage{geometry}',
-              '\\geometry{margin=1in}',
-            ],
-            rule,
-          };
-        }),
-      },
+      sections: sections.map(({ _id, ...s }) => s),
     });
   };
 
@@ -236,59 +235,48 @@ export const CreatePaperTemplate = () => {
         </CreateButton>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Create Paper Template</DialogTitle>
-          <DialogDescription>
-            Define the template structure with sections.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Create Paper Template</DialogTitle>
+            <DialogDescription>
+              Define the template structure with sections.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
         <form
           id="create-pt-form"
           onSubmit={handleSubmit}
-          className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-6 py-4"
         >
           {/* Basic info */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="pt-name" className="text-sm font-medium">
-                Name <span className="text-destructive">*</span>
-              </label>
-              <Input
-                id="pt-name"
-                value={formData.name}
-                onChange={(e) => updateField('name', e.target.value)}
-                placeholder="e.g. IMRAD STANDARD"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="pt-code" className="text-sm font-medium">
-                Code <span className="text-destructive">*</span>
-              </label>
-              <Input
-                id="pt-code"
-                value={formData.code}
-                onChange={(e) => updateField('code', e.target.value)}
-                placeholder="e.g. IMRAD_STANDARD"
-                required
-                readOnly
-                onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
-                autoComplete="off"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label htmlFor="pt-code" className="text-sm font-medium">
+              Code <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="pt-code"
+              value={formData.code}
+              onChange={(e) => updateField('code', e.target.value)}
+              placeholder="e.g. IMRAD"
+              required
+              readOnly
+              onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
+              autoComplete="off"
+            />
           </div>
-
           <div className="space-y-1.5">
             <label htmlFor="pt-description" className="text-sm font-medium">
               Description
             </label>
-            <Input
+            <textarea
               id="pt-description"
               value={formData.description}
               onChange={(e) => updateField('description', e.target.value)}
               placeholder="Short description..."
+              rows={3}
+              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full resize-none rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
             />
           </div>
 
@@ -313,112 +301,80 @@ export const CreatePaperTemplate = () => {
               </Button>
             </div>
 
-            <div className="rounded-lg border">
-              {/* Header */}
-              <div className="bg-muted/50 grid grid-cols-[2rem_1fr_2rem] gap-2 border-b px-3 py-2 text-xs font-medium text-gray-500">
-                <span>#</span>
-                <span>Title</span>
-                <span></span>
-              </div>
-
-              <div className="divide-y">
-                {sections.map((section, idx) => (
-                  <div key={section._id} className="space-y-1.5 px-3 py-2">
-                    {/* Row 1: index / title / delete */}
-                    <div className="grid grid-cols-[2rem_1fr_2rem] items-center gap-2">
-                      <span className="text-muted-foreground text-xs">
-                        {idx + 1}
+            <div className="space-y-2">
+              {sections.map((section, idx) => (
+                <div
+                  key={section._id}
+                  onDragEnter={() => handleDragEnter(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  className="space-y-3 rounded-md border px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex w-5 shrink-0 items-center justify-center">
+                      <span className="text-muted-foreground text-xs font-medium">
+                        {section.displayOrder}
                       </span>
-                      <Input
-                        value={section.title}
-                        onChange={(e) =>
-                          updateSection(section._id, 'title', e.target.value)
-                        }
-                        placeholder="Section title"
-                        className="h-7 text-xs"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-6 text-red-500 hover:text-red-600"
-                        onClick={() => removeSection(section._id)}
-                      >
-                        <Trash2 className="size-3" />
-                      </Button>
                     </div>
-                    {/* Row 2: boolean toggles */}
-                    <div className="flex flex-wrap items-center gap-4 pl-8 text-xs">
-                      <label className="flex cursor-pointer items-center gap-1 select-none">
-                        <input
-                          type="checkbox"
-                          checked={section.required ?? false}
-                          onChange={(e) =>
-                            updateSection(
-                              section._id,
-                              'required',
-                              e.target.checked,
-                            )
-                          }
-                          className="size-3.5"
-                        />
-                        Required
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-1 select-none">
-                        <input
-                          type="checkbox"
-                          checked={section.numbered ?? false}
-                          onChange={(e) =>
-                            updateSection(
-                              section._id,
-                              'numbered',
-                              e.target.checked,
-                            )
-                          }
-                          className="size-3.5"
-                        />
-                        Numbered
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-1 select-none">
-                        <input
-                          type="checkbox"
-                          checked={section.allowSubsections ?? false}
-                          onChange={(e) =>
-                            updateSection(
-                              section._id,
-                              'allowSubsections',
-                              e.target.checked,
-                            )
-                          }
-                          className="size-3.5"
-                        />
-                        Allow Sub-sections
-                      </label>
-                    </div>
-                    {/* Row 3: description */}
-                    <div className="pt-1 pl-8">
-                      <textarea
-                        value={section.description || ''}
-                        onChange={(e) =>
-                          updateSection(
-                            section._id,
-                            'description',
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Section description (optional)..."
-                        rows={2}
-                        className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-1.5 text-xs shadow-xs outline-none focus-visible:ring-2"
-                      />
-                    </div>
+                    <Input
+                      value={section.title}
+                      onChange={(e) =>
+                        updateSection(section._id, 'title', e.target.value)
+                      }
+                      placeholder="Section title"
+                      required
+                      onDragStart={(e) => e.stopPropagation()}
+                      className="h-10 flex-1 rounded-md text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-6 shrink-0 text-red-500 hover:text-red-600"
+                      onClick={() => removeSection(section._id)}
+                    >
+                      <Trash2 className="size-3" />
+                    </Button>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-start gap-3">
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      className="flex w-5 shrink-0 cursor-grab justify-center pt-3"
+                      aria-label="Drag section"
+                    >
+                      <div className="grid grid-cols-2 gap-x-0.5 gap-y-0.5">
+                        <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                        <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                        <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                        <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                        <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                        <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                      </div>
+                    </div>
+                    <textarea
+                      value={section.sectionRule}
+                      onChange={(e) =>
+                        updateSection(
+                          section._id,
+                          'sectionRule',
+                          e.target.value,
+                        )
+                      }
+                      placeholder="Rule"
+                      required
+                      rows={6}
+                      onDragStart={(e) => e.stopPropagation()}
+                      className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-36 w-full resize-none rounded-md border px-4 py-3 text-sm shadow-xs outline-none focus-visible:ring-2"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </form>
 
-        <DialogFooter className="px-4 pt-2 pb-4">
+        <DialogFooter className="shrink-0 px-6 pt-2 pb-6">
           <Button
             type="button"
             variant="ghost"
@@ -430,11 +386,7 @@ export const CreatePaperTemplate = () => {
           <Button
             type="submit"
             form="create-pt-form"
-            disabled={
-              mutation.isPending ||
-              !formData.name.trim() ||
-              !formData.code.trim()
-            }
+            disabled={mutation.isPending || !formData.code.trim()}
             variant="secondary"
             className="uppercase"
           >
