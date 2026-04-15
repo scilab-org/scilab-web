@@ -229,23 +229,10 @@ export type UpdateSectionDto = {
 };
 
 export type CreateSectionDto = {
-  id: string;
   title: string;
-  content?: string;
-  packages?: string[];
-  numbered: boolean;
   displayOrder: number;
-  sectionSumary?: string;
-  description?: string;
-  rule?: string;
-  parentSectionId?: string | null;
-};
-
-export type CreatePaperJournalDto = {
-  name: string;
-  styleName: string;
-  styleDescription?: string;
-  styleRule?: string;
+  sectionRule?: string;
+  mainIdea?: string;
 };
 
 export type CreatePaperInProjectDto = {
@@ -257,8 +244,10 @@ export type CreatePaperInProjectDto = {
   researchGap?: string;
   gapType?: string;
   mainContribution?: string;
+  researchAim?: string;
   status?: number;
-  journal?: CreatePaperJournalDto;
+  conferenceJournalName?: string;
+  conferenceJournalId?: string;
   sections?: CreateSectionDto[];
 };
 

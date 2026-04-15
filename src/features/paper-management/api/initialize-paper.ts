@@ -21,11 +21,15 @@ export const createPaperInProject = (
     researchGap: data.researchGap,
     gapType: data.gapType,
     mainContribution: data.mainContribution,
+    researchAim: data.researchAim,
     status: data.status,
-    journal: data.journal,
+    conferenceJournalName: data.conferenceJournalName,
+    conferenceJournalId: data.conferenceJournalId,
     sections: data.sections?.map((section) => ({
-      ...section,
-      ...(section.packages ? { Packages: section.packages } : {}),
+      title: section.title,
+      displayOrder: section.displayOrder,
+      sectionRule: section.sectionRule,
+      mainIdea: section.mainIdea,
     })),
   });
 };
