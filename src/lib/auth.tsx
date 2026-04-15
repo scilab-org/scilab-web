@@ -1,280 +1,99 @@
-import { useKeycloak } from '@react-keycloak/web';
 import * as React from 'react';
+import { Navigate } from 'react-router';
+import { Loader2 } from 'lucide-react';
 
-import { keycloak } from '@/config/keycloak';
-import { User } from '@/types/api';
+import { paths } from '@/config/paths';
+import { useAuthContext } from '@/features/auth/auth-context';
+import { tokenStore } from '@/features/auth/token-store';
 
-/**
- * Get the current access token
- */
-export const getToken = (): string | undefined => {
-  return keycloak.token;
-};
+// ─── Token accessors ──────────────────────────────────────────────────────────
 
-/**
- * Get the refresh token
- */
-export const getRefreshToken = (): string | undefined => {
-  return keycloak.refreshToken;
-};
+export const getToken = (): string | null => tokenStore.getAccessToken();
+export const getRefreshToken = (): string | null =>
+  tokenStore.getRefreshToken();
+export const isAuthenticated = (): boolean => !!tokenStore.getAccessToken();
 
-/**
- * Get the ID token
- */
-export const getIdToken = (): string | undefined => {
-  return keycloak.idToken;
-};
+// ─── Group helpers ────────────────────────────────────────────────────────────
 
-/**
- * Check if user is authenticated
- */
-export const isAuthenticated = (): boolean => {
-  return keycloak.authenticated || false;
-};
-
-/**
- * Get user profile from Keycloak
- */
-export const getUserProfile = async () => {
-  try {
-    return await keycloak.loadUserProfile();
-  } catch (error) {
-    console.error('Failed to load user profile', error);
-    return null;
-  }
-};
-
-/**
- * Update the token if it's about to expire
- * @param minValidity - Minimum validity in seconds (default: 5)
- */
-export const updateToken = async (
-  minValidity: number = 5,
-): Promise<boolean> => {
-  try {
-    return await keycloak.updateToken(minValidity);
-  } catch (error) {
-    console.error('Failed to refresh token', error);
-    return false;
-  }
-};
-
-/**
- * Check if user has a specific role
- * @param role - Role name to check
- */
-export const hasRole = (role: string): boolean => {
-  return keycloak.hasRealmRole(role) || keycloak.hasResourceRole(role);
-};
-
-/**
- * Check if user has any of the specified roles
- * @param roles - Array of role names
- */
-export const hasAnyRole = (roles: string[]): boolean => {
-  return roles.some((role) => hasRole(role));
-};
-
-/**
- * Check if user has all of the specified roles
- * @param roles - Array of role names
- */
-export const hasAllRoles = (roles: string[]): boolean => {
-  return roles.every((role) => hasRole(role));
-};
-
-/**
- * Get all user roles (both realm and resource roles), filtered to remove Keycloak defaults
- */
-export const getUserRoles = (): string[] => {
-  const realmRoles = keycloak.realmAccess?.roles || [];
-  const resourceRoles = Object.values(keycloak.resourceAccess || {}).flatMap(
-    (resource) => resource.roles || [],
-  );
-
-  // Filter out Keycloak default/system roles
-  const defaultRoles = [
-    'offline_access',
-    'uma_authorization',
-    'manage-account',
-    'manage-account-links',
-    'view-profile',
-  ];
-  const defaultRolePatterns = [/^default-roles-/];
-
-  return [...new Set([...realmRoles, ...resourceRoles])].filter(
-    (role) =>
-      !defaultRoles.includes(role) &&
-      !defaultRolePatterns.some((pattern) => pattern.test(role)),
-  );
-};
-
-/**
- * Get all user groups, with leading slashes removed
- */
 export const getUserGroups = (): string[] => {
-  const tokenParsed = keycloak.tokenParsed;
-  if (!tokenParsed) return [];
-
-  const keycloakGroups = tokenParsed.groups || [];
-  return keycloakGroups.map((g: string) =>
-    g.startsWith('/') ? g.substring(1) : g,
-  );
+  const token = tokenStore.getAccessToken();
+  if (!token) return [];
+  try {
+    const [, payload] = token.split('.');
+    const p = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return ((p.groups as string[]) ?? []).map((g) =>
+      g.startsWith('/') ? g.slice(1) : g,
+    );
+  } catch {
+    return [];
+  }
 };
 
-/**
- * Get the account management URL
- */
-export const getAccountUrl = (): string => {
-  return keycloak.createAccountUrl();
+export const getUserRoles = (): string[] => {
+  const token = tokenStore.getAccessToken();
+  if (!token) return [];
+  try {
+    const [, payload] = token.split('.');
+    const p = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    const realmRoles =
+      (p.realm_access as { roles?: string[] } | undefined)?.roles ?? [];
+    const resourceRoles = Object.values(
+      (p.resource_access as Record<string, { roles?: string[] }> | undefined) ??
+        {},
+    ).flatMap((r) => r.roles ?? []);
+    const systemRoles = [
+      'offline_access',
+      'uma_authorization',
+      'manage-account',
+      'manage-account-links',
+      'view-profile',
+    ];
+    return [...new Set([...realmRoles, ...resourceRoles])].filter(
+      (r) => !systemRoles.includes(r) && !r.startsWith('default-roles-'),
+    );
+  } catch {
+    return [];
+  }
 };
 
-/**
- * Redirect to account management
- */
-export const goToAccount = (): void => {
-  window.location.href = getAccountUrl();
-};
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
-/**
- * Get the token parsed payload
- */
-export const getTokenParsed = () => {
-  return keycloak.tokenParsed;
-};
-
-/**
- * Get user info from token
- */
-export const getUserInfo = () => {
-  const tokenParsed = keycloak.tokenParsed;
-  if (!tokenParsed) return null;
-
-  return {
-    sub: tokenParsed.sub,
-    email: tokenParsed.email,
-    emailVerified: tokenParsed.email_verified,
-    name: tokenParsed.name,
-    preferredUsername: tokenParsed.preferred_username,
-    givenName: tokenParsed.given_name,
-    familyName: tokenParsed.family_name,
-  };
-};
-
-/**
- * Login to Keycloak
- */
-export const login = () => {
-  keycloak.login({ redirectUri: `${window.location.origin}/app` });
-};
-
-/**
- * Logout from Keycloak
- */
-export const logout = () => {
-  keycloak.logout();
-};
-
-/**
- * Hook to get current user from Keycloak (always fresh data)
- * Maps Keycloak token claims to User type
- */
 export const useUser = () => {
-  const { keycloak, initialized } = useKeycloak();
-
-  const user: User | null = React.useMemo(() => {
-    if (!initialized || !keycloak.authenticated || !keycloak.tokenParsed) {
-      return null;
-    }
-
-    const userInfo = getUserInfo();
-
-    return {
-      id: userInfo?.sub || '',
-      email: userInfo?.email || '',
-      emailVerified: userInfo?.emailVerified,
-      name: userInfo?.name,
-      preferredUsername: userInfo?.preferredUsername,
-      firstName: userInfo?.givenName,
-      lastName: userInfo?.familyName,
-      groups: getUserGroups(),
-      roles: getUserRoles(),
-    };
-  }, [initialized, keycloak.authenticated, keycloak.tokenParsed]);
-
-  return {
-    data: user,
-    isLoading: !initialized,
-    error: null,
-  };
+  const { user, isLoading } = useAuthContext();
+  return { data: user, isLoading, error: null };
 };
 
-/**
- * Login hook (follows react-query-auth pattern)
- */
-export const useLogin = () => {
-  return {
-    mutate: login,
-    mutateAsync: async () => {
-      login();
-    },
-  };
-};
-
-/**
- * Logout hook (follows react-query-auth pattern)
- */
 export const useLogout = () => {
+  const { logout } = useAuthContext();
   return {
     mutate: logout,
-    mutateAsync: async () => {
-      logout();
-    },
+    mutateAsync: async () => logout(),
   };
 };
 
-/**
- * Auth loader component - shows loading state while Keycloak initializes
- */
-export const AuthLoader = ({ children }: { children: React.ReactNode }) => {
-  const { initialized } = useKeycloak();
+// ─── Route guards ─────────────────────────────────────────────────────────────
 
-  if (!initialized) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-};
-
-/**
- * Public route component - renders children regardless of auth state
- */
-export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
-
-/**
- * Protected route component
- */
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { data: user, isLoading } = useUser();
+  const { user, isLoading } = useAuthContext();
 
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <Loader2 className="text-muted-foreground size-12 animate-spin" />
       </div>
     );
   }
 
   if (!user) {
-    login();
-    return null;
+    return <Navigate to={paths.auth.login.getHref()} replace />;
   }
 
   return <>{children}</>;
 };
+
+export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  return <>{children}</>;
+};
+
+// Navigation helper — sign in is now handled via <Link to="/auth/login">
+export const login = () => {};

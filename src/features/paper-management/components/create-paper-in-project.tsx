@@ -354,7 +354,7 @@ export const CreatePaperInProject = ({
         if (!v) resetForm();
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="scrollbar-dialog max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create New Paper</DialogTitle>
           <DialogDescription>
@@ -366,7 +366,7 @@ export const CreatePaperInProject = ({
         <form
           id="create-paper-in-project-form"
           onSubmit={handleSubmit}
-          className="space-y-4 overflow-y-auto px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-4"
         >
           {/* ── Title ── */}
           <div className="space-y-1.5">
@@ -660,13 +660,9 @@ export const CreatePaperInProject = ({
                 <div className="rounded-xl border shadow-sm">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                        <TableHead className="w-8 font-semibold text-green-900 dark:text-green-200">
-                          #
-                        </TableHead>
-                        <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                          Section Title
-                        </TableHead>
+                      <TableRow>
+                        <TableHead className="w-8">#</TableHead>
+                        <TableHead>Section Title</TableHead>
                         <TableHead className="w-16" />
                       </TableRow>
                     </TableHeader>
@@ -767,10 +763,7 @@ export const CreatePaperInProject = ({
 
                             {/* Subsection rows – each gets its own full-width row */}
                             {subSections.map((subSection, subIndex) => (
-                              <TableRow
-                                key={subSection._id}
-                                className="bg-muted/20 hover:bg-muted/30"
-                              >
+                              <TableRow key={subSection._id}>
                                 <TableCell className="text-muted-foreground text-xs">
                                   <div className="flex items-center gap-1 pl-3">
                                     <span className="bg-muted-foreground/30 h-3.5 w-px" />
@@ -878,10 +871,10 @@ export const CreatePaperInProject = ({
               !formData.gapType.trim() ||
               !formData.mainContribution.trim()
             }
-            variant="secondary"
+            variant="darkRed"
             className="uppercase"
           >
-            {createMutation.isPending ? 'CREATING...' : 'CREATE'}
+            {createMutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
         </DialogFooter>
       </DialogContent>

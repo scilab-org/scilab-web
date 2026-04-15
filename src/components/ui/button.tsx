@@ -16,11 +16,15 @@ const buttonVariants = cva(
           'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
         secondary:
           'bg-cta-hover text-primary-foreground uppercase tracking-wide hover:opacity-90',
+        darkRed:
+          'btn-create h-9 px-4 text-sm font-semibold tracking-wide uppercase',
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
         action:
           'bg-muted/50 text-foreground font-semibold uppercase hover:bg-muted hover:text-foreground active:scale-[0.98]',
+        outlineAction:
+          'bg-action-outline/5 text-action-outline border border-action-outline/20 hover:bg-action-outline/15 font-semibold rounded-md uppercase text-xs tracking-wider transition-colors',
       },
 
       size: {
@@ -54,7 +58,11 @@ function Button({
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot.Root : 'button';
-  const size = sizeProp || (variant === 'action' ? 'action' : 'default');
+  const size =
+    sizeProp ||
+    (variant === 'action' || variant === 'outlineAction'
+      ? 'action'
+      : 'default');
 
   return (
     <Comp

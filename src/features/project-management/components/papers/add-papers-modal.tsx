@@ -11,17 +11,16 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { BTN } from '@/lib/button-styles';
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { useAvailablePapers } from '../../api/papers/get-available-papers';
@@ -207,27 +206,29 @@ export const AddPapersModal = ({
   const papers: ProjectPaper[] = (papersQuery.data as any)?.result?.items ?? [];
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(o) => {
         if (!o) handleReset();
         onOpenChange(o);
       }}
     >
-      <SheetContent className="flex flex-col sm:max-w-sm">
-        <SheetHeader>
-          <div className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            <SheetTitle>Add Papers Sample</SheetTitle>
-          </div>
-          <SheetDescription>
-            Search and select papers to add to this project.
-          </SheetDescription>
-        </SheetHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              <DialogTitle>Add Papers</DialogTitle>
+            </div>
+            <DialogDescription>
+              Search and select papers to add to this project.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="mt-6 flex-1 space-y-3 overflow-y-auto">
+        <div className="scrollbar-dialog flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-4">
           {/* Title search */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               type="text"
@@ -242,20 +243,24 @@ export const AddPapersModal = ({
           </div>
 
           {/* Tag filter */}
-          <TagAutocompleteInput
-            tagList={tagList}
-            onAddTag={(tag) =>
-              setTagList((prev) => (prev.includes(tag) ? prev : [...prev, tag]))
-            }
-            onRemoveTag={(tag) =>
-              setTagList((prev) => prev.filter((t) => t !== tag))
-            }
-            placeholder="Type a tag and press Enter..."
-          />
+          <div className="shrink-0">
+            <TagAutocompleteInput
+              tagList={tagList}
+              onAddTag={(tag) =>
+                setTagList((prev) =>
+                  prev.includes(tag) ? prev : [...prev, tag],
+                )
+              }
+              onRemoveTag={(tag) =>
+                setTagList((prev) => prev.filter((t) => t !== tag))
+              }
+              placeholder="Type a tag and press Enter..."
+            />
+          </div>
 
           {/* Selection summary */}
           {selectedPapers.size > 0 && (
-            <div className="flex items-center justify-between rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+            <div className="flex shrink-0 items-center justify-between rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
               <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 {selectedPapers.size} paper
                 {selectedPapers.size !== 1 ? 's' : ''} selected
@@ -270,7 +275,7 @@ export const AddPapersModal = ({
           )}
 
           {/* Papers list */}
-          <div className="max-h-120 space-y-2 overflow-y-auto pr-1">
+          <div className="flex-1 space-y-2">
             {papersQuery.isLoading ? (
               <>
                 <Skeleton className="h-20 w-full" />
@@ -297,35 +302,37 @@ export const AddPapersModal = ({
           </div>
         </div>
 
-        <SheetFooter className="mt-6">
-          <SheetClose asChild>
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                disabled={addPapersMutation.isPending}
+                className="uppercase"
+              >
+                CANCEL
+              </Button>
+            </DialogClose>
             <Button
-              variant="outline"
-              disabled={addPapersMutation.isPending}
-              className={BTN.CANCEL}
+              onClick={handleSubmit}
+              disabled={
+                selectedPapers.size === 0 || addPapersMutation.isPending
+              }
+              variant="darkRed"
+              className="uppercase"
             >
-              Cancel
+              {addPapersMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ADDING...
+                </>
+              ) : (
+                `ADD (${selectedPapers.size})`
+              )}
             </Button>
-          </SheetClose>
-          <Button
-            onClick={handleSubmit}
-            disabled={selectedPapers.size === 0 || addPapersMutation.isPending}
-            className={`gap-2 ${BTN.CREATE}`}
-          >
-            {addPapersMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                Add Papers ({selectedPapers.size})
-              </>
-            )}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

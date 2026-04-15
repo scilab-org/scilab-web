@@ -33,6 +33,7 @@ import { SubProjectPaper } from '../../types';
 import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { useUser } from '@/lib/auth';
 import { paths } from '@/config/paths';
+import { BTN } from '@/lib/button-styles';
 
 const getStatusColor = (status: number | null) => {
   switch (status) {
@@ -127,7 +128,7 @@ export const ProjectWritingPapersList = ({
   return (
     <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
       {/* Header */}
-      <div className="bg-muted/30 border-b px-6 py-4">
+      <div className="border-border bg-empty-state border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">Papers</h2>
@@ -142,9 +143,8 @@ export const ProjectWritingPapersList = ({
               onClick={onCreatePaperClick}
               size="sm"
               className="flex items-center gap-2"
-            >
-              Create Paper
-            </CreateButton>
+              label="Add Paper"
+            />
           )}
         </div>
 
@@ -244,11 +244,35 @@ export const ProjectWritingPapersList = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {isAuthor && !readOnly && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`${BTN.EDIT_OUTLINE} uppercase`}
+                            onClick={() => {
+                              const href = getPaperHref
+                                ? getPaperHref(projectId, paper.id)
+                                : readOnly
+                                  ? paths.app.projectPaperDetail.getHref(
+                                      projectId,
+                                      paper.id,
+                                    )
+                                  : paths.app.assignedProjects.paperDetail.getHref(
+                                      projectId,
+                                      paper.id,
+                                    );
+                              navigate(href);
+                            }}
+                          >
+                            EDIT
+                          </Button>
+                        )}
                         {(user?.preferredUsername === paper.createdBy ||
                           isManager) &&
                           !readOnly && (
                             <Button
-                              variant="action"
+                              variant="destructive"
+                              className={`${BTN.DANGER} uppercase`}
                               onClick={() => setPaperToDelete(paper)}
                             >
                               DELETE
@@ -262,13 +286,13 @@ export const ProjectWritingPapersList = ({
             </Table>
           </div>
         ) : searchDebounce ? (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">
               No papers found for &ldquo;{searchDebounce}&rdquo;
             </p>
           </div>
         ) : (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">No papers yet</p>
             {(isManager || isAuthor) && !!onCreatePaperClick && (
               <p className="text-muted-foreground mt-1 text-xs">

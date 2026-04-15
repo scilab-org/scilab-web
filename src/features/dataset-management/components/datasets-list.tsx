@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Download,
-  Pencil,
-  Trash2,
-  BarChart3,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, BarChart3, FileText } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -31,7 +24,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { BTN } from '@/lib/button-styles';
 import { useDatasets } from '../api/get-datasets';
 import { Dataset } from '../types';
 
@@ -82,7 +74,7 @@ export const DatasetsList = ({
 
   return (
     <div className="border-border rounded-xl border shadow-sm">
-      <div className="border-border bg-muted/30 border-b px-6 py-4">
+      <div className="border-border bg-empty-state border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-foreground text-lg font-semibold">
@@ -100,9 +92,8 @@ export const DatasetsList = ({
               onClick={onCreateClick}
               size="sm"
               className="flex items-center gap-2"
-            >
-              Upload Dataset
-            </CreateButton>
+              label="Upload Dataset"
+            />
           )}
         </div>
       </div>
@@ -166,51 +157,48 @@ export const DatasetsList = ({
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="action">VIEW</Button>
                             {canViewChart(dataset.filePath) &&
                               onViewChartClick && (
                                 <Button
-                                  variant="default"
-                                  size="sm"
+                                  variant="action"
+                                  size="icon"
                                   onClick={() => onViewChartClick(dataset)}
-                                  className="flex h-8 w-8 items-center justify-center bg-blue-600 p-0 hover:bg-blue-700"
+                                  className="size-8 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
                                   title="Chart"
                                 >
-                                  <BarChart3 className="h-4 w-4" />
+                                  <BarChart3 className="size-4" />
                                 </Button>
                               )}
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant="action"
+                              size="icon"
                               onClick={handleDownload}
-                              className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.VIEW_OUTLINE}`}
+                              className="size-8"
                               title="Download"
                             >
-                              <Download className="h-4 w-4" />
+                              <FileText className="size-4" />
                             </Button>
                             {!readOnly && (
                               <>
                                 <Button
-                                  variant="outline"
-                                  size="sm"
+                                  variant="outlineAction"
+                                  size="action"
                                   onClick={() =>
                                     (onUpdateClick ?? (() => {}))(dataset)
                                   }
-                                  className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.EDIT_OUTLINE}`}
                                   title="Edit"
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  EDIT
                                 </Button>
                                 <Button
                                   variant="destructive"
-                                  size="sm"
+                                  size="action"
                                   onClick={() =>
                                     setPendingDeleteDatasetId(dataset.id)
                                   }
-                                  className={`flex h-8 w-8 items-center justify-center p-0 ${BTN.DANGER}`}
                                   title="Delete"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  DELETE
                                 </Button>
                               </>
                             )}
@@ -323,7 +311,7 @@ export const DatasetsList = ({
             )}
           </>
         ) : (
-          <div className="bg-muted/30 rounded-lg py-12 text-center">
+          <div className="bg-empty-state rounded-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">
               No datasets uploaded yet
             </p>

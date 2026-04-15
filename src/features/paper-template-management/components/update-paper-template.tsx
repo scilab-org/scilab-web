@@ -133,7 +133,9 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="action">EDIT</Button>
+        <Button variant="outlineAction" size="action">
+          EDIT
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
@@ -273,7 +275,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
             type="submit"
             form="update-pt-form"
             disabled={mutation.isPending}
-            variant="secondary"
+            variant="darkRed"
           >
             {mutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>

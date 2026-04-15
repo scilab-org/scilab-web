@@ -410,9 +410,7 @@ export const CreatePaper = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <CreateButton size="sm" className="uppercase">
-          CREATE PAPER
-        </CreateButton>
+        <CreateButton className="uppercase">ADD PAPER</CreateButton>
       </DialogTrigger>
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
         <div className="shrink-0 px-6 pt-6">
@@ -871,9 +869,9 @@ export const CreatePaper = () => {
                 !file ||
                 isParsing
               }
-              variant="secondary"
+              variant="darkRed"
             >
-              {createPaperMutation.isPending ? 'CREATING...' : 'SAVE'}
+              {createPaperMutation.isPending ? 'SAVING...' : 'SAVE'}
             </Button>
           </DialogFooter>
         </div>

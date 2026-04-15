@@ -387,7 +387,7 @@ export const CreatePaperTemplate = () => {
             type="submit"
             form="create-pt-form"
             disabled={mutation.isPending || !formData.code.trim()}
-            variant="secondary"
+            variant="darkRed"
             className="uppercase"
           >
             {mutation.isPending ? 'CREATING...' : 'SAVE'}

@@ -45,6 +45,10 @@ const convert = (queryClient: QueryClient) => (m: any) => {
 export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
+      path: paths.auth.login.path,
+      lazy: () => import('./routes/auth/login').then(convert(queryClient)),
+    },
+    {
       path: paths.home.path,
       element: (
         <PublicRoute>

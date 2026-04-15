@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -141,7 +140,6 @@ export const UsersList = () => {
                 {/* Actions */}
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="action">VIEW</Button>
                     <UpdateUser user={user} userId={user.id!} />
                     {user.enabled ? (
                       <DeactivateUser userId={user.id!} />

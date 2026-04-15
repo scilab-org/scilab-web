@@ -70,7 +70,7 @@ import { useGetPaperSections } from '@/features/paper-management/api/get-paper-s
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
 import { ProjectMember } from '@/features/project-management/types';
 import { PaperWorkspacePage } from '@/features/project-management/components/papers/paper-workspace-page';
-import { PaperMembersSheet } from '@/features/project-management/components/papers/paper-members-sheet';
+import { PaperMembersDialog } from '@/features/project-management/components/papers/paper-members-sheet';
 import {
   useCreateTask,
   usePaperTasks,
@@ -2010,7 +2010,7 @@ export const ProjectPaperDetailPage = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <PaperMembersSheet
+      <PaperMembersDialog
         subProjectId={paperSubProjectId}
         isManager={isManager}
         isAuthor={isAuthor}

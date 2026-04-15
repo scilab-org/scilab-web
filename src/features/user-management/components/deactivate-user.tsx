@@ -24,7 +24,9 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="action">Delete</Button>
+        <Button variant="destructive" size="action">
+          Delete
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>
@@ -37,7 +39,7 @@ export const DeactivateUser = ({ userId }: DeactivateUserProps) => {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
+          <AlertDialogCancel variant="ghost">CANCEL</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={deactivateUserMutation.isPending}

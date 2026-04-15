@@ -39,7 +39,9 @@ export const DeletePaperTemplate = ({ id, name }: DeletePaperTemplateProps) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="action">DELETE</Button>
+        <Button variant="destructive" size="action">
+          DELETE
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

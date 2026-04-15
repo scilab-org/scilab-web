@@ -3,10 +3,8 @@ import {
   Compass,
   Lightbulb,
   Loader2,
-  Pencil,
   Sparkles,
   Target,
-  Trash2,
   Users,
   FileText,
   Database,
@@ -16,7 +14,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { BTN } from '@/lib/button-styles';
 import { Project } from '../../types';
 
 import { useProjectMembers } from '../../api/members/get-project-members';
@@ -122,7 +119,7 @@ export const ProjectView = ({
       description: 'Primary field and academic focus of the project.',
       icon: Compass,
       accent:
-        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900/40',
+        'bg-[#630F0F]/10 text-[#630F0F] border-[#630F0F]/20 dark:bg-[#630F0F]/20 dark:text-[#630F0F] dark:border-[#630F0F]/40',
     },
   ];
 
@@ -132,27 +129,24 @@ export const ProjectView = ({
         <div className="flex items-center justify-end">
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              size="sm"
+              variant="outlineAction"
+              size="action"
               onClick={onUpdate}
-              className={`h-8 w-8 p-0 ${BTN.EDIT_OUTLINE}`}
               title="Edit"
             >
-              <Pencil className="size-4" />
+              EDIT
             </Button>
             <Button
               variant="destructive"
-              size="sm"
+              size="action"
               onClick={onDelete}
               disabled={isDeleting}
-              className={`h-8 w-8 p-0 ${BTN.DANGER}`}
               title="Delete"
             >
               {isDeleting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Trash2 className="size-4" />
-              )}
+                <Loader2 className="mr-1 size-4 animate-spin" />
+              ) : null}
+              DELETE
             </Button>
           </div>
         </div>
@@ -163,7 +157,7 @@ export const ProjectView = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm dark:bg-blue-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#630F0F] text-white shadow-sm dark:bg-[#630F0F]">
                   <Lightbulb className="size-5" />
                 </div>
                 <div>
@@ -179,11 +173,11 @@ export const ProjectView = ({
             </div>
 
             <div className="w-full lg:w-[320px]">
-              <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm dark:border-blue-900/40 dark:bg-slate-950">
-                <div className="mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <div className="bg-card rounded-xl border border-[#630F0F]/20 p-4 shadow-sm dark:border-[#630F0F]/40 dark:bg-slate-950">
+                <div className="mb-2 flex items-center gap-2 text-[#630F0F] dark:text-[#630F0F]">
                   <CalendarRange className="size-4" />
                   <span className="text-xs font-semibold tracking-[0.18em] uppercase">
-                    Research Timeline
+                    Project Timeline
                   </span>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -208,10 +202,10 @@ export const ProjectView = ({
         <div className="p-6">
           <div className="mb-8">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+              <div className="rounded-xl border bg-transparent p-5 shadow-none transition-colors dark:bg-slate-950">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="rounded-md bg-blue-100/50 p-1.5 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                    <div className="rounded-md bg-[#630F0F]/10 p-1.5 text-[#630F0F] dark:bg-[#630F0F]/20 dark:text-[#630F0F]">
                       <Users className="size-4" />
                     </div>
                     <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
@@ -221,7 +215,7 @@ export const ProjectView = ({
                   <div>
                     <p className="text-foreground text-3xl font-bold">
                       {membersQuery.isLoading ? (
-                        <Loader2 className="size-6 animate-spin text-blue-600" />
+                        <Loader2 className="size-6 animate-spin text-[#630F0F]" />
                       ) : (
                         totalMembers
                       )}
@@ -230,7 +224,7 @@ export const ProjectView = ({
                 </div>
               </div>
 
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+              <div className="rounded-xl border bg-transparent p-5 shadow-none transition-colors dark:bg-slate-950">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="rounded-md bg-emerald-100/50 p-1.5 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
@@ -252,7 +246,7 @@ export const ProjectView = ({
                 </div>
               </div>
 
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+              <div className="rounded-xl border bg-transparent p-5 shadow-none transition-colors dark:bg-slate-950">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="rounded-md bg-violet-100/50 p-1.5 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
@@ -274,7 +268,7 @@ export const ProjectView = ({
                 </div>
               </div>
 
-              <div className="bg-muted/20 rounded-xl border p-5 shadow-none transition-colors dark:bg-slate-950">
+              <div className="rounded-xl border bg-transparent p-5 shadow-none transition-colors dark:bg-slate-950">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="rounded-md bg-amber-100/50 p-1.5 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
@@ -298,7 +292,7 @@ export const ProjectView = ({
             </div>
 
             {totalPapers > 0 && (
-              <div className="bg-muted/20 mt-4 rounded-xl border p-4 dark:bg-slate-950">
+              <div className="mt-4 rounded-xl border bg-transparent p-4 dark:bg-slate-950">
                 <p className="text-muted-foreground mb-3 text-xs font-bold tracking-wider uppercase">
                   Paper Status Breakdown
                 </p>

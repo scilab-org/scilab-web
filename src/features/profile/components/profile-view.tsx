@@ -130,12 +130,6 @@ export const ProfileView = () => {
                 {user?.username ?? authUser.preferredUsername ?? '—'}
               </p>
             </div>
-            <div>
-              <p className={fieldLabel}>System ID</p>
-              <p className="text-muted-foreground mt-1 font-sans text-xs break-all">
-                {authUser.id}
-              </p>
-            </div>
           </div>
         </div>
 
@@ -157,20 +151,6 @@ export const ProfileView = () => {
                 <Badge variant={user?.emailVerified ? 'success' : 'outline'}>
                   {user?.emailVerified ? 'Verified' : 'Not Verified'}
                 </Badge>
-              </div>
-            </div>
-            <div>
-              <p className={fieldLabel}>Groups</p>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {groups.length > 0 ? (
-                  groups.map((g) => (
-                    <Badge key={g} variant="muted">
-                      {g}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-muted-foreground text-sm">—</span>
-                )}
               </div>
             </div>
           </div>

@@ -215,7 +215,7 @@ export const PapersList = () => {
                       <FileText className="size-4" />
                     </Button>
                   )}
-                  <Button variant="action" asChild>
+                  <Button variant="outlineAction" size="action" asChild>
                     <Link
                       to={paths.app.paperManagement.paper.getHref(paper.id)}
                       onMouseEnter={() => {

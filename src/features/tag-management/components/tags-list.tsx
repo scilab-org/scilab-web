@@ -82,7 +82,9 @@ export const TagsList = () => {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Button variant="action">VIEW</Button>
+                  <Button variant="outlineAction" size="action">
+                    VIEW
+                  </Button>
                   <UpdateTag tagId={tag.id} tag={tag} />
                   <DeleteTag tagId={tag.id} />
                 </div>

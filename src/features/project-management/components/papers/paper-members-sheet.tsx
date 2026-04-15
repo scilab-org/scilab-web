@@ -14,14 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,7 +69,7 @@ const formatRole = (role: string): string => {
   return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 };
 
-type PaperMembersSheetProps = {
+type PaperMembersDialogProps = {
   /** Sub-project ID */
   subProjectId: string;
   isManager: boolean;
@@ -79,14 +79,14 @@ type PaperMembersSheetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export const PaperMembersSheet = ({
+export const PaperMembersDialog = ({
   subProjectId,
   isManager,
   isAuthor,
   paperTitle: _paperTitle,
   open,
   onOpenChange,
-}: PaperMembersSheetProps) => {
+}: PaperMembersDialogProps) => {
   const { data: user } = useUser();
   const isSystemAdmin = user?.groups?.includes('system:admin') ?? false;
 
@@ -237,32 +237,34 @@ export const PaperMembersSheet = ({
   }[panel];
 
   return (
-    <Sheet
+    <Dialog
       open={open}
       onOpenChange={(o) => {
         if (!o) handleClose();
       }}
     >
-      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm">
-        <SheetHeader className="px-1 pb-2">
-          <div className="flex items-center gap-2">
-            {panel === 'add' && (
-              <button
-                onClick={goBack}
-                className="text-muted-foreground hover:text-foreground mr-1 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-            )}
-            <Users className="h-5 w-5" />
-            <SheetTitle>{panelTitle}</SheetTitle>
-          </div>
-          <SheetDescription className="truncate">
-            {panelDescription}
-          </SheetDescription>
-        </SheetHeader>
+      <DialogContent className="flex max-h-[90vh] w-full flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              {panel === 'add' && (
+                <button
+                  onClick={goBack}
+                  className="text-muted-foreground hover:text-foreground mr-1 transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              )}
+              <Users className="h-5 w-5" />
+              <DialogTitle>{panelTitle}</DialogTitle>
+            </div>
+            <DialogDescription className="truncate">
+              {panelDescription}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="mt-4 flex flex-1 flex-col gap-3 overflow-hidden px-1">
+        <div className="scrollbar-dialog flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-4">
           {/* ── View panel: GET /projects/{id}/papers/{paperId}/members ── */}
           {panel === 'view' && (
             <div className="flex h-full flex-col">
@@ -279,7 +281,7 @@ export const PaperMembersSheet = ({
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto pr-1">
+              <div className="flex-1">
                 {membersQuery.isLoading ? (
                   <div className="space-y-2">
                     <Skeleton className="h-16 w-full rounded-xl" />
@@ -370,7 +372,7 @@ export const PaperMembersSheet = ({
                 </div>
               )}
 
-              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+              <div className="flex-1 space-y-2">
                 {parentAuthorsQuery.isLoading ? (
                   <>
                     <Skeleton className="h-16 w-full rounded-xl" />
@@ -437,46 +439,46 @@ export const PaperMembersSheet = ({
           )}
         </div>
 
-        <SheetFooter className="mt-4 flex-col gap-2 px-1 sm:flex-col">
-          {panel === 'view' && (
-            <SheetClose asChild>
-              <Button variant="outline" className={`w-full ${BTN.CANCEL}`}>
-                Close
-              </Button>
-            </SheetClose>
-          )}
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter className="gap-2 sm:gap-0">
+            {panel === 'view' && (
+              <DialogClose asChild>
+                <Button variant="outline" className={`w-full ${BTN.CANCEL}`}>
+                  Close
+                </Button>
+              </DialogClose>
+            )}
 
-          {panel === 'add' && (
-            <div className="flex w-full gap-2">
-              <Button
-                onClick={handleAdd}
-                disabled={selectedCount === 0 || addMembersMutation.isPending}
-                className={`flex flex-1 items-center gap-2 ${BTN.CREATE}`}
-              >
-                {addMembersMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4" />
-                    Add ({selectedCount})
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={goBack}
-                disabled={addMembersMutation.isPending}
-                className={BTN.CANCEL}
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
-        </SheetFooter>
-      </SheetContent>
+            {panel === 'add' && (
+              <div className="flex w-full gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={goBack}
+                  disabled={addMembersMutation.isPending}
+                  className="flex-1 uppercase"
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  onClick={handleAdd}
+                  disabled={selectedCount === 0 || addMembersMutation.isPending}
+                  variant="darkRed"
+                  className="flex-1 uppercase"
+                >
+                  {addMembersMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ADDING...
+                    </>
+                  ) : (
+                    `ADD (${selectedCount})`
+                  )}
+                </Button>
+              </div>
+            )}
+          </DialogFooter>
+        </div>
+      </DialogContent>
 
       <AlertDialog
         open={!!memberToRemove}
@@ -509,6 +511,6 @@ export const PaperMembersSheet = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Sheet>
+    </Dialog>
   );
 };
