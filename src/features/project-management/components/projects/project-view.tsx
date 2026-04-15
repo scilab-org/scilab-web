@@ -152,53 +152,7 @@ export const ProjectView = ({
         </div>
       )}
 
-      <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
-        <div className="border-b px-6 py-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#630F0F] text-white shadow-sm dark:bg-[#630F0F]">
-                  <Lightbulb className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-foreground text-2xl font-semibold tracking-tight">
-                    {project.name}
-                  </h2>
-                </div>
-              </div>
-              <p className="text-foreground/85 max-w-3xl text-sm leading-7 whitespace-pre-wrap">
-                {project.description ||
-                  'This project does not have a summary yet. Add a concise research description to help collaborators understand the scope quickly.'}
-              </p>
-            </div>
-
-            <div className="w-full lg:w-[320px]">
-              <div className="bg-card rounded-xl border border-[#630F0F]/20 p-4 shadow-sm dark:border-[#630F0F]/40 dark:bg-slate-950">
-                <div className="mb-2 flex items-center gap-2 text-[#630F0F] dark:text-[#630F0F]">
-                  <CalendarRange className="size-4" />
-                  <span className="text-xs font-semibold tracking-[0.18em] uppercase">
-                    Project Timeline
-                  </span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Start</span>
-                    <span className="text-foreground font-semibold">
-                      {formatDate(project.startDate)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">End</span>
-                    <span className="text-foreground font-semibold">
-                      {formatDate(project.endDate)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="bg-card overflow-hidden rounded-md border shadow-sm">
         <div className="p-6">
           <div className="mb-8">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

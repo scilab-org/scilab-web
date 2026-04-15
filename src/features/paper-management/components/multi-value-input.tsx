@@ -58,12 +58,16 @@ export const MultiValueInput = ({
       )}
     >
       {values.map((value) => (
-        <Badge key={value} variant="secondary" className="gap-1 pr-1 text-xs">
+        <Badge
+          key={value}
+          variant="secondary"
+          className="gap-1 pr-1 text-xs text-white"
+        >
           {value}
           <button
             type="button"
             onClick={() => onRemoveValue(value)}
-            className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+            className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-white/20"
           >
             <X className="size-3" />
           </button>

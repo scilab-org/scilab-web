@@ -142,8 +142,8 @@ export const ProjectWritingPapersList = ({
             <CreateButton
               onClick={onCreatePaperClick}
               size="sm"
-              className="flex items-center gap-2"
-              label="Add Paper"
+              className="flex items-center gap-2 tracking-wide uppercase"
+              label="Create Paper"
             />
           )}
         </div>

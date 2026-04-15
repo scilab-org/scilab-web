@@ -5,7 +5,7 @@ import { RouterProvider } from 'react-router/dom';
 
 import { Navigate, Outlet } from 'react-router';
 
-import { ProtectedRoute, PublicRoute, useUser } from '@/lib/auth';
+import { ProtectedRoute, PublicRoute, AdminRoute, useUser } from '@/lib/auth';
 import { getUserGroups } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
@@ -80,41 +80,6 @@ export const createAppRouter = (queryClient: QueryClient) =>
           lazy: () => import('./routes/app/sample').then(convert(queryClient)),
         },
         {
-          path: paths.app.projects.path,
-          lazy: () =>
-            import('./routes/app/project-management/projects').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.projectDetail.path,
-          lazy: () =>
-            import('./routes/app/project-management/project-detail').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.projectPaperDetail.path,
-          lazy: () =>
-            import('./routes/app/project-management/project-paper-detail').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.projectPaperWorkspace.path,
-          lazy: () =>
-            import('./routes/app/project-management/project-paper-workspace').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.projectPaperCombineEditor.path,
-          lazy: () =>
-            import('./routes/app/project-management/project-paper-combine-editor').then(
-              convert(queryClient),
-            ),
-        },
-        {
           path: paths.app.assignedProjects.list.path,
           lazy: () =>
             import('./routes/app/project-management/my-projects').then(
@@ -125,6 +90,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
           path: paths.app.assignedProjects.detail.path,
           lazy: () =>
             import('./routes/app/project-management/my-project-detail').then(
+              convert(queryClient),
+            ),
+        },
+        {
+          path: paths.app.assignedProjects.referenceDetail.path,
+          lazy: () =>
+            import('./routes/app/project-management/my-project-reference-detail').then(
               convert(queryClient),
             ),
         },
@@ -171,88 +143,132 @@ export const createAppRouter = (queryClient: QueryClient) =>
             import('./routes/app/settings').then(convert(queryClient)),
         },
         {
-          path: paths.app.userManagement.users.path,
-          lazy: () =>
-            import('./routes/app/user-management/users').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.userManagement.user.path,
-          lazy: () =>
-            import('./routes/app/user-management/user').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.groupRoleManagement.groups.path,
-          lazy: () =>
-            import('./routes/app/group-role-management/groups').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.groupRoleManagement.group.path,
-          lazy: () =>
-            import('./routes/app/group-role-management/group').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.paperManagement.papers.path,
-          lazy: () =>
-            import('./routes/app/paper-management/papers').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.paperManagement.paper.path,
-          lazy: () =>
-            import('./routes/app/paper-management/paper').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.paperManagement.writingPaper.path,
-          lazy: () =>
-            import('./routes/app/paper-management/writing-paper').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.tagManagement.tags.path,
-          lazy: () =>
-            import('./routes/app/tag-management/tags').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.journalManagement.journals.path,
-          lazy: () =>
-            import('./routes/app/journal-management/journals').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.journalManagement.journal.path,
-          lazy: () =>
-            import('./routes/app/journal-management/journal').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.paperTemplateManagement.paperTemplates.path,
-          lazy: () =>
-            import('./routes/app/paper-template-management/paper-templates').then(
-              convert(queryClient),
-            ),
-        },
-        {
-          path: paths.app.paperTemplateManagement.paperTemplate.path,
-          lazy: () =>
-            import('./routes/app/paper-template-management/paper-template').then(
-              convert(queryClient),
-            ),
+          element: (
+            <AdminRoute>
+              <Outlet />
+            </AdminRoute>
+          ),
+          children: [
+            {
+              path: paths.app.projects.path,
+              lazy: () =>
+                import('./routes/app/project-management/projects').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.projectDetail.path,
+              lazy: () =>
+                import('./routes/app/project-management/project-detail').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.projectPaperDetail.path,
+              lazy: () =>
+                import('./routes/app/project-management/project-paper-detail').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.projectPaperWorkspace.path,
+              lazy: () =>
+                import('./routes/app/project-management/project-paper-workspace').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.projectPaperCombineEditor.path,
+              lazy: () =>
+                import('./routes/app/project-management/project-paper-combine-editor').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.userManagement.users.path,
+              lazy: () =>
+                import('./routes/app/user-management/users').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.userManagement.user.path,
+              lazy: () =>
+                import('./routes/app/user-management/user').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.groupRoleManagement.groups.path,
+              lazy: () =>
+                import('./routes/app/group-role-management/groups').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.groupRoleManagement.group.path,
+              lazy: () =>
+                import('./routes/app/group-role-management/group').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.paperManagement.papers.path,
+              lazy: () =>
+                import('./routes/app/paper-management/papers').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.paperManagement.paper.path,
+              lazy: () =>
+                import('./routes/app/paper-management/paper').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.paperManagement.writingPaper.path,
+              lazy: () =>
+                import('./routes/app/paper-management/writing-paper').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.tagManagement.tags.path,
+              lazy: () =>
+                import('./routes/app/tag-management/tags').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.journalManagement.journals.path,
+              lazy: () =>
+                import('./routes/app/journal-management/journals').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.journalManagement.journal.path,
+              lazy: () =>
+                import('./routes/app/journal-management/journal').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.paperTemplateManagement.paperTemplates.path,
+              lazy: () =>
+                import('./routes/app/paper-template-management/paper-templates').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.paperTemplateManagement.paperTemplate.path,
+              lazy: () =>
+                import('./routes/app/paper-template-management/paper-template').then(
+                  convert(queryClient),
+                ),
+            },
+          ],
         },
       ],
     },

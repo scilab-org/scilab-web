@@ -122,6 +122,11 @@ export const paths = {
         path: 'my-projects/:projectId',
         getHref: (projectId: string) => `/app/my-projects/${projectId}`,
       },
+      referenceDetail: {
+        path: 'my-projects/:projectId/references/:paperId',
+        getHref: (projectId: string, paperId: string) =>
+          `/app/my-projects/${projectId}/references/${paperId}`,
+      },
       paperDetail: {
         path: 'my-projects/:projectId/papers/:paperId',
         getHref: (projectId: string, paperId: string) =>

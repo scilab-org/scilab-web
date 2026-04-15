@@ -67,16 +67,11 @@ const getStatusVariant = (
 };
 
 const TAG_COLORS = [
-  'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
-  'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800',
-  'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800',
-  'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-800',
-  'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
-  'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-800',
-  'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800',
-  'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
-  'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800',
-  'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
+  'border-border bg-muted text-muted-foreground',
+  'border-primary/20 bg-primary/10 text-primary',
+  'border-secondary/25 bg-secondary/15 text-secondary',
+  'border-tertiary/20 bg-tertiary/10 text-tertiary',
+  'border-outline bg-muted/70 text-on-surface-variant',
 ];
 
 const getTagColor = (tag: string) => {
@@ -245,9 +240,6 @@ export const ProjectPapersList = ({
                   <TableHead className="w-[15%] px-2 font-semibold">
                     Journal / Conference
                   </TableHead>
-                  <TableHead className="w-[10%] px-2 font-semibold">
-                    Status
-                  </TableHead>
                   <TableHead className="w-[15%] px-2 font-semibold">
                     Tags
                   </TableHead>
@@ -326,55 +318,41 @@ export const ProjectPapersList = ({
                       )}
                     </TableCell>
 
-                    {/* Status */}
-                    <TableCell className="px-2">
-                      {paper.status != null ? (
-                        (() => {
-                          const s = getStatusVariant(paper.status);
-                          return (
-                            <Badge variant={s.variant} className={s.className}>
-                              {PAPER_STATUS_MAP[paper.status] ?? 'Unknown'}
-                            </Badge>
-                          );
-                        })()
-                      ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
-                      )}
-                    </TableCell>
+                    {/* Status removed */}
+                    {/* Tags */}
                     <TableCell>
-                      {paper.tagNames && paper.tagNames.length > 0 ? (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="secondary"
-                              size="xs"
-                              className="gap-1"
-                            >
-                              <Tags className="size-3" />
-                              {paper.tagNames.length} tags
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-64">
-                            <p className="mb-2 text-sm font-medium">Tags</p>
-                            <div className="flex flex-wrap gap-1.5">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="action" size="xs">
+                            Tag
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="start"
+                          className="w-64 space-y-2"
+                        >
+                          <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                            Tags ({paper.tagNames?.length || 0})
+                          </p>
+                          {paper.tagNames && paper.tagNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
                               {paper.tagNames.map((tag) => (
                                 <Badge
                                   key={tag}
                                   variant="outline"
-                                  className={`text-xs ${getTagColor(tag)}`}
+                                  className={`px-2.5 py-1 text-xs font-medium ${getTagColor(tag)}`}
                                 >
                                   {tag}
                                 </Badge>
                               ))}
                             </div>
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        <span className="text-muted-foreground inline-flex items-center gap-1 text-xs italic">
-                          <Tags className="size-3 opacity-40" />
-                          No tags
-                        </span>
-                      )}
+                          ) : (
+                            <p className="text-muted-foreground text-sm">
+                              No tags.
+                            </p>
+                          )}
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-2">

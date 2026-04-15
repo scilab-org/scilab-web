@@ -107,9 +107,12 @@ const Breadcrumb = () => {
     .map((segment, index, arr) => {
       const next = arr[index + 1];
 
-      if (segment === 'papers' && isIdLikeSegment(next)) {
+      if (
+        (segment === 'papers' || segment === 'references') &&
+        isIdLikeSegment(next)
+      ) {
         return {
-          label: 'Paper Detail',
+          label: segment === 'references' ? 'Reference Detail' : 'Paper Detail',
           path: '/' + arr.slice(0, index + 2).join('/'),
         };
       }
@@ -123,8 +126,8 @@ const Breadcrumb = () => {
             path: '/' + arr.slice(0, index + 1).join('/'),
           };
         }
-        // Don't show "Paper Detail" for paper ID segment, stop at "Papers"
-        if (prev === 'papers') {
+        // Don't show detail label for ID segment, stop at preceding text
+        if (prev === 'papers' || prev === 'references') {
           return null;
         }
         return null;

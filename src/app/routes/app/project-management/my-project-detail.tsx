@@ -257,207 +257,212 @@ const MyProjectDetailRoute = () => {
   const borderClass = BORDER_CLASS[project.status] ?? BORDER_CLASS[1];
 
   return (
-    <ContentLayout title="" description="">
-      <div className="space-y-5">
-        {/* Project banner */}
-        <div
-          className={`border-border bg-card rounded-xl border border-l-4 px-6 py-5 shadow-sm ${borderClass}`}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-foreground text-2xl font-bold">
-                  {project.name}
-                </h1>
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusClass}`}
-                >
-                  {statusLabel}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Hash className="text-muted-foreground h-3.5 w-3.5" />
-                <span className="text-muted-foreground text-sm">
-                  {project.code}
-                </span>
-              </div>
-              {project.description && (
-                <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-                  {project.description}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-3">
-              <Button
-                className="btn-auto-tag"
-                onClick={() =>
-                  navigate(paths.app.aiResearch.getHref(projectId!))
-                }
-              >
-                <Bot className="mr-2 h-4 w-4" />
-                AI Research
-              </Button>
-              <div className="flex flex-col gap-1.5 text-sm">
-                <div className="flex items-center gap-2">
-                  <Calendar className="text-muted-foreground h-4 w-4" />
-                  <span className="text-muted-foreground">Start:</span>
-                  <span className="text-foreground font-medium">
-                    {project.startDate ? formatDate(project.startDate) : '—'}
+    <div className="min-h-[101vh]">
+      <ContentLayout title="" description="">
+        <div className="space-y-5">
+          {/* Project banner */}
+          <div
+            className={`border-border bg-card rounded-xl border border-l-4 px-6 py-5 shadow-sm ${borderClass}`}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-foreground text-2xl font-bold">
+                    {project.name}
+                  </h1>
+                  <span
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusClass}`}
+                  >
+                    {statusLabel}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="text-muted-foreground h-4 w-4" />
-                  <span className="text-muted-foreground">End:</span>
-                  <span className="text-foreground font-medium">
-                    {project.endDate ? formatDate(project.endDate) : '—'}
+                <div className="flex items-center gap-1.5">
+                  <Hash className="text-muted-foreground h-3.5 w-3.5" />
+                  <span className="text-muted-foreground text-sm">
+                    {project.code}
                   </span>
+                </div>
+                {project.description && (
+                  <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+                    {project.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-3">
+                <Button
+                  className="btn-auto-tag"
+                  onClick={() =>
+                    navigate(paths.app.aiResearch.getHref(projectId!))
+                  }
+                >
+                  <Bot className="mr-2 h-4 w-4" />
+                  AI Research
+                </Button>
+                <div className="flex flex-col gap-1.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="text-muted-foreground h-4 w-4" />
+                    <span className="text-muted-foreground">Start:</span>
+                    <span className="text-foreground font-medium">
+                      {project.startDate ? formatDate(project.startDate) : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="text-muted-foreground h-4 w-4" />
+                    <span className="text-muted-foreground">End:</span>
+                    <span className="text-foreground font-medium">
+                      {project.endDate ? formatDate(project.endDate) : '—'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Tab bar */}
+          <div className="border-border border-b">
+            <nav className="-mb-px flex gap-1">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'border-primary text-primary'
+                        : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Tab content */}
+          <div>
+            {activeTab === 'overview' && (
+              <ProjectView project={project} readOnly />
+            )}
+
+            {activeTab === 'members' && (
+              <ProjectMembersList
+                projectId={projectId}
+                viewerIsProjectManager={isManager}
+                onAddMembersClick={
+                  isManager ? () => setAddMembersOpen(true) : undefined
+                }
+                onRemoveMember={isManager ? handleRemoveMember : undefined}
+                removingMemberId={removingMemberId}
+              />
+            )}
+
+            {activeTab === 'papers' && (
+              <ProjectPapersList
+                projectId={projectId}
+                getPaperHref={(projectId, paperId) =>
+                  paths.app.assignedProjects.referenceDetail.getHref(
+                    projectId,
+                    paperId,
+                  )
+                }
+                onAddPapersClick={
+                  isManager ? () => setAddPapersOpen(true) : undefined
+                }
+                onRemovePaper={isManager ? handleRemovePaper : undefined}
+                removingPaperId={removingPaperId}
+                readOnly={!isManager}
+              />
+            )}
+
+            {activeTab === 'writing-papers' && (
+              <ProjectWritingPapersList
+                projectId={projectId}
+                getPaperHref={paths.app.assignedProjects.paperDetail.getHref}
+                isManager={isManager}
+                isAuthor={isAuthor}
+                onCreatePaperClick={
+                  isAuthor ? () => setCreatePaperOpen(true) : undefined
+                }
+              />
+            )}
+
+            {activeTab === 'datasets' && (
+              <DatasetsList
+                projectId={projectId}
+                onCreateClick={
+                  isManager ? () => setCreateDatasetOpen(true) : undefined
+                }
+                onUpdateClick={isManager ? handleUpdateDataset : undefined}
+                onDeleteClick={isManager ? handleDeleteDataset : undefined}
+                readOnly={!isManager}
+                onViewChartClick={handleViewChart}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="border-border border-b">
-          <nav className="-mb-px flex gap-1">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'border-primary text-primary'
-                      : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+        {isManager && (
+          <UpdateProject
+            project={project}
+            open={updateOpen}
+            onOpenChange={setUpdateOpen}
+          />
+        )}
 
-        {/* Tab content */}
-        <div>
-          {activeTab === 'overview' && (
-            <ProjectView project={project} readOnly />
-          )}
+        {isManager && (
+          <AddMembersModal
+            projectId={projectId}
+            open={addMembersOpen}
+            onOpenChange={setAddMembersOpen}
+          />
+        )}
 
-          {activeTab === 'members' && (
-            <ProjectMembersList
-              projectId={projectId}
-              viewerIsProjectManager={isManager}
-              onAddMembersClick={
-                isManager ? () => setAddMembersOpen(true) : undefined
-              }
-              onRemoveMember={isManager ? handleRemoveMember : undefined}
-              removingMemberId={removingMemberId}
-            />
-          )}
+        {isManager && (
+          <AddPapersModal
+            projectId={projectId}
+            open={addPapersOpen}
+            onOpenChange={setAddPapersOpen}
+          />
+        )}
 
-          {activeTab === 'papers' && (
-            <ProjectPapersList
-              projectId={projectId}
-              getPaperHref={(_projectId, paperId) =>
-                paths.app.paperManagement.paper.getHref(paperId)
-              }
-              onAddPapersClick={
-                isManager ? () => setAddPapersOpen(true) : undefined
-              }
-              onRemovePaper={isManager ? handleRemovePaper : undefined}
-              removingPaperId={removingPaperId}
-              readOnly={!isManager}
-            />
-          )}
+        {(isManager || isAuthor) && (
+          <CreatePaperInProject
+            projectId={projectId}
+            open={createPaperOpen}
+            onOpenChange={setCreatePaperOpen}
+          />
+        )}
 
-          {activeTab === 'writing-papers' && (
-            <ProjectWritingPapersList
-              projectId={projectId}
-              getPaperHref={paths.app.assignedProjects.paperDetail.getHref}
-              isManager={isManager}
-              isAuthor={isAuthor}
-              onCreatePaperClick={
-                isAuthor ? () => setCreatePaperOpen(true) : undefined
-              }
-            />
-          )}
+        {isManager && (
+          <CreateDataset
+            projectId={projectId}
+            open={createDatasetOpen}
+            onOpenChange={setCreateDatasetOpen}
+          />
+        )}
 
-          {activeTab === 'datasets' && (
-            <DatasetsList
-              projectId={projectId}
-              onCreateClick={
-                isManager ? () => setCreateDatasetOpen(true) : undefined
-              }
-              onUpdateClick={isManager ? handleUpdateDataset : undefined}
-              onDeleteClick={isManager ? handleDeleteDataset : undefined}
-              readOnly={!isManager}
-              onViewChartClick={handleViewChart}
-            />
-          )}
-        </div>
-      </div>
+        {isManager && (
+          <UpdateDataset
+            projectId={projectId}
+            dataset={selectedDataset}
+            open={updateDatasetOpen}
+            onOpenChange={setUpdateDatasetOpen}
+          />
+        )}
 
-      {isManager && (
-        <UpdateProject
-          project={project}
-          open={updateOpen}
-          onOpenChange={setUpdateOpen}
-        />
-      )}
-
-      {isManager && (
-        <AddMembersModal
-          projectId={projectId}
-          open={addMembersOpen}
-          onOpenChange={setAddMembersOpen}
-        />
-      )}
-
-      {isManager && (
-        <AddPapersModal
-          projectId={projectId}
-          open={addPapersOpen}
-          onOpenChange={setAddPapersOpen}
-        />
-      )}
-
-      {(isManager || isAuthor) && (
-        <CreatePaperInProject
-          projectId={projectId}
-          open={createPaperOpen}
-          onOpenChange={setCreatePaperOpen}
-        />
-      )}
-
-      {isManager && (
-        <CreateDataset
-          projectId={projectId}
-          open={createDatasetOpen}
-          onOpenChange={setCreateDatasetOpen}
-        />
-      )}
-
-      {isManager && (
-        <UpdateDataset
-          projectId={projectId}
-          dataset={selectedDataset}
-          open={updateDatasetOpen}
-          onOpenChange={setUpdateDatasetOpen}
-        />
-      )}
-
-      {chartViewerOpen && chartDataset && (
-        <ExcelChartViewer
-          fileUrl={chartDataset.filePath}
-          fileName={chartDataset.name}
-          onClose={handleCloseChartViewer}
-        />
-      )}
-    </ContentLayout>
+        {chartViewerOpen && chartDataset && (
+          <ExcelChartViewer
+            fileUrl={chartDataset.filePath}
+            fileName={chartDataset.name}
+            onClose={handleCloseChartViewer}
+          />
+        )}
+      </ContentLayout>
+    </div>
   );
 };
 

@@ -132,12 +132,16 @@ export const TagAutocompleteInput = ({
         )}
       >
         {tagList.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
+          <Badge
+            key={tag}
+            variant="secondary"
+            className="gap-1 pr-1 text-xs text-white"
+          >
             {tag}
             <button
               type="button"
               onClick={() => onRemoveTag(tag)}
-              className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+              className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-white/20"
             >
               <X className="size-3" />
             </button>
