@@ -20,6 +20,7 @@ type FilterDropdownProps = {
   onChange: (value: string) => void;
   options: FilterOption[];
   placeholder?: string;
+  clearLabel?: string;
   className?: string;
 };
 
@@ -28,6 +29,7 @@ export const FilterDropdown = ({
   onChange,
   options,
   placeholder,
+  clearLabel,
   className,
   variant = 'ghost',
 }: FilterDropdownProps & { variant?: 'ghost' | 'outline' }) => {
@@ -41,7 +43,7 @@ export const FilterDropdown = ({
           variant === 'ghost' &&
             'text-muted-foreground hover:text-foreground data-[state=open]:text-foreground h-full bg-transparent px-4 text-sm font-medium',
           variant === 'outline' &&
-            'border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:ring-1',
+            'border-input dark:bg-input/30 focus-visible:ring-ring h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:ring-1',
           className,
         )}
       >
@@ -71,7 +73,7 @@ export const FilterDropdown = ({
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
           <DropdownMenuRadioItem value="">
             <span className={cn('text-muted-foreground text-sm')}>
-              {variant === 'ghost' ? placeholder : 'All'}
+              {variant === 'ghost' ? placeholder : (clearLabel ?? 'All')}
             </span>
           </DropdownMenuRadioItem>
           {options.map((option) => (
