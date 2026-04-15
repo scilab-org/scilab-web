@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Users, FileText, Database, Calendar, Hash, Info } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { paths } from '@/config/paths';
@@ -249,6 +250,8 @@ const MyProjectDetailRoute = () => {
   const borderClass = BORDER_CLASS[project.status] ?? BORDER_CLASS[1];
 
   return (
+    <>
+      <Head title="Project Details" />
     <div className="min-h-[101vh]">
       <ContentLayout title="" description="">
         <div className="space-y-5">
@@ -446,6 +449,7 @@ const MyProjectDetailRoute = () => {
         )}
       </ContentLayout>
     </div>
+    </>
   );
 };
 

@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { getPaperTemplatesQueryOptions } from '@/features/paper-template-management/api/get-paper-templates';
 import { CreatePaperTemplate } from '@/features/paper-template-management/components/create-paper-template';
 import { PaperTemplatesFilter } from '@/features/paper-template-management/components/paper-templates-filter';
@@ -34,10 +35,12 @@ export const clientLoader =
 
 const PaperTemplatesRoute = () => {
   return (
-    <ContentLayout
-      title="Paper Templates"
-      description="Manage paper structure templates"
-    >
+    <>
+      <Head title="Paper Templates" />
+      <ContentLayout
+        title="Paper Templates"
+        description="Manage paper structure templates"
+      >
       <div className="flex justify-end">
         <CreatePaperTemplate />
       </div>
@@ -48,6 +51,7 @@ const PaperTemplatesRoute = () => {
         <PaperTemplatesList />
       </div>
     </ContentLayout>
+    </>
   );
 };
 

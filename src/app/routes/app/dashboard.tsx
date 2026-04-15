@@ -1,6 +1,7 @@
 import { ClipboardList, Plus, Users } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -125,10 +126,12 @@ const StatusBadge = ({ status }: { status: ActivityItem['status'] }) => {
 
 const DashboardRoute = () => {
   return (
-    <ContentLayout
-      title="Dashboard Overview"
-      description="Welcome back, here's what's happening today."
-    >
+    <>
+      <Head title="Dashboard" />
+      <ContentLayout
+        title="Dashboard Overview"
+        description="Welcome back, here's what's happening today."
+      >
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
@@ -202,6 +205,7 @@ const DashboardRoute = () => {
         </CardContent>
       </Card>
     </ContentLayout>
+    </>
   );
 };
 

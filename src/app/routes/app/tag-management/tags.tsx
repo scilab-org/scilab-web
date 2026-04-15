@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { getTagsQueryOptions } from '@/features/tag-management/api/get-tags';
 import { CreateTag } from '@/features/tag-management/components/create-tag';
 import { TagsFilter } from '@/features/tag-management/components/tags-filter';
@@ -34,7 +35,9 @@ export const clientLoader =
 
 const TagsRoute = () => {
   return (
-    <ContentLayout title="Tag Management" description="Manage tags">
+    <>
+      <Head title="Tag Management" />
+      <ContentLayout title="Tag Management" description="Manage tags">
       <div className="space-y-4">
         <div className="flex items-center justify-end">
           <CreateTag />
@@ -45,6 +48,7 @@ const TagsRoute = () => {
         <TagsList />
       </div>
     </ContentLayout>
+    </>
   );
 };
 

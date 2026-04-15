@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Search, X, FolderOpen } from 'lucide-react';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
@@ -143,10 +144,12 @@ const MyProjectsRoute = () => {
   const hasFilters = !!(name || code || status);
 
   return (
-    <ContentLayout
-      title="Assigned Projects"
-      description="Research projects you are a contributor to"
-    >
+    <>
+      <Head title="Assigned Projects" />
+      <ContentLayout
+        title="Assigned Projects"
+        description="Research projects you are a contributor to"
+      >
       <form
         onSubmit={handleApply}
         className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
@@ -332,6 +335,7 @@ const MyProjectsRoute = () => {
         )}
       </div>
     </ContentLayout>
+    </>
   );
 };
 

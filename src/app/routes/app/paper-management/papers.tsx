@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { getPapersQueryOptions } from '@/features/paper-management/api/get-papers';
 import { CreatePaper } from '@/features/paper-management/components/create-paper';
 import { PapersFilter } from '@/features/paper-management/components/papers-filter';
@@ -62,20 +63,23 @@ export const clientLoader =
 
 const PapersRoute = () => {
   return (
-    <ContentLayout
-      title="Paper Bank Management"
-      description="Manage research paper banks"
-    >
-      <div className="flex justify-end">
-        <CreatePaper />
-      </div>
-      <div className="mt-4">
-        <PapersFilter />
-      </div>
-      <div className="mt-4">
-        <PapersList />
-      </div>
-    </ContentLayout>
+    <>
+      <Head title="Paper Bank" />
+      <ContentLayout
+        title="Paper Bank Management"
+        description="Manage research paper banks"
+      >
+        <div className="flex justify-end">
+          <CreatePaper />
+        </div>
+        <div className="mt-4">
+          <PapersFilter />
+        </div>
+        <div className="mt-4">
+          <PapersList />
+        </div>
+      </ContentLayout>
+    </>
   );
 };
 

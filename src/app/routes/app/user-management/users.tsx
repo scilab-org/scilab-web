@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { getUsersQueryOptions } from '@/features/user-management/api/get-users';
 import { CreateUser } from '@/features/user-management/components/create-user';
 import { UsersFilter } from '@/features/user-management/components/users-filter';
@@ -36,7 +37,9 @@ export const clientLoader =
 
 const UsersRoute = () => {
   return (
-    <ContentLayout title="User Management" description="Manage system users">
+    <>
+      <Head title="User Management" />
+      <ContentLayout title="User Management" description="Manage system users">
       <div className="space-y-4">
         <div className="flex items-center justify-end">
           <CreateUser />
@@ -48,6 +51,7 @@ const UsersRoute = () => {
         <UsersList />
       </div>
     </ContentLayout>
+    </>
   );
 };
 

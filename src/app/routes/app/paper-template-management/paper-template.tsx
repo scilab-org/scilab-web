@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router';
 
 import { ContentLayout } from '@/components/layouts';
+import { Head } from '@/components/seo';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -56,7 +57,9 @@ const PaperTemplateRoute = () => {
   }
 
   return (
-    <ContentLayout title={template.code}>
+    <>
+      <Head title="Paper Template" />
+      <ContentLayout title={template.code}>
       <Card className="overflow-hidden rounded-xl border py-0 shadow-sm">
         <CardContent className="space-y-6 bg-[#fffaf1] p-6">
           {/* Actions bar */}
@@ -108,6 +111,7 @@ const PaperTemplateRoute = () => {
         </CardContent>
       </Card>
     </ContentLayout>
+    </>
   );
 };
 
