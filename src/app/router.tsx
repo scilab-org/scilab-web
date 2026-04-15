@@ -247,6 +247,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
               convert(queryClient),
             ),
         },
+        {
+          path: paths.app.paperTemplateManagement.paperTemplate.path,
+          lazy: () =>
+            import('./routes/app/paper-template-management/paper-template').then(
+              convert(queryClient),
+            ),
+        },
       ],
     },
     {

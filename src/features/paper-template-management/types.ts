@@ -9,31 +9,16 @@ export type PagingResult = {
 };
 
 export type TemplateSectionDto = {
-  key: string;
   title: string;
-  displayOrder?: number;
-  order?: number;
-  latex?: string;
-  packages?: string[];
-  numbered?: boolean;
-  allowSubsections?: boolean;
-  required?: boolean;
-  description?: string;
-  rule?: string;
-};
-
-export type TemplateStructureDto = {
-  templateCode: string;
-  sections: TemplateSectionDto[];
+  sectionRule: string;
+  displayOrder: number;
 };
 
 export type PaperTemplateDto = {
   id: string;
-  name: string;
   code: string;
   description: string;
-  templateStructure: TemplateStructureDto;
-  version: number;
+  sections: TemplateSectionDto[];
   createdOnUtc: string;
   lastModifiedOnUtc: string;
 };
@@ -48,35 +33,22 @@ export type GetPaperTemplatesResultApiResponse = {
 };
 
 export type GetPaperTemplatesParams = {
-  Name?: string;
+  Description?: string;
   Code?: string;
   PageNumber?: number;
   PageSize?: number;
 };
 
-export type CreateTemplateSectionDto = {
-  key: string;
+export type CreateTemplateSectionInput = {
   title: string;
+  sectionRule: string;
   displayOrder: number;
-  latex?: string;
-  packages?: string[];
-  numbered?: boolean;
-  allowSubsections?: boolean;
-  required?: boolean;
-  description?: string;
-  rule?: string;
-};
-
-export type CreateTemplateStructureDto = {
-  templateCode: string;
-  sections: CreateTemplateSectionDto[];
 };
 
 export type CreatePaperTemplateDto = {
-  name: string;
   code: string;
   description: string;
-  templateStructure: CreateTemplateStructureDto;
+  sections: CreateTemplateSectionInput[];
 };
 
 export type GetPaperTemplateByIdApiResponse = {
@@ -87,7 +59,7 @@ export type GetPaperTemplateByIdApiResponse = {
 
 export type UpdatePaperTemplateDto = {
   description: string;
-  templateStructure: CreateTemplateStructureDto;
+  sections: CreateTemplateSectionInput[];
 };
 
 export type StringApiCreatedResponse = {

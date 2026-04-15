@@ -6,12 +6,14 @@ import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-import { PAPER_STATUS_OPTIONS } from '../constants';
 import { MultiValueInput } from './multi-value-input';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
 export const PapersFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const filterInputClassName =
+    'border-input bg-background text-foreground placeholder:text-muted-foreground/50 h-10 rounded-md border px-4 font-sans text-sm shadow-none focus:border-outline focus:ring-0 focus:ring-offset-0 focus-visible:border-outline focus-visible:ring-0 focus-visible:ring-offset-0';
+
   const [showMore, setShowMore] = React.useState(() => {
     return Boolean(
       searchParams.get('abstract') ||
@@ -22,7 +24,6 @@ export const PapersFilter = () => {
       searchParams.get('isDeleted') === 'true' ||
       searchParams.get('fromDate') ||
       searchParams.get('toDate') ||
-      searchParams.get('status') ||
       searchParams.getAll('author').length > 0,
     );
   });
@@ -32,7 +33,6 @@ export const PapersFilter = () => {
     publisher: searchParams.get('publisher') || '',
     abstract: searchParams.get('abstract') || '',
     doi: searchParams.get('doi') || '',
-    status: searchParams.get('status') || '',
     fromDate: searchParams.get('fromDate') || '',
     toDate: searchParams.get('toDate') || '',
     paperType: searchParams.get('paperType') || '',
@@ -48,6 +48,8 @@ export const PapersFilter = () => {
   const [tagList, setTagList] = React.useState<string[]>(
     searchParams.getAll('tag'),
   );
+  const [isFromDateFocused, setIsFromDateFocused] = React.useState(false);
+  const [isToDateFocused, setIsToDateFocused] = React.useState(false);
 
   const handleAddAuthor = (value: string) => {
     const trimmed = value.trim();
@@ -87,6 +89,11 @@ export const PapersFilter = () => {
     (filters.isDeleted !== 'false' ? 1 : 0) +
     (tagList.length > 0 ? 1 : 0);
 
+  const fromDateInputType =
+    isFromDateFocused || Boolean(filters.fromDate) ? 'date' : 'text';
+  const toDateInputType =
+    isToDateFocused || Boolean(filters.toDate) ? 'date' : 'text';
+
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -94,7 +101,6 @@ export const PapersFilter = () => {
     if (filters.publisher) params.set('publisher', filters.publisher);
     if (filters.abstract) params.set('abstract', filters.abstract);
     if (filters.doi) params.set('doi', filters.doi);
-    if (filters.status) params.set('status', filters.status);
     if (filters.fromDate) params.set('fromDate', filters.fromDate);
     if (filters.toDate) params.set('toDate', filters.toDate);
     if (filters.paperType) params.set('paperType', filters.paperType);
@@ -122,7 +128,6 @@ export const PapersFilter = () => {
       publisher: '',
       abstract: '',
       doi: '',
-      status: '',
       fromDate: '',
       toDate: '',
       paperType: '',
@@ -142,7 +147,7 @@ export const PapersFilter = () => {
     >
       <div className="flex w-full flex-wrap items-center gap-2">
         {/* Title */}
-        <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+        <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
           <Search className="text-muted-foreground size-4" />
           <input
             value={filters.title}
@@ -170,7 +175,7 @@ export const PapersFilter = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, doi: e.target.value }))
             }
-            placeholder="DOI"
+            placeholder="Search by DOI..."
             className="text-foreground placeholder:text-muted-foreground/50 w-full bg-transparent font-sans text-sm outline-none"
           />
         </div>
@@ -181,7 +186,9 @@ export const PapersFilter = () => {
             tagList={tagList}
             onAddTag={handleAddTag}
             onRemoveTag={handleRemoveTag}
-            placeholder="Keywords..."
+            placeholder="Search by keywords..."
+            className="border-input bg-background focus-within:ring-ring/50 h-10 rounded-md border px-4 py-0 shadow-none focus-within:ring-1"
+            inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans"
           />
         </div>
 
@@ -208,98 +215,19 @@ export const PapersFilter = () => {
 
       {/* Secondary filters - collapsible */}
       {showMore && (
-        <div className="bg-background space-y-4 rounded-md p-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-status"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Status
-              </label>
-              <FilterDropdown
-                value={filters.status}
-                onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
-                options={PAPER_STATUS_OPTIONS.map((opt) => ({
-                  label: opt.label,
-                  value: String(opt.value),
-                }))}
-                placeholder="All status"
-                className="h-10 w-full justify-between px-4 font-sans"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-muted-foreground font-sans text-xs font-medium">
-                Authors
-              </span>
+        <div className="bg-background rounded-md p-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
               <MultiValueInput
                 values={authorList}
                 onAddValue={handleAddAuthor}
                 onRemoveValue={handleRemoveAuthor}
-                placeholder="Type an author and press Enter..."
+                placeholder="Search by author..."
+                className="h-10 px-4 py-1"
+                inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans text-sm"
               />
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-publisher"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Publisher
-              </label>
-              <Input
-                id="filter-publisher"
-                value={filters.publisher}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, publisher: e.target.value }))
-                }
-                placeholder="Search by publisher..."
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-fromDate"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Publication From
-              </label>
-              <Input
-                id="filter-fromDate"
-                type="date"
-                value={filters.fromDate}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, fromDate: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-toDate"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Publication To
-              </label>
-              <Input
-                id="filter-toDate"
-                type="date"
-                value={filters.toDate}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, toDate: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-paperType"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Paper Type
-              </label>
+            <div>
               <Input
                 id="filter-paperType"
                 value={filters.paperType}
@@ -307,15 +235,55 @@ export const PapersFilter = () => {
                   setFilters((prev) => ({ ...prev, paperType: e.target.value }))
                 }
                 placeholder="Search by type..."
+                className={filterInputClassName}
               />
             </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-journalName"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Journal Name
-              </label>
+            <div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  id="filter-fromDate"
+                  type={fromDateInputType}
+                  value={filters.fromDate}
+                  onFocus={() => setIsFromDateFocused(true)}
+                  onBlur={() => setIsFromDateFocused(false)}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      fromDate: e.target.value,
+                    }))
+                  }
+                  placeholder="Search by from date..."
+                  className={filterInputClassName}
+                />
+                <Input
+                  id="filter-toDate"
+                  type={toDateInputType}
+                  value={filters.toDate}
+                  onFocus={() => setIsToDateFocused(true)}
+                  onBlur={() => setIsToDateFocused(false)}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      toDate: e.target.value,
+                    }))
+                  }
+                  placeholder="Search by to date..."
+                  className={filterInputClassName}
+                />
+              </div>
+            </div>
+            <div>
+              <Input
+                id="filter-publisher"
+                value={filters.publisher}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, publisher: e.target.value }))
+                }
+                placeholder="Search by publisher..."
+                className={filterInputClassName}
+              />
+            </div>
+            <div>
               <Input
                 id="filter-journalName"
                 value={filters.journalName}
@@ -326,15 +294,10 @@ export const PapersFilter = () => {
                   }))
                 }
                 placeholder="Search by journal..."
+                className={filterInputClassName}
               />
             </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-conferenceName"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Conference Name
-              </label>
+            <div>
               <Input
                 id="filter-conferenceName"
                 value={filters.conferenceName}
@@ -345,18 +308,10 @@ export const PapersFilter = () => {
                   }))
                 }
                 placeholder="Search by conference..."
+                className={filterInputClassName}
               />
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-abstract"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Abstract
-              </label>
+            <div className="sm:col-span-2 lg:col-span-2">
               <Input
                 id="filter-abstract"
                 value={filters.abstract}
@@ -364,26 +319,22 @@ export const PapersFilter = () => {
                   setFilters((prev) => ({ ...prev, abstract: e.target.value }))
                 }
                 placeholder="Search by abstract..."
+                className={filterInputClassName}
               />
             </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="filter-isDeleted"
-                className="text-muted-foreground font-sans text-xs font-medium"
-              >
-                Is Deleted
-              </label>
+            <div>
               <FilterDropdown
                 value={filters.isDeleted}
                 onChange={(v) =>
                   setFilters((prev) => ({ ...prev, isDeleted: v }))
                 }
                 options={[
-                  { label: 'False', value: 'false' },
-                  { label: 'True', value: 'true' },
+                  { label: 'Active', value: 'false' },
+                  { label: 'Inactive', value: 'true' },
                 ]}
-                placeholder="False"
-                className="w-full font-sans"
+                placeholder="Search by status..."
+                variant="outline"
+                className="focus:border-outline focus-visible:border-outline h-10 w-full justify-between px-4 font-sans focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
           </div>

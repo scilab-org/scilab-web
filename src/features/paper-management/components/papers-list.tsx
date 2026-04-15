@@ -4,7 +4,6 @@ import { Link } from 'react-router';
 import { FileText, Building2, ExternalLink } from 'lucide-react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -20,7 +19,6 @@ import { paths } from '@/config/paths';
 import { usePapers } from '../api/get-papers';
 import { getPaperQueryOptions } from '../api/get-paper';
 import { DeletePaper } from './delete-paper';
-import { PAPER_STATUS_MAP } from '../constants';
 import { UpdatePaper } from './update-paper';
 import { Pagination } from '@/components/ui/pagination';
 
@@ -45,34 +43,6 @@ const truncateAuthors = (authors: string | null): React.ReactNode => {
   );
 };
 
-const getStatusVariant = (
-  status: number,
-): {
-  variant:
-    | 'default'
-    | 'secondary'
-    | 'destructive'
-    | 'success'
-    | 'outline'
-    | 'muted';
-  className?: string;
-} => {
-  switch (status) {
-    case 1:
-      return { variant: 'outline' };
-    case 2:
-      return { variant: 'default' };
-    case 3:
-      return { variant: 'secondary' };
-    case 4:
-      return { variant: 'success' };
-    case 5:
-      return { variant: 'muted' };
-    default:
-      return { variant: 'outline' };
-  }
-};
-
 export const PapersList = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -82,9 +52,6 @@ export const PapersList = () => {
   const publisher = searchParams.get('publisher') || undefined;
   const abstract = searchParams.get('abstract') || undefined;
   const doi = searchParams.get('doi') || undefined;
-  const status = searchParams.get('status')
-    ? Number(searchParams.get('status'))
-    : undefined;
   const fromDate = searchParams.get('fromDate') || undefined;
   const toDate = searchParams.get('toDate') || undefined;
   const paperType = searchParams.get('paperType') || undefined;
@@ -106,7 +73,6 @@ export const PapersList = () => {
       Publisher: publisher,
       Abstract: abstract,
       Doi: doi,
-      Status: status,
       FromPublicationDate: fromDate,
       ToPublicationDate: toDate,
       PaperType: paperType,
@@ -148,39 +114,28 @@ export const PapersList = () => {
       >
         <TableHeader>
           <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-            <TableHead className="w-[5%] px-2 text-xs leading-tight font-semibold tracking-wider uppercase">
-              #
-            </TableHead>
-            <TableHead className="w-[10%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[12%] px-8 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               DOI
             </TableHead>
-            <TableHead className="w-[22%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[28%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Title
             </TableHead>
-            <TableHead className="w-[18%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[18%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Authors
             </TableHead>
-            <TableHead className="w-[15%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[18%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Journal / Conference
             </TableHead>
-            <TableHead className="w-[10%] px-2 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
-              Status
-            </TableHead>
-            <TableHead className="w-[20%] px-2 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[24%] px-8 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Actions
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {papers.map((paper, index) => (
+          {papers.map((paper) => (
             <TableRow key={paper.id} className="hover:bg-surface-container-low">
-              {/* # STT */}
-              <TableCell className="text-muted-foreground px-2 text-center text-xs">
-                {(page - 1) * 10 + index + 1}
-              </TableCell>
-
               {/* DOI */}
-              <TableCell className="px-2 break-all whitespace-normal">
+              <TableCell className="px-8 break-all whitespace-normal">
                 {paper.doi ? (
                   <a
                     href={`https://doi.org/${paper.doi}`}
@@ -200,19 +155,22 @@ export const PapersList = () => {
               </TableCell>
 
               {/* Title */}
-              <TableCell className="overflow-hidden px-2 font-medium wrap-break-word whitespace-normal">
-                <span className="text-foreground block font-medium transition-colors">
-                  <span className="line-clamp-3">{paper.title || 'N/A'}</span>
+              <TableCell className="overflow-hidden px-3 font-medium">
+                <span
+                  className="text-foreground block truncate font-medium transition-colors"
+                  title={paper.title || 'N/A'}
+                >
+                  {paper.title || 'N/A'}
                 </span>
               </TableCell>
 
               {/* Authors */}
-              <TableCell className="px-2 text-sm wrap-break-word whitespace-normal">
+              <TableCell className="px-3 text-sm wrap-break-word whitespace-normal">
                 {truncateAuthors(paper.authors)}
               </TableCell>
 
               {/* Venue (Journal + Conference combined) */}
-              <TableCell className="px-2 wrap-break-word whitespace-normal">
+              <TableCell className="px-3 wrap-break-word whitespace-normal">
                 {paper.journalName ? (
                   <span className="line-clamp-2 text-sm">
                     {paper.journalName}
@@ -229,23 +187,8 @@ export const PapersList = () => {
                 )}
               </TableCell>
 
-              {/* Status */}
-              <TableCell className="px-2 whitespace-normal">
-                {(() => {
-                  const statusStyle = getStatusVariant(paper.status);
-                  return (
-                    <Badge
-                      variant={statusStyle.variant}
-                      className={statusStyle.className}
-                    >
-                      {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
-                    </Badge>
-                  );
-                })()}
-              </TableCell>
-
               {/* Actions */}
-              <TableCell className="px-2 whitespace-nowrap">
+              <TableCell className="px-8 whitespace-nowrap">
                 <div className="flex flex-nowrap items-center justify-center gap-1">
                   {paper.filePath ? (
                     <Button

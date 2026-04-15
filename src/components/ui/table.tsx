@@ -10,10 +10,7 @@ function Table({ className, containerClassName, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className={cn(
-        'relative w-full overflow-x-auto rounded-2xl',
-        containerClassName,
-      )}
+      className={cn('relative w-full overflow-x-auto', containerClassName)}
     >
       <table
         data-slot="table"
@@ -32,7 +29,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
     <thead
       data-slot="table-header"
       className={cn(
-        '[&_tr]:border-b-border/20 [&_tr]:border-b [&_tr]:!bg-[#E9E1D8] [&_tr]:hover:!bg-[#E9E1D8]',
+        '[&_tr]:bg-secondary-fixed! [&_tr]:hover:bg-secondary-fixed! [&_tr]:border-border/20 [&_tr]:border-b',
         className,
       )}
       {...props}
@@ -45,7 +42,7 @@ function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
     <tbody
       data-slot="table-body"
       className={cn(
-        'divide-border/10 divide-y [&_tr]:!bg-[#fffaf1] [&_tr]:hover:!bg-[#f4efe6] [&_tr:last-child]:border-0',
+        'divide-border/10 divide-y [&_tr]:bg-[#fffaf1]! [&_tr]:hover:bg-[#f4efe6]! [&_tr:last-child]:border-0',
         className,
       )}
       {...props}

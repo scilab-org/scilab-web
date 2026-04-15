@@ -11,6 +11,7 @@ export type PaperDto = {
   referenceContent: string | null;
   filePath: string | null;
   status: number;
+  ingestStatus?: number;
   isIngested: boolean;
   isAutoTagged: boolean;
   parsedText: string | null;

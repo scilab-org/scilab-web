@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Eye, GitBranch, Lock } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,18 +61,8 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
               {/* Info */}
               <div className="grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2">
                 <div>
-                  <p className="text-muted-foreground text-xs">Name</p>
-                  <p className="font-medium">{template.name}</p>
-                </div>
-                <div>
                   <p className="text-muted-foreground text-xs">Code</p>
                   <Badge variant="outline">{template.code}</Badge>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Template Code</p>
-                  <p className="font-sans text-xs">
-                    {template.templateStructure?.templateCode || '—'}
-                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-muted-foreground text-xs">Description</p>
@@ -89,72 +79,34 @@ export const ViewPaperTemplate = ({ id, name }: ViewPaperTemplateProps) => {
               {/* Sections */}
               <div className="space-y-2">
                 <p className="text-sm font-medium">
-                  Sections ({template.templateStructure?.sections?.length ?? 0})
+                  Sections ({template.sections?.length ?? 0})
                 </p>
                 <div className="rounded-lg border">
                   {/* Header */}
-                  <div className="bg-muted/50 grid grid-cols-[3rem_1fr_auto] items-center gap-2 border-b px-3 py-2 text-xs font-medium text-gray-500">
+                  <div className="bg-muted/50 grid grid-cols-[2rem_1fr] items-center gap-2 border-b px-3 py-2 text-xs font-medium text-gray-500">
                     <span>#</span>
-                    <span>Title</span>
-                    <span>Flags</span>
+                    <span>Title / Rule</span>
                   </div>
                   {/* Rows */}
                   <div className="divide-y">
-                    {(() => {
-                      let mainNum = 0;
-                      return template.templateStructure?.sections?.map(
-                        (section) => {
-                          let displayPrefix = '';
-                          if (section.numbered) {
-                            mainNum++;
-                            displayPrefix = `${mainNum}.`;
-                          }
-                          return (
-                            <div
-                              key={section.key}
-                              className="grid grid-cols-[3rem_1fr_auto] items-center gap-2 px-3 py-2 text-sm"
-                            >
-                              <span className="text-muted-foreground font-sans text-xs">
-                                {displayPrefix || '—'}
-                              </span>
-                              <div className="flex flex-col gap-0.5 py-1">
-                                <span>{section.title}</span>
-                                {section.description && (
-                                  <span className="text-muted-foreground text-xs leading-relaxed whitespace-pre-wrap">
-                                    {section.description}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {section.required && (
-                                  <Badge
-                                    variant="default"
-                                    className="h-5 bg-red-100 px-1.5 text-[10px] text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                                  >
-                                    Required
-                                  </Badge>
-                                )}
-                                {section.allowSubsections ? (
-                                  <span
-                                    title="Subsections allowed"
-                                    className="text-blue-500"
-                                  >
-                                    <GitBranch className="size-3.5" />
-                                  </span>
-                                ) : (
-                                  <span
-                                    title="No subsections"
-                                    className="text-muted-foreground"
-                                  >
-                                    <Lock className="size-3.5" />
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        },
-                      );
-                    })()}
+                    {template.sections?.map((section) => (
+                      <div
+                        key={section.displayOrder}
+                        className="grid grid-cols-[2rem_1fr] gap-2 px-3 py-2 text-sm"
+                      >
+                        <span className="text-muted-foreground pt-0.5 font-sans text-xs">
+                          {section.displayOrder}.
+                        </span>
+                        <div className="flex flex-col gap-0.5 py-0.5">
+                          <span className="font-medium">{section.title}</span>
+                          {section.sectionRule && (
+                            <span className="text-muted-foreground text-xs leading-relaxed whitespace-pre-wrap">
+                              {section.sectionRule}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

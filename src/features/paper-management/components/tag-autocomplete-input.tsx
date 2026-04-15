@@ -8,12 +8,15 @@ import {
   PopoverAnchor,
 } from '@/components/ui/popover';
 import { useTags } from '@/features/tag-management/api/get-tags';
+import { cn } from '@/utils/cn';
 
 type TagAutocompleteInputProps = {
   tagList: string[];
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
   placeholder?: string;
+  className?: string;
+  inputClassName?: string;
 };
 
 export const TagAutocompleteInput = ({
@@ -21,6 +24,8 @@ export const TagAutocompleteInput = ({
   onAddTag,
   onRemoveTag,
   placeholder = 'Type a tag and press Enter...',
+  className,
+  inputClassName,
 }: TagAutocompleteInputProps) => {
   const [tagInput, setTagInput] = React.useState('');
   const [showSuggestions, setShowSuggestions] = React.useState(false);
@@ -120,7 +125,12 @@ export const TagAutocompleteInput = ({
 
   return (
     <Popover open={showSuggestions && suggestions.length > 0}>
-      <div className="border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1">
+      <div
+        className={cn(
+          'border-input bg-background focus-within:ring-ring flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-sm transition-colors focus-within:ring-1',
+          className,
+        )}
+      >
         {tagList.map((tag) => (
           <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
             {tag}
@@ -153,7 +163,10 @@ export const TagAutocompleteInput = ({
               }, 200);
             }}
             placeholder={tagList.length === 0 ? placeholder : ''}
-            className="placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none"
+            className={cn(
+              'placeholder:text-muted-foreground min-w-30 flex-1 bg-transparent text-sm outline-none',
+              inputClassName,
+            )}
           />
         </PopoverAnchor>
       </div>

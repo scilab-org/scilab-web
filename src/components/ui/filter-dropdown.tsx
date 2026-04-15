@@ -45,7 +45,12 @@ export const FilterDropdown = ({
           className,
         )}
       >
-        <span className="truncate">
+        <span
+          className={cn(
+            'truncate',
+            !selectedOption && 'text-muted-foreground/50',
+          )}
+        >
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
@@ -59,8 +64,8 @@ export const FilterDropdown = ({
         align={variant === 'ghost' ? 'end' : 'start'}
         className={cn(
           variant === 'ghost'
-            ? 'w-[160px]'
-            : 'w-[var(--radix-dropdown-menu-trigger-width)] min-w-[160px]',
+            ? 'w-40'
+            : 'w-(--radix-dropdown-menu-trigger-width) min-w-40',
         )}
       >
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>

@@ -18,7 +18,7 @@ export const clientLoader =
     const query = getPaperTemplatesQueryOptions({
       PageNumber: page,
       PageSize: 10,
-      Name: name,
+      Description: name,
       Code: code,
     });
 

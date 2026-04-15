@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router';
 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -63,7 +62,7 @@ export const TagsList = () => {
             <TableHead className="w-[35%]">Name</TableHead>
             <TableHead className="w-[20%]">Created</TableHead>
             <TableHead className="w-[20%]">Last Modified</TableHead>
-            <TableHead className="w-[25%] text-right">Actions</TableHead>
+            <TableHead className="w-[25%] pl-16 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -80,11 +79,8 @@ export const TagsList = () => {
                   ? new Date(tag.lastModifiedOnUtc).toLocaleDateString()
                   : 'N/A'}
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <Button variant="outlineAction" size="action">
-                    VIEW
-                  </Button>
+              <TableCell className="pl-16 text-center">
+                <div className="flex items-center justify-center gap-2">
                   <UpdateTag tagId={tag.id} tag={tag} />
                   <DeleteTag tagId={tag.id} />
                 </div>
