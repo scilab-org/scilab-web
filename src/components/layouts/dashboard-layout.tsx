@@ -347,25 +347,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Breadcrumb />
             </div>
           </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="relative hidden md:block">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="border-input bg-background text-foreground placeholder-muted-foreground focus:ring-ring h-9 w-64 rounded-lg border pr-4 pl-10 text-sm outline-none focus:ring-2"
-              />
-            </div>
-
-            {/* Notifications */}
-            <button className="text-muted-foreground hover:bg-accent hover:text-accent-foreground relative rounded-lg p-2">
-              <Bell className="size-5" />
-              <span className="bg-primary absolute top-1.5 right-1.5 size-2 rounded-full" />
-            </button>
-          </div>
         </header>
 
         {/* Main content */}
