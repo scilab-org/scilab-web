@@ -660,7 +660,7 @@ export const CreatePaperInProject = ({
                   Loading sections...
                 </div>
               ) : sections.length > 0 ? (
-                <div className="rounded-xl border shadow-sm">
+                <div className="min-h-[400px] rounded-xl border shadow-sm">
                   <Table>
                     <TableHeader>
                       <TableRow>

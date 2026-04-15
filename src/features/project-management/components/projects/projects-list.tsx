@@ -140,7 +140,7 @@ export const ProjectsList = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
+    <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader className="[&_tr]:bg-surface-container-low [&_tr]:hover:bg-surface-container-low">
           <TableRow className="bg-surface-container-low hover:bg-surface-container-low">

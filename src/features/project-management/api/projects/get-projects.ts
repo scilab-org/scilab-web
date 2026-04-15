@@ -1,4 +1,8 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  queryOptions,
+  useQuery,
+} from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
 import { QueryConfig } from '@/lib/react-query';
@@ -34,5 +38,6 @@ export const useProjects = ({
   return useQuery({
     ...getProjectsQueryOptions(params),
     ...queryConfig,
+    placeholderData: keepPreviousData,
   });
 };

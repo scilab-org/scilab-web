@@ -56,7 +56,7 @@ export const PaperTemplatesList = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border shadow-sm">
+    <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
       <Table>
         <TableHeader>
           <TableRow className="bg-surface-container-low hover:bg-surface-container-low">

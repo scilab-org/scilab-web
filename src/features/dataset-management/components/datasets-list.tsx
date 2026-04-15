@@ -73,7 +73,7 @@ export const DatasetsList = ({
   const paging = datasetsQuery.data?.result?.paging;
 
   return (
-    <div className="border-border rounded-xl border shadow-sm">
+    <div className="border-border min-h-[400px] rounded-xl border shadow-sm">
       <div className="border-border bg-empty-state border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>

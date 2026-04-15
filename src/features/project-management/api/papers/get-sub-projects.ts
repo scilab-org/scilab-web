@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
 
@@ -39,6 +39,7 @@ export const useSubProjects = ({
   return useQuery({
     queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.SUB_PROJECTS, projectId, params],
     queryFn: () => getSubProjects(projectId, params),
+    placeholderData: keepPreviousData,
     ...queryConfig,
   });
 };

@@ -1,4 +1,8 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  queryOptions,
+  useQuery,
+} from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
 import { QueryConfig } from '@/lib/react-query';
@@ -39,5 +43,6 @@ export const usePaperTemplates = ({
   return useQuery({
     ...getPaperTemplatesQueryOptions(params),
     ...queryConfig,
+    placeholderData: keepPreviousData,
   });
 };

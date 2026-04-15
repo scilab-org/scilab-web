@@ -1,4 +1,8 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  queryOptions,
+  useQuery,
+} from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
 import { QueryConfig } from '@/lib/react-query';
@@ -33,5 +37,6 @@ export const useGroupRoles = ({
   return useQuery({
     ...getGroupRolesQueryOptions(groupId),
     ...queryConfig,
+    placeholderData: keepPreviousData,
   });
 };
