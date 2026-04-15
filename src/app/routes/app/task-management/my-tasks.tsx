@@ -449,763 +449,769 @@ const MyTasksRoute = () => {
         title="My Task"
         description="Track, filter and manage your paper tasks"
       >
-      <div className="mb-4 flex items-center justify-end">
-        <CreateButton
-          className="uppercase"
-          onClick={() => setIsCreateOpen(true)}
-        >
-          CREATE TASK
-        </CreateButton>
-      </div>
-
-      <form
-        onSubmit={applyFilters}
-        className="mb-6 flex flex-wrap items-end gap-2 rounded-md border bg-[#E9E1D8] p-2"
-      >
-        <div className="bg-background h-10 min-w-[220px] flex-1 rounded-md">
-          <FilterDropdown
-            value={localFilters.PaperId}
-            onChange={(value) => handleFilterChange('PaperId', value)}
-            options={paperFilterOptions}
-            placeholder="All Papers"
-            variant="outline"
-            className="h-10 w-full justify-between px-4 font-sans"
-          />
-        </div>
-        <div className="bg-background h-10 w-48 rounded-md">
-          <FilterDropdown
-            value={localFilters.Status}
-            onChange={(value) => handleFilterChange('Status', value)}
-            options={TASK_STATUS_OPTIONS.map((s) => ({
-              label: s.label,
-              value: String(s.value),
-            }))}
-            placeholder="All status"
-            variant="outline"
-            className="h-10 w-full justify-between px-4 font-sans"
-          />
-        </div>
-        <div className="bg-background h-10 w-52 rounded-md">
-          <FilterDropdown
-            value={localFilters.DateField}
-            onChange={(value) => handleFilterChange('DateField', value)}
-            options={DATE_TASK_FILTER_OPTIONS.map((f) => ({
-              label: f.label,
-              value: f.value,
-            }))}
-            placeholder="Select Date Field"
-            variant="outline"
-            className="h-10 w-full justify-between px-4 font-sans"
-          />
-        </div>
-        <Input
-          type="date"
-          value={localFilters.FromDate}
-          disabled={!isDateFieldSelected}
-          onChange={(e) => handleFilterChange('FromDate', e.target.value)}
-          className="bg-background h-10 w-[170px]"
-        />
-        <Input
-          type="date"
-          value={localFilters.ToDate}
-          disabled={!isDateFieldSelected}
-          onChange={(e) => handleFilterChange('ToDate', e.target.value)}
-          className="bg-background h-10 w-[170px]"
-        />
-
-        {activeFilterCount > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="text-muted-foreground hover:text-foreground h-10 px-3"
+        <div className="mb-4 flex items-center justify-end">
+          <CreateButton
+            className="uppercase"
+            onClick={() => setIsCreateOpen(true)}
           >
-            <X className="size-4" />
-            Clear ({activeFilterCount})
-          </Button>
-        )}
-
-        <Button
-          type="submit"
-          variant="outline"
-          className="border-input h-10 px-6 font-sans text-sm font-medium"
-        >
-          Search
-        </Button>
-      </form>
-
-      {/* ── Kanban Board ───────────────────────────────────────── */}
-      {tasksQuery.isLoading ? (
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-9 w-full rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-            </div>
-          ))}
+            CREATE TASK
+          </CreateButton>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {KANBAN_COLUMNS.map((col) => {
-            const colTasks = items
-              .map((t) => ({
-                ...t,
-                status: localStatusOverrides[t.id] ?? t.status,
-              }))
-              .filter((t) => t.status === col.status);
-            const isDragTarget = dragOverCol === col.status;
-            return (
-              <div key={col.status} className="flex min-w-0 flex-col">
-                {/* Column header */}
-                <div
-                  className={cn(
-                    'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
-                    col.headerCls,
-                  )}
-                >
-                  <span
-                    className={cn('size-2 shrink-0 rounded-full', col.dot)}
-                  />
-                  <span
-                    className={cn('flex-1 text-sm font-semibold', col.labelCls)}
-                  >
-                    {col.label}
-                  </span>
-                  <span
+
+        <form
+          onSubmit={applyFilters}
+          className="mb-6 flex flex-wrap items-end gap-2 rounded-md border bg-[#E9E1D8] p-2"
+        >
+          <div className="bg-background h-10 min-w-[220px] flex-1 rounded-md">
+            <FilterDropdown
+              value={localFilters.PaperId}
+              onChange={(value) => handleFilterChange('PaperId', value)}
+              options={paperFilterOptions}
+              placeholder="All Papers"
+              variant="outline"
+              className="h-10 w-full justify-between px-4 font-sans"
+            />
+          </div>
+          <div className="bg-background h-10 w-48 rounded-md">
+            <FilterDropdown
+              value={localFilters.Status}
+              onChange={(value) => handleFilterChange('Status', value)}
+              options={TASK_STATUS_OPTIONS.map((s) => ({
+                label: s.label,
+                value: String(s.value),
+              }))}
+              placeholder="All status"
+              variant="outline"
+              className="h-10 w-full justify-between px-4 font-sans"
+            />
+          </div>
+          <div className="bg-background h-10 w-52 rounded-md">
+            <FilterDropdown
+              value={localFilters.DateField}
+              onChange={(value) => handleFilterChange('DateField', value)}
+              options={DATE_TASK_FILTER_OPTIONS.map((f) => ({
+                label: f.label,
+                value: f.value,
+              }))}
+              placeholder="Select Date Field"
+              variant="outline"
+              className="h-10 w-full justify-between px-4 font-sans"
+            />
+          </div>
+          <Input
+            type="date"
+            value={localFilters.FromDate}
+            disabled={!isDateFieldSelected}
+            onChange={(e) => handleFilterChange('FromDate', e.target.value)}
+            className="bg-background h-10 w-[170px]"
+          />
+          <Input
+            type="date"
+            value={localFilters.ToDate}
+            disabled={!isDateFieldSelected}
+            onChange={(e) => handleFilterChange('ToDate', e.target.value)}
+            className="bg-background h-10 w-[170px]"
+          />
+
+          {activeFilterCount > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-muted-foreground hover:text-foreground h-10 px-3"
+            >
+              <X className="size-4" />
+              Clear ({activeFilterCount})
+            </Button>
+          )}
+
+          <Button
+            type="submit"
+            variant="outline"
+            className="border-input h-10 px-6 font-sans text-sm font-medium"
+          >
+            Search
+          </Button>
+        </form>
+
+        {/* ── Kanban Board ───────────────────────────────────────── */}
+        {tasksQuery.isLoading ? (
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-9 w-full rounded-lg" />
+                <Skeleton className="h-24 w-full rounded-lg" />
+                <Skeleton className="h-24 w-full rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {KANBAN_COLUMNS.map((col) => {
+              const colTasks = items
+                .map((t) => ({
+                  ...t,
+                  status: localStatusOverrides[t.id] ?? t.status,
+                }))
+                .filter((t) => t.status === col.status);
+              const isDragTarget = dragOverCol === col.status;
+              return (
+                <div key={col.status} className="flex min-w-0 flex-col">
+                  {/* Column header */}
+                  <div
                     className={cn(
-                      'rounded-full px-1.5 py-0.5 text-xs font-bold',
-                      col.countCls,
+                      'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
+                      col.headerCls,
                     )}
                   >
-                    {colTasks.length}
-                  </span>
-                </div>
-
-                {/* Column body – drop zone */}
-                <div
-                  className={cn(
-                    'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
-                    col.bodyCls,
-                    isDragTarget && 'ring-primary/40 ring-2 ring-inset',
-                  )}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    if (dragOverCol !== col.status) setDragOverCol(col.status);
-                  }}
-                  onDragLeave={(e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget as Node))
-                      setDragOverCol(null);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragOverCol(null);
-                    if (!draggedTaskId) return;
-                    const task = items.find((t) => t.id === draggedTaskId);
-                    if (!task) return;
-                    handleTaskDrop(task, col.status);
-                  }}
-                >
-                  {colTasks.length === 0 ? (
-                    <div
+                    <span
+                      className={cn('size-2 shrink-0 rounded-full', col.dot)}
+                    />
+                    <span
                       className={cn(
-                        'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
-                        isDragTarget
-                          ? 'border-primary/40 bg-primary/5'
-                          : 'border-transparent',
+                        'flex-1 text-sm font-semibold',
+                        col.labelCls,
                       )}
                     >
-                      <p className="text-muted-foreground text-xs">
-                        {isDragTarget ? 'Drop here' : 'No tasks'}
-                      </p>
-                    </div>
-                  ) : (
-                    colTasks.map((task) => {
-                      const canDelete =
-                        !!currentUsername &&
-                        (task.createdBy || '').trim().toLowerCase() ===
-                          currentUsername;
-                      const isPending = dndMutatingRef.current.has(task.id);
-                      return (
-                        <div
-                          key={task.id}
-                          draggable
-                          onDragStart={(e) => {
-                            setDraggedTaskId(task.id);
-                            e.dataTransfer.effectAllowed = 'move';
-                            e.dataTransfer.setData('text/plain', task.id);
-                          }}
-                          onDragEnd={() => {
-                            setDraggedTaskId(null);
-                            setDragOverCol(null);
-                          }}
-                          onClick={() => openEdit(task)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              openEdit(task);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          className={cn(
-                            'group bg-card relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
-                            isPending && 'ring-primary/40 ring-1',
-                          )}
-                        >
-                          {/* Pending indicator */}
-                          {isPending && (
-                            <span className="bg-primary absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
-                          )}
+                      {col.label}
+                    </span>
+                    <span
+                      className={cn(
+                        'rounded-full px-1.5 py-0.5 text-xs font-bold',
+                        col.countCls,
+                      )}
+                    >
+                      {colTasks.length}
+                    </span>
+                  </div>
 
-                          {/* Name + delete action */}
-                          <div className="flex items-start gap-1.5">
-                            <p className="flex-1 text-sm leading-snug font-medium">
-                              {task.name}
-                            </p>
-                            {canDelete && (
-                              <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeletingTask(task);
-                                }}
-                                title="Delete task"
-                                className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                              >
-                                <Trash2 className="size-3.5 text-red-600" />
-                              </Button>
+                  {/* Column body – drop zone */}
+                  <div
+                    className={cn(
+                      'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
+                      col.bodyCls,
+                      isDragTarget && 'ring-primary/40 ring-2 ring-inset',
+                    )}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (dragOverCol !== col.status)
+                        setDragOverCol(col.status);
+                    }}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node))
+                        setDragOverCol(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOverCol(null);
+                      if (!draggedTaskId) return;
+                      const task = items.find((t) => t.id === draggedTaskId);
+                      if (!task) return;
+                      handleTaskDrop(task, col.status);
+                    }}
+                  >
+                    {colTasks.length === 0 ? (
+                      <div
+                        className={cn(
+                          'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
+                          isDragTarget
+                            ? 'border-primary/40 bg-primary/5'
+                            : 'border-transparent',
+                        )}
+                      >
+                        <p className="text-muted-foreground text-xs">
+                          {isDragTarget ? 'Drop here' : 'No tasks'}
+                        </p>
+                      </div>
+                    ) : (
+                      colTasks.map((task) => {
+                        const canDelete =
+                          !!currentUsername &&
+                          (task.createdBy || '').trim().toLowerCase() ===
+                            currentUsername;
+                        const isPending = dndMutatingRef.current.has(task.id);
+                        return (
+                          <div
+                            key={task.id}
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggedTaskId(task.id);
+                              e.dataTransfer.effectAllowed = 'move';
+                              e.dataTransfer.setData('text/plain', task.id);
+                            }}
+                            onDragEnd={() => {
+                              setDraggedTaskId(null);
+                              setDragOverCol(null);
+                            }}
+                            onClick={() => openEdit(task)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                openEdit(task);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className={cn(
+                              'group bg-card relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
+                              isPending && 'ring-primary/40 ring-1',
+                            )}
+                          >
+                            {/* Pending indicator */}
+                            {isPending && (
+                              <span className="bg-primary absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
+                            )}
+
+                            {/* Name + delete action */}
+                            <div className="flex items-start gap-1.5">
+                              <p className="flex-1 text-sm leading-snug font-medium">
+                                {task.name}
+                              </p>
+                              {canDelete && (
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingTask(task);
+                                  }}
+                                  title="Delete task"
+                                  className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                >
+                                  <Trash2 className="size-3.5 text-red-600" />
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* Description */}
+                            {task.description && (
+                              <p className="text-muted-foreground line-clamp-2 text-xs">
+                                {task.description}
+                              </p>
+                            )}
+
+                            {/* Paper name */}
+                            {task.paperTitle && (
+                              <p className="text-muted-foreground truncate text-[11px]">
+                                📄 {task.paperTitle}
+                              </p>
+                            )}
+
+                            {/* Assignee */}
+                            <div className="flex items-center gap-1.5">
+                              <div className="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
+                                {task.assignedToUserName.charAt(0)}
+                              </div>
+                              <span className="text-muted-foreground truncate text-xs">
+                                {task.assignedToUserName}
+                              </span>
+                            </div>
+
+                            {/* Dates */}
+                            {(task.startDate ||
+                              task.nextReviewDate ||
+                              task.completeDate) && (
+                              <div className="space-y-0.5 border-t pt-1.5">
+                                {task.startDate && (
+                                  <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                    <Calendar className="size-3 shrink-0" />
+                                    <span>
+                                      Start: {formatDate(task.startDate)}
+                                    </span>
+                                  </div>
+                                )}
+                                {task.nextReviewDate && (
+                                  <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                    <Calendar className="size-3 shrink-0" />
+                                    <span>
+                                      Review: {formatDate(task.nextReviewDate)}
+                                    </span>
+                                  </div>
+                                )}
+                                {task.completeDate && (
+                                  <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                    <Calendar className="size-3 shrink-0" />
+                                    <span>
+                                      Due: {formatDate(task.completeDate)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-
-                          {/* Description */}
-                          {task.description && (
-                            <p className="text-muted-foreground line-clamp-2 text-xs">
-                              {task.description}
-                            </p>
-                          )}
-
-                          {/* Paper name */}
-                          {task.paperTitle && (
-                            <p className="text-muted-foreground truncate text-[11px]">
-                              📄 {task.paperTitle}
-                            </p>
-                          )}
-
-                          {/* Assignee */}
-                          <div className="flex items-center gap-1.5">
-                            <div className="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
-                              {task.assignedToUserName.charAt(0)}
-                            </div>
-                            <span className="text-muted-foreground truncate text-xs">
-                              {task.assignedToUserName}
-                            </span>
-                          </div>
-
-                          {/* Dates */}
-                          {(task.startDate ||
-                            task.nextReviewDate ||
-                            task.completeDate) && (
-                            <div className="space-y-0.5 border-t pt-1.5">
-                              {task.startDate && (
-                                <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                                  <Calendar className="size-3 shrink-0" />
-                                  <span>
-                                    Start: {formatDate(task.startDate)}
-                                  </span>
-                                </div>
-                              )}
-                              {task.nextReviewDate && (
-                                <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                                  <Calendar className="size-3 shrink-0" />
-                                  <span>
-                                    Review: {formatDate(task.nextReviewDate)}
-                                  </span>
-                                </div>
-                              )}
-                              {task.completeDate && (
-                                <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                                  <Calendar className="size-3 shrink-0" />
-                                  <span>
-                                    Due: {formatDate(task.completeDate)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <Dialog
-        open={isCreateOpen}
-        onOpenChange={(open) => {
-          setIsCreateOpen(open);
-          if (!open) setCreateForm(createInitialTaskForm());
-        }}
-      >
-        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create New Task</DialogTitle>
-            <DialogDescription>
-              Fill in the details to create a new task. Fields marked with * are
-              required.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            id="create-task-form"
-            onSubmit={handleCreate}
-            className="scrollbar-dialog grid flex-1 gap-4 overflow-y-auto px-4 py-2 sm:grid-cols-2"
-          >
-            <div className="space-y-2 sm:col-span-2">
-              <label
-                htmlFor="create-paper-id"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Paper Name *
-              </label>
-              <select
-                id="create-paper-id"
-                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                value={createForm.paperId}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    paperId: e.target.value,
-                  }))
-                }
-              >
-                <option value="">Select paper</option>
-                {assignedPapers.map((paper) => (
-                  <option key={paper.id} value={paper.id}>
-                    {paper.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="create-assignee"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Assigned To
-              </label>
-              <Input
-                id="create-assignee"
-                placeholder="Assigned to (You)"
-                value={createForm.assignedToUserName}
-                readOnly
-                className="bg-muted text-muted-foreground cursor-not-allowed"
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <label
-                htmlFor="create-name"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Task Name *
-              </label>
-              <Input
-                id="create-name"
-                placeholder="Enter task name"
-                value={createForm.name}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <label
-                htmlFor="create-desc"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Description
-              </label>
-              <textarea
-                id="create-desc"
-                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                placeholder="Enter task description"
-                value={createForm.description}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="create-status"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Status
-              </label>
-              <select
-                id="create-status"
-                className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                value={createForm.status}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    status: e.target.value,
-                  }))
-                }
-              >
-                {TASK_STATUS_OPTIONS.map((s) => (
-                  <option key={s.value} value={String(s.value)}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="create-start"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Start Date
-              </label>
-              <Input
-                id="create-start"
-                type="datetime-local"
-                value={createForm.startDate}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    startDate: e.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="create-review"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Next Review
-              </label>
-              <Input
-                id="create-review"
-                type="datetime-local"
-                value={createForm.nextReviewDate}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    nextReviewDate: e.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <label
-                htmlFor="create-complete"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Complete Date
-              </label>
-              <Input
-                id="create-complete"
-                type="datetime-local"
-                value={createForm.completeDate}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({
-                    ...prev,
-                    completeDate: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </form>
-          <DialogFooter className="gap-2 px-4 pb-2">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className={`min-w-25 ${BTN.CANCEL}`}
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              form="create-task-form"
-              className={`min-w-25 ${BTN.CREATE}`}
-              disabled={createTaskMutation.isPending}
-            >
-              {createTaskMutation.isPending ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!editingTask}
-        onOpenChange={(open) => !open && setEditingTask(null)}
-      >
-        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-            <DialogDescription>
-              Update task details and schedule.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            id="edit-task-form"
-            onSubmit={handleUpdate}
-            className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-2"
-          >
-            {(() => {
-              const isOwnedTask =
-                !!currentUsername &&
-                !!editingTask &&
-                (editingTask.createdBy || '').trim().toLowerCase() ===
-                  currentUsername;
-              return (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm leading-none font-medium">Paper</p>
-                    <Input
-                      value={
-                        editingTask?.paperTitle || editingTask?.paperId || ''
-                      }
-                      readOnly
-                      className="bg-muted text-muted-foreground cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm leading-none font-medium">
-                      Task Name
-                    </p>
-                    <Input
-                      value={editingTask?.name || ''}
-                      readOnly
-                      className="bg-muted text-muted-foreground cursor-not-allowed"
-                    />
-                  </div>
-
-                  {editingTask?.description && (
-                    <div className="space-y-2">
-                      <p className="text-sm leading-none font-medium">
-                        Description
-                      </p>
-                      <p className="text-muted-foreground bg-muted/50 rounded-md border px-3 py-2 text-sm">
-                        {editingTask.description}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="edit-assignee"
-                      className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Assigned To
-                    </label>
-                    <Input
-                      id="edit-assignee"
-                      placeholder="Assigned to"
-                      value={updateForm.assignedToUserName}
-                      readOnly
-                      className="bg-muted text-muted-foreground cursor-not-allowed"
-                    />
-                  </div>
-
-                  {isOwnedTask ? (
-                    <>
-                      <div className="space-y-2">
-                        <label
-                          htmlFor="edit-name"
-                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Task Name *
-                        </label>
-                        <Input
-                          id="edit-name"
-                          placeholder="Task name *"
-                          value={updateForm.name}
-                          onChange={(e) =>
-                            setUpdateForm((prev) => ({
-                              ...prev,
-                              name: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label
-                          htmlFor="edit-desc"
-                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Description
-                        </label>
-                        <textarea
-                          id="edit-desc"
-                          className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                          placeholder="Description"
-                          value={updateForm.description}
-                          onChange={(e) =>
-                            setUpdateForm((prev) => ({
-                              ...prev,
-                              description: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    </>
-                  ) : null}
-
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="edit-status"
-                      className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Status
-                    </label>
-                    <select
-                      id="edit-status"
-                      className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                      value={updateForm.status}
-                      onChange={(e) =>
-                        setUpdateForm((prev) => ({
-                          ...prev,
-                          status: e.target.value,
-                        }))
-                      }
-                    >
-                      {TASK_STATUS_OPTIONS.map((s) => (
-                        <option key={s.value} value={String(s.value)}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="edit-start"
-                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Start Date
-                      </label>
-                      <Input
-                        id="edit-start"
-                        type="datetime-local"
-                        value={updateForm.startDate}
-                        onChange={(e) =>
-                          setUpdateForm((prev) => ({
-                            ...prev,
-                            startDate: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="edit-review"
-                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Next Review
-                      </label>
-                      <Input
-                        id="edit-review"
-                        type="datetime-local"
-                        value={updateForm.nextReviewDate}
-                        onChange={(e) =>
-                          setUpdateForm((prev) => ({
-                            ...prev,
-                            nextReviewDate: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               );
-            })()}
-          </form>
-          <DialogFooter className="gap-2 px-4 pb-2">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className={`min-w-25 ${BTN.CANCEL}`}
-                onClick={() => setEditingTask(null)}
-              >
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              form="edit-task-form"
-              className={`min-w-25 ${BTN.EDIT}`}
-              disabled={updateTaskMutation.isPending}
-            >
-              {updateTaskMutation.isPending ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            })}
+          </div>
+        )}
 
-      <AlertDialog
-        open={!!deletingTask}
-        onOpenChange={(open) => !open && setDeletingTask(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Task</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete{' '}
-              <span className="font-semibold">{deletingTask?.name}</span>? This
-              action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className={BTN.CANCEL}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={BTN.DANGER}
-              onClick={() => {
-                if (!deletingTask) return;
-                const canDeleteTask =
-                  !!currentUsername &&
-                  (deletingTask.createdBy || '').trim().toLowerCase() ===
-                    currentUsername;
-                if (!canDeleteTask) {
-                  toast.error('You can only delete tasks created by you');
-                  setDeletingTask(null);
-                  return;
-                }
-                deleteTaskMutation.mutate(deletingTask.id);
-              }}
-              disabled={deleteTaskMutation.isPending}
+        <Dialog
+          open={isCreateOpen}
+          onOpenChange={(open) => {
+            setIsCreateOpen(open);
+            if (!open) setCreateForm(createInitialTaskForm());
+          }}
+        >
+          <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Task</DialogTitle>
+              <DialogDescription>
+                Fill in the details to create a new task. Fields marked with *
+                are required.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              id="create-task-form"
+              onSubmit={handleCreate}
+              className="scrollbar-dialog grid flex-1 gap-4 overflow-y-auto px-4 py-2 sm:grid-cols-2"
             >
-              {deleteTaskMutation.isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </ContentLayout>
+              <div className="space-y-2 sm:col-span-2">
+                <label
+                  htmlFor="create-paper-id"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Paper Name *
+                </label>
+                <select
+                  id="create-paper-id"
+                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                  value={createForm.paperId}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      paperId: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="">Select paper</option>
+                  {assignedPapers.map((paper) => (
+                    <option key={paper.id} value={paper.id}>
+                      {paper.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="create-assignee"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Assigned To
+                </label>
+                <Input
+                  id="create-assignee"
+                  placeholder="Assigned to (You)"
+                  value={createForm.assignedToUserName}
+                  readOnly
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label
+                  htmlFor="create-name"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Task Name *
+                </label>
+                <Input
+                  id="create-name"
+                  placeholder="Enter task name"
+                  value={createForm.name}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label
+                  htmlFor="create-desc"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="create-desc"
+                  className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                  placeholder="Enter task description"
+                  value={createForm.description}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="create-status"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Status
+                </label>
+                <select
+                  id="create-status"
+                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                  value={createForm.status}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      status: e.target.value,
+                    }))
+                  }
+                >
+                  {TASK_STATUS_OPTIONS.map((s) => (
+                    <option key={s.value} value={String(s.value)}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="create-start"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Start Date
+                </label>
+                <Input
+                  id="create-start"
+                  type="datetime-local"
+                  value={createForm.startDate}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="create-review"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Next Review
+                </label>
+                <Input
+                  id="create-review"
+                  type="datetime-local"
+                  value={createForm.nextReviewDate}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      nextReviewDate: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label
+                  htmlFor="create-complete"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Complete Date
+                </label>
+                <Input
+                  id="create-complete"
+                  type="datetime-local"
+                  value={createForm.completeDate}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      completeDate: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </form>
+            <DialogFooter className="gap-2 px-4 pb-2">
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`min-w-25 ${BTN.CANCEL}`}
+                  onClick={() => setIsCreateOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                type="submit"
+                form="create-task-form"
+                className={`min-w-25 ${BTN.CREATE}`}
+                disabled={createTaskMutation.isPending}
+              >
+                {createTaskMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={!!editingTask}
+          onOpenChange={(open) => !open && setEditingTask(null)}
+        >
+          <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+              <DialogDescription>
+                Update task details and schedule.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              id="edit-task-form"
+              onSubmit={handleUpdate}
+              className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-2"
+            >
+              {(() => {
+                const isOwnedTask =
+                  !!currentUsername &&
+                  !!editingTask &&
+                  (editingTask.createdBy || '').trim().toLowerCase() ===
+                    currentUsername;
+                return (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm leading-none font-medium">Paper</p>
+                      <Input
+                        value={
+                          editingTask?.paperTitle || editingTask?.paperId || ''
+                        }
+                        readOnly
+                        className="bg-muted text-muted-foreground cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm leading-none font-medium">
+                        Task Name
+                      </p>
+                      <Input
+                        value={editingTask?.name || ''}
+                        readOnly
+                        className="bg-muted text-muted-foreground cursor-not-allowed"
+                      />
+                    </div>
+
+                    {editingTask?.description && (
+                      <div className="space-y-2">
+                        <p className="text-sm leading-none font-medium">
+                          Description
+                        </p>
+                        <p className="text-muted-foreground bg-muted/50 rounded-md border px-3 py-2 text-sm">
+                          {editingTask.description}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="edit-assignee"
+                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Assigned To
+                      </label>
+                      <Input
+                        id="edit-assignee"
+                        placeholder="Assigned to"
+                        value={updateForm.assignedToUserName}
+                        readOnly
+                        className="bg-muted text-muted-foreground cursor-not-allowed"
+                      />
+                    </div>
+
+                    {isOwnedTask ? (
+                      <>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="edit-name"
+                            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Task Name *
+                          </label>
+                          <Input
+                            id="edit-name"
+                            placeholder="Task name *"
+                            value={updateForm.name}
+                            onChange={(e) =>
+                              setUpdateForm((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="edit-desc"
+                            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Description
+                          </label>
+                          <textarea
+                            id="edit-desc"
+                            className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                            placeholder="Description"
+                            value={updateForm.description}
+                            onChange={(e) =>
+                              setUpdateForm((prev) => ({
+                                ...prev,
+                                description: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </>
+                    ) : null}
+
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="edit-status"
+                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Status
+                      </label>
+                      <select
+                        id="edit-status"
+                        className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                        value={updateForm.status}
+                        onChange={(e) =>
+                          setUpdateForm((prev) => ({
+                            ...prev,
+                            status: e.target.value,
+                          }))
+                        }
+                      >
+                        {TASK_STATUS_OPTIONS.map((s) => (
+                          <option key={s.value} value={String(s.value)}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="edit-start"
+                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Start Date
+                        </label>
+                        <Input
+                          id="edit-start"
+                          type="datetime-local"
+                          value={updateForm.startDate}
+                          onChange={(e) =>
+                            setUpdateForm((prev) => ({
+                              ...prev,
+                              startDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="edit-review"
+                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Next Review
+                        </label>
+                        <Input
+                          id="edit-review"
+                          type="datetime-local"
+                          value={updateForm.nextReviewDate}
+                          onChange={(e) =>
+                            setUpdateForm((prev) => ({
+                              ...prev,
+                              nextReviewDate: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </form>
+            <DialogFooter className="gap-2 px-4 pb-2">
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`min-w-25 ${BTN.CANCEL}`}
+                  onClick={() => setEditingTask(null)}
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                type="submit"
+                form="edit-task-form"
+                className={`min-w-25 ${BTN.EDIT}`}
+                disabled={updateTaskMutation.isPending}
+              >
+                {updateTaskMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog
+          open={!!deletingTask}
+          onOpenChange={(open) => !open && setDeletingTask(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete{' '}
+                <span className="font-semibold">{deletingTask?.name}</span>?
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className={BTN.CANCEL}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className={BTN.DANGER}
+                onClick={() => {
+                  if (!deletingTask) return;
+                  const canDeleteTask =
+                    !!currentUsername &&
+                    (deletingTask.createdBy || '').trim().toLowerCase() ===
+                      currentUsername;
+                  if (!canDeleteTask) {
+                    toast.error('You can only delete tasks created by you');
+                    setDeletingTask(null);
+                    return;
+                  }
+                  deleteTaskMutation.mutate(deletingTask.id);
+                }}
+                disabled={deleteTaskMutation.isPending}
+              >
+                {deleteTaskMutation.isPending ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </ContentLayout>
     </>
   );
 };

@@ -1,5 +1,4 @@
 import {
-  Bell,
   Bookmark,
   BookOpen,
   ClipboardList,
@@ -8,7 +7,6 @@ import {
   FolderKanban,
   LayoutTemplate,
   LogOut,
-  Search,
   Tag,
   Users,
 } from 'lucide-react';

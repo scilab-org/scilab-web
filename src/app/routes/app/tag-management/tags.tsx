@@ -38,16 +38,16 @@ const TagsRoute = () => {
     <>
       <Head title="Tag Management" />
       <ContentLayout title="Tag Management" description="Manage tags">
-      <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          <CreateTag />
+        <div className="space-y-4">
+          <div className="flex items-center justify-end">
+            <CreateTag />
+          </div>
+          <TagsFilter />
         </div>
-        <TagsFilter />
-      </div>
-      <div className="mt-4">
-        <TagsList />
-      </div>
-    </ContentLayout>
+        <div className="mt-4">
+          <TagsList />
+        </div>
+      </ContentLayout>
     </>
   );
 };

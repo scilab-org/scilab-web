@@ -11,15 +11,15 @@ const LandingRoute = () => {
     <>
       <Head description="HyperDataLab — scientific research collaboration platform" />
       <div className="bg-background text-foreground min-h-screen">
-      <LandingNav />
-      <main>
-        <HeroSection />
-        <FeaturesSection />
-        <ProgressionSection />
-        <QuoteSection />
-      </main>
-      <LandingFooter />
-    </div>
+        <LandingNav />
+        <main>
+          <HeroSection />
+          <FeaturesSection />
+          <ProgressionSection />
+          <QuoteSection />
+        </main>
+        <LandingFooter />
+      </div>
     </>
   );
 };

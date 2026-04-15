@@ -150,191 +150,193 @@ const MyProjectsRoute = () => {
         title="Assigned Projects"
         description="Research projects you are a contributor to"
       >
-      <form
-        onSubmit={handleApply}
-        className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
-      >
-        <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
-          <Search className="text-muted-foreground size-4" />
-          <Input
-            className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
-            placeholder="Search by project name..."
-            value={filters.name}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, name: e.target.value }))
-            }
-          />
-          {filters.name && (
-            <button
-              type="button"
-              onClick={handleClearName}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
-
-        <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
-          <Search className="text-muted-foreground size-4" />
-          <Input
-            className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
-            placeholder="Search by code..."
-            value={filters.code}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, code: e.target.value }))
-            }
-          />
-          {filters.code && (
-            <button
-              type="button"
-              onClick={handleClearCode}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
-
-        <div className="bg-background h-10 w-48 rounded-md">
-          <FilterDropdown
-            value={filters.status}
-            onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
-            options={PROJECT_STATUS_OPTIONS.map((opt) => ({
-              label: opt.label,
-              value: String(opt.value),
-            }))}
-            placeholder="All status"
-            className="h-10 w-full justify-between px-4 font-sans"
-          />
-        </div>
-
-        <Button
-          type="submit"
-          variant="outline"
-          className="border-input h-10 px-6 font-sans text-sm font-medium"
+        <form
+          onSubmit={handleApply}
+          className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
         >
-          Search
-        </Button>
-      </form>
-
-      {/* Table */}
-      <div className="mt-4 overflow-x-auto rounded-xl border shadow-sm">
-        {projectsQuery.isLoading ? (
-          <div className="space-y-2 p-6">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : projects.length > 0 ? (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-                    <TableHead className="text-muted-foreground w-35">
-                      Code
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Name
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Status
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Start Date
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      End Date
-                    </TableHead>
-                    <TableHead className="text-muted-foreground text-right">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {projects.map((project) => {
-                    const cfg = getStatusConfig(project.status);
-                    return (
-                      <TableRow
-                        key={project.id}
-                        className="cursor-pointer"
-                        onClick={() =>
-                          navigate(
-                            paths.app.assignedProjects.detail.getHref(
-                              project.id,
-                            ),
-                          )
-                        }
-                      >
-                        <TableCell className="text-foreground text-sm font-medium">
-                          {project.code}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {project.name}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={cfg.variant}>{cfg.text}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {project.startDate
-                            ? formatDate(project.startDate)
-                            : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {project.endDate ? formatDate(project.endDate) : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Link
-                            to={paths.app.assignedProjects.detail.getHref(
-                              project.id,
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button variant="outlineAction" size="action">
-                              VIEW
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            {paging && <Pagination paging={paging} />}
-          </>
-        ) : (
-          <div className="rounded-xl py-20 text-center">
-            <FolderOpen className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
-            <p className="text-foreground font-medium">
-              {hasFilters
-                ? 'No projects match your filters'
-                : 'No assigned projects yet'}
-            </p>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {hasFilters
-                ? 'Try adjusting your search or filter'
-                : 'Projects you contribute to will appear here'}
-            </p>
-            {hasFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => {
-                  setFilters({ name: '', code: '', status: '' });
-                  setSearchParams({});
-                }}
+          <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+            <Search className="text-muted-foreground size-4" />
+            <Input
+              className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
+              placeholder="Search by project name..."
+              value={filters.name}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+            {filters.name && (
+              <button
+                type="button"
+                onClick={handleClearName}
+                className="text-muted-foreground hover:text-foreground"
               >
-                Clear filters
-              </Button>
+                <X className="size-4" />
+              </button>
             )}
           </div>
-        )}
-      </div>
-    </ContentLayout>
+
+          <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+            <Search className="text-muted-foreground size-4" />
+            <Input
+              className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
+              placeholder="Search by code..."
+              value={filters.code}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, code: e.target.value }))
+              }
+            />
+            {filters.code && (
+              <button
+                type="button"
+                onClick={handleClearCode}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="bg-background h-10 w-48 rounded-md">
+            <FilterDropdown
+              value={filters.status}
+              onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
+              options={PROJECT_STATUS_OPTIONS.map((opt) => ({
+                label: opt.label,
+                value: String(opt.value),
+              }))}
+              placeholder="All status"
+              className="h-10 w-full justify-between px-4 font-sans"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            variant="outline"
+            className="border-input h-10 px-6 font-sans text-sm font-medium"
+          >
+            Search
+          </Button>
+        </form>
+
+        {/* Table */}
+        <div className="mt-4 overflow-x-auto rounded-xl border shadow-sm">
+          {projectsQuery.isLoading ? (
+            <div className="space-y-2 p-6">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : projects.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+                      <TableHead className="text-muted-foreground w-35">
+                        Code
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Name
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Status
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Start Date
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        End Date
+                      </TableHead>
+                      <TableHead className="text-muted-foreground text-right">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projects.map((project) => {
+                      const cfg = getStatusConfig(project.status);
+                      return (
+                        <TableRow
+                          key={project.id}
+                          className="cursor-pointer"
+                          onClick={() =>
+                            navigate(
+                              paths.app.assignedProjects.detail.getHref(
+                                project.id,
+                              ),
+                            )
+                          }
+                        >
+                          <TableCell className="text-foreground text-sm font-medium">
+                            {project.code}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {project.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={cfg.variant}>{cfg.text}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {project.startDate
+                              ? formatDate(project.startDate)
+                              : '—'}
+                          </TableCell>
+                          <TableCell>
+                            {project.endDate
+                              ? formatDate(project.endDate)
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link
+                              to={paths.app.assignedProjects.detail.getHref(
+                                project.id,
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button variant="outlineAction" size="action">
+                                VIEW
+                              </Button>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {paging && <Pagination paging={paging} />}
+            </>
+          ) : (
+            <div className="rounded-xl py-20 text-center">
+              <FolderOpen className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+              <p className="text-foreground font-medium">
+                {hasFilters
+                  ? 'No projects match your filters'
+                  : 'No assigned projects yet'}
+              </p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {hasFilters
+                  ? 'Try adjusting your search or filter'
+                  : 'Projects you contribute to will appear here'}
+              </p>
+              {hasFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => {
+                    setFilters({ name: '', code: '', status: '' });
+                    setSearchParams({});
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </ContentLayout>
     </>
   );
 };
