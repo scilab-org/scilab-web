@@ -12,7 +12,7 @@ import { BooleanApiDeletedResponse } from '../types';
 export const deleteJournal = (
   journalId: string,
 ): Promise<BooleanApiDeletedResponse> => {
-  return api.delete(JOURNAL_MANAGEMENT_API.ADMIN_JOURNAL_BY_ID(journalId));
+  return api.delete(JOURNAL_MANAGEMENT_API.JOURNAL_BY_ID(journalId));
 };
 
 type UseDeleteJournalOptions = {

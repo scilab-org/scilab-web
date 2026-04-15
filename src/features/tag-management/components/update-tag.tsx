@@ -83,9 +83,9 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
         <form
           id="update-tag-form"
           onSubmit={handleSubmit}
-          className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+          className="space-y-4 px-4 py-4"
         >
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label htmlFor="update-tag-name" className="text-sm font-medium">
               Name <span className="text-destructive">*</span>
             </label>

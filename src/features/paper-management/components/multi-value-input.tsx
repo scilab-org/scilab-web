@@ -85,6 +85,18 @@ export const MultiValueInput = ({
           inputClassName,
         )}
       />
+      {inputValue && (
+        <button
+          type="button"
+          onClick={() => {
+            setInputValue('');
+            inputRef.current?.focus();
+          }}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="size-4" />
+        </button>
+      )}
     </div>
   );
 };

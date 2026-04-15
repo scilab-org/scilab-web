@@ -43,7 +43,7 @@ export const PaperTemplatesFilter = () => {
       className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
     >
       {/* Search Name */}
-      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
         <Search className="text-muted-foreground size-4" />
         <input
           value={filters.name}
@@ -65,8 +65,7 @@ export const PaperTemplatesFilter = () => {
       </div>
 
       {/* Search Code */}
-      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
-        <Search className="text-muted-foreground size-4" />
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
         <input
           value={filters.code}
           onChange={(e) =>

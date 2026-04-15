@@ -46,7 +46,7 @@ export const UsersFilter = () => {
       className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
     >
       {/* Search */}
-      <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+      <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
         <Search className="text-muted-foreground size-4" />
         <input
           value={filters.search}
@@ -68,7 +68,7 @@ export const UsersFilter = () => {
       </div>
 
       {/* Roles */}
-      <div className="bg-background h-10 w-56 rounded-md">
+      <div className="bg-background h-10 w-56 rounded-md shadow-xs">
         <FilterDropdown
           value={filters.groupName}
           onChange={(v) => handleSelectChange('groupName', v)}
@@ -79,7 +79,7 @@ export const UsersFilter = () => {
       </div>
 
       {/* Status */}
-      <div className="bg-background h-10 w-56 rounded-md">
+      <div className="bg-background h-10 w-56 rounded-md shadow-xs">
         <FilterDropdown
           value={filters.enabled}
           onChange={(v) => handleSelectChange('enabled', v)}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Loader2, Search, Tags, Building2, FileText } from 'lucide-react';
+import { Loader2, Search, Building2, FileText } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -34,37 +34,7 @@ import {
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { ProjectPaper } from '../../types';
 import { paths } from '@/config/paths';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
-
-const getStatusVariant = (
-  status: number | null,
-): {
-  variant:
-    | 'default'
-    | 'secondary'
-    | 'destructive'
-    | 'success'
-    | 'outline'
-    | 'muted';
-  className?: string;
-} => {
-  if (status == null) return { variant: 'outline' };
-  switch (status) {
-    case 1:
-      return { variant: 'outline' };
-    case 2:
-      return { variant: 'default' };
-    case 3:
-      return { variant: 'secondary' };
-    case 4:
-      return { variant: 'success' };
-    case 5:
-      return { variant: 'muted' };
-    default:
-      return { variant: 'outline' };
-  }
-};
 
 const TAG_COLORS = [
   'border-border bg-muted text-muted-foreground',

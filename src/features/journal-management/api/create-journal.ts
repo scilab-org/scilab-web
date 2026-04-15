@@ -12,7 +12,17 @@ import { CreateJournalDto, StringApiCreatedResponse } from '../types';
 export const createJournal = (
   data: CreateJournalDto,
 ): Promise<StringApiCreatedResponse> => {
-  return api.post(JOURNAL_MANAGEMENT_API.ADMIN_JOURNALS, { dto: data });
+  const formData = new FormData();
+  formData.append('name', data.name);
+  formData.append('templateId', data.templateId);
+  formData.append('startAt', data.startAt);
+  formData.append('endAt', data.endAt);
+  formData.append('style', data.style);
+  formData.append('texFile', data.texFile);
+  formData.append('pdfFile', data.pdfFile);
+  return api.post(JOURNAL_MANAGEMENT_API.JOURNALS, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
 type UseCreateJournalOptions = {
