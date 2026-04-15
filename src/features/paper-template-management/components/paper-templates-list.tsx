@@ -94,7 +94,7 @@ export const PaperTemplatesList = () => {
                     <UpdatePaperTemplate template={template} />
                     <DeletePaperTemplate
                       id={template.id}
-                      name={template.code}
+                      code={template.code}
                     />
                   </div>
                 </TableCell>

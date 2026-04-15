@@ -538,9 +538,9 @@ export const CreatePaperInProject = ({
             {selectedTemplate ? (
               <div className="bg-muted/50 flex items-center justify-between rounded-lg border p-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{selectedTemplate.name}</p>
+                  <p className="text-sm font-medium">{selectedTemplate.code}</p>
                   <p className="text-muted-foreground text-xs">
-                    Code: {selectedTemplate.code}
+                    {selectedTemplate.description || 'No description'}
                   </p>
                 </div>
                 <Button
@@ -594,9 +594,9 @@ export const CreatePaperInProject = ({
                               >
                                 <Check className="text-primary invisible size-3.5" />
                                 <div className="min-w-0">
-                                  <p className="font-medium">{tpl.name}</p>
+                                  <p className="font-medium">{tpl.code}</p>
                                   <p className="text-muted-foreground text-xs">
-                                    {tpl.code}
+                                    {tpl.description || 'No description'}
                                   </p>
                                 </div>
                               </button>

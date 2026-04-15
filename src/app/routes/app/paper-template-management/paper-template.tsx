@@ -62,7 +62,7 @@ const PaperTemplateRoute = () => {
           {/* Actions bar */}
           <div className="flex items-center justify-end gap-2">
             <UpdatePaperTemplate template={template} />
-            <DeletePaperTemplate id={template.id} />
+            <DeletePaperTemplate id={template.id} code={template.code} />
           </div>
 
           <div className="bg-border/60 h-px" />

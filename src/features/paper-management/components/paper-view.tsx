@@ -13,7 +13,6 @@ import { usePaperDetail } from '../api/get-paper';
 import { UpdatePaper } from './update-paper';
 import { DeletePaper } from './delete-paper';
 import { formatPublicationDate } from '@/utils/string-utils';
-import { PAPER_STATUS_MAP } from '../constants';
 
 const TAG_COLORS = [
   'border-border bg-muted text-muted-foreground',
@@ -31,32 +30,22 @@ const getTagColor = (tag: string) => {
   return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
 };
 
-const getStatusVariant = (
-  status: number,
-): {
-  variant:
-    | 'default'
-    | 'secondary'
-    | 'destructive'
-    | 'success'
-    | 'outline'
-    | 'muted';
-  className?: string;
-} => {
-  switch (status) {
-    case 1:
-      return { variant: 'outline' };
-    case 2:
-      return { variant: 'default' };
-    case 3:
-      return { variant: 'secondary' };
-    case 4:
-      return { variant: 'success' };
-    case 5:
-      return { variant: 'muted' };
-    default:
-      return { variant: 'outline' };
+const getIngestStatusLabel = (status?: number) => {
+  if (status === 1) return 'Success';
+  if (status === 2) return 'Failed';
+  return 'Pending';
+};
+
+const getIngestStatusClassName = (status?: number) => {
+  if (status === 1) {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
   }
+
+  if (status === 2) {
+    return 'border-red-200 bg-red-50 text-red-700';
+  }
+
+  return 'border-amber-200 bg-amber-50 text-amber-700';
 };
 
 type DetailField = {
@@ -154,6 +143,24 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                     ) : (
                       <p className="text-muted-foreground text-sm">No tags.</p>
                     )}
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="action">
+                      Ingest
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-56 space-y-2">
+                    <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                      Ingest Status
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className={getIngestStatusClassName(paper.ingestStatus)}
+                    >
+                      {getIngestStatusLabel(paper.ingestStatus)}
+                    </Badge>
                   </PopoverContent>
                 </Popover>
               </div>

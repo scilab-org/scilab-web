@@ -18,10 +18,10 @@ import { useDeletePaperTemplate } from '../api/delete-paper-template';
 
 type DeletePaperTemplateProps = {
   id: string;
-  name: string;
+  code: string;
 };
 
-export const DeletePaperTemplate = ({ id, name }: DeletePaperTemplateProps) => {
+export const DeletePaperTemplate = ({ id, code }: DeletePaperTemplateProps) => {
   const [open, setOpen] = React.useState(false);
 
   const mutation = useDeletePaperTemplate({
@@ -49,7 +49,7 @@ export const DeletePaperTemplate = ({ id, name }: DeletePaperTemplateProps) => {
           <AlertDialogDescription>
             This will permanently delete{' '}
             <span className="text-foreground font-semibold">
-              &ldquo;{name}&rdquo;
+              &ldquo;{code}&rdquo;
             </span>
             . This action cannot be undone.
           </AlertDialogDescription>
