@@ -95,5 +95,31 @@ export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuthContext();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="text-muted-foreground size-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to={paths.auth.login.getHref()} replace />;
+  }
+
+  const isAdmin =
+    user.groups?.includes('system:admin') ||
+    getUserGroups().includes('system:admin');
+
+  if (!isAdmin) {
+    return <Navigate to={paths.app.assignedProjects.list.getHref()} replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // Navigation helper — sign in is now handled via <Link to="/auth/login">
 export const login = () => {};

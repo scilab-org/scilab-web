@@ -137,7 +137,7 @@ export const TagAutocompleteInput = ({
             <button
               type="button"
               onClick={() => onRemoveTag(tag)}
-              className="hover:bg-muted-foreground/20 ml-0.5 rounded-full p-0.5"
+              className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-white/20"
             >
               <X className="size-3" />
             </button>
