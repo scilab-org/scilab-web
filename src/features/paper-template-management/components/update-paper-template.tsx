@@ -169,7 +169,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short description..."
               rows={3}
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full resize-none rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
+              className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full resize-none rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
             />
           </div>
 
@@ -258,7 +258,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
                       required
                       rows={6}
                       onDragStart={(e) => e.stopPropagation()}
-                      className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-36 w-full resize-none rounded-md border px-4 py-3 text-sm shadow-xs outline-none focus-visible:ring-2"
+                      className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-36 w-full resize-none rounded-md border bg-transparent px-4 py-3 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
                     />
                   </div>
                 </div>

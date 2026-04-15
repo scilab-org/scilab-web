@@ -1,142 +1,135 @@
 import * as React from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-import { JournalDto } from '../types';
+import { JournalDto, ProjectRef } from '../types';
+import { UpdateJournal } from './update-journal';
+import { DeleteJournal } from './delete-journal';
 
 type ViewJournalProps = {
   journal: JournalDto;
+  projects?: ProjectRef[];
 };
 
-export const ViewJournal = ({ journal }: ViewJournalProps) => {
-  const [expandedIdx, setExpandedIdx] = React.useState<number | null>(null);
+const fmt = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString() : 'N/A';
+
+type DetailField = {
+  label: string;
+  value: React.ReactNode;
+};
+
+export const ViewJournal = ({ journal, projects }: ViewJournalProps) => {
+  const journalInfo: DetailField[] = [
+    { label: 'Structure', value: journal.templateCode || 'N/A' },
+    { label: 'Start Date', value: fmt(journal.startAt) },
+    { label: 'End Date', value: fmt(journal.endAt) },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Journal Basic Info */}
-      <div className="space-y-4 rounded-lg border p-4">
-        <div>
-          <h3 className="text-muted-foreground text-sm font-medium">
-            Journal Name
-          </h3>
-          <p className="mt-1 text-lg font-semibold">{journal.name}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h3 className="text-muted-foreground text-sm font-medium">
-              Created
-            </h3>
-            <p className="mt-1 text-sm">
-              {journal.createdOnUtc
-                ? new Date(journal.createdOnUtc).toLocaleDateString()
-                : 'N/A'}
-            </p>
+      <Card className="overflow-hidden rounded-md border py-0 shadow-sm">
+        <CardContent className="space-y-6 bg-[#fffaf1] p-6">
+          {/* Action buttons */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {journal.texFile && (
+                <Button variant="action" asChild>
+                  <a
+                    href={journal.texFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View TeX
+                  </a>
+                </Button>
+              )}
+              {journal.pdfFile && (
+                <Button variant="action" asChild>
+                  <a
+                    href={journal.pdfFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View PDF
+                  </a>
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <UpdateJournal journalId={journal.id} journal={journal} />
+              <DeleteJournal journalId={journal.id} />
+            </div>
           </div>
-          <div>
-            <h3 className="text-muted-foreground text-sm font-medium">
-              Last Modified
-            </h3>
-            <p className="mt-1 text-sm">
-              {journal.lastModifiedOnUtc
-                ? new Date(journal.lastModifiedOnUtc).toLocaleDateString()
-                : 'N/A'}
-            </p>
+
+          <div className="bg-border/60 h-px" />
+
+          {/* Journal Info card */}
+          <div className="bg-card space-y-4 rounded-md border p-5">
+            <h2 className="text-xl font-semibold">Journal Info</h2>
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-3">
+              {journalInfo.map((field) => (
+                <div key={field.label} className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                    {field.label}
+                  </p>
+                  <p className="text-foreground text-base font-medium wrap-break-word">
+                    {field.value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <h3 className="text-muted-foreground text-sm font-medium">
-            Total Styles
-          </h3>
-          <p className="mt-1 text-sm">
-            <span className="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-              {journal.styles?.length ?? 0}
-            </span>
-          </p>
-        </div>
-      </div>
-
-      {/* Writing Styles */}
-      {journal.styles && journal.styles.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-base font-semibold">Writing Styles</h3>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table className="text-sm">
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50 dark:bg-slate-950/50">
-                  <TableHead className="font-semibold" />
-                  <TableHead className="font-semibold">Style Name</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {journal.styles.map((style, idx) => (
-                  <React.Fragment key={idx}>
-                    <TableRow>
-                      <TableCell className="w-8">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedIdx(expandedIdx === idx ? null : idx)
-                          }
-                          className="rounded hover:bg-slate-100 dark:hover:bg-slate-800"
-                        >
-                          {expandedIdx === idx ? (
-                            <ChevronUp className="size-4" />
-                          ) : (
-                            <ChevronDown className="size-4" />
-                          )}
-                        </button>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {style.name}
-                      </TableCell>
-                    </TableRow>
-                    {expandedIdx === idx && (
-                      <TableRow className="bg-slate-50/50 dark:bg-slate-950/20">
-                        <TableCell colSpan={2} className="p-3">
-                          <div className="space-y-3 text-xs">
-                            {style.description && (
-                              <div>
-                                <p className="font-semibold">Description:</p>
-                                <p className="text-muted-foreground mt-1">
-                                  {style.description}
-                                </p>
-                              </div>
-                            )}
-                            {style.rule && (
-                              <div>
-                                <p className="font-semibold">Rule:</p>
-                                <pre className="bg-background overflow-auto rounded border p-2 font-sans text-xs">
-                                  {style.rule}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
+          {/* Associated Projects */}
+          <div className="bg-card space-y-4 rounded-md border p-5">
+            <h2 className="text-xl font-semibold">Associated Projects</h2>
+            <div className="border-t pt-4">
+              {projects && projects.length > 0 ? (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="text-muted-foreground pb-3 text-left text-xs font-semibold tracking-wider uppercase">
+                        Name
+                      </th>
+                      <th className="text-muted-foreground pb-3 text-left text-xs font-semibold tracking-wider uppercase">
+                        Code
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {projects.map((p) => (
+                      <tr key={p.id}>
+                        <td className="text-foreground py-2.5 text-base font-medium">
+                          {p.name}
+                        </td>
+                        <td className="text-foreground py-2.5 font-mono text-sm font-medium">
+                          {p.code}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-muted-foreground text-base">
+                  No associated projects.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
 
-      {(!journal.styles || journal.styles.length === 0) && (
-        <div className="flex h-32 w-full items-center justify-center rounded-lg border">
-          <p className="text-muted-foreground">No writing styles defined.</p>
-        </div>
-      )}
+          {/* Style */}
+          <div className="bg-card space-y-4 rounded-md border p-5">
+            <h2 className="text-xl font-semibold">Style</h2>
+            <div className="border-t pt-4">
+              <p className="text-foreground text-base font-medium">
+                {journal.style || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

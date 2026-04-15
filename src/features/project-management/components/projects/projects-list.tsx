@@ -140,89 +140,93 @@ export const ProjectsList = () => {
   }
 
   return (
-    <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
-      <Table>
-        <TableHeader className="[&_tr]:bg-surface-container-low [&_tr]:hover:bg-surface-container-low">
-          <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-            <TableHead className="text-muted-foreground w-35">Code</TableHead>
-            <TableHead className="text-muted-foreground">Name</TableHead>
-            <TableHead className="text-muted-foreground">Status</TableHead>
-            <TableHead className="text-muted-foreground">Start Date</TableHead>
-            <TableHead className="text-muted-foreground">End Date</TableHead>
-            <TableHead className="text-muted-foreground text-center">
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {projects.map((project) => {
-            const statusConfig = getStatusConfig(project.status);
-            return (
-              <TableRow key={project.id}>
-                <TableCell className="text-foreground text-sm font-medium">
-                  {project.code}
-                </TableCell>
-                <TableCell className="font-medium">
-                  <Link
-                    to={paths.app.projectDetail.getHref(project.id)}
-                    className="text-foreground font-medium transition-colors"
-                    onMouseEnter={() => {
-                      queryClient.prefetchQuery(
-                        getProjectQueryOptions(project.id),
-                      );
-                    }}
-                  >
-                    {project.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={statusConfig.variant}>
-                    {statusConfig.text}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {project.startDate ? formatDate(project.startDate) : '—'}
-                </TableCell>
-                <TableCell>
-                  {project.endDate ? formatDate(project.endDate) : '—'}
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center gap-2">
+    <div>
+      <div className="rounded-md border shadow-sm">
+        <Table>
+          <TableHeader className="[&_tr]:bg-surface-container-low [&_tr]:hover:bg-surface-container-low">
+            <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
+              <TableHead className="text-muted-foreground w-35">Code</TableHead>
+              <TableHead className="text-muted-foreground">Name</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">
+                Start Date
+              </TableHead>
+              <TableHead className="text-muted-foreground">End Date</TableHead>
+              <TableHead className="text-muted-foreground text-center">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {projects.map((project) => {
+              const statusConfig = getStatusConfig(project.status);
+              return (
+                <TableRow key={project.id}>
+                  <TableCell className="text-foreground text-sm font-medium">
+                    {project.code}
+                  </TableCell>
+                  <TableCell className="font-medium">
                     <Link
                       to={paths.app.projectDetail.getHref(project.id)}
+                      className="text-foreground font-medium transition-colors"
                       onMouseEnter={() => {
                         queryClient.prefetchQuery(
                           getProjectQueryOptions(project.id),
                         );
                       }}
                     >
-                      <Button variant="outlineAction" size="action">
-                        VIEW
-                      </Button>
+                      {project.name}
                     </Link>
-                    <Button
-                      variant="outlineAction"
-                      size="action"
-                      onClick={() => handleUpdate(project)}
-                    >
-                      EDIT
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="action"
-                      onClick={() => handleDelete(project)}
-                    >
-                      DELETE
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusConfig.variant}>
+                      {statusConfig.text}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {project.startDate ? formatDate(project.startDate) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {project.endDate ? formatDate(project.endDate) : '—'}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center gap-2">
+                      <Link
+                        to={paths.app.projectDetail.getHref(project.id)}
+                        onMouseEnter={() => {
+                          queryClient.prefetchQuery(
+                            getProjectQueryOptions(project.id),
+                          );
+                        }}
+                      >
+                        <Button variant="outlineAction" size="action">
+                          VIEW
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outlineAction"
+                        size="action"
+                        onClick={() => handleUpdate(project)}
+                      >
+                        EDIT
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="action"
+                        onClick={() => handleDelete(project)}
+                      >
+                        DELETE
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
 
-      {paging && <Pagination paging={paging} />}
+        {paging && <Pagination paging={paging} />}
+      </div>
 
       <UpdateProject
         project={selectedProject}

@@ -18,7 +18,7 @@ export const updateJournal = ({
   journalId,
   data,
 }: UpdateJournalPayload): Promise<BooleanApiUpdatedResponse> => {
-  return api.put(JOURNAL_MANAGEMENT_API.ADMIN_JOURNAL_BY_ID(journalId), data);
+  return api.put(JOURNAL_MANAGEMENT_API.JOURNAL_BY_ID(journalId), data);
 };
 
 type UseUpdateJournalOptions = {

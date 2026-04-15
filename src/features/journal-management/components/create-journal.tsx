@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -15,27 +14,26 @@ import {
 } from '@/components/ui/dialog';
 
 import { CreateButton } from '@/components/ui/create-button';
-
+import { usePaperTemplates } from '@/features/paper-template-management/api/get-paper-templates';
 import { useCreateJournal } from '../api/create-journal';
-import { JournalStyle } from '../types';
 
 const initialFormData = {
   name: '',
-  styles: [] as JournalStyle[],
+  templateId: '',
+  startAt: '',
+  endAt: '',
+  style: '',
+  texFile: null as File | null,
+  pdfFile: null as File | null,
 };
 
 export const CreateJournal = () => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState(initialFormData);
-  const [editingIdx, setEditingIdx] = React.useState<number | null>(null);
-  const [styleDialogOpen, setStyleDialogOpen] = React.useState(false);
-  const [styleDialogMode, setStyleDialogMode] = React.useState<'add' | 'edit'>(
-    'add',
-  );
-  const [editingStyle, setEditingStyle] = React.useState<JournalStyle>({
-    name: '',
-    description: '',
-    rule: '',
+
+  const templatesQuery = usePaperTemplates({
+    params: { PageSize: 1000 },
+    queryConfig: { enabled: open },
   });
 
   const createJournalMutation = useCreateJournal({
@@ -43,100 +41,52 @@ export const CreateJournal = () => {
       onSuccess: () => {
         setOpen(false);
         setFormData(initialFormData);
-        setEditingIdx(null);
-        setStyleDialogOpen(false);
-        setEditingStyle({ name: '', description: '', rule: '' });
         toast.success('Journal created successfully');
       },
-      onError: (error: any) => {
-        const errorData = error?.response?.data;
-        if (
-          errorData?.errors?.[0]?.errorMessage === 'JOURNAL_NAME_ALREADY_EXISTS'
-        ) {
-          toast.error('Journal name already exists');
-        } else {
-          toast.error('Failed to create journal');
-        }
+      onError: () => {
+        toast.error('Failed to create journal');
       },
     },
   });
 
-  const handleAddStyle = () => {
-    if (!editingStyle.name.trim()) return;
-    setFormData((prev) => ({
-      ...prev,
-      styles: [
-        ...prev.styles,
-        { ...editingStyle, name: editingStyle.name.trim() },
-      ],
-    }));
-    setStyleDialogOpen(false);
-    setEditingStyle({ name: '', description: '', rule: '' });
-    setEditingIdx(null);
-  };
-
-  const handleEditStyle = (index: number) => {
-    setEditingIdx(index);
-    setStyleDialogMode('edit');
-    setEditingStyle(formData.styles[index]);
-    setStyleDialogOpen(true);
-  };
-
-  const handleOpenAddStyleDialog = () => {
-    setEditingIdx(null);
-    setStyleDialogMode('add');
-    setEditingStyle({ name: '', description: '', rule: '' });
-    setStyleDialogOpen(true);
-  };
-
-  const handleUpdateExistingStyle = () => {
-    if (!editingStyle.name.trim() || editingIdx === null) return;
-    setFormData((prev) => ({
-      ...prev,
-      styles: prev.styles.map((s, i) =>
-        i === editingIdx
-          ? { ...editingStyle, name: editingStyle.name.trim() }
-          : s,
-      ),
-    }));
-    setEditingIdx(null);
-    setStyleDialogOpen(false);
-    setEditingStyle({ name: '', description: '', rule: '' });
-  };
-
-  const handleRemoveStyle = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      styles: prev.styles.filter((_, i) => i !== index),
-    }));
-    if (editingIdx === index) {
-      setEditingIdx(null);
-      setStyleDialogOpen(false);
-      setEditingStyle({ name: '', description: '', rule: '' });
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (
+      !formData.name.trim() ||
+      !formData.templateId ||
+      !formData.startAt ||
+      !formData.endAt ||
+      !formData.style.trim() ||
+      !formData.texFile ||
+      !formData.pdfFile
+    )
+      return;
+
     createJournalMutation.mutate({
       name: formData.name.trim(),
-      styles: formData.styles,
+      templateId: formData.templateId,
+      startAt: new Date(formData.startAt).toISOString(),
+      endAt: new Date(formData.endAt).toISOString(),
+      style: formData.style.trim(),
+      texFile: formData.texFile,
+      pdfFile: formData.pdfFile,
     });
   };
+
+  const templates = templatesQuery.data?.result?.items ?? [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <CreateButton size="sm" className="uppercase">
-          CREATE JOURNAL
+          ADD JOURNAL / CONFERENCE
         </CreateButton>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Create New Journal</DialogTitle>
+          <DialogTitle>Add Journal / Conference</DialogTitle>
           <DialogDescription>
-            Fill in the journal details and add writing styles.
+            Fill in the journal details and upload files.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -144,181 +94,135 @@ export const CreateJournal = () => {
           onSubmit={handleSubmit}
           className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-4"
         >
+          {/* Name */}
           <div className="space-y-1.5">
-            <label
-              htmlFor="create-journal-name"
-              className="text-sm font-medium"
-            >
+            <label htmlFor="cj-name" className="text-sm font-medium">
               Journal Name <span className="text-destructive">*</span>
             </label>
             <Input
-              id="create-journal-name"
+              id="cj-name"
               value={formData.name}
-              onChange={(e) => {
-                setFormData((prev) => ({ ...prev, name: e.target.value }));
-              }}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="Enter journal name"
               required
             />
           </div>
 
-          <div className="space-y-3 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Writing Styles</h3>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleOpenAddStyleDialog}
-              >
-                <Plus className="size-3.5" />
-                Add Style
-              </Button>
-            </div>
+          {/* Template */}
+          <div className="space-y-1.5">
+            <label htmlFor="cj-template" className="text-sm font-medium">
+              Template <span className="text-destructive">*</span>
+            </label>
+            <select
+              id="cj-template"
+              value={formData.templateId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, templateId: e.target.value }))
+              }
+              required
+              className="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+            >
+              <option value="">Select a template...</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.code} {t.description ? `— ${t.description}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            {formData.styles.length > 0 && (
-              <div className="space-y-2">
-                {formData.styles.map((style, idx) => (
-                  <div key={idx} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-semibold">
-                        {style.name}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/30"
-                          onClick={() => handleEditStyle(idx)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-7 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                          onClick={() => handleRemoveStyle(idx)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Style */}
+          <div className="space-y-1.5">
+            <label htmlFor="cj-style" className="text-sm font-medium">
+              Style <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              id="cj-style"
+              value={formData.style}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, style: e.target.value }))
+              }
+              placeholder="Enter Journal / Conference Style"
+              required
+              className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-40 w-full rounded-md border bg-transparent px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          {/* Start At */}
+          <div className="space-y-1.5">
+            <label htmlFor="cj-startAt" className="text-sm font-medium">
+              Start Date <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="cj-startAt"
+              type="datetime-local"
+              value={formData.startAt}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, startAt: e.target.value }))
+              }
+              required
+            />
+          </div>
+
+          {/* End At */}
+          <div className="space-y-1.5">
+            <label htmlFor="cj-endAt" className="text-sm font-medium">
+              End Date <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="cj-endAt"
+              type="datetime-local"
+              value={formData.endAt}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, endAt: e.target.value }))
+              }
+              required
+            />
+          </div>
+
+          {/* TeX File */}
+          <div className="space-y-1.5">
+            <label htmlFor="cj-texFile" className="text-sm font-medium">
+              TeX File <span className="text-destructive">*</span>
+            </label>
+            <input
+              id="cj-texFile"
+              type="file"
+              accept=".tex"
+              required
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  texFile: e.target.files?.[0] ?? null,
+                }))
+              }
+              className="border-input dark:bg-input/30 flex h-10 w-full cursor-pointer rounded-md border bg-transparent px-3 py-2 text-sm file:mr-2 file:border-0 file:bg-transparent file:text-sm file:font-medium"
+            />
+          </div>
+
+          {/* PDF File */}
+          <div className="space-y-1.5">
+            <label htmlFor="cj-pdfFile" className="text-sm font-medium">
+              PDF File <span className="text-destructive">*</span>
+            </label>
+            <input
+              id="cj-pdfFile"
+              type="file"
+              accept=".pdf,application/pdf"
+              required
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  pdfFile: e.target.files?.[0] ?? null,
+                }))
+              }
+              className="border-input dark:bg-input/30 flex h-10 w-full cursor-pointer rounded-md border bg-transparent px-3 py-2 text-sm file:mr-2 file:border-0 file:bg-transparent file:text-sm file:font-medium"
+            />
           </div>
         </form>
 
-        {styleDialogOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-background w-full max-w-2xl rounded-lg border shadow-lg">
-              <div className="border-b px-4 py-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-semibold">
-                      {styleDialogMode === 'add'
-                        ? 'Add New Style'
-                        : 'Edit Style'}
-                    </h4>
-                    <p className="text-muted-foreground text-xs">
-                      {styleDialogMode === 'add'
-                        ? 'Fill style information and click Add Style.'
-                        : 'Update style information and click Save Style.'}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    onClick={() => {
-                      setStyleDialogOpen(false);
-                      setEditingIdx(null);
-                      setEditingStyle({
-                        name: '',
-                        description: '',
-                        rule: '',
-                      });
-                    }}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2 px-4 py-3">
-                <Input
-                  value={editingStyle.name}
-                  onChange={(e) =>
-                    setEditingStyle((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  placeholder="Style name"
-                  className="h-8 text-sm"
-                />
-                <textarea
-                  value={editingStyle.description}
-                  onChange={(e) =>
-                    setEditingStyle((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Description"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                />
-                <textarea
-                  value={editingStyle.rule}
-                  onChange={(e) =>
-                    setEditingStyle((prev) => ({
-                      ...prev,
-                      rule: e.target.value,
-                    }))
-                  }
-                  placeholder="Rule"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-36 w-full rounded-md border px-3 py-2 font-sans text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                />
-              </div>
-              <div className="flex gap-2 border-t px-4 py-3">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="w-full uppercase"
-                  onClick={
-                    styleDialogMode === 'add'
-                      ? handleAddStyle
-                      : handleUpdateExistingStyle
-                  }
-                  disabled={!editingStyle.name.trim()}
-                >
-                  {styleDialogMode === 'add' ? 'ADD STYLE' : 'SAVE STYLE'}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="uppercase"
-                  onClick={() => {
-                    setStyleDialogOpen(false);
-                    setEditingIdx(null);
-                    setEditingStyle({
-                      name: '',
-                      description: '',
-                      rule: '',
-                    });
-                  }}
-                >
-                  CANCEL
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
         <DialogFooter className="pt-2">
           <Button
             type="button"
@@ -331,7 +235,7 @@ export const CreateJournal = () => {
           <Button
             type="submit"
             form="create-journal-form"
-            disabled={createJournalMutation.isPending || !formData.name.trim()}
+            disabled={createJournalMutation.isPending || !formData.style.trim()}
             variant="darkRed"
             className="uppercase"
           >

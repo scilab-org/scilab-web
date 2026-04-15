@@ -65,7 +65,7 @@ export const UsersList = () => {
   }
 
   return (
-    <div>
+    <div className="rounded-md border shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>

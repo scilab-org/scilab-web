@@ -18,7 +18,6 @@ import {
 import { useUpdatePaper } from '../api/update-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
 import { PaperDto } from '../types';
-import { PAPER_STATUS_OPTIONS } from '../constants';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
 type UpdatePaperProps = {
@@ -131,6 +130,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const [pubYearError, setPubYearError] = React.useState('');
   const [journalConferenceError, setJournalConferenceError] =
     React.useState('');
+  const [pagesError, setPagesError] = React.useState('');
   const [tagList, setTagList] = React.useState<string[]>(paper?.tagNames || []);
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [isAutoTagged, setIsAutoTagged] = React.useState(
@@ -200,6 +200,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setPubDay(dateParts[2] && dateParts[2] !== '01' ? dateParts[2] : '');
       setPubYearError('');
       setJournalConferenceError('');
+      setPagesError('');
       setTagList(paper.tagNames || []);
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
@@ -306,11 +307,27 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     }
     const hasJournalName = formData.journalName.trim().length > 0;
     const hasConferenceName = formData.conferenceName.trim().length > 0;
+    if (!hasJournalName && !hasConferenceName) {
+      setJournalConferenceError(
+        'Please fill at least one of Journal Name or Conference Name.',
+      );
+      return;
+    }
     if (hasJournalName && hasConferenceName) {
       setJournalConferenceError(
         'Please fill either Journal Name or Conference Name, not both.',
       );
       return;
+    }
+
+    if (formData.pages.trim()) {
+      const pagesPattern = /^\d+--\d+$/;
+      if (!pagesPattern.test(formData.pages.trim())) {
+        setPagesError(
+          'Pages must be in the format Number--Number (e.g. 436--444).',
+        );
+        return;
+      }
     }
 
     if (!pubYear.trim()) {
@@ -395,7 +412,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
-              placeholder="Enter title"
+              placeholder="e.g. Attention Is All You Need"
             />
           </div>
 
@@ -438,6 +455,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
               placeholder="Type a tag and press Enter..."
+              className="dark:bg-input/30 bg-transparent"
             />
           </div>
 
@@ -451,7 +469,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, doi: e.target.value }))
               }
-              placeholder="Enter DOI"
+              placeholder="e.g. 10.1000/xyz123"
             />
           </div>
 
@@ -468,7 +486,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, authors: e.target.value }))
               }
-              placeholder="Enter authors"
+              placeholder="e.g. LeCun, Yann and Bengio, Yoshua"
               required
             />
           </div>
@@ -489,7 +507,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   publisher: e.target.value,
                 }))
               }
-              placeholder="Enter publisher"
+              placeholder="e.g. Nature Publishing Group"
             />
           </div>
 
@@ -502,12 +520,12 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             </label>
             <textarea
               id="update-paper-abstract"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-20 w-full rounded-md border bg-transparent px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.abstract}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, abstract: e.target.value }))
               }
-              placeholder="Enter abstract"
+              placeholder="e.g. The effects of..."
             />
           </div>
 
@@ -539,7 +557,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   setPubYearError('');
                 }}
                 className={cn(
-                  'border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  'border-input dark:bg-input/30 ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   !pubMonth && 'text-muted-foreground',
                 )}
               >
@@ -560,7 +578,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   setPubYearError('');
                 }}
                 className={cn(
-                  'border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  'border-input dark:bg-input/30 ring-offset-background focus-visible:ring-ring h-10 w-full min-w-0 rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                   !pubDay && 'text-muted-foreground',
                 )}
               >
@@ -587,7 +605,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, paperType: e.target.value }))
               }
-              placeholder="Enter paper type"
+              placeholder="e.g. Research, Review"
             />
           </div>
 
@@ -596,7 +614,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               htmlFor="update-paper-journal"
               className="text-sm font-medium"
             >
-              Journal Name
+              Journal Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="update-paper-journal"
@@ -610,7 +628,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   };
                 })
               }
-              placeholder="Enter journal name"
+              placeholder="e.g. Nature"
               disabled={Boolean(formData.conferenceName.trim())}
             />
           </div>
@@ -620,7 +638,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               htmlFor="update-paper-conference"
               className="text-sm font-medium"
             >
-              Conference Name
+              Conference Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="update-paper-conference"
@@ -634,7 +652,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   };
                 })
               }
-              placeholder="Enter conference name"
+              placeholder="e.g. NeurIPS"
               disabled={Boolean(formData.journalName.trim())}
             />
             {journalConferenceError && (
@@ -655,11 +673,15 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               <Input
                 id="update-paper-pages"
                 value={formData.pages}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, pages: e.target.value }))
-                }
-                placeholder="Enter pages"
+                onChange={(e) => {
+                  if (pagesError) setPagesError('');
+                  setFormData((prev) => ({ ...prev, pages: e.target.value }));
+                }}
+                placeholder="e.g. 436--444"
               />
+              {pagesError && (
+                <p className="text-destructive text-xs">{pagesError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label
@@ -674,7 +696,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, number: e.target.value }))
                 }
-                placeholder="Enter number"
+                placeholder="e.g. 7553"
               />
             </div>
           </div>
@@ -692,34 +714,8 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, volume: e.target.value }))
               }
-              placeholder="Enter volume"
+              placeholder="e.g. 521"
             />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="update-paper-status"
-              className="text-sm font-medium"
-            >
-              Status
-            </label>
-            <select
-              id="update-paper-status"
-              className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              value={formData.status}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  status: Number(e.target.value),
-                }))
-              }
-            >
-              {PAPER_STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
           </div>
         </form>
 

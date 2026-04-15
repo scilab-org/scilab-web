@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { FileText, Building2, ExternalLink } from 'lucide-react';
+import { Building2, ExternalLink } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -107,14 +107,14 @@ export const PapersList = () => {
   }
 
   return (
-    <div className="overflow-x-hidden rounded-xl border shadow-sm">
+    <div className="overflow-x-hidden rounded-md border shadow-sm">
       <Table
         containerClassName="overflow-x-hidden"
         className="w-full table-fixed"
       >
         <TableHeader>
           <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-            <TableHead className="w-[12%] px-8 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[16%] px-8 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               DOI
             </TableHead>
             <TableHead className="w-[28%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
@@ -126,7 +126,7 @@ export const PapersList = () => {
             <TableHead className="w-[18%] px-3 text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Journal / Conference
             </TableHead>
-            <TableHead className="w-[24%] px-8 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
+            <TableHead className="w-[20%] px-8 text-center text-xs leading-tight font-semibold tracking-wider wrap-break-word whitespace-normal uppercase">
               Actions
             </TableHead>
           </TableRow>
@@ -190,31 +190,6 @@ export const PapersList = () => {
               {/* Actions */}
               <TableCell className="px-8 whitespace-nowrap">
                 <div className="flex flex-nowrap items-center justify-center gap-1">
-                  {paper.filePath ? (
-                    <Button
-                      variant="action"
-                      size="icon"
-                      asChild
-                      className="size-8"
-                    >
-                      <a
-                        href={paper.filePath}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <FileText className="size-4" />
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="action"
-                      size="icon"
-                      disabled
-                      className="size-8"
-                    >
-                      <FileText className="size-4" />
-                    </Button>
-                  )}
                   <Button variant="outlineAction" size="action" asChild>
                     <Link
                       to={paths.app.paperManagement.paper.getHref(paper.id)}

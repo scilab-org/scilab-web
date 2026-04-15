@@ -55,7 +55,7 @@ export const TagsList = () => {
   }
 
   return (
-    <div className="rounded-lg border shadow-sm">
+    <div className="rounded-md border shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>

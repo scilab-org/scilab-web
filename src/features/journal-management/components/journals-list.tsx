@@ -14,17 +14,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+import { Pagination } from '@/components/ui/pagination';
 import { paths } from '@/config/paths';
 import { useJournals } from '../api/get-journals';
 import { DeleteJournal } from './delete-journal';
 import { UpdateJournal } from './update-journal';
-import { Pagination } from '@/components/ui/pagination';
+
+const fmt = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString() : 'N/A';
 
 export const JournalsList = () => {
   const [searchParams] = useSearchParams();
 
   const page = +(searchParams.get('page') || 1);
   const name = searchParams.get('name') || undefined;
+  const templateCode = searchParams.get('templateCode') || undefined;
+  const projectName = searchParams.get('projectName') || undefined;
+  const projectCode = searchParams.get('projectCode') || undefined;
   const isDeleted = searchParams.get('isDeleted') === 'true';
 
   const journalsQuery = useJournals({
@@ -32,6 +38,9 @@ export const JournalsList = () => {
       PageNumber: page,
       PageSize: 10,
       Name: name,
+      TemplateCode: templateCode,
+      ProjectName: projectName,
+      ProjectCode: projectCode,
       IsDeleted: isDeleted,
     },
   });
@@ -64,23 +73,23 @@ export const JournalsList = () => {
 
   return (
     <div>
-      <div className="rounded-lg border shadow-sm">
+      <div className="rounded-md border shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="text-muted-foreground w-[30%] text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[35%] text-xs font-medium tracking-wider uppercase">
                 Name
               </TableHead>
               <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
-                Styles
+                Structure
               </TableHead>
-              <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
-                Created
+              <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+                Start Date
               </TableHead>
-              <TableHead className="text-muted-foreground w-[20%] text-xs font-medium tracking-wider uppercase">
-                Last Modified
+              <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+                End Date
               </TableHead>
-              <TableHead className="text-muted-foreground w-[15%] text-center text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[20%] text-center text-xs font-medium tracking-wider uppercase">
                 Actions
               </TableHead>
             </TableRow>
@@ -88,26 +97,10 @@ export const JournalsList = () => {
           <TableBody>
             {journals.map((journal) => (
               <TableRow key={journal.id} className="hover:bg-muted/30">
-                <TableCell className="font-medium">
-                  <span className="text-foreground transition-colors">
-                    {journal.name}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="bg-muted text-foreground inline-block rounded-full px-2.5 py-0.5 text-sm font-medium">
-                    {journal.styles?.length ?? 0}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {journal.createdOnUtc
-                    ? new Date(journal.createdOnUtc).toLocaleDateString()
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {journal.lastModifiedOnUtc
-                    ? new Date(journal.lastModifiedOnUtc).toLocaleDateString()
-                    : 'N/A'}
-                </TableCell>
+                <TableCell className="font-medium">{journal.name}</TableCell>
+                <TableCell>{journal.templateCode || 'N/A'}</TableCell>
+                <TableCell>{fmt(journal.startAt)}</TableCell>
+                <TableCell>{fmt(journal.endAt)}</TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-2">
                     <Link

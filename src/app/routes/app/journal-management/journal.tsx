@@ -43,6 +43,7 @@ const JournalRoute = () => {
   }
 
   const journal = journalQuery.data?.result?.journal;
+  const projects = journalQuery.data?.result?.projects;
 
   if (!journal) {
     return (
@@ -56,7 +57,7 @@ const JournalRoute = () => {
 
   return (
     <ContentLayout title={journal.name || 'Journal Details'}>
-      <ViewJournal journal={journal} />
+      <ViewJournal journal={journal} projects={projects} />
     </ContentLayout>
   );
 };
