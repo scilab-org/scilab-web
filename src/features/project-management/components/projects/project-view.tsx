@@ -1,15 +1,4 @@
-import {
-  CalendarRange,
-  Compass,
-  Lightbulb,
-  Loader2,
-  Sparkles,
-  Target,
-  Users,
-  FileText,
-  Database,
-  BookOpen,
-} from 'lucide-react';
+import { Loader2, Users, FileText, Database, BookOpen } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -84,42 +73,18 @@ export const ProjectView = ({
     {} as Record<number, number>,
   );
 
-  const formatDate = (date: string | null | undefined) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (isNaN(d.getTime()) || d.getFullYear() <= 1970) return '—';
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const overviewCards = [
     {
-      title: 'Key Objective',
+      title: 'Key Point',
       value: project.keypoint || 'Not specified',
-      description:
-        'Main result, hypothesis, or outcome the team is driving toward.',
-      icon: Target,
-      accent:
-        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/40',
     },
     {
-      title: 'Study Context',
+      title: 'Project Context',
       value: project.context || 'Not specified',
-      description: 'Operational setting, environment, and research frame.',
-      icon: Sparkles,
-      accent:
-        'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-900/40',
     },
     {
       title: 'Research Domain',
       value: project.domain || 'Not specified',
-      description: 'Primary field and academic focus of the project.',
-      icon: Compass,
-      accent:
-        'bg-[#630F0F]/10 text-[#630F0F] border-[#630F0F]/20 dark:bg-[#630F0F]/20 dark:text-[#630F0F] dark:border-[#630F0F]/40',
     },
   ];
 
@@ -153,52 +118,6 @@ export const ProjectView = ({
       )}
 
       <div className="bg-card overflow-hidden rounded-md border shadow-sm">
-        <div className="border-b px-6 py-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#630F0F] text-white shadow-sm dark:bg-[#630F0F]">
-                  <Lightbulb className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-foreground text-2xl font-semibold tracking-tight">
-                    {project.name}
-                  </h2>
-                </div>
-              </div>
-              <p className="text-foreground/85 max-w-3xl text-sm leading-7 whitespace-pre-wrap">
-                {project.description ||
-                  'This project does not have a summary yet. Add a concise research description to help collaborators understand the scope quickly.'}
-              </p>
-            </div>
-
-            <div className="w-full lg:w-[320px]">
-              <div className="bg-card rounded-md border border-[#630F0F]/20 p-4 shadow-sm dark:border-[#630F0F]/40 dark:bg-slate-950">
-                <div className="mb-2 flex items-center gap-2 text-[#630F0F] dark:text-[#630F0F]">
-                  <CalendarRange className="size-4" />
-                  <span className="text-xs font-semibold tracking-[0.18em] uppercase">
-                    Project Timeline
-                  </span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Start</span>
-                    <span className="text-foreground font-semibold">
-                      {formatDate(project.startDate)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">End</span>
-                    <span className="text-foreground font-semibold">
-                      {formatDate(project.endDate)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="p-6">
           <div className="mb-8">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -320,28 +239,16 @@ export const ProjectView = ({
 
           <div className="grid gap-4">
             {overviewCards.map((card) => {
-              const Icon = card.icon;
-
               return (
                 <div
                   key={card.title}
                   className="bg-muted/20 rounded-md border p-5 shadow-none transition-colors dark:bg-slate-950"
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <div
-                      className={`flex items-center justify-center rounded-md p-1 ${card.accent.split(' ')[0]} ${card.accent.split(' ')[1]}`}
-                    >
-                      <Icon className="size-4" />
-                    </div>
-                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                    <p className="text-foreground text-sm font-bold tracking-wider uppercase">
                       {card.title}
                     </p>
                   </div>
-                  {card.description && (
-                    <p className="text-muted-foreground mb-3 text-xs leading-relaxed">
-                      {card.description}
-                    </p>
-                  )}
                   <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                     {card.value}
                   </p>

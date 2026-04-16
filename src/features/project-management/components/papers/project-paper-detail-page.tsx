@@ -1,21 +1,16 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
   Plus,
   RefreshCw,
   Search,
-  User,
   Users,
   X,
   Trash2,
   FileText,
-  Target,
   BookOpen,
-  Globe,
   ClipboardList,
   Calendar,
-  Presentation,
-  LayoutTemplate,
   ExternalLink,
   Pencil,
   Layers,
@@ -32,14 +27,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +50,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
 import { useUser } from '@/lib/auth';
@@ -80,8 +89,9 @@ import {
 import {
   DATE_TASK_FILTER_OPTIONS,
   TASK_MANAGEMENT_QUERY_KEYS,
-  TASK_STATUS_OPTIONS,
-  AUTHOR_TASK_STATUS_OPTIONS,
+  PAPER_TASK_STATUS_OPTIONS,
+  TASK_TYPE_OPTIONS,
+  TASK_TYPE_LABELS,
 } from '@/features/task-management/constants';
 import {
   DateTaskFilterField,
@@ -93,38 +103,47 @@ const KANBAN_COLUMNS = [
   {
     status: 1,
     label: 'To Do',
-    dot: 'bg-primary',
-    headerCls: 'bg-surface-container-highest',
-    bodyCls: 'bg-surface-container',
-    countCls: 'bg-surface text-primary',
-    labelCls: 'text-primary font-semibold',
+    dot: 'bg-slate-500',
+    headerCls: 'bg-slate-100 border-slate-200',
+    bodyCls: 'bg-slate-50 border-slate-200',
+    countCls: 'bg-slate-200 text-slate-700',
+    labelCls: 'text-slate-700 font-semibold',
   },
   {
     status: 2,
     label: 'In Progress',
-    dot: 'bg-secondary',
-    headerCls: 'bg-surface-container-highest',
-    bodyCls: 'bg-surface-container',
-    countCls: 'bg-surface text-primary',
-    labelCls: 'text-primary font-semibold',
+    dot: 'bg-blue-500',
+    headerCls: 'bg-blue-50 border-blue-200',
+    bodyCls: 'bg-blue-50/50 border-blue-200',
+    countCls: 'bg-blue-200 text-blue-700',
+    labelCls: 'text-blue-700 font-semibold',
   },
   {
     status: 3,
     label: 'In Review',
-    dot: 'bg-tertiary',
-    headerCls: 'bg-surface-container-highest',
-    bodyCls: 'bg-surface-container',
-    countCls: 'bg-surface text-primary',
-    labelCls: 'text-primary font-semibold',
+    dot: 'bg-amber-500',
+    headerCls: 'bg-amber-50 border-amber-200',
+    bodyCls: 'bg-amber-50/50 border-amber-200',
+    countCls: 'bg-amber-200 text-amber-800',
+    labelCls: 'text-amber-800 font-semibold',
   },
   {
     status: 4,
     label: 'Completed',
-    dot: 'bg-primary',
-    headerCls: 'bg-surface-container-highest',
-    bodyCls: 'bg-surface-container',
-    countCls: 'bg-surface text-primary',
-    labelCls: 'text-primary font-semibold',
+    dot: 'bg-green-500',
+    headerCls: 'bg-green-50 border-green-200',
+    bodyCls: 'bg-green-50/50 border-green-200',
+    countCls: 'bg-green-200 text-green-800',
+    labelCls: 'text-green-800 font-semibold',
+  },
+  {
+    status: 5,
+    label: 'Closed',
+    dot: 'bg-gray-500',
+    headerCls: 'bg-gray-100 border-gray-200',
+    bodyCls: 'bg-gray-50 border-gray-200',
+    countCls: 'bg-gray-200 text-gray-700',
+    labelCls: 'text-gray-700 font-semibold',
   },
 ];
 
@@ -178,14 +197,25 @@ export const ProjectPaperDetailPage = ({
   backPath: string;
   combineEditorPath?: (combineId: string) => string;
 }) => {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const location = useLocation();
+  const locationState = location.state as {
+    initialTab?: Tab;
+    initialSectionId?: string;
+  } | null;
+  const [activeTab, setActiveTab] = useState<Tab>(
+    locationState?.initialTab ?? 'overview',
+  );
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: user } = useUser();
   const paperQuery = useWritingPaperDetail({ paperId });
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [viewingTask, setViewingTask] = useState<TaskItem | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskItem | null>(null);
+  const [pendingSectionId, setPendingSectionId] = useState<string | null>(
+    locationState?.initialSectionId ?? null,
+  );
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [isEditPaperOpen, setIsEditPaperOpen] = useState(false);
   const [editPaperForm, setEditPaperForm] = useState({
@@ -209,7 +239,9 @@ export const ProjectPaperDetailPage = ({
   const [createForm, setCreateForm] = useState({
     name: '',
     description: '',
-    assignedToUserName: '',
+    memberId: '',
+    taskType: '1',
+    sectionId: '',
     status: '1',
     startDate: '',
     nextReviewDate: '',
@@ -431,6 +463,40 @@ export const ProjectPaperDetailPage = ({
     return options;
   }, [paperMembersQuery.data, currentUsername]);
 
+  // Member options for create form — uses memberId as value (required by new API)
+  const createMemberOptions = useMemo(() => {
+    const members: ProjectMember[] =
+      (paperMembersQuery.data as any)?.result?.items ?? [];
+    const seen = new Set<string>();
+    return members
+      .filter((m) => !(m.role || '').toLowerCase().includes('manager'))
+      .filter((m) => {
+        if (!m.memberId || seen.has(m.memberId)) return false;
+        seen.add(m.memberId);
+        return true;
+      })
+      .map((m) => {
+        const username = (m.username || '').trim();
+        const isMe = username.toLowerCase() === currentUsername;
+        return {
+          value: m.memberId,
+          label: isMe ? `me (${username})` : username,
+          isMe,
+        };
+      })
+      .sort((a, b) => {
+        if (a.isMe && !b.isMe) return -1;
+        if (!a.isMe && b.isMe) return 1;
+        return a.label.localeCompare(b.label);
+      });
+  }, [paperMembersQuery.data, currentUsername]);
+
+  // Sections for the create form (only shown when taskType === Writing)
+  const sectionOptions = useMemo(
+    () => sectionsQuery.data?.result?.items ?? [],
+    [sectionsQuery.data],
+  );
+
   const createTaskMutation = useCreateTask({
     mutationConfig: {
       onSuccess: () => {
@@ -439,7 +505,9 @@ export const ProjectPaperDetailPage = ({
         setCreateForm({
           name: '',
           description: '',
-          assignedToUserName: '',
+          memberId: '',
+          taskType: '1',
+          sectionId: '',
           status: '1',
           startDate: '',
           nextReviewDate: '',
@@ -465,7 +533,17 @@ export const ProjectPaperDetailPage = ({
           queryKey: [TASK_MANAGEMENT_QUERY_KEYS.PAPER_TASKS, paperId],
         });
       },
-      onError: () => toast.error('Failed to update task'),
+      onError: (error: any) => {
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          toast.error(
+            'You cannot update this task as it is not assigned to you.',
+            { duration: 3000 },
+          );
+        } else {
+          toast.error('Failed to update task');
+        }
+      },
     },
   });
 
@@ -497,7 +575,7 @@ export const ProjectPaperDetailPage = ({
         data: {
           name: task.name,
           description: task.description || '',
-          assignedToUserName: task.assignedToUserName,
+          assignedToUserName: task.assignedToUserName ?? '',
           status: newStatus,
           startDate: task.startDate || new Date().toISOString(),
           nextReviewDate: task.nextReviewDate || null,
@@ -520,7 +598,7 @@ export const ProjectPaperDetailPage = ({
               });
             });
         },
-        onError: () => {
+        onError: (error: any) => {
           dndMutatingRef.current.delete(task.id);
           // Revert optimistic update
           setLocalStatusOverrides((prev) => {
@@ -528,7 +606,14 @@ export const ProjectPaperDetailPage = ({
             delete next[task.id];
             return next;
           });
-          toast.error('Failed to update task status');
+          const status = error?.response?.status;
+          if (status === 401 || status === 403) {
+            toast.error(
+              'You cannot update this task as it is not assigned to you.',
+            );
+          } else {
+            toast.error('Failed to update task status');
+          }
         },
       },
     );
@@ -550,7 +635,7 @@ export const ProjectPaperDetailPage = ({
     setUpdateForm({
       name: task.name,
       description: task.description || '',
-      assignedToUserName: task.assignedToUserName,
+      assignedToUserName: task.assignedToUserName || '',
       status: String(task.status),
       startDate: toDateTimeLocalValue(task.startDate),
       nextReviewDate: toDateTimeLocalValue(task.nextReviewDate),
@@ -585,7 +670,7 @@ export const ProjectPaperDetailPage = ({
 
   const handleCreateTask = (e: FormEvent) => {
     e.preventDefault();
-    if (!createForm.name || !createForm.assignedToUserName) {
+    if (!createForm.name || !createForm.memberId) {
       toast.error('Task name and assignee are required');
       return;
     }
@@ -594,7 +679,10 @@ export const ProjectPaperDetailPage = ({
       paperId,
       name: createForm.name.trim(),
       description: createForm.description.trim(),
-      assignedToUserName: createForm.assignedToUserName.trim(),
+      memberId: createForm.memberId,
+      type: Number(createForm.taskType),
+      sectionId:
+        createForm.taskType === '2' ? createForm.sectionId || null : null,
       status: Number(createForm.status),
       startDate: createForm.startDate
         ? new Date(createForm.startDate).toISOString()
@@ -621,7 +709,7 @@ export const ProjectPaperDetailPage = ({
           : editingTask.description || '',
         assignedToUserName: isAuthor
           ? updateForm.assignedToUserName
-          : editingTask.assignedToUserName,
+          : (editingTask.assignedToUserName ?? ''),
         status: Number(updateForm.status),
         startDate: updateForm.startDate
           ? new Date(updateForm.startDate).toISOString()
@@ -651,98 +739,84 @@ export const ProjectPaperDetailPage = ({
   return (
     <ContentLayout title="" description="">
       <div className="space-y-6">
-        <div className="bg-surface-container-low overflow-hidden rounded-xl shadow-sm">
-          {/* Card header */}
-          <div className="bg-surface flex items-center justify-between px-6 py-4">
-            <div>
-              <h1 className="text-primary font-serif text-2xl leading-tight font-extrabold tracking-tight">
-                {paper.title}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {paperType && (
-                  <Badge className="bg-surface-container text-primary hover:bg-surface-container-highest gap-1 border-0 text-xs shadow-none">
-                    <FileText className="size-3" />
-                    {paperType}
-                  </Badge>
-                )}
-                <Badge
-                  className={cn(
-                    'border-0 text-xs shadow-none',
-                    paper.status === 1
-                      ? 'bg-surface-container text-primary hover:bg-surface-container-highest'
-                      : paper.status === 2
-                        ? 'bg-surface-container text-primary hover:bg-surface-container-highest'
-                        : paper.status === 3
-                          ? 'bg-surface-container text-primary hover:bg-surface-container-highest'
-                          : 'bg-surface-container text-primary hover:bg-surface-container-highest',
-                  )}
-                >
-                  {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
-                </Badge>
-                {paper.template && (
-                  <Badge className="bg-surface-container text-primary hover:bg-surface-container-highest gap-1 border-0 text-xs shadow-none">
-                    <LayoutTemplate className="size-3" />
-                    {paper.template}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              {paper.createdBy && (
-                <div className="text-secondary flex items-center gap-1.5 font-sans text-[10px]">
-                  <User className="h-3.5 w-3.5" />
-                  <span>
-                    Created by{' '}
-                    <span className="text-primary font-medium">
-                      {paper.createdBy}
-                    </span>
-                  </span>
-                </div>
+        {/* ── Page header (outside card) ───────────────────────────── */}
+        <div>
+          <h1 className="text-primary font-serif text-4xl font-extrabold tracking-tight">
+            {paper.title}
+          </h1>
+        </div>
+
+        {/* ── Single unified card ──────────────────────────────────── */}
+        <div className="overflow-hidden rounded-md border bg-[#fffaf1] py-0 shadow-sm">
+          {/* Action bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
+            {/* Left: status + template + created-by */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="active">
+                {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
+              </Badge>
+              {paperType && <Badge variant="outline">{paperType}</Badge>}
+              {paper.template && (
+                <Badge variant="outline">{paper.template}</Badge>
               )}
-              <div className="flex items-center gap-2">
-                {isAuthor && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleEditPaperOpen}
-                    className="text-primary bg-surface-container hover:bg-surface-container-highest gap-1.5 border-transparent"
-                  >
-                    <Pencil className="size-4" />
-                    Edit Paper
-                  </Button>
-                )}
-                {paper.filePath && (
+              {paper.createdBy && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-muted-foreground border-border bg-muted/40 ml-1 cursor-default rounded border px-2 py-0.5 text-xs font-medium">
+                        {paper.createdBy}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Created by {paper.createdBy}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            {/* Right: actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              {paper.filePath && (
+                <Button variant="action" size="action" asChild>
                   <a
                     href={paper.filePath}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-surface-container text-tertiary hover:bg-surface-container-highest inline-flex items-center gap-1.5 rounded-md border-0 px-2.5 py-1.5 font-sans text-xs shadow-sm transition-colors"
                   >
                     <ExternalLink className="size-3" />
                     View PDF
                   </a>
-                )}
-              </div>
+                </Button>
+              )}
+              {isAuthor && (
+                <Button
+                  size="action"
+                  variant="outline"
+                  onClick={handleEditPaperOpen}
+                >
+                  Edit Paper
+                </Button>
+              )}
             </div>
           </div>
 
+          <div className="bg-border/60 h-px" />
+
           {/* Tab bar */}
-          <div className="bg-surface-container-low">
-            <nav className="-mb-px flex gap-1 px-4">
+          <div className="border-border border-b px-6">
+            <nav className="-mb-px flex gap-1">
               {TABS.map((tab) => {
-                const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                       isActive
-                        ? 'text-primary bg-surface-container rounded-t-lg shadow-sm'
-                        : 'text-secondary hover:text-primary bg-transparent'
+                        ? 'border-primary text-primary'
+                        : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
                     }`}
                   >
-                    <Icon className="size-4" />
                     {tab.label}
                   </button>
                 );
@@ -750,119 +824,98 @@ export const ProjectPaperDetailPage = ({
             </nav>
           </div>
 
-          {/* Paper detail dashboard */}
-          <div className="bg-surface-container p-6">
+          {/* Tab content */}
+          <div className="p-6">
             {activeTab === 'overview' && (
               <>
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
-                  <div className="bg-surface-container-highest rounded-xl p-5 shadow-sm transition-colors">
+                  <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="bg-surface text-primary rounded-md p-1.5">
+                        <div className="bg-muted text-primary rounded-md p-1.5">
                           <Layers className="size-4" />
                         </div>
-                        <p className="text-secondary font-sans text-xs font-bold">
+                        <p className="text-muted-foreground font-sans text-xs font-bold">
                           Sections
                         </p>
                       </div>
-                      <div>
-                        <p className="text-primary font-serif text-3xl font-bold">
-                          {sectionsQuery.isLoading ? (
-                            <Loader2 className="text-tertiary size-6 animate-spin" />
-                          ) : (
-                            totalSections
-                          )}
-                        </p>
-                      </div>
+                      <p className="text-foreground font-serif text-3xl font-bold">
+                        {sectionsQuery.isLoading ? (
+                          <Loader2 className="text-tertiary size-6 animate-spin" />
+                        ) : (
+                          totalSections
+                        )}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="bg-surface-container-highest rounded-xl p-5 shadow-sm transition-colors">
+                  <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="bg-surface text-primary rounded-md p-1.5">
+                        <div className="bg-muted text-primary rounded-md p-1.5">
                           <Users className="size-4" />
                         </div>
-                        <p className="text-secondary font-sans text-xs font-bold">
+                        <p className="text-muted-foreground font-sans text-xs font-bold">
                           Contributors
                         </p>
                       </div>
-                      <div>
-                        <p className="text-primary font-serif text-3xl font-bold">
-                          {paperMembersQuery.isLoading ? (
-                            <Loader2 className="text-tertiary size-6 animate-spin" />
-                          ) : (
-                            totalPaperMembers
-                          )}
-                        </p>
-                      </div>
+                      <p className="text-foreground font-serif text-3xl font-bold">
+                        {paperMembersQuery.isLoading ? (
+                          <Loader2 className="text-tertiary size-6 animate-spin" />
+                        ) : (
+                          totalPaperMembers
+                        )}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="bg-surface-container-highest rounded-xl p-5 shadow-sm transition-colors">
+                  <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="bg-surface text-primary rounded-md p-1.5">
+                        <div className="bg-muted text-primary rounded-md p-1.5">
                           <Pencil className="size-4" />
                         </div>
-                        <p className="text-secondary font-sans text-xs font-bold">
+                        <p className="text-muted-foreground font-sans text-xs font-bold">
                           Authors
                         </p>
                       </div>
-                      <div>
-                        <p className="text-primary font-serif text-3xl font-bold">
-                          {paperMembersQuery.isLoading ? (
-                            <Loader2 className="text-tertiary size-6 animate-spin" />
-                          ) : (
-                            editRoleMembers
-                          )}
-                        </p>
-                      </div>
+                      <p className="text-foreground font-serif text-3xl font-bold">
+                        {paperMembersQuery.isLoading ? (
+                          <Loader2 className="text-tertiary size-6 animate-spin" />
+                        ) : (
+                          editRoleMembers
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   {/* Abstract */}
-                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
-                        <FileText className="text-secondary size-4" />
-                      </div>
-                      <h3 className="text-secondary font-sans text-xs font-bold">
-                        Abstract
-                      </h3>
-                    </div>
+                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      Abstract
+                    </h3>
                     <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
                       {paper.abstract || 'No abstract provided.'}
                     </p>
                   </div>
 
                   {/* Context */}
-                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
-                        <Globe className="text-secondary size-4" />
-                      </div>
-                      <h3 className="text-secondary font-sans text-xs font-bold">
-                        Context
-                      </h3>
-                    </div>
+                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      Context
+                    </h3>
                     <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
                       {paper.context || 'No context defined.'}
                     </p>
                   </div>
 
                   {/* Research Gap */}
-                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
-                        <Target className="text-secondary size-4" />
-                      </div>
-                      <h3 className="text-secondary font-sans text-xs font-bold">
-                        Research Gap
-                      </h3>
-                    </div>
+                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      Research Gap
+                    </h3>
                     <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
                       {paper.researchGap ||
                         'No research gap explicitly stated.'}
@@ -874,16 +927,21 @@ export const ProjectPaperDetailPage = ({
                     )}
                   </div>
 
+                  {/* Research Aim */}
+                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      Research Aim
+                    </h3>
+                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {paper.researchAim || 'No research aim defined.'}
+                    </p>
+                  </div>
+
                   {/* Main Contribution */}
-                  <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
-                        <BookOpen className="text-secondary size-4" />
-                      </div>
-                      <h3 className="text-secondary font-sans text-xs font-bold">
-                        Main Contribution
-                      </h3>
-                    </div>
+                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      Main Contribution
+                    </h3>
                     <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
                       {paper.mainContribution || 'No main contribution listed.'}
                     </p>
@@ -893,15 +951,10 @@ export const ProjectPaperDetailPage = ({
                   {((paper as any).journalName ||
                     (paper as any).journal ||
                     (paper as any).conferenceName) && (
-                    <div className="bg-surface-container-highest rounded-xl p-5 transition-shadow hover:shadow-sm">
-                      <div className="mb-3 flex items-center gap-2">
-                        <div className="bg-surface flex h-8 w-8 items-center justify-center rounded-lg">
-                          <Presentation className="text-secondary size-4" />
-                        </div>
-                        <h3 className="text-secondary font-sans text-xs font-bold">
-                          Journal / Conference
-                        </h3>
-                      </div>
+                    <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                      <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                        Journal / Conference
+                      </h3>
                       <div className="space-y-2">
                         {((paper as any).journalName ||
                           (paper as any).journal) && (
@@ -925,847 +978,1381 @@ export const ProjectPaperDetailPage = ({
                 </div>
               </>
             )}
-          </div>
-        </div>
 
-        {/* ── Combines Panel ───────────────────────────────────────── */}
-        {activeTab === 'compile-paper' && (
-          <div className="bg-surface-container mt-6 rounded-xl shadow-sm">
-            <div className="bg-surface-container-low flex items-center gap-3 rounded-t-xl px-6 py-4">
-              <div className="bg-surface flex h-9 w-9 items-center justify-center rounded-lg">
-                <Layers className="text-primary size-5" />
-              </div>
+            {/* ── Combines Panel ────────────────────────────────────── */}
+            {activeTab === 'compile-paper' && (
               <div>
-                <h2 className="text-primary text-base font-semibold">
-                  Combined Versions
-                </h2>
-                <p className="text-secondary mt-1 font-sans text-[10px]">
-                  {combines.length} version{combines.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-              {isAuthor && (
-                <Button
-                  variant="action"
-                  className={cn('ml-auto gap-1.5')}
-                  size="sm"
-                  disabled={combinePaperMutation.isPending}
-                  onClick={() => {
-                    combinePaperMutation.mutate({
-                      paperId,
-                      data: {
-                        isPreview: true,
-                        projectId: paperSubProjectId,
-                      },
-                    });
-                  }}
-                >
-                  {combinePaperMutation.isPending ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Play className="size-4" />
-                  )}
-                  Compile Paper
-                </Button>
-              )}
-            </div>
-            <div className="p-6">
-              {combines.length === 0 ? (
-                <div className="bg-surface-container-low flex flex-col items-center justify-center rounded-xl border border-transparent py-10 text-center">
-                  <Layers className="text-secondary mb-3 size-10 opacity-50" />
-                  <p className="text-primary text-sm font-medium">
-                    No combined versions yet.
-                  </p>
-                  {isAuthor && (
-                    <p className="text-secondary mt-1 text-xs">
-                      Click &ldquo;Compile Paper&rdquo; to generate a combined
-                      version.
+                <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h2 className="text-foreground text-base font-semibold">
+                      Combined Versions
+                    </h2>
+                    <p className="text-secondary mt-1 font-sans text-[10px]">
+                      {combines.length} version
+                      {combines.length !== 1 ? 's' : ''}
                     </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {combines.map((combine) => (
-                    <div
-                      key={combine.id}
-                      className="bg-surface flex items-center justify-between rounded-lg p-4 shadow-sm transition-shadow hover:shadow-md"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-primary truncate text-sm font-semibold">
-                          {combine.name}
-                        </p>
-                        <div className="text-secondary mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-sans text-[10px]">
-                          {combine.createdOnUtc && (
-                            <span>
-                              <span className="text-secondary font-medium">
-                                Created{' '}
-                              </span>
-                              {new Date(combine.createdOnUtc).toLocaleString(
-                                'en-US',
-                                {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                },
-                              )}
-                            </span>
-                          )}
-                          {combine.lastModifiedOnUtc && (
-                            <span>
-                              <span className="text-secondary font-medium">
-                                Last modified{' '}
-                              </span>
-                              {new Date(
-                                combine.lastModifiedOnUtc,
-                              ).toLocaleString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isAuthor && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
-                            onClick={() => {
-                              if (combineEditorPath) {
-                                navigate(
-                                  combineEditorPath(combine.id) + '?edit=true',
-                                );
-                              }
-                            }}
-                          >
-                            <Pencil className="size-3.5" />
-                            Edit
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
-                          onClick={() => {
-                            if (combineEditorPath) {
-                              navigate(combineEditorPath(combine.id));
-                            }
-                          }}
-                        >
-                          <Eye className="size-4" />
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── Sections Panel ───────────────────────────────────────── */}
-        {activeTab === 'sections' && (
-          <div className="bg-surface-container mt-6 rounded-xl p-6 shadow-sm">
-            <PaperWorkspacePage
-              projectId={projectId}
-              paperId={paperId}
-              isAuthor={isAuthor}
-              isManager={isManager}
-              backPath={backPath}
-              embedded={true}
-            />
-          </div>
-        )}
-
-        {/* ── Contributors Panel ───────────────────────────────────────── */}
-        {activeTab === 'contributor' && (
-          <div className="bg-surface-container mt-6 rounded-xl p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-primary text-base font-semibold">
-                Contributors
-              </h2>
-              {(isAuthor || isManager) && (
-                <Button
-                  size="sm"
-                  variant="action"
-                  onClick={() => setIsMembersOpen(true)}
-                  className="gap-1.5"
-                >
-                  <Users className="size-4" />
-                  Manage Contributors
-                </Button>
-              )}
-            </div>
-
-            {paperMembersQuery.isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : paperMembersList.length === 0 ? (
-              <div className="text-secondary py-12 text-center">
-                No contributors found.
-              </div>
-            ) : (
-              <div className="bg-surface overflow-x-auto rounded-xl shadow-sm">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-surface-container-low text-primary">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">User</th>
-                      <th className="px-4 py-3 font-medium">Email</th>
-                      <th className="px-4 py-3 font-medium">Role</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-surface-container-highest divide-y">
-                    {paperMembersList.map((member: any) => (
-                      <tr
-                        key={member.id}
-                        className="hover:bg-surface-container-highest"
-                      >
-                        <td className="text-primary px-4 py-3 font-medium">
-                          {member.firstName || member.lastName
-                            ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
-                            : member.username}
-                        </td>
-                        <td className="text-secondary px-4 py-3">
-                          {member.email}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge className="bg-surface-container text-primary hover:bg-surface-container-highest border-0 shadow-none">
-                            {member.role}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Tasks Panel ─────────────────────────────────────────────── */}
-        {activeTab === 'task' && (
-          <div className="bg-surface-container mt-6 rounded-xl shadow-sm">
-            <div className="bg-surface-container-low flex items-center gap-3 rounded-t-xl px-6 py-4">
-              <div className="bg-surface flex h-9 w-9 items-center justify-center rounded-lg">
-                <ClipboardList className="text-primary size-5" />
-              </div>
-              <div>
-                <h2 className="text-primary text-base font-semibold">Tasks</h2>
-                <p className="text-secondary mt-1 font-sans text-[10px]">
-                  {paperTasksQuery.data?.result?.paging?.totalCount != null
-                    ? `${paperTasksQuery.data.result.paging.totalCount} task${paperTasksQuery.data.result.paging.totalCount !== 1 ? 's' : ''}`
-                    : 'Paper tasks'}
-                </p>
-              </div>
-              <Button
-                variant="action"
-                className={cn('ml-auto')}
-                size="sm"
-                onClick={() => {
-                  if (!isAuthor && user?.preferredUsername) {
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      assignedToUserName: user.preferredUsername || '',
-                    }));
-                  }
-                  setIsCreateTaskOpen(true);
-                }}
-              >
-                <Plus className="size-4" />
-                Create Task
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => paperTasksQuery.refetch()}
-                disabled={paperTasksQuery.isFetching}
-                title="Refresh tasks"
-                className="bg-surface text-primary hover:bg-surface-container-highest border-transparent"
-              >
-                <RefreshCw
-                  className={cn(
-                    'size-4',
-                    paperTasksQuery.isFetching && 'animate-spin',
-                  )}
-                />
-              </Button>
-            </div>
-
-            <div className="p-4">
-              <form
-                onSubmit={applyTaskFilters}
-                className="bg-surface-container-low mb-4 rounded-xl p-4"
-              >
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="filterAssignee"
-                      className="text-secondary font-sans text-[10px]"
-                    >
-                      Assignee
-                    </label>
-                    <select
-                      id="filterAssignee"
-                      className="bg-surface border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                      value={localFilters.AssignedToUserName}
-                      onChange={(e) =>
-                        handleFilterChange('AssignedToUserName', e.target.value)
-                      }
-                    >
-                      <option value="">All Assignees</option>
-                      {memberOptions.map((member) => (
-                        <option key={member.value} value={member.value}>
-                          {member.label}
-                        </option>
-                      ))}
-                    </select>
                   </div>
-
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="filterStatus"
-                      className="text-secondary font-sans text-[10px]"
-                    >
-                      Status
-                    </label>
-                    <select
-                      id="filterStatus"
-                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                      value={localFilters.Status}
-                      onChange={(e) =>
-                        handleFilterChange('Status', e.target.value)
-                      }
-                    >
-                      <option value="">All Status</option>
-                      {TASK_STATUS_OPTIONS.map((status) => (
-                        <option key={status.value} value={String(status.value)}>
-                          {status.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="filterDateField"
-                      className="text-secondary font-sans text-[10px]"
-                    >
-                      Date Field
-                    </label>
-                    <select
-                      id="filterDateField"
-                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                      value={localFilters.DateField}
-                      onChange={(e) =>
-                        handleFilterChange('DateField', e.target.value)
-                      }
-                    >
-                      <option value="">Select Date Field</option>
-                      {DATE_TASK_FILTER_OPTIONS.map((f) => (
-                        <option key={f.value} value={f.value}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="filterFromDate"
-                      className="text-secondary font-sans text-[10px]"
-                    >
-                      From Date
-                    </label>
-                    <Input
-                      id="filterFromDate"
-                      type="date"
-                      value={localFilters.FromDate}
-                      disabled={!isDateFieldSelected}
-                      onChange={(e) =>
-                        handleFilterChange('FromDate', e.target.value)
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="filterToDate"
-                      className="text-secondary font-sans text-[10px]"
-                    >
-                      To Date
-                    </label>
-                    <Input
-                      id="filterToDate"
-                      type="date"
-                      value={localFilters.ToDate}
-                      disabled={!isDateFieldSelected}
-                      onChange={(e) =>
-                        handleFilterChange('ToDate', e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-end gap-2">
-                  {activeFilterCount > 0 && (
+                  {isAuthor && (
                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearTaskFilters}
-                      className="text-secondary hover:text-primary mr-auto"
+                      variant="action"
+                      className={cn('ml-auto gap-1.5')}
+                      size="action"
+                      disabled={combinePaperMutation.isPending}
+                      onClick={() => {
+                        combinePaperMutation.mutate({
+                          paperId,
+                          data: {
+                            isPreview: true,
+                            projectId: paperSubProjectId,
+                          },
+                        });
+                      }}
                     >
-                      <X className="size-4" />
-                      Clear ({activeFilterCount})
+                      {combinePaperMutation.isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Play className="size-4" />
+                      )}
+                      Compile Paper
                     </Button>
                   )}
                   <Button
-                    type="button"
                     variant="outline"
-                    size="sm"
-                    onClick={clearTaskFilters}
-                    className={BTN.CANCEL}
+                    size="action"
+                    onClick={() => paperQuery.refetch()}
+                    disabled={paperQuery.isFetching}
+                    title="Refresh"
+                    className="border-transparent"
                   >
-                    Reset
-                  </Button>
-                  <Button type="submit" size="sm" className={BTN.EDIT}>
-                    <Search className="size-4" />
-                    Search
+                    <RefreshCw
+                      className={cn(
+                        'size-4',
+                        paperQuery.isFetching && 'animate-spin',
+                      )}
+                    />
                   </Button>
                 </div>
-              </form>
-
-              {/* ── Kanban Board ───────────────────────────────────────── */}
-              {paperTasksQuery.isLoading ? (
-                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="space-y-2">
-                      <Skeleton className="h-9 w-full rounded-lg" />
-                      <Skeleton className="h-24 w-full rounded-lg" />
-                      <Skeleton className="h-24 w-full rounded-lg" />
+                <div>
+                  {combines.length === 0 ? (
+                    <div className="bg-surface-container-low flex flex-col items-center justify-center rounded-xl border border-transparent py-10 text-center">
+                      <Layers className="text-secondary mb-3 size-10 opacity-50" />
+                      <p className="text-primary text-sm font-medium">
+                        No combined versions yet.
+                      </p>
+                      {isAuthor && (
+                        <p className="text-secondary mt-1 text-xs">
+                          Click &ldquo;Compile Paper&rdquo; to generate a
+                          combined version.
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {KANBAN_COLUMNS.map((col) => {
-                    const allItems = paperTasksQuery.data?.result?.items ?? [];
-                    const colTasks = allItems
-                      .map((t) => ({
-                        ...t,
-                        status: localStatusOverrides[t.id] ?? t.status,
-                      }))
-                      .filter((t) => t.status === col.status);
-                    const isDragTarget = dragOverCol === col.status;
-                    return (
-                      <div key={col.status} className="flex min-w-0 flex-col">
-                        {/* Column header */}
+                  ) : (
+                    <div className="space-y-3">
+                      {combines.map((combine) => (
                         <div
-                          className={cn(
-                            'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
-                            col.headerCls,
-                          )}
+                          key={combine.id}
+                          className="bg-surface flex items-center justify-between rounded-lg p-4 shadow-sm transition-shadow hover:shadow-md"
                         >
-                          <span
-                            className={cn(
-                              'size-2 shrink-0 rounded-full',
-                              col.dot,
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              'flex-1 text-sm font-semibold',
-                              col.labelCls,
-                            )}
-                          >
-                            {col.label}
-                          </span>
-                          <span
-                            className={cn(
-                              'rounded-full px-1.5 py-0.5 text-xs font-bold',
-                              col.countCls,
-                            )}
-                          >
-                            {colTasks.length}
-                          </span>
-                        </div>
-
-                        {/* Column body – drop zone */}
-                        <div
-                          className={cn(
-                            'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
-                            col.bodyCls,
-                            isDragTarget && 'ring-tertiary ring-2 ring-inset',
-                          )}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                            if (dragOverCol !== col.status)
-                              setDragOverCol(col.status);
-                          }}
-                          onDragLeave={(e) => {
-                            // Only clear if leaving the column entirely
-                            if (
-                              !e.currentTarget.contains(e.relatedTarget as Node)
-                            )
-                              setDragOverCol(null);
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            setDragOverCol(null);
-                            if (!draggedTaskId) return;
-                            const task = allItems.find(
-                              (t) => t.id === draggedTaskId,
-                            );
-                            if (!task) return;
-                            // Don't clear draggedTaskId here — let onDragEnd do it
-                            // so the optimistic override and drag-clear happen in the
-                            // same render, preventing a flash back to the old column
-                            handleTaskDrop(task, col.status);
-                          }}
-                        >
-                          {colTasks.length === 0 ? (
-                            <div
-                              className={cn(
-                                'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
-                                isDragTarget
-                                  ? 'border-tertiary bg-surface-container-highest'
-                                  : 'border-transparent',
+                          <div className="min-w-0 flex-1">
+                            <p className="text-primary truncate text-sm font-semibold">
+                              {combine.name}
+                            </p>
+                            <div className="text-secondary mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-sans text-[10px]">
+                              {combine.createdOnUtc && (
+                                <span>
+                                  <span className="text-secondary font-medium">
+                                    Created{' '}
+                                  </span>
+                                  {new Date(
+                                    combine.createdOnUtc,
+                                  ).toLocaleString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
                               )}
-                            >
-                              <p className="text-secondary text-xs">
-                                {isDragTarget ? 'Drop here' : 'No tasks'}
-                              </p>
+                              {combine.lastModifiedOnUtc && (
+                                <span>
+                                  <span className="text-secondary font-medium">
+                                    Last modified{' '}
+                                  </span>
+                                  {new Date(
+                                    combine.lastModifiedOnUtc,
+                                  ).toLocaleString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              )}
                             </div>
-                          ) : (
-                            colTasks.map((task) => {
-                              const canEdit =
-                                isAuthor ||
-                                (currentUsername &&
-                                  task.assignedToUserName.toLowerCase() ===
-                                    currentUsername);
-                              const isPending = dndMutatingRef.current.has(
-                                task.id,
-                              );
-                              return (
-                                <div
-                                  key={task.id}
-                                  draggable
-                                  role="button"
-                                  tabIndex={canEdit ? 0 : -1}
-                                  onDragStart={(e) => {
-                                    setDraggedTaskId(task.id);
-                                    e.dataTransfer.effectAllowed = 'move';
-                                    // needed for Firefox
-                                    e.dataTransfer.setData(
-                                      'text/plain',
-                                      task.id,
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isAuthor && (
+                              <Button
+                                variant="outline"
+                                size="action"
+                                className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
+                                onClick={() => {
+                                  if (combineEditorPath) {
+                                    navigate(
+                                      combineEditorPath(combine.id) +
+                                        '?edit=true',
                                     );
-                                  }}
-                                  onDragEnd={() => {
-                                    setDraggedTaskId(null);
-                                    setDragOverCol(null);
-                                  }}
-                                  onClick={() =>
-                                    canEdit && openUpdateTask(task)
                                   }
-                                  onKeyDown={(e) => {
-                                    if (!canEdit) return;
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      openUpdateTask(task);
-                                    }
-                                  }}
-                                  className={cn(
-                                    'bg-card relative flex flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
-                                    canEdit && 'cursor-pointer',
-                                    isPending && 'ring-tertiary ring-1',
-                                  )}
-                                >
-                                  {/* Pending indicator (while mutation is in flight) */}
-                                  {isPending && (
-                                    <span className="bg-muted-bronze absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
-                                  )}
-
-                                  {/* Name */}
-                                  <p className="pr-4 text-sm leading-snug font-medium">
-                                    {task.name}
-                                  </p>
-
-                                  {/* Description */}
-                                  {task.description && (
-                                    <p className="text-secondary line-clamp-2 text-xs">
-                                      {task.description}
-                                    </p>
-                                  )}
-
-                                  {/* Assignee */}
-                                  <div className="flex items-center gap-1.5">
-                                    <div className="bg-surface-container flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
-                                      {task.assignedToUserName.charAt(0)}
-                                    </div>
-                                    <span className="text-secondary truncate text-xs">
-                                      {task.assignedToUserName}
-                                    </span>
-                                  </div>
-
-                                  {/* Dates */}
-                                  {(task.startDate ||
-                                    task.nextReviewDate ||
-                                    task.completeDate) && (
-                                    <div className="space-y-0.5 border-t pt-1.5">
-                                      {task.startDate && (
-                                        <div className="text-secondary flex items-center gap-1 text-[11px]">
-                                          <Calendar className="size-3 shrink-0" />
-                                          <span>
-                                            Start: {formatDate(task.startDate)}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {task.nextReviewDate && (
-                                        <div className="text-secondary flex items-center gap-1 text-[11px]">
-                                          <Calendar className="size-3 shrink-0" />
-                                          <span>
-                                            Review:{' '}
-                                            {formatDate(task.nextReviewDate)}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {task.completeDate && (
-                                        <div className="text-secondary flex items-center gap-1 text-[11px]">
-                                          <Calendar className="size-3 shrink-0" />
-                                          <span>
-                                            Due: {formatDate(task.completeDate)}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          )}
+                                }}
+                              >
+                                <Pencil className="size-3.5" />
+                                Edit
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="action"
+                              className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
+                              onClick={() => {
+                                if (combineEditorPath) {
+                                  navigate(combineEditorPath(combine.id));
+                                }
+                              }}
+                            >
+                              <Eye className="size-4" />
+                              View
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Sheet open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
-        <SheetContent className="flex w-full flex-col sm:max-w-sm">
-          <form onSubmit={handleCreateTask} className="flex h-full flex-col">
-            <SheetHeader>
-              <SheetTitle>Create Task</SheetTitle>
-              <SheetDescription>Create a task for this paper</SheetDescription>
-            </SheetHeader>
-
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="createTaskName"
-                  className="text-secondary font-sans text-[10px]"
-                >
-                  Task Name
-                </label>
-                <Input
-                  id="createTaskName"
-                  value={createForm.name}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  required
-                />
               </div>
+            )}
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="createTaskDesc"
-                  className="text-secondary font-sans text-[10px]"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="createTaskDesc"
-                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                  value={createForm.description}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="createTaskAssignee"
-                  className="text-secondary font-sans text-[10px]"
-                >
-                  Assign Username
-                </label>
-                {isAuthor ? (
-                  <select
-                    id="createTaskAssignee"
-                    className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                    value={createForm.assignedToUserName}
-                    onChange={(e) =>
-                      setCreateForm((prev) => ({
-                        ...prev,
-                        assignedToUserName: e.target.value,
-                      }))
-                    }
-                    required
+            {/* ── Sections Panel ──────────────────────────────────── */}
+            {activeTab === 'sections' && (
+              <div className="-mx-6 -mb-6">
+                <div className="border-border -mt-6 mb-0 flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h2 className="text-foreground text-base font-semibold">
+                      Sections
+                    </h2>
+                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
+                      {totalSections} section
+                      {totalSections !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="action"
+                    onClick={() => sectionsQuery.refetch()}
+                    disabled={sectionsQuery.isFetching}
+                    title="Refresh"
+                    className="border-transparent"
                   >
-                    <option value="">Select assignee</option>
-                    {memberOptions.map((member) => (
-                      <option key={member.value} value={member.value}>
-                        {member.label}
-                      </option>
-                    ))}
-                  </select>
+                    <RefreshCw
+                      className={cn(
+                        'size-4',
+                        sectionsQuery.isFetching && 'animate-spin',
+                      )}
+                    />
+                  </Button>
+                </div>
+                <PaperWorkspacePage
+                  projectId={projectId}
+                  paperId={paperId}
+                  isAuthor={isAuthor}
+                  isManager={isManager}
+                  backPath={backPath}
+                  embedded={true}
+                  initialSectionId={pendingSectionId ?? undefined}
+                  onInitialSectionOpened={() => setPendingSectionId(null)}
+                />
+              </div>
+            )}
+
+            {/* ── Contributors Panel ──────────────────────────────── */}
+            {activeTab === 'contributor' && (
+              <div>
+                <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h2 className="text-foreground text-base font-semibold">
+                      Contributors
+                    </h2>
+                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
+                      {totalPaperMembers} contributor
+                      {totalPaperMembers !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  {(isAuthor || isManager) && (
+                    <Button
+                      size="action"
+                      variant="action"
+                      onClick={() => setIsMembersOpen(true)}
+                      className="gap-1.5"
+                    >
+                      <Users className="size-4" />
+                      Manage Contributors
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="action"
+                    onClick={() => paperMembersQuery.refetch()}
+                    disabled={paperMembersQuery.isFetching}
+                    title="Refresh"
+                    className="border-transparent"
+                  >
+                    <RefreshCw
+                      className={cn(
+                        'size-4',
+                        paperMembersQuery.isFetching && 'animate-spin',
+                      )}
+                    />
+                  </Button>
+                </div>
+
+                {paperMembersQuery.isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : paperMembersList.length === 0 ? (
+                  <div className="text-muted-foreground py-12 text-center">
+                    No contributors found.
+                  </div>
                 ) : (
-                  <Input
-                    id="createTaskAssignee"
-                    value={createForm.assignedToUserName}
-                    readOnly
-                    className="bg-surface-container text-secondary cursor-not-allowed"
-                  />
+                  <div className="bg-card overflow-hidden rounded-md border shadow-sm">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead>User</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paperMembersList.map((member: any) => (
+                          <TableRow
+                            key={member.id}
+                            className="hover:bg-muted/30"
+                          >
+                            <TableCell className="text-foreground font-medium">
+                              {member.firstName || member.lastName
+                                ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
+                                : member.username}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {member.email}
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const parts = (member.role ?? '').split(':');
+                                const raw =
+                                  parts.length > 1
+                                    ? parts[parts.length - 1]
+                                    : parts[0];
+                                let label: string;
+                                if (raw === 'author') label = 'Author';
+                                else if (raw === 'member') label = 'Member';
+                                else if (raw === 'edit') label = 'Editor';
+                                else if (raw === 'read' || raw === 'view')
+                                  label = 'Viewer';
+                                else
+                                  label = raw
+                                    ? raw.charAt(0).toUpperCase() + raw.slice(1)
+                                    : (member.role ?? '');
+                                const cls =
+                                  raw === 'author'
+                                    ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
+                                    : raw === 'member' || raw === 'edit'
+                                      ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
+                                      : '';
+                                return (
+                                  <Badge variant="outline" className={cls}>
+                                    {label}
+                                  </Badge>
+                                );
+                              })()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </div>
+            )}
 
+            {/* ── Tasks Panel ─────────────────────────────────────── */}
+            {activeTab === 'task' && (
+              <div>
+                <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h2 className="text-foreground text-base font-semibold">
+                      Tasks
+                    </h2>
+                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
+                      {paperTasksQuery.data?.result?.paging?.totalCount != null
+                        ? `${paperTasksQuery.data.result.paging.totalCount} task${paperTasksQuery.data.result.paging.totalCount !== 1 ? 's' : ''}`
+                        : 'Paper tasks'}
+                    </p>
+                  </div>
+                  {isAuthor && (
+                    <Button
+                      variant="action"
+                      className={cn('ml-auto')}
+                      size="action"
+                      onClick={() => {
+                        setIsCreateTaskOpen(true);
+                      }}
+                    >
+                      <Plus className="size-4" />
+                      Create Task
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="action"
+                    onClick={() => paperTasksQuery.refetch()}
+                    disabled={paperTasksQuery.isFetching}
+                    title="Refresh tasks"
+                    className="border-transparent"
+                  >
+                    <RefreshCw
+                      className={cn(
+                        'size-4',
+                        paperTasksQuery.isFetching && 'animate-spin',
+                      )}
+                    />
+                  </Button>
+                </div>
+
+                <form
+                  onSubmit={applyTaskFilters}
+                  className="bg-muted/30 mb-4 rounded-xl p-4"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="filterAssignee"
+                        className="text-secondary font-sans text-[10px]"
+                      >
+                        Assignee
+                      </label>
+                      <select
+                        id="filterAssignee"
+                        className="bg-surface border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                        value={localFilters.AssignedToUserName}
+                        onChange={(e) =>
+                          handleFilterChange(
+                            'AssignedToUserName',
+                            e.target.value,
+                          )
+                        }
+                      >
+                        <option value="">All Assignees</option>
+                        {memberOptions.map((member) => (
+                          <option key={member.value} value={member.value}>
+                            {member.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="filterStatus"
+                        className="text-secondary font-sans text-[10px]"
+                      >
+                        Status
+                      </label>
+                      <select
+                        id="filterStatus"
+                        className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                        value={localFilters.Status}
+                        onChange={(e) =>
+                          handleFilterChange('Status', e.target.value)
+                        }
+                      >
+                        <option value="">All Status</option>
+                        {PAPER_TASK_STATUS_OPTIONS.map((status) => (
+                          <option
+                            key={status.value}
+                            value={String(status.value)}
+                          >
+                            {status.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="filterDateField"
+                        className="text-secondary font-sans text-[10px]"
+                      >
+                        Date Field
+                      </label>
+                      <select
+                        id="filterDateField"
+                        className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                        value={localFilters.DateField}
+                        onChange={(e) =>
+                          handleFilterChange('DateField', e.target.value)
+                        }
+                      >
+                        <option value="">Select Date Field</option>
+                        {DATE_TASK_FILTER_OPTIONS.map((f) => (
+                          <option key={f.value} value={f.value}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="filterFromDate"
+                        className="text-secondary font-sans text-[10px]"
+                      >
+                        From Date
+                      </label>
+                      <Input
+                        id="filterFromDate"
+                        type="date"
+                        value={localFilters.FromDate}
+                        disabled={!isDateFieldSelected}
+                        onChange={(e) =>
+                          handleFilterChange('FromDate', e.target.value)
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="filterToDate"
+                        className="text-secondary font-sans text-[10px]"
+                      >
+                        To Date
+                      </label>
+                      <Input
+                        id="filterToDate"
+                        type="date"
+                        value={localFilters.ToDate}
+                        disabled={!isDateFieldSelected}
+                        onChange={(e) =>
+                          handleFilterChange('ToDate', e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    {activeFilterCount > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="action"
+                        onClick={clearTaskFilters}
+                        className="text-secondary hover:text-primary mr-auto"
+                      >
+                        <X className="size-4" />
+                        Clear ({activeFilterCount})
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="action"
+                      onClick={clearTaskFilters}
+                      className={BTN.CANCEL}
+                    >
+                      Reset
+                    </Button>
+                    <Button type="submit" size="action" className={BTN.EDIT}>
+                      <Search className="size-4" />
+                      Search
+                    </Button>
+                  </div>
+                </form>
+
+                {/* ── Kanban Board ───────────────────────────────────────── */}
+                {paperTasksQuery.isLoading ? (
+                  <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-9 w-full rounded-lg" />
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {KANBAN_COLUMNS.filter((c) => c.status !== 5).map(
+                        (col) => {
+                          const allItems =
+                            paperTasksQuery.data?.result?.items ?? [];
+                          const colTasks = allItems
+                            .map((t) => ({
+                              ...t,
+                              status: localStatusOverrides[t.id] ?? t.status,
+                            }))
+                            .filter((t) => t.status === col.status);
+                          const isDragTarget = dragOverCol === col.status;
+                          return (
+                            <div
+                              key={col.status}
+                              className="flex min-w-0 flex-col"
+                            >
+                              {/* Column header */}
+                              <div
+                                className={cn(
+                                  'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
+                                  col.headerCls,
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    'size-2 shrink-0 rounded-full',
+                                    col.dot,
+                                  )}
+                                />
+                                <span
+                                  className={cn(
+                                    'flex-1 text-sm font-semibold',
+                                    col.labelCls,
+                                  )}
+                                >
+                                  {col.label}
+                                </span>
+                                <span
+                                  className={cn(
+                                    'rounded-full px-1.5 py-0.5 text-xs font-bold',
+                                    col.countCls,
+                                  )}
+                                >
+                                  {colTasks.length}
+                                </span>
+                              </div>
+
+                              {/* Column body – drop zone */}
+                              <div
+                                className={cn(
+                                  'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
+                                  col.bodyCls,
+                                  isDragTarget &&
+                                    'ring-primary/40 ring-2 ring-inset',
+                                )}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = 'move';
+                                  if (dragOverCol !== col.status)
+                                    setDragOverCol(col.status);
+                                }}
+                                onDragLeave={(e) => {
+                                  // Only clear if leaving the column entirely
+                                  if (
+                                    !e.currentTarget.contains(
+                                      e.relatedTarget as Node,
+                                    )
+                                  )
+                                    setDragOverCol(null);
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  setDragOverCol(null);
+                                  if (!draggedTaskId) return;
+                                  const task = allItems.find(
+                                    (t) => t.id === draggedTaskId,
+                                  );
+                                  if (!task) return;
+                                  handleTaskDrop(task, col.status);
+                                }}
+                              >
+                                {colTasks.length === 0 ? (
+                                  <div
+                                    className={cn(
+                                      'flex h-24 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
+                                      isDragTarget
+                                        ? 'border-primary/40 bg-primary/5'
+                                        : 'border-transparent',
+                                    )}
+                                  >
+                                    <p className="text-muted-foreground text-xs">
+                                      {isDragTarget ? 'Drop here' : 'No tasks'}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  colTasks.map((task) => {
+                                    const isPending =
+                                      dndMutatingRef.current.has(task.id);
+                                    return (
+                                      <div
+                                        key={task.id}
+                                        draggable
+                                        role="button"
+                                        tabIndex={0}
+                                        onDragStart={(e) => {
+                                          setDraggedTaskId(task.id);
+                                          e.dataTransfer.effectAllowed = 'move';
+                                          e.dataTransfer.setData(
+                                            'text/plain',
+                                            task.id,
+                                          );
+                                        }}
+                                        onDragEnd={() => {
+                                          setDraggedTaskId(null);
+                                          setDragOverCol(null);
+                                        }}
+                                        onClick={() =>
+                                          isAuthor
+                                            ? openUpdateTask(task)
+                                            : setViewingTask(task)
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (
+                                            e.key === 'Enter' ||
+                                            e.key === ' '
+                                          ) {
+                                            e.preventDefault();
+                                            if (isAuthor) openUpdateTask(task);
+                                            else setViewingTask(task);
+                                          }
+                                        }}
+                                        className={cn(
+                                          'group bg-card relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
+                                          isPending && 'ring-primary/40 ring-1',
+                                        )}
+                                      >
+                                        {/* Pending indicator */}
+                                        {isPending && (
+                                          <span className="bg-primary absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
+                                        )}
+
+                                        {/* Name + section editor button */}
+                                        <div className="flex items-start gap-1.5">
+                                          <p className="flex-1 text-sm leading-snug font-medium">
+                                            {task.name}
+                                          </p>
+                                          {task.sectionId && (
+                                            <Button
+                                              size="icon-sm"
+                                              variant="ghost"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPendingSectionId(
+                                                  task.sectionId!,
+                                                );
+                                                setActiveTab('sections');
+                                              }}
+                                              title="Open in section editor"
+                                              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                            >
+                                              <BookOpen className="size-3.5 text-blue-600" />
+                                            </Button>
+                                          )}
+                                        </div>
+
+                                        {/* Task type badge */}
+                                        {task.taskType && (
+                                          <span
+                                            className={cn(
+                                              'inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold tracking-wider uppercase',
+                                              (
+                                                {
+                                                  1: 'bg-violet-100 text-violet-700',
+                                                  2: 'bg-emerald-100 text-emerald-700',
+                                                  3: 'bg-amber-100 text-amber-700',
+                                                  4: 'bg-muted text-muted-foreground',
+                                                } as Record<number, string>
+                                              )[task.taskType] ??
+                                                'bg-muted text-muted-foreground',
+                                            )}
+                                          >
+                                            {TASK_TYPE_LABELS[task.taskType] ??
+                                              'Task'}
+                                          </span>
+                                        )}
+
+                                        {/* Description */}
+                                        {task.description && (
+                                          <p className="text-muted-foreground line-clamp-2 text-xs">
+                                            {task.description}
+                                          </p>
+                                        )}
+
+                                        {/* Section title */}
+                                        {task.sectionTitle && (
+                                          <p className="text-muted-foreground truncate text-[11px]">
+                                            {task.sectionTitle}
+                                          </p>
+                                        )}
+
+                                        {/* Assignee */}
+                                        <div className="flex items-center gap-1.5">
+                                          <div className="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
+                                            {task.assignedToUserName?.charAt(
+                                              0,
+                                            ) ?? '?'}
+                                          </div>
+                                          <span className="text-muted-foreground truncate text-xs">
+                                            {task.assignedToUserName ?? '—'}
+                                          </span>
+                                        </div>
+
+                                        {/* Dates */}
+                                        {(task.startDate ||
+                                          task.nextReviewDate ||
+                                          task.completeDate) && (
+                                          <div className="space-y-0.5 border-t pt-1.5">
+                                            {task.startDate && (
+                                              <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                                <Calendar className="size-3 shrink-0" />
+                                                <span>
+                                                  Start:{' '}
+                                                  {formatDate(task.startDate)}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {task.nextReviewDate && (
+                                              <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                                <Calendar className="size-3 shrink-0" />
+                                                <span>
+                                                  Review:{' '}
+                                                  {formatDate(
+                                                    task.nextReviewDate,
+                                                  )}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {task.completeDate && (
+                                              <div className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                                <Calendar className="size-3 shrink-0" />
+                                                <span>
+                                                  Due:{' '}
+                                                  {formatDate(
+                                                    task.completeDate,
+                                                  )}
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+
+                    {/* ── Closed row ─────────────────────────────────────── */}
+                    {(() => {
+                      const closedCol = KANBAN_COLUMNS.find(
+                        (c) => c.status === 5,
+                      )!;
+                      const allItems =
+                        paperTasksQuery.data?.result?.items ?? [];
+                      const closedTasks = allItems
+                        .map((t) => ({
+                          ...t,
+                          status: localStatusOverrides[t.id] ?? t.status,
+                        }))
+                        .filter((t) => t.status === 5);
+                      const isDragTarget = dragOverCol === 5;
+                      return (
+                        <div className="flex min-w-0 flex-col">
+                          <div
+                            className={cn(
+                              'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
+                              closedCol.headerCls,
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'size-2 shrink-0 rounded-full',
+                                closedCol.dot,
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                'flex-1 text-sm font-semibold',
+                                closedCol.labelCls,
+                              )}
+                            >
+                              {closedCol.label}
+                            </span>
+                            <span
+                              className={cn(
+                                'rounded-full px-1.5 py-0.5 text-xs font-bold',
+                                closedCol.countCls,
+                              )}
+                            >
+                              {closedTasks.length}
+                            </span>
+                          </div>
+                          <div
+                            className={cn(
+                              'rounded-b-lg border p-2 transition-colors duration-150',
+                              closedCol.bodyCls,
+                              isDragTarget &&
+                                'ring-primary/40 ring-2 ring-inset',
+                            )}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = 'move';
+                              if (dragOverCol !== 5) setDragOverCol(5);
+                            }}
+                            onDragLeave={(e) => {
+                              if (
+                                !e.currentTarget.contains(
+                                  e.relatedTarget as Node,
+                                )
+                              )
+                                setDragOverCol(null);
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setDragOverCol(null);
+                              if (!draggedTaskId) return;
+                              const task = allItems.find(
+                                (t) => t.id === draggedTaskId,
+                              );
+                              if (!task) return;
+                              handleTaskDrop(task, 5);
+                            }}
+                          >
+                            {closedTasks.length === 0 ? (
+                              <div
+                                className={cn(
+                                  'flex h-10 items-center justify-center rounded-md border-2 border-dashed transition-colors duration-150',
+                                  isDragTarget
+                                    ? 'border-primary/40 bg-primary/5'
+                                    : 'border-transparent',
+                                )}
+                              >
+                                <p className="text-muted-foreground text-xs">
+                                  {isDragTarget ? 'Drop here' : 'No tasks'}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {closedTasks.map((task) => {
+                                  const isPending = dndMutatingRef.current.has(
+                                    task.id,
+                                  );
+                                  return (
+                                    <div
+                                      key={task.id}
+                                      draggable
+                                      role="button"
+                                      tabIndex={0}
+                                      onDragStart={(e) => {
+                                        setDraggedTaskId(task.id);
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        e.dataTransfer.setData(
+                                          'text/plain',
+                                          task.id,
+                                        );
+                                      }}
+                                      onDragEnd={() => {
+                                        setDraggedTaskId(null);
+                                        setDragOverCol(null);
+                                      }}
+                                      onClick={() =>
+                                        isAuthor
+                                          ? openUpdateTask(task)
+                                          : setViewingTask(task)
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (
+                                          e.key === 'Enter' ||
+                                          e.key === ' '
+                                        ) {
+                                          e.preventDefault();
+                                          if (isAuthor) openUpdateTask(task);
+                                          else setViewingTask(task);
+                                        }
+                                      }}
+                                      className={cn(
+                                        'bg-card group relative flex w-56 shrink-0 cursor-pointer flex-col gap-1.5 rounded-lg border p-3 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
+                                        isPending && 'ring-primary/40 ring-1',
+                                      )}
+                                    >
+                                      {isPending && (
+                                        <span className="bg-primary absolute top-2 right-2 inline-flex size-2 animate-pulse rounded-full" />
+                                      )}
+                                      <p className="text-sm leading-snug font-medium">
+                                        {task.name}
+                                      </p>
+                                      {task.taskType && (
+                                        <span
+                                          className={cn(
+                                            'inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold tracking-wider uppercase',
+                                            (
+                                              {
+                                                1: 'bg-violet-100 text-violet-700',
+                                                2: 'bg-emerald-100 text-emerald-700',
+                                                3: 'bg-amber-100 text-amber-700',
+                                                4: 'bg-muted text-muted-foreground',
+                                              } as Record<number, string>
+                                            )[task.taskType] ??
+                                              'bg-muted text-muted-foreground',
+                                          )}
+                                        >
+                                          {TASK_TYPE_LABELS[task.taskType] ??
+                                            'Task'}
+                                        </span>
+                                      )}
+                                      {task.assignedToUserName && (
+                                        <div className="flex items-center gap-1.5">
+                                          <div className="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
+                                            {task.assignedToUserName.charAt(0)}
+                                          </div>
+                                          <span className="text-muted-foreground truncate text-xs">
+                                            {task.assignedToUserName}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── View Task Info Dialog (non-authors, read-only) ───────────── */}
+      <Dialog
+        open={!!viewingTask}
+        onOpenChange={(open) => !open && setViewingTask(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{viewingTask?.name}</DialogTitle>
+            <DialogDescription>
+              <span
+                className={cn(
+                  'inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold tracking-wider uppercase',
+                  (
+                    {
+                      1: 'bg-violet-100 text-violet-700',
+                      2: 'bg-emerald-100 text-emerald-700',
+                      3: 'bg-amber-100 text-amber-700',
+                      4: 'bg-muted text-muted-foreground',
+                    } as Record<number, string>
+                  )[viewingTask?.taskType ?? 0] ??
+                    'bg-muted text-muted-foreground',
+                )}
+              >
+                {TASK_TYPE_LABELS[viewingTask?.taskType ?? 0] ?? 'Task'}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {viewingTask?.description && (
               <div className="space-y-1.5">
+                <p className="text-secondary font-sans text-[10px] font-bold tracking-widest uppercase">
+                  Description
+                </p>
+                <p className="bg-surface-container text-primary rounded-md px-3 py-2 text-sm leading-relaxed">
+                  {viewingTask.description}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <p className="text-secondary font-sans text-[10px] font-bold tracking-widest uppercase">
+                  Assigned To
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <div className="bg-muted flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
+                    {viewingTask?.assignedToUserName?.charAt(0) ?? '?'}
+                  </div>
+                  <span className="text-primary text-sm">
+                    {viewingTask?.assignedToUserName ?? '—'}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-secondary font-sans text-[10px] font-bold tracking-widest uppercase">
+                  Status
+                </p>
+                <span className="text-primary text-sm">
+                  {PAPER_TASK_STATUS_OPTIONS.find(
+                    (s) => s.value === viewingTask?.status,
+                  )?.label ?? '—'}
+                </span>
+              </div>
+            </div>
+
+            {viewingTask?.sectionTitle && (
+              <div className="space-y-1.5">
+                <p className="text-secondary font-sans text-[10px] font-bold tracking-widest uppercase">
+                  Section
+                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-primary text-sm">
+                    {viewingTask.sectionTitle}
+                  </span>
+                  {viewingTask.sectionId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="action"
+                      className="shrink-0 gap-1.5"
+                      onClick={() => {
+                        setViewingTask(null);
+                        setPendingSectionId(viewingTask.sectionId!);
+                        setActiveTab('sections');
+                      }}
+                    >
+                      <BookOpen className="size-3.5" />
+                      Open Editor
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(viewingTask?.startDate ||
+              viewingTask?.nextReviewDate ||
+              viewingTask?.completeDate) && (
+              <div className="space-y-2 border-t pt-3">
+                {viewingTask.startDate && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Start Date</span>
+                    <span className="text-primary">
+                      {formatDate(viewingTask.startDate)}
+                    </span>
+                  </div>
+                )}
+                {viewingTask.nextReviewDate && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Next Review</span>
+                    <span className="text-primary">
+                      {formatDate(viewingTask.nextReviewDate)}
+                    </span>
+                  </div>
+                )}
+                {viewingTask.completeDate && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Due Date</span>
+                    <span className="text-primary">
+                      {formatDate(viewingTask.completeDate)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className={BTN.CANCEL}>
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isCreateTaskOpen}
+        onOpenChange={(open) => {
+          setIsCreateTaskOpen(open);
+          if (!open)
+            setCreateForm({
+              name: '',
+              description: '',
+              memberId: '',
+              taskType: '1',
+              sectionId: '',
+              status: '1',
+              startDate: '',
+              nextReviewDate: '',
+              completeDate: '',
+            });
+        }}
+      >
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Task</DialogTitle>
+            <DialogDescription>Create a task for this paper</DialogDescription>
+          </DialogHeader>
+          <form
+            id="create-task-form"
+            onSubmit={handleCreateTask}
+            className="scrollbar-dialog grid flex-1 gap-4 overflow-y-auto px-1 py-2 sm:grid-cols-2"
+          >
+            {/* Task Type — shown first */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label
+                htmlFor="createTaskType"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Task Type *
+              </label>
+              <select
+                id="createTaskType"
+                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={createForm.taskType}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    taskType: e.target.value,
+                    sectionId: '',
+                  }))
+                }
+                required
+              >
+                {TASK_TYPE_OPTIONS.map((t) => (
+                  <option key={t.value} value={String(t.value)}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Section — only shown for Writing tasks */}
+            {createForm.taskType === '2' && (
+              <div className="space-y-1.5 sm:col-span-2">
                 <label
-                  htmlFor="createTaskStatus"
+                  htmlFor="createTaskSection"
                   className="text-secondary font-sans text-[10px]"
                 >
-                  Status
+                  Section
                 </label>
                 <select
-                  id="createTaskStatus"
+                  id="createTaskSection"
                   className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                  value={createForm.status}
+                  value={createForm.sectionId}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
                       ...prev,
-                      status: e.target.value,
+                      sectionId: e.target.value,
                     }))
                   }
                 >
-                  {TASK_STATUS_OPTIONS.map((status) => (
-                    <option key={status.value} value={String(status.value)}>
-                      {status.label}
+                  <option value="">Select section</option>
+                  {sectionOptions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.title}
                     </option>
                   ))}
                 </select>
               </div>
+            )}
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="createTaskStart"
-                  className="text-secondary font-sans text-[10px]"
-                >
-                  Start Date
-                </label>
-                <Input
-                  id="createTaskStart"
-                  type="datetime-local"
-                  value={createForm.startDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      startDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="createTaskNextReview"
-                  className="text-secondary font-sans text-[10px]"
-                >
-                  Next Review Date
-                </label>
-                <Input
-                  id="createTaskNextReview"
-                  type="datetime-local"
-                  value={createForm.nextReviewDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      nextReviewDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="createTaskComplete"
-                  className="text-secondary font-sans text-[10px]"
-                >
-                  Complete Date
-                </label>
-                <Input
-                  id="createTaskComplete"
-                  type="datetime-local"
-                  value={createForm.completeDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      completeDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+            {/* Task Name */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label
+                htmlFor="createTaskName"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Task Name *
+              </label>
+              <Input
+                id="createTaskName"
+                value={createForm.name}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                required
+              />
             </div>
 
-            <SheetFooter className="shrink-0">
-              <SheetClose asChild>
-                <Button type="button" variant="outline" className={BTN.CANCEL}>
-                  Cancel
-                </Button>
-              </SheetClose>
-              <Button
-                type="submit"
-                className={BTN.CREATE}
-                disabled={createTaskMutation.isPending}
+            {/* Description */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label
+                htmlFor="createTaskDesc"
+                className="text-secondary font-sans text-[10px]"
               >
-                {createTaskMutation.isPending ? 'Creating...' : 'Create'}
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
+                Description
+              </label>
+              <textarea
+                id="createTaskDesc"
+                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={createForm.description}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+              />
+            </div>
 
-      <Sheet
+            {/* Assignee (memberId) */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label
+                htmlFor="createTaskAssignee"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Assign Member *
+              </label>
+              <select
+                id="createTaskAssignee"
+                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={createForm.memberId}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    memberId: e.target.value,
+                  }))
+                }
+                required
+              >
+                <option value="">Select assignee</option>
+                {createMemberOptions.map((member) => (
+                  <option key={member.value} value={member.value}>
+                    {member.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="createTaskStatus"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Status
+              </label>
+              <select
+                id="createTaskStatus"
+                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                value={createForm.status}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    status: e.target.value,
+                  }))
+                }
+              >
+                {PAPER_TASK_STATUS_OPTIONS.map((status) => (
+                  <option key={status.value} value={String(status.value)}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Start Date */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="createTaskStart"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Start Date
+              </label>
+              <Input
+                id="createTaskStart"
+                type="datetime-local"
+                value={createForm.startDate}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    startDate: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Next Review Date */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="createTaskNextReview"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Next Review Date
+              </label>
+              <Input
+                id="createTaskNextReview"
+                type="datetime-local"
+                value={createForm.nextReviewDate}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    nextReviewDate: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            {/* Complete Date */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label
+                htmlFor="createTaskComplete"
+                className="text-secondary font-sans text-[10px]"
+              >
+                Complete Date
+              </label>
+              <Input
+                id="createTaskComplete"
+                type="datetime-local"
+                value={createForm.completeDate}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    completeDate: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </form>
+          <DialogFooter className="gap-2 px-1 pb-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className={BTN.CANCEL}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type="submit"
+              form="create-task-form"
+              className={BTN.CREATE}
+              disabled={createTaskMutation.isPending}
+            >
+              {createTaskMutation.isPending ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={!!editingTask}
         onOpenChange={(open) => !open && setEditingTask(null)}
       >
-        <SheetContent className="flex w-full flex-col sm:max-w-sm">
+        <DialogContent className="flex max-h-[90vh] w-full flex-col sm:max-w-lg">
           <form onSubmit={handleUpdateTask} className="flex h-full flex-col">
-            <SheetHeader>
-              <SheetTitle>Update Task</SheetTitle>
-              <SheetDescription>
+            <DialogHeader>
+              <DialogTitle>Update Task</DialogTitle>
+              <DialogDescription>
                 {isAuthor
                   ? 'Update task details'
                   : 'Only status and your date fields can be updated'}
-              </SheetDescription>
-            </SheetHeader>
+              </DialogDescription>
+            </DialogHeader>
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
               {!isAuthor && (
@@ -1837,31 +2424,14 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label
-                      htmlFor="updateTaskAssignee"
-                      className="text-secondary font-sans text-[10px]"
-                    >
-                      Assign Username
-                    </label>
-                    <select
-                      id="updateTaskAssignee"
-                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                    <p className="text-secondary font-sans text-[10px]">
+                      Assigned Member
+                    </p>
+                    <Input
                       value={updateForm.assignedToUserName}
-                      onChange={(e) =>
-                        setUpdateForm((prev) => ({
-                          ...prev,
-                          assignedToUserName: e.target.value,
-                        }))
-                      }
-                      required
-                    >
-                      <option value="">Select assignee</option>
-                      {memberOptions.map((member) => (
-                        <option key={member.value} value={member.value}>
-                          {member.label}
-                        </option>
-                      ))}
-                    </select>
+                      readOnly
+                      className="bg-surface-container text-secondary cursor-not-allowed"
+                    />
                   </div>
                 </>
               )}
@@ -1875,7 +2445,7 @@ export const ProjectPaperDetailPage = ({
                 </label>
                 <select
                   id="updateTaskStatus"
-                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="focus-visible:border-ring focus-visible:ring-ring/50 border-input h-9 w-full cursor-pointer rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
                   value={updateForm.status}
                   onChange={(e) =>
                     setUpdateForm((prev) => ({
@@ -1884,10 +2454,7 @@ export const ProjectPaperDetailPage = ({
                     }))
                   }
                 >
-                  {(isAuthor
-                    ? AUTHOR_TASK_STATUS_OPTIONS
-                    : TASK_STATUS_OPTIONS
-                  ).map((status) => (
+                  {PAPER_TASK_STATUS_OPTIONS.map((status) => (
                     <option key={status.value} value={String(status.value)}>
                       {status.label}
                     </option>
@@ -1936,17 +2503,16 @@ export const ProjectPaperDetailPage = ({
               </div>
             </div>
 
-            <SheetFooter className="shrink-0">
+            <DialogFooter className="shrink-0">
               <div className="flex w-full items-center gap-2">
-                <SheetClose asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={BTN.CANCEL}
-                  >
-                    Cancel
-                  </Button>
-                </SheetClose>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={BTN.CANCEL}
+                  onClick={() => setEditingTask(null)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   className={cn('flex-1', BTN.EDIT)}
@@ -1968,10 +2534,10 @@ export const ProjectPaperDetailPage = ({
                   </Button>
                 )}
               </div>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={!!deletingTask}
@@ -2013,13 +2579,15 @@ export const ProjectPaperDetailPage = ({
         onOpenChange={setIsMembersOpen}
       />
 
-      {/* ── Edit Paper Sheet (author only) ───────────────────────── */}
-      <Sheet open={isEditPaperOpen} onOpenChange={setIsEditPaperOpen}>
-        <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-          <SheetHeader>
-            <SheetTitle>Edit Paper</SheetTitle>
-            <SheetDescription>Update the paper details below.</SheetDescription>
-          </SheetHeader>
+      {/* ── Edit Paper Dialog (author only) ───────────────────────── */}
+      <Dialog open={isEditPaperOpen} onOpenChange={setIsEditPaperOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Paper</DialogTitle>
+            <DialogDescription>
+              Update the paper details below.
+            </DialogDescription>
+          </DialogHeader>
 
           <form
             id="edit-paper-form"
@@ -2183,12 +2751,15 @@ export const ProjectPaperDetailPage = ({
             </div>
           </form>
 
-          <SheetFooter className="px-4 pb-4">
-            <SheetClose asChild>
-              <Button type="button" variant="outline" className={BTN.CANCEL}>
-                Cancel
-              </Button>
-            </SheetClose>
+          <DialogFooter className="px-0 pb-0">
+            <Button
+              type="button"
+              variant="outline"
+              className={BTN.CANCEL}
+              onClick={() => setIsEditPaperOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
               form="edit-paper-form"
@@ -2199,9 +2770,9 @@ export const ProjectPaperDetailPage = ({
                 ? 'Saving...'
                 : 'Save Changes'}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ContentLayout>
   );
 };

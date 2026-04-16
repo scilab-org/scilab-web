@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -35,20 +36,22 @@ import { useUser } from '@/lib/auth';
 import { paths } from '@/config/paths';
 import { BTN } from '@/lib/button-styles';
 
-const getStatusColor = (status: number | null) => {
+type BadgeVariant = 'draft' | 'active' | 'outline' | 'success' | 'secondary';
+
+const getPaperStatusVariant = (status: number | null): BadgeVariant => {
   switch (status) {
-    case 1: // Draft
-      return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-    case 2: // Processing
-      return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
-    case 3: // Submitted
-      return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
-    case 4: // Released
-      return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-    case 5: // Sampled
-      return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+    case 1:
+      return 'draft';
+    case 2:
+      return 'active';
+    case 3:
+      return 'outline';
+    case 4:
+      return 'success';
+    case 5:
+      return 'secondary';
     default:
-      return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+      return 'secondary';
   }
 };
 
@@ -174,8 +177,8 @@ export const ProjectWritingPapersList = ({
             <Skeleton className="h-10 w-full" />
           </div>
         ) : papers.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table className="table-fixed">
+          <div>
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="text-muted-foreground w-[40%] text-xs font-medium tracking-wider uppercase">
@@ -198,36 +201,19 @@ export const ProjectWritingPapersList = ({
               <TableBody>
                 {papers.map((paper) => (
                   <TableRow key={paper.id} className="hover:bg-muted/30">
-                    <TableCell className="overflow-hidden font-medium">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const href = getPaperHref
-                            ? getPaperHref(projectId, paper.id)
-                            : readOnly
-                              ? paths.app.projectPaperDetail.getHref(
-                                  projectId,
-                                  paper.id,
-                                )
-                              : paths.app.assignedProjects.paperDetail.getHref(
-                                  projectId,
-                                  paper.id,
-                                );
-                          navigate(href);
-                        }}
-                        className="block w-full truncate text-left text-blue-600 hover:underline dark:text-blue-400"
+                    <TableCell className="max-w-0 overflow-hidden font-medium">
+                      <span
+                        className="block truncate"
                         title={paper.title || '(Untitled)'}
                       >
                         {paper.title || '(Untitled)'}
-                      </button>
+                      </span>
                     </TableCell>
                     <TableCell>
                       {paper.status != null ? (
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(paper.status)}`}
-                        >
+                        <Badge variant={getPaperStatusVariant(paper.status)}>
                           {PAPER_STATUS_MAP[paper.status] ?? 'Unknown'}
-                        </span>
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
@@ -244,10 +230,30 @@ export const ProjectWritingPapersList = ({
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="action"
+                          onClick={() => {
+                            const href = getPaperHref
+                              ? getPaperHref(projectId, paper.id)
+                              : readOnly
+                                ? paths.app.projectPaperDetail.getHref(
+                                    projectId,
+                                    paper.id,
+                                  )
+                                : paths.app.assignedProjects.paperDetail.getHref(
+                                    projectId,
+                                    paper.id,
+                                  );
+                            navigate(href);
+                          }}
+                        >
+                          View
+                        </Button>
                         {isAuthor && !readOnly && (
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="action"
                             className={`${BTN.EDIT_OUTLINE} uppercase`}
                             onClick={() => {
                               const href = getPaperHref
@@ -272,6 +278,7 @@ export const ProjectWritingPapersList = ({
                           !readOnly && (
                             <Button
                               variant="destructive"
+                              size="action"
                               className={`${BTN.DANGER} uppercase`}
                               onClick={() => setPaperToDelete(paper)}
                             >

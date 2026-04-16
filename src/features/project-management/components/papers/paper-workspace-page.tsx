@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -22,8 +22,16 @@ import { toast } from 'sonner';
 
 import { ContentLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   Sheet,
   SheetClose,
@@ -63,6 +71,7 @@ import { useAvailableSectionMembers } from '@/features/paper-management/api/get-
 import { useCreatePaperContributor } from '@/features/paper-management/api/create-paper-contributor';
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
 import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
+import { useGetPaperContributors } from '@/features/paper-management/api/get-paper-contributors';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import {
   AssignedSection,
@@ -204,10 +213,10 @@ const SectionMembersSheet = ({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && handleClose()}>
-      <SheetContent className="flex w-full flex-col sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             {view === 'assign' && (
               <button
                 onClick={() => setView('members')}
@@ -218,18 +227,18 @@ const SectionMembersSheet = ({
             )}
             <Users className="size-5 text-green-600" />
             {view === 'assign' ? 'Assign Member' : 'Section Members'}
-          </SheetTitle>
-          <SheetDescription className="truncate text-xs">
+          </DialogTitle>
+          <DialogDescription className="truncate text-xs">
             {sectionTitle}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         {view === 'members' ? (
           <div className="flex flex-1 flex-col overflow-hidden">
             {isAuthor && (
               <div className="flex justify-end pt-2 pb-3">
                 <Button
-                  size="sm"
+                  size="action"
                   onClick={() => {
                     setSelectedMemberIds(new Set());
                     setView('assign');
@@ -237,7 +246,7 @@ const SectionMembersSheet = ({
                   }}
                   className={cn('flex items-center gap-2', BTN.CREATE)}
                 >
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus className="size-4" />
                   Assign Member
                 </Button>
               </div>
@@ -257,25 +266,21 @@ const SectionMembersSheet = ({
                   </p>
                 </div>
               ) : (
-                <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
+                <div className="overflow-hidden rounded-md border">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                        <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                          Member
-                        </TableHead>
-                        <TableHead className="w-44 font-semibold text-green-900 dark:text-green-200">
-                          Role
-                        </TableHead>
+                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableHead>Member</TableHead>
+                        <TableHead className="w-36">Role</TableHead>
                         {isAuthor && (
-                          <TableHead className="w-28 text-center font-semibold text-green-900 dark:text-green-200">
+                          <TableHead className="w-24 text-center">
                             Actions
                           </TableHead>
                         )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedMembers.map((m, idx) => {
+                      {sortedMembers.map((m) => {
                         const isProjectRole =
                           m.sectionRole.startsWith('project:') ||
                           m.sectionRole.startsWith('paper:');
@@ -292,14 +297,7 @@ const SectionMembersSheet = ({
                             : raw;
                         })();
                         return (
-                          <TableRow
-                            key={m.id}
-                            className={`transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20 ${
-                              idx % 2 === 0
-                                ? 'bg-white dark:bg-transparent'
-                                : 'bg-slate-50/50 dark:bg-slate-900/20'
-                            }`}
-                          >
+                          <TableRow key={m.id} className="hover:bg-muted/30">
                             <TableCell>
                               <p className="text-foreground text-sm font-medium">
                                 {m.firstName || m.lastName
@@ -312,35 +310,36 @@ const SectionMembersSheet = ({
                               </p>
                             </TableCell>
                             <TableCell>
-                              <span
-                                className={cn(
-                                  'rounded-full border px-2 py-0.5 text-xs font-medium',
-                                  isProjectRole
-                                    ? 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                    : 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-                                )}
+                              <Badge
+                                variant="outline"
+                                className={
+                                  displayRole === 'Author'
+                                    ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
+                                    : displayRole === 'Editor'
+                                      ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
+                                      : displayRole === 'Viewer'
+                                        ? 'border-muted-foreground/20 bg-muted/50 text-muted-foreground'
+                                        : ''
+                                }
                               >
                                 {displayRole}
-                              </span>
+                              </Badge>
                             </TableCell>
                             {isAuthor && (
                               <TableCell className="text-center">
                                 {!isProjectRole && (
                                   <Button
-                                    size="sm"
+                                    size="action"
                                     variant="outline"
                                     onClick={() => setConfirmDeleteId(m.id)}
                                     disabled={deleteMutation.isPending}
-                                    className={cn(
-                                      'h-7 px-2 text-xs',
-                                      BTN.DANGER_OUTLINE,
-                                    )}
+                                    className={BTN.DANGER_OUTLINE}
                                   >
                                     {deleteMutation.isPending &&
                                     confirmDeleteId === m.id ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      <Loader2 className="size-3 animate-spin" />
                                     ) : (
-                                      <Trash2 className="h-3 w-3" />
+                                      <Trash2 className="size-3" />
                                     )}
                                   </Button>
                                 )}
@@ -475,15 +474,17 @@ const SectionMembersSheet = ({
             <div className="flex items-center justify-end gap-3 border-t pt-4">
               <Button
                 variant="outline"
+                size="action"
                 onClick={() => setView('members')}
                 className={BTN.CANCEL}
               >
                 Cancel
               </Button>
               <Button
+                size="action"
                 onClick={handleAssign}
                 disabled={!canSubmit}
-                className={BTN.SUCCESS}
+                className={BTN.CREATE}
               >
                 {assignMutation.isPending ? (
                   <>
@@ -528,8 +529,8 @@ const SectionMembersSheet = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -542,6 +543,8 @@ export const PaperWorkspacePage = ({
   isAuthor = false,
   backPath,
   embedded = false,
+  initialSectionId,
+  onInitialSectionOpened,
 }: {
   projectId: string;
   paperId: string;
@@ -549,6 +552,8 @@ export const PaperWorkspacePage = ({
   isAuthor?: boolean;
   backPath: string;
   embedded?: boolean;
+  initialSectionId?: string;
+  onInitialSectionOpened?: () => void;
 }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -633,6 +638,7 @@ export const PaperWorkspacePage = ({
             parentSectionId: s.parentSectionId || null,
             sectionSumary: s.sectionSumary || '',
             description: (s as any).description || s.sectionSumary || '',
+            mainIdea: (s as any).mainIdea || '',
             content: s.content || '',
             numbered: s.numbered,
             displayOrder: s.displayOrder,
@@ -658,6 +664,7 @@ export const PaperWorkspacePage = ({
           parentSectionId: s.parentSectionId || null,
           sectionSumary: s.sectionSumary || '',
           description: (assigned as any).description || s.sectionSumary || '',
+          mainIdea: (assigned as any).mainIdea || '',
           content: s.content || '',
           numbered: s.numbered,
           displayOrder: s.displayOrder,
@@ -676,6 +683,7 @@ export const PaperWorkspacePage = ({
         parentSectionId: s.parentSectionId || null,
         sectionSumary: s.sectionSumary || '',
         description: (s as any).description || s.sectionSumary || '',
+        mainIdea: (s as any).mainIdea || '',
         content: s.content || '',
         numbered: s.numbered,
         displayOrder: s.displayOrder,
@@ -702,6 +710,22 @@ export const PaperWorkspacePage = ({
     },
   });
 
+  const paperContributorsQuery = useGetPaperContributors({
+    paperId,
+    queryConfig: { enabled: !!paperId } as any,
+  });
+
+  // Map sectionId -> contributor count from paper contributors
+  const sectionContributorCounts = useMemo(() => {
+    const items = (paperContributorsQuery.data as any)?.result?.items ?? [];
+    const map = new Map<string, number>();
+    items.forEach((c: any) => {
+      const id = c.sectionId || c.markSectionId;
+      if (id) map.set(id, (map.get(id) ?? 0) + 1);
+    });
+    return map;
+  }, [paperContributorsQuery.data]);
+
   const Wrapper = embedded ? React.Fragment : ContentLayout;
   const wrapperProps = embedded ? {} : { title: 'Workspace' };
 
@@ -725,6 +749,7 @@ export const PaperWorkspacePage = ({
         parentSectionId: s.parentSectionId,
         sectionRole: s.sectionRole,
         description: (s as any).description || s.sectionSumary || '',
+        mainIdea: (s as any).mainIdea || '',
         createdOnUtc: s.createdOnUtc || null,
         lastModifiedOnUtc: s.lastModifiedOnUtc || null,
         packages: s.packages ?? undefined,
@@ -735,10 +760,12 @@ export const PaperWorkspacePage = ({
   const resolvedInitialSectionId = useMemo(() => {
     if (!editorState) return undefined;
 
-    const sectionExists = editorSections.some(
-      (s) => s.id === editorState.initialSectionId,
+    const section = editorSections.find(
+      (s) =>
+        s.id === editorState.initialSectionId ||
+        s.markSectionId === editorState.initialSectionId,
     );
-    if (sectionExists) return editorState.initialSectionId;
+    if (section) return section.id;
 
     return editorSections[0]?.id;
   }, [editorSections, editorState]);
@@ -823,8 +850,37 @@ export const PaperWorkspacePage = ({
       // Open the editor even if the section fetch fails; it will use current data.
     }
 
-    setEditorState({ initialSectionId: resolvedSectionId, readOnly });
+    // Resolve resolvedSectionId back to the workspace section id (editorSections use
+    // allSections ids, not assigned-section record ids).
+    const wsSection = editorSections.find(
+      (s) =>
+        s.id === resolvedSectionId || s.markSectionId === resolvedSectionId,
+    );
+    setEditorState({
+      initialSectionId: wsSection?.id ?? resolvedSectionId,
+      readOnly,
+    });
   };
+
+  // Auto-open a specific section editor when initialSectionId prop is provided
+  const [pendingAutoOpenSectionId, setPendingAutoOpenSectionId] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (initialSectionId) setPendingAutoOpenSectionId(initialSectionId);
+  }, [initialSectionId]);
+
+  useEffect(() => {
+    if (!pendingAutoOpenSectionId) return;
+    if (isLoading) return;
+    if (editorSections.length === 0) return;
+    const sectionId = pendingAutoOpenSectionId;
+    setPendingAutoOpenSectionId(null);
+    openSectionEditor(sectionId, false);
+    onInitialSectionOpened?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoOpenSectionId, isLoading, editorSections.length]);
 
   const handleEditorSave = async () => {
     // Mark queries stale but do NOT trigger background refetches while the
@@ -844,7 +900,7 @@ export const PaperWorkspacePage = ({
       <LatexPaperEditor
         readOnly={editorState.readOnly}
         paperTitle={paper?.title || 'Untitled'}
-        projectId={projectId}
+        projectId={subProjectId}
         sections={editorSections}
         initialSectionId={resolvedInitialSectionId}
         onSave={handleEditorSave}
@@ -978,14 +1034,28 @@ export const PaperWorkspacePage = ({
                   })}
                 </span>
               )}
+              {(() => {
+                const count =
+                  sectionContributorCounts.get(s.id) ??
+                  sectionContributorCounts.get(s.markSectionId || '');
+                if (!count) return null;
+                return (
+                  <span className="flex items-center gap-1">
+                    <Users className="size-3" />
+                    {count} contributor{count !== 1 ? 's' : ''}
+                  </span>
+                );
+              })()}
             </div>
-            {(s.description || s.sectionSumary) && (
+            {(s as any).mainIdea && (
               <div className="mt-2">
-                <p className="text-muted-foreground mb-1 text-xs font-medium">
-                  Writing Guideline
+                <p className="text-foreground mb-1.5 text-sm font-semibold">
+                  Main Idea
                 </p>
-                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
-                  {formatDesc(s.description || s.sectionSumary || '')}
+                <p className="text-primary text-[14px] leading-relaxed whitespace-pre-line">
+                  {formatDesc((s as any).mainIdea)
+                    .replace(/^["]+/, '')
+                    .trimStart()}
                 </p>
               </div>
             )}

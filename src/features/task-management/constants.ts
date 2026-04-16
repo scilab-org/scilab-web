@@ -28,4 +28,26 @@ export const TASK_STATUS_OPTIONS = [
   { label: 'Completed', value: 4 },
 ] as const;
 
+export const PAPER_TASK_STATUS_OPTIONS = [
+  { label: 'To Do', value: 1 },
+  { label: 'In Progress', value: 2 },
+  { label: 'In Review', value: 3 },
+  { label: 'Completed', value: 4 },
+  { label: 'Closed', value: 5 },
+] as const;
+
 export const AUTHOR_TASK_STATUS_OPTIONS = TASK_STATUS_OPTIONS;
+
+export const TASK_TYPE_OPTIONS = [
+  { label: 'Research', value: 1 },
+  { label: 'Writing', value: 2 },
+  { label: 'Review', value: 3 },
+  { label: 'Other', value: 4 },
+] as const;
+
+export const TASK_TYPE_LABELS: Record<number, string> = {
+  1: 'Research',
+  2: 'Writing',
+  3: 'Review',
+  4: 'Other',
+};

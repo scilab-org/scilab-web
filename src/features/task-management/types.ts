@@ -7,11 +7,17 @@ export type DateTaskFilterField =
 export type TaskItem = {
   id: string;
   paperId: string;
+  subProjectId: string | null;
+  projectId: string | null;
   paperTitle?: string | null;
   paperContributorId: string;
+  memberId: string;
   name: string;
   description: string | null;
-  assignedToUserName: string;
+  taskType: number;
+  assignedToUserName: string | null;
+  sectionId: string | null;
+  sectionTitle: string | null;
   status: number;
   startDate: string | null;
   nextReviewDate: string | null;
@@ -45,10 +51,12 @@ export type PagingInfo = {
 
 export type CreateTaskDto = {
   paperId: string;
+  sectionId?: string | null;
   name: string;
   description: string;
-  assignedToUserName: string;
+  memberId: string;
   status: number;
+  type: number;
   startDate: string;
   nextReviewDate?: string | null;
   completeDate?: string | null;
@@ -73,10 +81,12 @@ export type TasksResponse = {
 export type AssignedPaperItem = {
   id: string;
   title: string;
+  subProjectId?: string;
 };
 
 export type GetMyAssignedPapersParams = {
   title?: string;
+  ProjectCode?: string;
   PageNumber?: number;
   PageSize?: number;
 };
