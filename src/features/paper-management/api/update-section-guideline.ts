@@ -11,14 +11,17 @@ import {
 export type UpdateSectionGuidelinePayload = {
   sectionId: string;
   description: string;
+  mainIdea?: string;
 };
 
 export const updateSectionGuideline = ({
   sectionId,
   description,
+  mainIdea,
 }: UpdateSectionGuidelinePayload): Promise<unknown> => {
   return api.put(PAPER_MANAGEMENT_API.SECTION_GUIDELINE(sectionId), {
     description,
+    mainIdea,
   });
 };
 

@@ -5,15 +5,12 @@ import {
   ArrowLeft,
   BookOpen,
   Check,
+  ChevronDown,
   ChevronRight,
-  Edit3,
-  Eye,
   FileText,
-  Hash,
   LayoutList,
   Loader2,
   Star,
-  Trash2,
   UserPlus,
   Users,
   BookMarked,
@@ -31,16 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import {
   Table,
   TableBody,
@@ -63,7 +52,6 @@ import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
-import { getAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
 import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionMembers } from '@/features/paper-management/api/get-section-members';
@@ -72,10 +60,12 @@ import { useCreatePaperContributor } from '@/features/paper-management/api/creat
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
 import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
 import { useGetPaperContributors } from '@/features/paper-management/api/get-paper-contributors';
+import { useMarkSection } from '@/features/paper-management/api/get-mark-section';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import {
   AssignedSection,
   AvailableSectionMember,
+  MarkSectionItem,
   PaperSection,
   SectionMember,
 } from '@/features/paper-management/types';
@@ -97,6 +87,14 @@ const stripLatex = (input: string): string => {
 // Format description: convert literal \n to real newlines
 const formatDesc = (text: string) =>
   text.replace(/\\n/g, '\n').replace(/  +/g, ' ').trim();
+
+const getIdeaLines = (text: string) =>
+  formatDesc(text)
+    .replace(/^"+/, '')
+    .trimStart()
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
 // ── Section Members Sheet ────────────────────────────────────────────────────
 const SectionMembersSheet = ({
@@ -330,16 +328,18 @@ const SectionMembersSheet = ({
                                 {!isProjectRole && (
                                   <Button
                                     size="action"
-                                    variant="outline"
+                                    variant="destructive"
                                     onClick={() => setConfirmDeleteId(m.id)}
                                     disabled={deleteMutation.isPending}
-                                    className={BTN.DANGER_OUTLINE}
                                   >
                                     {deleteMutation.isPending &&
                                     confirmDeleteId === m.id ? (
-                                      <Loader2 className="size-3 animate-spin" />
+                                      <>
+                                        <Loader2 className="mr-1 size-3 animate-spin" />
+                                        REMOVE
+                                      </>
                                     ) : (
-                                      <Trash2 className="size-3" />
+                                      'REMOVE'
                                     )}
                                   </Button>
                                 )}
@@ -534,6 +534,242 @@ const SectionMembersSheet = ({
   );
 };
 
+// ── Section Version Dialog ───────────────────────────────────────────────────
+const SectionVersionDialog = ({
+  open,
+  onClose,
+  sectionTitle,
+  markSectionId,
+  sectionStatus,
+  currentMemberId,
+  canEdit,
+  isFullEditor = false,
+  hasOwnDraft = false,
+  onOpenEditor,
+}: {
+  open: boolean;
+  onClose: () => void;
+  sectionTitle: string;
+  markSectionId: string | null;
+  sectionStatus?: number;
+  currentMemberId?: string;
+  canEdit: boolean;
+  isFullEditor?: boolean;
+  hasOwnDraft?: boolean;
+  onOpenEditor: (sectionId: string, readOnly: boolean) => void;
+}) => {
+  const versionsQuery = useMarkSection({
+    markSectionId: open && markSectionId ? markSectionId : null,
+  });
+
+  const allItems: MarkSectionItem[] = versionsQuery.data?.result?.items ?? [];
+  const versions = allItems.filter(
+    (v) => v.markSectionId === markSectionId || v.sectionId === markSectionId,
+  );
+
+  const sorted = [...versions].sort(
+    (a, b) =>
+      new Date(a.createdOnUtc || '').getTime() -
+      new Date(b.createdOnUtc || '').getTime(),
+  );
+
+  // Only treat versions as "mine" when the user actually has edit permission
+  const myVersions = canEdit
+    ? sorted.filter((v) => v.memberId === currentMemberId)
+    : [];
+  const mainVersions = sorted.filter(
+    (v) => v.isMainSection && !(canEdit && v.memberId === currentMemberId),
+  );
+  const otherVersions = sorted.filter(
+    (v) => !v.isMainSection && !(canEdit && v.memberId === currentMemberId),
+  );
+  const ordered = [...myVersions, ...mainVersions, ...otherVersions];
+
+  const statusMap: Record<number, { label: string; cls: string }> = {
+    1: {
+      label: 'Not started',
+      cls: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
+    },
+    2: {
+      label: 'In progress',
+      cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
+    },
+    3: {
+      label: 'In review',
+      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+    },
+    4: {
+      label: 'Completed',
+      cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
+    },
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="size-5 text-blue-600" />
+            Open Section
+          </DialogTitle>
+          <DialogDescription className="truncate text-xs">
+            {sectionTitle}
+          </DialogDescription>
+        </DialogHeader>
+
+        {sectionStatus != null && statusMap[sectionStatus] && (
+          <div className="flex items-center gap-2 border-b pb-3">
+            <span className="text-muted-foreground text-xs font-medium">
+              Status:
+            </span>
+            <Badge
+              variant="outline"
+              className={cn(
+                'h-5 rounded-full px-2 py-0 text-xs',
+                statusMap[sectionStatus].cls,
+              )}
+            >
+              {statusMap[sectionStatus].label}
+            </Badge>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
+          {versionsQuery.isLoading ? (
+            <div className="flex flex-col gap-3 pt-2">
+              <Skeleton className="h-20 w-full rounded-lg" />
+              <Skeleton className="h-20 w-full rounded-lg" />
+            </div>
+          ) : ordered.length === 0 ? (
+            <div className="py-8 text-center">
+              <FileText className="text-muted-foreground/40 mx-auto mb-3 size-10" />
+              <p className="text-muted-foreground text-sm">
+                No versions found for this section.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 pt-2">
+              {ordered.map((item) => {
+                const isMe = canEdit && item.memberId === currentMemberId;
+                const displayName =
+                  item.name || item.email || item.createdBy || '';
+                const showMainBadge = item.isMainSection && ordered.length > 1;
+                return (
+                  <div
+                    key={item.sectionId}
+                    className={cn(
+                      'rounded-lg border p-4',
+                      isMe
+                        ? 'border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20'
+                        : item.isMainSection
+                          ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20'
+                          : 'border-border bg-muted/20',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                          {item.version && (
+                            <span className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
+                              {item.version}
+                            </span>
+                          )}
+                          {showMainBadge && (
+                            <Badge
+                              variant="outline"
+                              className="h-4 rounded-full border-green-300 bg-green-100 px-1.5 py-0 text-[10px] font-semibold text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            >
+                              Main
+                            </Badge>
+                          )}
+                          {isMe && (
+                            <Badge
+                              variant="outline"
+                              className="h-4 rounded-full border-blue-300 bg-blue-100 px-1.5 py-0 text-[10px] font-semibold text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            >
+                              You
+                            </Badge>
+                          )}
+                          {item.status != null && statusMap[item.status] && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'h-4 rounded-full px-1.5 py-0 text-[10px] font-semibold',
+                                statusMap[item.status].cls,
+                              )}
+                            >
+                              {statusMap[item.status].label}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-foreground text-sm font-medium">
+                          {displayName}
+                        </p>
+                        {item.email && (item.name || item.createdBy) && (
+                          <p className="text-muted-foreground text-xs">
+                            {item.email}
+                          </p>
+                        )}
+                        {item.createdOnUtc && (
+                          <p className="text-muted-foreground mt-0.5 text-xs">
+                            Created{' '}
+                            {new Date(item.createdOnUtc).toLocaleDateString(
+                              'en-US',
+                              {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              },
+                            )}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="action"
+                        variant="outline"
+                        onClick={() => {
+                          // Permission rules:
+                          // Main section:
+                          //   - own draft exists → always view-only
+                          //   - no own draft + canEdit → editable (initial version)
+                          // Non-main section (author behaves like member, extra: can edit others'):
+                          //   - canEdit=false (e.g. References) → always view-only for everyone
+                          //   - canEdit=true + isFullEditor (author/manager) → editable (own OR others')
+                          //   - canEdit=true + isMe → editable (member's own version)
+                          //   - otherwise → view-only
+                          let itemReadOnly: boolean;
+                          if (item.isMainSection) {
+                            itemReadOnly = hasOwnDraft ? true : !canEdit;
+                          } else {
+                            itemReadOnly = !(canEdit && (isFullEditor || isMe));
+                          }
+                          onOpenEditor(item.sectionId, itemReadOnly);
+                          onClose();
+                        }}
+                      >
+                        {(() => {
+                          if (item.isMainSection) {
+                            return !hasOwnDraft && canEdit
+                              ? 'Open Editor'
+                              : 'View';
+                          }
+                          return canEdit && (isFullEditor || isMe)
+                            ? 'Open Editor'
+                            : 'View';
+                        })()}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 type EditorState = { initialSectionId: string; readOnly: boolean } | null;
 
 export const PaperWorkspacePage = ({
@@ -569,8 +805,25 @@ export const PaperWorkspacePage = ({
     id: string;
     title: string;
     description: string;
+    mainIdea: string;
   } | null>(null);
   const [guidelineText, setGuidelineText] = useState('');
+  const [guidelineMainIdea, setGuidelineMainIdea] = useState('');
+  const [expandedSectionIds, setExpandedSectionIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [versionDialog, setVersionDialog] = useState<{
+    id: string;
+    markSectionId: string;
+    title: string;
+    memberId: string;
+    canEdit: boolean;
+    status?: number;
+    hasOwnDraft: boolean;
+  } | null>(null);
+  const [injectedSections, setInjectedSections] = useState<
+    (typeof editorSections)[0][]
+  >([]);
   const [markMainOpen, setMarkMainOpen] = useState(false);
 
   const paperQuery = useWritingPaperDetail({ paperId });
@@ -669,6 +922,7 @@ export const PaperWorkspacePage = ({
           numbered: s.numbered,
           displayOrder: s.displayOrder,
           packages: assigned.packages ?? (s as any).packages ?? null,
+          status: assigned.status ?? (s as any).status,
         } as AssignedSection;
       }
       return {
@@ -753,6 +1007,7 @@ export const PaperWorkspacePage = ({
         createdOnUtc: s.createdOnUtc || null,
         lastModifiedOnUtc: s.lastModifiedOnUtc || null,
         packages: s.packages ?? undefined,
+        status: s.status,
       })),
     [workspaceSections],
   );
@@ -760,7 +1015,8 @@ export const PaperWorkspacePage = ({
   const resolvedInitialSectionId = useMemo(() => {
     if (!editorState) return undefined;
 
-    const section = editorSections.find(
+    const all = [...editorSections, ...injectedSections];
+    const section = all.find(
       (s) =>
         s.id === editorState.initialSectionId ||
         s.markSectionId === editorState.initialSectionId,
@@ -768,7 +1024,7 @@ export const PaperWorkspacePage = ({
     if (section) return section.id;
 
     return editorSections[0]?.id;
-  }, [editorSections, editorState]);
+  }, [editorSections, injectedSections, editorState]);
 
   // Compute sequential numbers for numbered sections
   const sectionNumbers = useMemo(() => {
@@ -800,17 +1056,34 @@ export const PaperWorkspacePage = ({
   const openSectionEditor = async (sectionId: string, readOnly: boolean) => {
     let resolvedSectionId = sectionId;
 
-    // Always resolve the latest section id from assigned-sections.
-    // Reason: backend may version sections (id changes) after updates; using the workspace id
-    // can lead to loading stale/previous versions.
-    try {
-      const assignedResponse = await getAssignedSections({
-        paperId,
-        params: { PageNumber: 1, PageSize: 1000 },
-      });
-      const assignedItems = assignedResponse.result?.items ?? [];
+    // Check if this sectionId already exists in the workspace sections.
+    // If not (e.g. a foreign member's version), skip assigned-sections resolution.
+    const isWorkspaceSection = editorSections.some(
+      (s) => s.id === sectionId || s.markSectionId === sectionId,
+    );
 
-      const workspaceSection = editorSections.find((s) => s.id === sectionId);
+    // Also check if sectionId is the current user's own assigned-version ID.
+    // The version dialog may pass the version-specific id (assigned.id) which
+    // differs from the base section id used in editorSections.
+    const ownAssigned =
+      !isWorkspaceSection && !readOnly
+        ? assignedByIdMap.get(sectionId)
+        : undefined;
+    const isOwnSection = isWorkspaceSection || !!ownAssigned;
+
+    // When readOnly, use the exact sectionId — the user wants to view that
+    // specific version (e.g. Main), not their own assigned version.
+    if (isOwnSection && !readOnly) {
+      // Use cached assigned-sections data — no extra network call needed.
+      const assignedItems = assignedSectionsQuery.data?.result?.items ?? [];
+
+      const workspaceSection = ownAssigned
+        ? editorSections.find(
+            (s) =>
+              s.id === ownAssigned.markSectionId ||
+              s.markSectionId === ownAssigned.markSectionId,
+          )
+        : editorSections.find((s) => s.id === sectionId);
       const markSectionId = workspaceSection?.markSectionId || sectionId;
 
       const exactMatch = assignedItems.find((item) => item.id === sectionId);
@@ -819,40 +1092,71 @@ export const PaperWorkspacePage = ({
       );
 
       resolvedSectionId = exactMatch?.id || markMatch?.id || sectionId;
-    } catch {
-      resolvedSectionId = sectionId;
     }
+
+    // The base section id in allSectionsQuery that should be updated
+    const baseSectionId = ownAssigned?.markSectionId ?? sectionId;
 
     try {
       const response = await getSection(resolvedSectionId);
       const latestSection = response.result;
 
-      setFreshSections((prev) => {
-        const baseSections = prev ?? allSectionsQuery.data?.result?.items ?? [];
-        if (baseSections.length === 0) return prev;
+      const existsInWorkspace = isOwnSection && !readOnly;
+      if (existsInWorkspace) {
+        setFreshSections((prev) => {
+          const baseSections =
+            prev ?? allSectionsQuery.data?.result?.items ?? [];
+          if (baseSections.length === 0) return prev;
 
-        return baseSections.map((section) =>
-          section.id === sectionId || section.id === resolvedSectionId
-            ? {
-                ...section,
-                id: latestSection.id || resolvedSectionId,
-                title: latestSection.title,
-                content: latestSection.content,
-                numbered: latestSection.numbered,
-                displayOrder: latestSection.displayOrder,
-                sectionSumary: latestSection.sectionSumary,
-                parentSectionId: latestSection.parentSectionId,
-              }
-            : section,
-        );
-      });
+          return baseSections.map((section) =>
+            section.id === baseSectionId || section.id === resolvedSectionId
+              ? {
+                  ...section,
+                  id: latestSection.id || resolvedSectionId,
+                  title: latestSection.title,
+                  content: latestSection.content,
+                  numbered: latestSection.numbered,
+                  displayOrder: latestSection.displayOrder,
+                  sectionSumary: latestSection.sectionSumary,
+                  parentSectionId: latestSection.parentSectionId,
+                }
+              : section,
+          );
+        });
+      } else {
+        // Foreign version: inject into editor sections so it can be loaded.
+        // When readOnly=false (author/manager editing someone else's draft),
+        // give the section an editable role so the editor allows editing.
+        setInjectedSections([
+          {
+            id: latestSection.id || resolvedSectionId,
+            markSectionId: resolvedSectionId,
+            paperId: (latestSection.paperId as string) || paperId,
+            title: stripLatex(latestSection.title),
+            content: latestSection.content || '',
+            memberId: latestSection.memberId || '',
+            numbered: latestSection.numbered ?? false,
+            displayOrder: latestSection.displayOrder ?? 9999,
+            sectionSumary: latestSection.sectionSumary || '',
+            parentSectionId: latestSection.parentSectionId ?? null,
+            sectionRole: readOnly ? 'section:view' : 'paper:author',
+            description:
+              (latestSection as any).description ||
+              latestSection.sectionSumary ||
+              '',
+            mainIdea: (latestSection as any).mainIdea || '',
+            createdOnUtc: latestSection.createdOnUtc ?? null,
+            lastModifiedOnUtc: latestSection.lastModifiedOnUtc ?? null,
+            packages: latestSection.packages ?? undefined,
+            status: undefined,
+          },
+        ]);
+      }
     } catch {
       // Open the editor even if the section fetch fails; it will use current data.
     }
 
-    // Resolve resolvedSectionId back to the workspace section id (editorSections use
-    // allSections ids, not assigned-section record ids).
-    const wsSection = editorSections.find(
+    const wsSection = [...editorSections, ...injectedSections].find(
       (s) =>
         s.id === resolvedSectionId || s.markSectionId === resolvedSectionId,
     );
@@ -900,13 +1204,14 @@ export const PaperWorkspacePage = ({
       <LatexPaperEditor
         readOnly={editorState.readOnly}
         paperTitle={paper?.title || 'Untitled'}
-        projectId={subProjectId}
-        sections={editorSections}
+        projectId={projectId}
+        sections={[...editorSections, ...injectedSections]}
         initialSectionId={resolvedInitialSectionId}
         onSave={handleEditorSave}
         onClose={() => {
           setEditorState(null);
           setFreshSections(null);
+          setInjectedSections([]);
           // Now that the editor is closed, force fresh data for the workspace.
           queryClient.invalidateQueries({
             queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
@@ -946,6 +1251,25 @@ export const PaperWorkspacePage = ({
     );
   }
 
+  const SECTION_STATUS_MAP: Record<number, { label: string; cls: string }> = {
+    1: {
+      label: 'Not started',
+      cls: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
+    },
+    2: {
+      label: 'In progress',
+      cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
+    },
+    3: {
+      label: 'In review',
+      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+    },
+    4: {
+      label: 'Completed',
+      cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
+    },
+  };
+
   const canEditSection = (role: string) =>
     role === 'section:edit' ||
     role === 'paper:author' ||
@@ -955,6 +1279,15 @@ export const PaperWorkspacePage = ({
   const rootSections = editorSections.filter((s) => !s.parentSectionId);
   const childSections = (parentId: string) =>
     editorSections.filter((s) => s.parentSectionId === parentId);
+
+  const toggleSectionCollapse = (sectionId: string) => {
+    setExpandedSectionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  };
 
   const renderSectionCard = (
     s: (typeof editorSections)[0],
@@ -969,64 +1302,60 @@ export const PaperWorkspacePage = ({
         editableSectionIds.has(s.id) ||
         editableSectionIds.has(s.markSectionId || ''));
     const num = sectionNumbers.get(s.id);
+    const contributorCount =
+      sectionContributorCounts.get(s.id) ??
+      sectionContributorCounts.get(s.markSectionId || '') ??
+      0;
+    const isCollapsed = !expandedSectionIds.has(s.id);
+    const mainIdeaLines = (s as any).mainIdea
+      ? getIdeaLines((s as any).mainIdea)
+      : [];
     return (
       <div
         key={s.id}
         className={cn(
-          'bg-card rounded-xl border transition-shadow hover:shadow-md',
+          'bg-card border-border/70 overflow-hidden border transition-shadow hover:shadow-md',
           isChild
             ? 'ml-6 border-l-2 border-l-blue-200 dark:border-l-blue-800'
             : 'border-border shadow-sm',
         )}
       >
-        <div className="flex items-start gap-4 p-5">
-          {/* Icon */}
+        <div
+          className="flex cursor-pointer items-start gap-4 px-5 py-5"
+          onClick={() => toggleSectionCollapse(s.id)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleSectionCollapse(s.id);
+            }
+          }}
+        >
           <div
             className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-              canEdit ? 'bg-blue-100/60 dark:bg-blue-900/30' : 'bg-muted/60',
+              'bg-muted/40 border-border/60 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border',
+              canEdit && 'bg-primary/5',
             )}
           >
-            {s.numbered ? (
-              <Hash
-                className={cn(
-                  'size-5',
-                  canEdit
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-muted-foreground',
-                )}
-              />
-            ) : (
-              <FileText
-                className={cn(
-                  'size-5',
-                  canEdit
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-muted-foreground',
-                )}
-              />
-            )}
+            <FileText
+              className={cn(
+                'size-5',
+                canEdit
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-muted-foreground',
+              )}
+            />
           </div>
 
-          {/* Content */}
           <div className="min-w-0 flex-1">
-            <h3 className="text-foreground text-base font-semibold">
+            <h3 className="text-foreground text-xl leading-none font-semibold">
               {s.numbered ? `${num ? ` ${num}.` : ''} ${s.title}` : s.title}
             </h3>
-            <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-xs">
-              {s.createdOnUtc && (
-                <span>
-                  Created:{' '}
-                  {new Date(s.createdOnUtc).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              )}
+            <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               {s.lastModifiedOnUtc && (
                 <span>
-                  Last modified:{' '}
+                  Modified{' '}
                   {new Date(s.lastModifiedOnUtc).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
@@ -1034,105 +1363,154 @@ export const PaperWorkspacePage = ({
                   })}
                 </span>
               )}
-              {(() => {
-                const count =
-                  sectionContributorCounts.get(s.id) ??
-                  sectionContributorCounts.get(s.markSectionId || '');
-                if (!count) return null;
-                return (
-                  <span className="flex items-center gap-1">
-                    <Users className="size-3" />
-                    {count} contributor{count !== 1 ? 's' : ''}
+              {s.status != null && SECTION_STATUS_MAP[s.status] && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'h-6 rounded-full px-2.5 py-0 text-xs font-medium',
+                    SECTION_STATUS_MAP[s.status].cls,
+                  )}
+                >
+                  {SECTION_STATUS_MAP[s.status].label}
+                </Badge>
+              )}
+              {contributorCount > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-100 px-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                    {contributorCount}
                   </span>
-                );
-              })()}
+                  <span>contributor{contributorCount !== 1 ? 's' : ''}</span>
+                </span>
+              )}
             </div>
-            {(s as any).mainIdea && (
-              <div className="mt-2">
-                <p className="text-foreground mb-1.5 text-sm font-semibold">
-                  Main Idea
-                </p>
-                <p className="text-primary text-[14px] leading-relaxed whitespace-pre-line">
-                  {formatDesc((s as any).mainIdea)
-                    .replace(/^["]+/, '')
-                    .trimStart()}
-                </p>
-              </div>
-            )}
           </div>
 
-          {/* Actions */}
-          <div className="flex shrink-0 items-center gap-1">
-            {canEdit && (
-              <Button
-                size="icon"
-                onClick={() => void openSectionEditor(s.id, false)}
-                title="Edit"
-                className="size-9 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-              >
-                <Edit3 className="size-4" />
-              </Button>
-            )}
-            {!canEdit && (
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => void openSectionEditor(s.id, true)}
-                title="View"
-                className="size-9"
-              >
-                <Eye className="size-4" />
-              </Button>
-            )}
+          <div className="flex shrink-0 items-center gap-2">
             <Button
-              size="icon"
+              size="action"
               variant="outline"
-              onClick={() =>
-                setMemberSheet({
-                  id: s.markSectionId || s.id,
+              onClick={(e) => {
+                e.stopPropagation();
+                const assigned =
+                  assignedByIdMap.get(s.id) ||
+                  assignedByIdMap.get(s.markSectionId || s.id);
+                const sectionHasOwnDraft =
+                  !!assigned &&
+                  !!assigned.markSectionId &&
+                  assigned.id !== assigned.markSectionId;
+                setVersionDialog({
+                  id: s.id,
+                  markSectionId: s.markSectionId || s.id,
                   title: stripLatex(s.title),
-                })
-              }
-              title="Members"
-              className="size-9"
+                  memberId: s.memberId || '',
+                  canEdit,
+                  status: s.status,
+                  hasOwnDraft: sectionHasOwnDraft,
+                });
+              }}
+              className="bg-background/70 hover:bg-muted shrink-0 rounded-lg px-3 text-xs font-semibold tracking-wide uppercase"
             >
-              <Users className="size-4" />
+              Open
             </Button>
             {isAuthor && (
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setGuidelineText(s.description || s.sectionSumary || '');
+                  setGuidelineMainIdea((s as any).mainIdea || '');
                   setGuidelineSheet({
                     id: s.id,
                     title: stripLatex(s.title),
                     description: s.description || s.sectionSumary || '',
+                    mainIdea: (s as any).mainIdea || '',
                   });
                 }}
-                title="Update Guideline"
-                className="size-9"
+                title="Open Brief"
+                aria-label="Open Brief"
+                className="bg-background/70 hover:bg-muted size-10 rounded-2xl"
               >
                 <BookMarked className="size-4" />
               </Button>
             )}
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMemberSheet({
+                  id: s.markSectionId || s.id,
+                  title: stripLatex(s.title),
+                });
+              }}
+              title="Members"
+              className="bg-background/70 hover:bg-muted size-10 rounded-2xl"
+            >
+              <Users className="size-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSectionCollapse(s.id);
+              }}
+              title={isCollapsed ? 'Expand' : 'Collapse'}
+              className="bg-background/70 hover:bg-muted size-10 rounded-full"
+            >
+              <ChevronDown
+                className={cn(
+                  'size-4 transition-transform',
+                  isCollapsed && '-rotate-90',
+                )}
+              />
+            </Button>
           </div>
         </div>
 
-        {/* Child sections */}
-        {childSections(s.id).length > 0 && (
-          <div className="space-y-3 border-t px-5 pt-3 pb-4">
-            <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-              <ChevronRight className="size-3" />
-              Sub-sections
-            </p>
-            <div className="space-y-3">
-              {childSections(s.id).map((child) =>
-                renderSectionCard(child, true),
+        {!isCollapsed &&
+          (mainIdeaLines.length > 0 || childSections(s.id).length > 0) && (
+            <div className="border-border/70 border-t px-5 py-4">
+              {mainIdeaLines.length > 0 && (
+                <div>
+                  <p className="text-muted-foreground mb-3 text-xs font-bold tracking-[0.12em] uppercase">
+                    Main Idea
+                  </p>
+                  {mainIdeaLines.some(
+                    (line) => line.startsWith('-') || line.startsWith('*'),
+                  ) ? (
+                    <ul className="text-foreground marker:text-muted-foreground list-disc space-y-2 pl-5 text-sm leading-7">
+                      {mainIdeaLines.map((line, index) => (
+                        <li key={`${s.id}-idea-${index}`}>
+                          {line.replace(/^[-*]\s*/, '')}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-foreground space-y-2 text-sm leading-7">
+                      {mainIdeaLines.map((line, index) => (
+                        <p key={`${s.id}-idea-${index}`}>{line}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {childSections(s.id).length > 0 && (
+                <div className={cn(mainIdeaLines.length > 0 && 'mt-5')}>
+                  <p className="text-muted-foreground mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase">
+                    <ChevronRight className="size-3" />
+                    Sub-sections
+                  </p>
+                  <div className="space-y-3">
+                    {childSections(s.id).map((child) =>
+                      renderSectionCard(child, true),
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
       </div>
     );
   };
@@ -1208,7 +1586,7 @@ export const PaperWorkspacePage = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-1.5">
             {rootSections.map((s) => renderSectionCard(s))}
             {/* Sections with unknown parent (not in root list) */}
             {editorSections
@@ -1234,6 +1612,25 @@ export const PaperWorkspacePage = ({
         />
       )}
 
+      {/* Section Version Dialog */}
+      {versionDialog && (
+        <SectionVersionDialog
+          open={!!versionDialog}
+          onClose={() => setVersionDialog(null)}
+          sectionTitle={versionDialog.title}
+          markSectionId={versionDialog.markSectionId}
+          sectionStatus={versionDialog.status}
+          currentMemberId={versionDialog.memberId}
+          canEdit={versionDialog.canEdit}
+          isFullEditor={isAuthor || isManager}
+          hasOwnDraft={versionDialog.hasOwnDraft}
+          onOpenEditor={(sectionId, readOnly) => {
+            setVersionDialog(null);
+            void openSectionEditor(sectionId, readOnly);
+          }}
+        />
+      )}
+
       {/* Mark Main Section Dialog */}
       <MarkMainSectionDialog
         paperId={paperId}
@@ -1242,41 +1639,57 @@ export const PaperWorkspacePage = ({
         onOpenChange={setMarkMainOpen}
       />
 
-      {/* Update Guideline Sheet */}
-      <Sheet
+      {/* Update Guideline Dialog */}
+      <Dialog
         open={!!guidelineSheet}
         onOpenChange={(v) => !v && setGuidelineSheet(null)}
       >
-        <SheetContent side="right" className="overflow-y-auto sm:max-w-sm">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <BookMarked className="size-5 text-violet-600" />
-              Update Guideline
-            </SheetTitle>
-            <SheetDescription className="truncate text-xs">
+              Section Description
+            </DialogTitle>
+            <DialogDescription className="truncate text-xs">
               {guidelineSheet?.title}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           <form
             id="guideline-form"
-            className="px-4 py-4"
+            className="flex flex-1 flex-col gap-4 overflow-y-auto px-1 py-2"
             onSubmit={(e) => {
               e.preventDefault();
               if (!guidelineSheet) return;
               updateGuidelineMutation.mutate({
                 sectionId: guidelineSheet.id,
                 description: guidelineText,
+                mainIdea: guidelineMainIdea,
               });
             }}
           >
+            <div className="space-y-1.5">
+              <label
+                htmlFor="guideline-main-idea"
+                className="text-sm font-medium"
+              >
+                Main Idea
+              </label>
+              <textarea
+                id="guideline-main-idea"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-32 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={guidelineMainIdea}
+                onChange={(e) => setGuidelineMainIdea(e.target.value)}
+                placeholder="Enter the main idea for this section..."
+              />
+            </div>
             <div className="space-y-1.5">
               <label htmlFor="guideline-desc" className="text-sm font-medium">
                 Description
               </label>
               <textarea
                 id="guideline-desc"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-40 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-32 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={guidelineText}
                 onChange={(e) => setGuidelineText(e.target.value)}
                 placeholder="Enter writing guideline for this section..."
@@ -1284,23 +1697,27 @@ export const PaperWorkspacePage = ({
             </div>
           </form>
 
-          <SheetFooter className="px-4 pb-4">
-            <SheetClose asChild>
-              <Button type="button" variant="outline" className={BTN.CANCEL}>
-                Cancel
-              </Button>
-            </SheetClose>
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className={BTN.CANCEL}
+              onClick={() => setGuidelineSheet(null)}
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
               form="guideline-form"
-              className={BTN.EDIT}
+              variant="darkRed"
+              className="uppercase"
               disabled={updateGuidelineMutation.isPending}
             >
-              {updateGuidelineMutation.isPending ? 'Saving...' : 'Save'}
+              {updateGuidelineMutation.isPending ? 'SAVING...' : 'SAVE'}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Wrapper>
   );
 };
