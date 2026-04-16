@@ -25,7 +25,10 @@ const getSubmissionStatusSummary = (projectId: string): Promise<ApiResponse> =>
 
 export const useSubmissionStatusSummary = (projectId: string) =>
   useQuery({
-    queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.SUBMISSION_STATUS_SUMMARY, projectId],
+    queryKey: [
+      PROJECT_MANAGEMENT_QUERY_KEYS.SUBMISSION_STATUS_SUMMARY,
+      projectId,
+    ],
     queryFn: () => getSubmissionStatusSummary(projectId),
     enabled: !!projectId,
   });

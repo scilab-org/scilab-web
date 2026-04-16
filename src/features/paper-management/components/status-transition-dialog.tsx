@@ -61,7 +61,8 @@ export const StatusTransitionDialog = ({
   const [revisionType, setRevisionType] = React.useState<string>('');
   const [note, setNote] = React.useState('');
 
-  const availableTransitions = SUBMISSION_STATUS_TRANSITIONS[currentStatus] ?? [];
+  const availableTransitions =
+    SUBMISSION_STATUS_TRANSITIONS[currentStatus] ?? [];
   const isRevisionRequired = Number(targetStatus) === REVISION_REQUIRED_STATUS;
 
   const reset = () => {
@@ -156,6 +157,8 @@ export const StatusTransitionDialog = ({
               {REVISION_TYPE_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
+                  htmlFor={`revision-type-${opt.value}`}
+                  aria-label={opt.label}
                   className={`flex cursor-pointer items-start gap-3 rounded-sm border p-3 transition-colors ${
                     revisionType === opt.value
                       ? 'border-foreground bg-card'
@@ -163,6 +166,7 @@ export const StatusTransitionDialog = ({
                   }`}
                 >
                   <input
+                    id={`revision-type-${opt.value}`}
                     type="radio"
                     name="revisionType"
                     value={opt.value}
@@ -171,7 +175,7 @@ export const StatusTransitionDialog = ({
                     className="mt-0.5 shrink-0 accent-current"
                   />
                   <div className="space-y-0.5">
-                    <p className="text-sm font-semibold leading-none">
+                    <p className="text-sm leading-none font-semibold">
                       {opt.label}
                     </p>
                     <p className="text-muted-foreground text-xs leading-snug">
@@ -187,7 +191,7 @@ export const StatusTransitionDialog = ({
           <div className="space-y-1.5">
             <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
               Note{' '}
-              <span className="normal-case font-normal tracking-normal">
+              <span className="font-normal tracking-normal normal-case">
                 (optional)
               </span>
             </p>
@@ -220,7 +224,7 @@ export const StatusTransitionDialog = ({
                 transitionMutation.isPending
               }
             >
-              {transitionMutation.isPending ? <Loader/> : 'SAVE'}
+              {transitionMutation.isPending ? <Loader /> : 'SAVE'}
             </Button>
           </DialogFooter>
         </form>

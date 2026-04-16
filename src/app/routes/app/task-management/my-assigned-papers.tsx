@@ -43,14 +43,22 @@ type BadgeVariant = 'draft' | 'active' | 'outline' | 'success' | 'secondary';
 
 const getSubmissionStatusVariant = (status: number | null): BadgeVariant => {
   switch (status) {
-    case 1: return 'draft';
-    case 2: return 'active';
-    case 3: return 'outline';
-    case 4: return 'active';
-    case 5: return 'success';
-    case 6: return 'success';
-    case 7: return 'secondary';
-    default: return 'draft';
+    case 1:
+      return 'draft';
+    case 2:
+      return 'active';
+    case 3:
+      return 'outline';
+    case 4:
+      return 'active';
+    case 5:
+      return 'success';
+    case 6:
+      return 'success';
+    case 7:
+      return 'secondary';
+    default:
+      return 'draft';
   }
 };
 
@@ -274,7 +282,7 @@ const MyAssignedPapersRoute = () => {
                     {filteredPapers.map((paper) => {
                       const projectId: string | undefined =
                         paper.projectId ?? paper.subProjectId ?? undefined;
-                      const status: number | null = paper.submissionStatus ?? 1;
+                      const status: number = paper.submissionStatus ?? 1;
                       const projectCode: string = paper.projectCode ?? '—';
                       const template: string = paper.template ?? '—';
 

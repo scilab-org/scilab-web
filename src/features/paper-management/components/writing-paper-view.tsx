@@ -94,7 +94,10 @@ type WritingPaperViewProps = {
   projectId?: string;
 };
 
-export const WritingPaperView = ({ paperId, projectId }: WritingPaperViewProps) => {
+export const WritingPaperView = ({
+  paperId,
+  projectId,
+}: WritingPaperViewProps) => {
   const paperQuery = useWritingPaperDetail({ paperId });
 
   if (paperQuery.isLoading) {

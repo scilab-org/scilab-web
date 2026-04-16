@@ -4,7 +4,7 @@ import { useSearchParams, Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
-import { StatusDot } from '@/components/ui/status-dot';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -87,13 +87,13 @@ export const ProjectsList = () => {
     status: number,
   ): {
     label: string;
-    variant: 'draft' | 'active' | 'completed' | 'archived';
+    variant: 'draft' | 'success' | 'completed' | 'archived';
   } => {
     switch (status) {
       case 1:
         return { label: 'Draft', variant: 'draft' };
       case 2:
-        return { label: 'Active', variant: 'active' };
+        return { label: 'Active', variant: 'success' };
       case 3:
         return { label: 'Completed', variant: 'completed' };
       case 4:
@@ -169,10 +169,9 @@ export const ProjectsList = () => {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <StatusDot
-                      variant={statusConfig.variant}
-                      label={statusConfig.label}
-                    />
+                    <Badge variant={statusConfig.variant}>
+                      {statusConfig.label}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {project.startDate ? formatDate(project.startDate) : '—'}

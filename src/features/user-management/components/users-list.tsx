@@ -13,7 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
-import { StatusDot } from '@/components/ui/status-dot';
 
 import { useUsers } from '../api/get-users';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -117,7 +116,9 @@ export const UsersList = () => {
 
                 {/* Status */}
                 <TableCell>
-                  <StatusDot variant={user.enabled ? 'active' : 'disabled'} />
+                  <Badge variant={user.enabled ? 'success' : 'destructive'}>
+                    {user.enabled ? 'Active' : 'Disabled'}
+                  </Badge>
                 </TableCell>
 
                 {/* Role — subtle badge */}

@@ -217,7 +217,10 @@ export const ProjectView = ({
                       <span className="text-foreground text-sm font-medium">
                         {SUBMISSION_STATUS_LABELS[status] ?? 'Unknown'}
                       </span>
-                      <Badge variant="secondary" className="ml-1 px-1.5 text-xs">
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 px-1.5 text-xs"
+                      >
                         {count}
                       </Badge>
                     </div>

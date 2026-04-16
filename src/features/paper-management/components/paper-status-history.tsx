@@ -5,7 +5,10 @@ import { cn } from '@/utils/cn';
 import { formatLocalDate, formatLocalDateTime } from '@/utils/date-utils';
 
 import { usePaperStatusHistory } from '../api/get-paper-status-history';
-import { SUBMISSION_STATUS_LABELS, SUBMISSION_STATUS_TRANSITIONS } from '../constants';
+import {
+  SUBMISSION_STATUS_LABELS,
+  SUBMISSION_STATUS_TRANSITIONS,
+} from '../constants';
 import { PaperStatusHistoryEntry } from '../types';
 import { StatusTransitionDialog } from './status-transition-dialog';
 
@@ -34,7 +37,7 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
   return (
     <div className="space-y-4 pb-6">
       <div className="space-y-1">
-        <h3 className="font-newsreader text-2xl font-normal leading-tight">
+        <h3 className="font-newsreader text-2xl leading-tight font-normal">
           {SUBMISSION_STATUS_LABELS[entry.status] ?? `Status ${entry.status}`}
         </h3>
         <p className="text-muted-foreground text-xs">
@@ -106,7 +109,7 @@ const StatusTimelineItem = ({
       />
 
       {/* Date */}
-      <span className="w-24 shrink-0 text-xs text-muted-foreground tabular-nums">
+      <span className="text-muted-foreground w-24 shrink-0 text-xs tabular-nums">
         {formatLocalDate(entry.createdOnUtc)}
       </span>
 
@@ -114,14 +117,14 @@ const StatusTimelineItem = ({
       <div className="space-y-0.5">
         <p
           className={cn(
-            'text-sm font-semibold leading-none',
+            'text-sm leading-none font-semibold',
             isLatest ? label : 'text-foreground',
           )}
         >
           {SUBMISSION_STATUS_LABELS[entry.status] ?? `Status ${entry.status}`}
         </p>
         {entry.note && (
-          <p className="text-muted-foreground text-xs leading-snug line-clamp-1">
+          <p className="text-muted-foreground line-clamp-1 text-xs leading-snug">
             {entry.note}
           </p>
         )}
@@ -138,7 +141,11 @@ type StatusTimelineProps = {
   onSelect: (entry: PaperStatusHistoryEntry) => void;
 };
 
-const StatusTimeline = ({ entries, selectedId, onSelect }: StatusTimelineProps) => {
+const StatusTimeline = ({
+  entries,
+  selectedId,
+  onSelect,
+}: StatusTimelineProps) => {
   if (entries.length === 0) return null;
 
   return (
@@ -182,7 +189,7 @@ export const PaperStatusHistory = ({
   // Keep selected entry in sync when data loads or refreshes
   React.useEffect(() => {
     setSelectedEntry(latestEntry);
-  }, [latestEntry?.id]);
+  }, [latestEntry, latestEntry?.id]);
 
   const displayEntry = selectedEntry ?? latestEntry;
 
@@ -191,7 +198,7 @@ export const PaperStatusHistory = ({
       {/* Section header */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold tracking-widest text-foreground uppercase">
+          <p className="text-foreground text-xs font-semibold tracking-widest uppercase">
             Status History
           </p>
           {canTransition && (
@@ -222,11 +229,14 @@ export const PaperStatusHistory = ({
       )}
 
       {/* Empty — default draft state */}
-      {!historyQuery.isLoading && !historyQuery.isError && history.length === 0 && (
-        <p className="text-muted-foreground py-4 text-sm">
-          No status changes recorded. This paper is in its initial draft state.
-        </p>
-      )}
+      {!historyQuery.isLoading &&
+        !historyQuery.isError &&
+        history.length === 0 && (
+          <p className="text-muted-foreground py-4 text-sm">
+            No status changes recorded. This paper is in its initial draft
+            state.
+          </p>
+        )}
 
       {/* Detail for selected (or latest) entry */}
       {displayEntry && <CurrentStatusDetail entry={displayEntry} />}

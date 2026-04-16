@@ -773,7 +773,8 @@ export const ProjectPaperDetailPage = ({
             {/* Left: status + template + created-by */}
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="active">
-                {SUBMISSION_STATUS_LABELS[paper.submissionStatus ?? 1] ?? 'Draft'}
+                {SUBMISSION_STATUS_LABELS[paper.submissionStatus ?? 1] ??
+                  'Draft'}
               </Badge>
               {paperType && <Badge variant="outline">{paperType}</Badge>}
               {paper.template && (

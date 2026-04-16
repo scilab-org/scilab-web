@@ -70,7 +70,8 @@ export const PaperInProjectDetailDialog = ({
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-xs">Status</p>
                     <p className="text-sm font-medium">
-                      {SUBMISSION_STATUS_LABELS[submissionStatus ?? 1] ?? 'Draft'}
+                      {SUBMISSION_STATUS_LABELS[submissionStatus ?? 1] ??
+                        'Draft'}
                     </p>
                   </div>
                   <div className="space-y-1">
