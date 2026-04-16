@@ -431,6 +431,31 @@ export type GetMarkSectionApiResponse = {
   result: { items: MarkSectionItem[] };
 };
 
+export type MarkSectionVersionItem = {
+  id: string;
+  title: string;
+  content: string;
+  sectionSumary: string;
+  description?: string;
+  mainIdea?: string;
+  createdOnUtc: string;
+  lastModifiedOnUtc: string;
+  displayOrder: number;
+  filePath: string | null;
+  paperId: string;
+  sectionRole: string;
+  isOldMainSection: boolean;
+  isMainSection: boolean;
+  rule?: string;
+  version: string;
+  packages: string[];
+  status: number;
+};
+
+export type GetMarkSectionVersionsApiResponse = {
+  result: { items: MarkSectionVersionItem[] };
+};
+
 export type CommentDto = {
   id: string;
   sectionId: string;
