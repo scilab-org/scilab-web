@@ -15,10 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  PAPER_INITIALIZE_STATUS_OPTIONS,
-  PAPER_MANAGEMENT_QUERY_KEYS,
-} from '../constants';
+import { PAPER_MANAGEMENT_QUERY_KEYS } from '../constants';
 import { PROJECT_MANAGEMENT_QUERY_KEYS } from '@/features/project-management/constants';
 import { usePaperTemplate } from '@/features/paper-template-management/api/get-paper-template';
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
@@ -49,7 +46,7 @@ const initialFormData = {
   mainContribution: '',
   researchAim: '',
   selectedJournalId: '',
-  status: 2,
+  status: 1,
 };
 
 export const CreatePaperInProject = ({
@@ -406,21 +403,12 @@ export const CreatePaperInProject = ({
           {/* ── Status ── */}
           <div className="space-y-1.5">
             <p className="text-sm font-medium">Status</p>
-            <FilterDropdown
-              value={String(formData.status)}
-              onChange={(v) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  status: v ? Number(v) : prev.status,
-                }))
-              }
-              options={PAPER_INITIALIZE_STATUS_OPTIONS.map((opt) => ({
-                label: opt.label,
-                value: String(opt.value),
-              }))}
-              placeholder="Select status"
-              variant="outline"
-            />
+            <div className="border-input bg-muted/30 text-foreground flex min-h-10 items-center rounded-md border px-3 text-sm">
+              Draft
+            </div>
+            <p className="text-muted-foreground text-xs">
+              New papers are created in Draft status.
+            </p>
           </div>
         </form>
 

@@ -2158,7 +2158,7 @@ export const ProjectPaperDetailPage = ({
             });
         }}
       >
-        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+        <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Create Task</DialogTitle>
             <DialogDescription>Create a task for this paper</DialogDescription>
@@ -2388,7 +2388,7 @@ export const ProjectPaperDetailPage = ({
           <DialogFooter className="gap-2 px-1 pb-2">
             <DialogClose asChild>
               <Button type="button" variant="outline" className={BTN.CANCEL}>
-                Cancel
+                CANCEL
               </Button>
             </DialogClose>
             <Button
@@ -2397,7 +2397,7 @@ export const ProjectPaperDetailPage = ({
               className={BTN.CREATE}
               disabled={createTaskMutation.isPending}
             >
-              {createTaskMutation.isPending ? 'Creating...' : 'Create'}
+              {createTaskMutation.isPending ? 'CREATING...' : 'CREATE'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2407,14 +2407,26 @@ export const ProjectPaperDetailPage = ({
         open={!!editingTask}
         onOpenChange={(open) => !open && setEditingTask(null)}
       >
-        <DialogContent className="flex max-h-[90vh] w-full flex-col sm:max-w-lg">
+        <DialogContent className="flex max-h-[90vh] w-full flex-col sm:max-w-xl">
           <form onSubmit={handleUpdateTask} className="flex h-full flex-col">
             <DialogHeader>
               <DialogTitle>Update Task</DialogTitle>
               <DialogDescription>
-                {isAuthor
-                  ? 'Update task details'
-                  : 'Only status and your date fields can be updated'}
+                {editingTask?.sectionTitle ? (
+                  <>
+                    {isAuthor
+                      ? 'Update task details'
+                      : 'Only status and your date fields can be updated'}
+                    {' · '}
+                    <span className="text-foreground font-medium">
+                      Section: {editingTask.sectionTitle}
+                    </span>
+                  </>
+                ) : isAuthor ? (
+                  'Update task details'
+                ) : (
+                  'Only status and your date fields can be updated'
+                )}
               </DialogDescription>
             </DialogHeader>
 
@@ -2476,7 +2488,7 @@ export const ProjectPaperDetailPage = ({
                     </label>
                     <textarea
                       id="updateTaskDesc"
-                      className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                      className="border-surface-container-highest text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                       value={updateForm.description}
                       onChange={(e) =>
                         setUpdateForm((prev) => ({
@@ -2498,6 +2510,19 @@ export const ProjectPaperDetailPage = ({
                     />
                   </div>
                 </>
+              )}
+
+              {editingTask?.sectionTitle && (
+                <div className="space-y-1.5">
+                  <p className="text-secondary font-sans text-[10px]">
+                    Section
+                  </p>
+                  <Input
+                    value={editingTask.sectionTitle}
+                    readOnly
+                    className="bg-surface-container text-secondary cursor-not-allowed"
+                  />
+                </div>
               )}
 
               <div className="space-y-1.5">
@@ -2575,14 +2600,14 @@ export const ProjectPaperDetailPage = ({
                   className={BTN.CANCEL}
                   onClick={() => setEditingTask(null)}
                 >
-                  Cancel
+                  CANCEL
                 </Button>
                 <Button
                   type="submit"
-                  className={cn('flex-1', BTN.EDIT)}
+                  className={cn('flex-1', BTN.CREATE)}
                   disabled={updateTaskMutation.isPending}
                 >
-                  {updateTaskMutation.isPending ? 'Updating...' : 'Update'}
+                  {updateTaskMutation.isPending ? 'UPDATING...' : 'UPDATE'}
                 </Button>
                 {isAuthor && (
                   <Button
@@ -2684,7 +2709,7 @@ export const ProjectPaperDetailPage = ({
 
       {/* ── Edit Paper Dialog (author only) ───────────────────────── */}
       <Dialog open={isEditPaperOpen} onOpenChange={setIsEditPaperOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-sm">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Paper</DialogTitle>
             <DialogDescription>
@@ -2861,17 +2886,15 @@ export const ProjectPaperDetailPage = ({
               className={BTN.CANCEL}
               onClick={() => setIsEditPaperOpen(false)}
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               type="submit"
               form="edit-paper-form"
-              className={BTN.EDIT}
+              className={BTN.CREATE}
               disabled={updateWritingPaperMutation.isPending}
             >
-              {updateWritingPaperMutation.isPending
-                ? 'Saving...'
-                : 'Save Changes'}
+              {updateWritingPaperMutation.isPending ? 'SAVING...' : 'SAVE'}
             </Button>
           </DialogFooter>
         </DialogContent>

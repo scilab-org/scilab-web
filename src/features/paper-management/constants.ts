@@ -44,6 +44,8 @@ export const PAPER_MANAGEMENT_API = {
   COMPILE_LATEX: `${LATEX_SERVICE_PREFIX}/compile`,
   MARK_SECTION: (id: string) =>
     `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}`,
+  MARK_SECTION_VERSIONS: (id: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}/versions`,
   MARK_MAIN_SECTION: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/mark-main-section`,
   COMBINE_PAPER: (paperId: string) =>
@@ -67,6 +69,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   SECTION_REFERENCE: 'section-reference',
   MARK_SECTION: 'mark-section',
   SECTION_HISTORY: 'section-history',
+  MARK_SECTION_VERSIONS: 'mark-section-versions',
 } as const;
 
 export const PAPER_STATUS_MAP: Record<number, string> = {

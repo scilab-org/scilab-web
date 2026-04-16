@@ -14,6 +14,7 @@ import {
   UserPlus,
   Users,
   BookMarked,
+  PenLine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -224,7 +225,7 @@ const SectionMembersSheet = ({
               </button>
             )}
             <Users className="size-5 text-green-600" />
-            {view === 'assign' ? 'Assign Member' : 'Section Members'}
+            {view === 'assign' ? 'Assign Writers' : 'Section Writers'}
           </DialogTitle>
           <DialogDescription className="truncate text-xs">
             {sectionTitle}
@@ -286,7 +287,7 @@ const SectionMembersSheet = ({
                           const raw = m.sectionRole.includes(':')
                             ? m.sectionRole.split(':').pop()
                             : m.sectionRole;
-                          if (raw === 'edit') return 'Editor';
+                          if (raw === 'edit') return 'Writer';
                           if (raw === 'read' || raw === 'view') return 'Viewer';
                           if (raw === 'author') return 'Author';
                           if (raw === 'manager') return 'Manager';
@@ -313,7 +314,7 @@ const SectionMembersSheet = ({
                                 className={
                                   displayRole === 'Author'
                                     ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
-                                    : displayRole === 'Editor'
+                                    : displayRole === 'Writer'
                                       ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
                                       : displayRole === 'Viewer'
                                         ? 'border-muted-foreground/20 bg-muted/50 text-muted-foreground'
@@ -460,7 +461,7 @@ const SectionMembersSheet = ({
                                 Role:
                               </span>
                               <span className="rounded-full border border-blue-200 bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                Editor
+                                Writer
                               </span>
                             </div>
                           </div>
@@ -543,6 +544,7 @@ const SectionVersionDialog = ({
   sectionStatus,
   currentMemberId,
   canEdit,
+  isAssigned = false,
   hasOwnDraft = false,
   onOpenEditor,
 }: {
@@ -553,6 +555,7 @@ const SectionVersionDialog = ({
   sectionStatus?: number;
   currentMemberId?: string;
   canEdit: boolean;
+  isAssigned?: boolean;
   isFullEditor?: boolean;
   hasOwnDraft?: boolean;
   onOpenEditor: (sectionId: string, readOnly: boolean) => void;
@@ -607,13 +610,7 @@ const SectionVersionDialog = ({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="size-5 text-blue-600" />
-            Open Section
-          </DialogTitle>
-          <DialogDescription className="truncate text-xs">
-            {sectionTitle}
-          </DialogDescription>
+          <DialogTitle>{sectionTitle}</DialogTitle>
         </DialogHeader>
 
         {sectionStatus != null && statusMap[sectionStatus] && (
@@ -738,7 +735,7 @@ const SectionVersionDialog = ({
                           //   - otherwise → view-only
                           let itemReadOnly: boolean;
                           if (item.isMainSection) {
-                            itemReadOnly = hasOwnDraft ? true : !canEdit;
+                            itemReadOnly = hasOwnDraft ? true : !isAssigned;
                           } else {
                             // Authors do NOT get special edit rights on other people's versions.
                             // Only the owner of a version (isMe) may edit it.
@@ -750,7 +747,7 @@ const SectionVersionDialog = ({
                       >
                         {(() => {
                           if (item.isMainSection) {
-                            return !hasOwnDraft && canEdit
+                            return !hasOwnDraft && isAssigned
                               ? 'Open Editor'
                               : 'View';
                           }
@@ -819,6 +816,7 @@ export const PaperWorkspacePage = ({
     title: string;
     memberId: string;
     canEdit: boolean;
+    isAssigned: boolean;
     status?: number;
     hasOwnDraft: boolean;
   } | null>(null);
@@ -970,19 +968,26 @@ export const PaperWorkspacePage = ({
     queryConfig: { enabled: !!paperId } as any,
   });
 
-  // Map sectionId -> contributor count from paper contributors
-  // Index by both sectionId and markSectionId to maximise lookup coverage.
+  // Map sectionId -> writer/author count from paper contributors.
+  // Index by both sectionId and markSectionId to maximize lookup coverage.
   const sectionContributorCounts = useMemo(() => {
     const items = (paperContributorsQuery.data as any)?.result?.items ?? [];
-    // Use sets to deduplicate multiple IDs per contributor per section key.
+    const isWritingContributor = (role?: string) =>
+      role === 'section:edit' || role === 'paper:author';
+
+    // Use sets to deduplicate the same contributor across multiple assignments.
     const perSection = new Map<string, Set<string>>();
     items.forEach((c: any) => {
-      const cKey = c.id || `${c.memberId}:${c.sectionId}`;
+      if (!isWritingContributor(c.sectionRole)) return;
+
+      const contributorKey = c.userId || c.memberId || c.id;
+      if (!contributorKey) return;
+
       [c.sectionId, c.markSectionId]
         .filter(Boolean)
         .forEach((secId: string) => {
           if (!perSection.has(secId)) perSection.set(secId, new Set());
-          perSection.get(secId)!.add(cKey);
+          perSection.get(secId)!.add(contributorKey);
         });
     });
     const map = new Map<string, number>();
@@ -1343,22 +1348,6 @@ export const PaperWorkspacePage = ({
             }
           }}
         >
-          <div
-            className={cn(
-              'bg-muted/40 border-border/60 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border',
-              canEdit && 'bg-primary/5',
-            )}
-          >
-            <FileText
-              className={cn(
-                'size-5',
-                canEdit
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-muted-foreground',
-              )}
-            />
-          </div>
-
           <div className="min-w-0 flex-1">
             <h3 className="text-foreground text-xl leading-none font-semibold">
               {s.numbered ? `${num ? ` ${num}.` : ''} ${s.title}` : s.title}
@@ -1386,11 +1375,14 @@ export const PaperWorkspacePage = ({
                 </Badge>
               )}
               {contributorCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-100 px-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                <span className="flex items-center">
+                  <span
+                    className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-100 px-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+                    title={`${contributorCount} writer/author${contributorCount !== 1 ? 's' : ''}`}
+                    aria-label={`${contributorCount} writer or author${contributorCount !== 1 ? 's' : ''}`}
+                  >
                     {contributorCount}
                   </span>
-                  <span>contributor{contributorCount !== 1 ? 's' : ''}</span>
                 </span>
               )}
             </div>
@@ -1415,14 +1407,31 @@ export const PaperWorkspacePage = ({
                   title: stripLatex(s.title),
                   memberId: s.memberId || '',
                   canEdit,
+                  isAssigned: !!assigned,
                   status: s.status,
                   hasOwnDraft: sectionHasOwnDraft,
                 });
               }}
               className="bg-background/70 hover:bg-muted shrink-0 rounded-lg px-3 text-xs font-semibold tracking-wide uppercase"
             >
-              Open
+              VIEW
             </Button>
+            <Button
+              size="action"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMemberSheet({
+                  id: s.markSectionId || s.id,
+                  title: stripLatex(s.title),
+                });
+              }}
+              title="Writers"
+              className="bg-background/70 hover:bg-muted shrink-0 rounded-lg px-3 text-xs font-semibold tracking-wide uppercase"
+            >
+              Writer
+            </Button>
+
             {isAuthor && (
               <Button
                 size="icon"
@@ -1438,28 +1447,13 @@ export const PaperWorkspacePage = ({
                     mainIdea: (s as any).mainIdea || '',
                   });
                 }}
-                title="Open Brief"
-                aria-label="Open Brief"
+                title="Open Description"
+                aria-label="Open Description"
                 className="bg-background/70 hover:bg-muted size-10 rounded-2xl"
               >
-                <BookMarked className="size-4" />
+                <PenLine className="size-4" />
               </Button>
             )}
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMemberSheet({
-                  id: s.markSectionId || s.id,
-                  title: stripLatex(s.title),
-                });
-              }}
-              title="Members"
-              className="bg-background/70 hover:bg-muted size-10 rounded-2xl"
-            >
-              <Users className="size-4" />
-            </Button>
             <Button
               size="icon"
               variant="outline"
@@ -1633,6 +1627,7 @@ export const PaperWorkspacePage = ({
           sectionStatus={versionDialog.status}
           currentMemberId={versionDialog.memberId}
           canEdit={versionDialog.canEdit}
+          isAssigned={versionDialog.isAssigned}
           isFullEditor={isAuthor || isManager}
           hasOwnDraft={versionDialog.hasOwnDraft}
           onOpenEditor={(sectionId, readOnly) => {

@@ -181,19 +181,19 @@ export const ProjectWritingPapersList = ({
             <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="text-muted-foreground w-[40%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[38%] text-xs font-medium tracking-wider uppercase">
                     Title
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[13%] text-xs font-medium tracking-wider uppercase">
                     Status
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
                     Template
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[9%] text-xs font-medium tracking-wider uppercase">
                     Members
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[15%] text-center text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[30%] pr-6 text-center text-xs font-medium tracking-wider uppercase">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -228,7 +228,7 @@ export const ProjectWritingPapersList = ({
                         <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="pr-6 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <Button
                           variant="outline"

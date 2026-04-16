@@ -58,7 +58,7 @@ const CommentItem = ({
   const avatarInitial = (comment.userName || '?').charAt(0).toUpperCase();
 
   return (
-    <div className="group flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700">
+    <div className="group bg-editor-bg flex flex-col gap-2 rounded-lg border border-slate-200 p-3 shadow-sm transition-all hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2.5">
@@ -122,7 +122,7 @@ const CommentItem = ({
           <Input
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="h-8 border-slate-200 bg-white px-2 text-sm shadow-sm focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
+            className="bg-editor-content-bg h-8 border-slate-200 px-2 text-sm shadow-sm focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleUpdate();
               if (e.key === 'Escape') {
@@ -244,7 +244,7 @@ export const SectionComments = ({
             />
           ))}
           {comments.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center dark:border-slate-800 dark:bg-slate-900/20">
+            <div className="bg-editor-bg flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 py-8 text-center dark:border-slate-800 dark:bg-slate-900/20">
               <MessageSquare className="h-6 w-6 text-slate-300 dark:text-slate-600" />
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 No comments yet.
@@ -261,12 +261,12 @@ export const SectionComments = ({
 
       {/* Composer Input */}
       {!isReadOnly && (
-        <div className="mt-2 flex shrink-0 flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="bg-editor-bg mt-2 flex shrink-0 flex-col gap-3 rounded-lg border border-slate-200 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
           <Input
             placeholder="Leave a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="h-10 border-slate-200 bg-white px-3 text-sm shadow-sm focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder-slate-500"
+            className="bg-editor-content-bg h-10 border-slate-200 px-3 text-sm shadow-sm focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder-slate-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
