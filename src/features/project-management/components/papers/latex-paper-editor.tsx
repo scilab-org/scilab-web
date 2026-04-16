@@ -268,7 +268,7 @@ const WriteDiffView = ({
 
   return (
     <div
-      className="font-sans text-xs leading-[22px]"
+      className="font-sans text-xs leading-5.5"
       style={{ padding: '16px 0' }}
     >
       {diffLines.map((line, idx) => (

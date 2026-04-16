@@ -154,7 +154,7 @@ const MyProjectsRoute = () => {
           onSubmit={handleApply}
           className="flex flex-wrap items-center gap-2 rounded-md border bg-[#E9E1D8] p-2"
         >
-          <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+          <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
             <Search className="text-muted-foreground size-4" />
             <Input
               className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
@@ -175,7 +175,7 @@ const MyProjectsRoute = () => {
             )}
           </div>
 
-          <div className="bg-background flex h-10 min-w-[200px] flex-1 items-center gap-3 rounded-md px-4">
+          <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4">
             <Search className="text-muted-foreground size-4" />
             <Input
               className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
