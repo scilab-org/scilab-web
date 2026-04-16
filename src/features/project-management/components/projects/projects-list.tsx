@@ -3,8 +3,8 @@ import { useSearchParams, Link } from 'react-router';
 
 import { useQueryClient } from '@tanstack/react-query';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StatusDot } from '@/components/ui/status-dot';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -83,33 +83,23 @@ export const ProjectsList = () => {
     });
   };
 
-  const getStatusConfig = (status: number) => {
+  const getStatusConfig = (
+    status: number,
+  ): {
+    label: string;
+    variant: 'draft' | 'active' | 'completed' | 'archived';
+  } => {
     switch (status) {
       case 1:
-        return {
-          text: 'Draft',
-          variant: 'draft' as const,
-        };
+        return { label: 'Draft', variant: 'draft' };
       case 2:
-        return {
-          text: 'Active',
-          variant: 'active' as const,
-        };
+        return { label: 'Active', variant: 'active' };
       case 3:
-        return {
-          text: 'Completed',
-          variant: 'completed' as const,
-        };
+        return { label: 'Completed', variant: 'completed' };
       case 4:
-        return {
-          text: 'Archived',
-          variant: 'archived' as const,
-        };
+        return { label: 'Archived', variant: 'archived' };
       default:
-        return {
-          text: 'Unknown',
-          variant: 'outline' as const,
-        };
+        return { label: 'Unknown', variant: 'archived' };
     }
   };
 
@@ -179,9 +169,10 @@ export const ProjectsList = () => {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusConfig.variant}>
-                      {statusConfig.text}
-                    </Badge>
+                    <StatusDot
+                      variant={statusConfig.variant}
+                      label={statusConfig.label}
+                    />
                   </TableCell>
                   <TableCell>
                     {project.startDate ? formatDate(project.startDate) : '—'}

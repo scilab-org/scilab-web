@@ -99,6 +99,7 @@ import {
   DateTaskFilterField,
   TaskItem,
 } from '@/features/task-management/types';
+import { PaperStatusHistory } from '@/features/paper-management/components/paper-status-history';
 
 // Kanban column definitions
 const KANBAN_COLUMNS = [
@@ -174,7 +175,8 @@ export type Tab =
   | 'compile-paper'
   | 'sections'
   | 'contributor'
-  | 'task';
+  | 'task'
+  | 'submission';
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'overview', label: 'Overview', icon: FileText },
@@ -182,6 +184,7 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'sections', label: 'Sections', icon: BookOpen },
   { id: 'contributor', label: 'Contributor', icon: Users },
   { id: 'task', label: 'Task', icon: ClipboardList },
+  { id: 'submission', label: 'Submission Status', icon: Calendar },
 ];
 
 export const ProjectPaperDetailPage = ({
@@ -2000,6 +2003,11 @@ export const ProjectPaperDetailPage = ({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── Submission Status Panel ──────────────────────────── */}
+            {activeTab === 'submission' && (
+              <PaperStatusHistory paperId={paperId} projectId={projectId} />
             )}
           </div>
         </div>

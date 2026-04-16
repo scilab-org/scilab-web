@@ -477,3 +477,32 @@ export type CreateCommentDto = {
   sectionId: string;
   content: string;
 };
+
+export type PaperStatusHistoryEntry = {
+  id: string;
+  paperId: string;
+  status: number;
+  actorId: string;
+  actorUserName: string;
+  note?: string | null;
+  revisionType?: string | null;
+  createdOnUtc: string;
+  createdBy: string;
+};
+
+export type GetPaperStatusHistoryApiResponse = {
+  paperId: string;
+  currentStatus: number;
+  history: PaperStatusHistoryEntry[];
+};
+
+export type TransitionPaperStatusDto = {
+  projectId: string;
+  targetStatus: number;
+  note?: string;
+  revisionType?: string;
+};
+
+export type TransitionPaperStatusApiResponse = {
+  value: string;
+};

@@ -24,6 +24,7 @@ import {
 
 import { useWritingPaperDetail } from '../api/get-writing-paper';
 import { PAPER_STATUS_MAP } from '../constants';
+import { PaperStatusHistory } from './paper-status-history';
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
@@ -88,7 +89,12 @@ const getStatusVariant = (
   }
 };
 
-export const WritingPaperView = ({ paperId }: { paperId: string }) => {
+type WritingPaperViewProps = {
+  paperId: string;
+  projectId?: string;
+};
+
+export const WritingPaperView = ({ paperId, projectId }: WritingPaperViewProps) => {
   const paperQuery = useWritingPaperDetail({ paperId });
 
   if (paperQuery.isLoading) {
@@ -290,6 +296,11 @@ export const WritingPaperView = ({ paperId }: { paperId: string }) => {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Status History */}
+      <div className="bg-card rounded-md border p-5">
+        <PaperStatusHistory paperId={paperId} projectId={projectId} />
       </div>
     </div>
   );

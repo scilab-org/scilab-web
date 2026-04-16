@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
-import { cn } from '@/utils/cn';
+import { StatusDot } from '@/components/ui/status-dot';
 
 import { useUsers } from '../api/get-users';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -115,19 +115,9 @@ export const UsersList = () => {
                   {capitalize(user.firstName)} {capitalize(user.lastName)}
                 </TableCell>
 
-                {/* Status — dot indicator */}
+                {/* Status */}
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'size-2 shrink-0 rounded-full',
-                        user.enabled ? 'bg-green-500' : 'bg-destructive',
-                      )}
-                    />
-                    <span className="text-xs font-medium">
-                      {user.enabled ? 'Active' : 'Disabled'}
-                    </span>
-                  </div>
+                  <StatusDot variant={user.enabled ? 'active' : 'disabled'} />
                 </TableCell>
 
                 {/* Role — subtle badge */}
