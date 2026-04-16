@@ -59,6 +59,9 @@ export const PROJECT_MANAGEMENT_API = {
   // DELETE a sub-project
   DELETE_SUB_PROJECT: (subProjectId: string) =>
     `${SERVICE_PREFIX}/manager/sub-projects/${subProjectId}`,
+  // GET submission status summary for all papers in a project
+  SUBMISSION_STATUS_SUMMARY: (projectId: string) =>
+    `${SERVICE_PREFIX}/projects/${projectId}/submission-status-summary`,
 } as const;
 
 export const PROJECT_MANAGEMENT_QUERY_KEYS = {
@@ -73,6 +76,7 @@ export const PROJECT_MANAGEMENT_QUERY_KEYS = {
   SUB_PROJECTS: 'sub-projects',
   PAPER_MEMBERS: 'paper-members',
   PAPER_MEMBERS_AVAILABLE: 'paper-members-available',
+  SUBMISSION_STATUS_SUMMARY: 'submission-status-summary',
 } as const;
 
 export const FIELD_LABEL_CLASS =

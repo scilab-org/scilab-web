@@ -209,6 +209,7 @@ export type SubProjectPaper = {
   doi: string | null;
   filePath: string | null;
   status: number | null;
+  submissionStatus: number | null;
   publicationDate: string | null;
   paperType: string | null;
   journalName: string | null;

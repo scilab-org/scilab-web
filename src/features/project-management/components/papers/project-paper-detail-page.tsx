@@ -67,7 +67,7 @@ import { useWritingPaperDetail } from '@/features/paper-management/api/get-writi
 import { useUpdateWritingPaper } from '@/features/paper-management/api/update-writing-paper';
 import {
   PAPER_INITIALIZE_STATUS_OPTIONS,
-  PAPER_STATUS_MAP,
+  SUBMISSION_STATUS_LABELS,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '@/features/paper-management/constants';
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
@@ -773,7 +773,7 @@ export const ProjectPaperDetailPage = ({
             {/* Left: status + template + created-by */}
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="active">
-                {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
+                {SUBMISSION_STATUS_LABELS[paper.submissionStatus ?? 1] ?? 'Draft'}
               </Badge>
               {paperType && <Badge variant="outline">{paperType}</Badge>}
               {paper.template && (

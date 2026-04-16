@@ -67,6 +67,7 @@ export type WritingPaperDto = {
   referenceContent?: string | null;
   filePath: string | null;
   status: number;
+  submissionStatus?: number | null;
   publicationDate: string | null;
   paperType: string | null;
   journalName: string | null;
