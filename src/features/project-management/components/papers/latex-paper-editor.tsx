@@ -3148,29 +3148,39 @@ export const LatexPaperEditor = ({
       if (!isSectionSwitched) return;
 
       try {
-        // Always resolve the newest id from assigned-sections before loading content.
-        const markSectionId = (
-          activeSection.markSectionId || activeSection.id
-        ).trim();
-        const resolvedId =
-          (await resolveLatestSectionIdFromAssignedSections(
-            markSectionId,
-            activeSection,
-          )) || activeSectionId;
+        // For read-only mode, skip assigned-sections resolution entirely —
+        // the sectionId is already the exact version we want to display.
+        // The resolution is only needed for edit mode to pick up the latest
+        // versioned sectionId from assigned-sections.
+        let resolvedId = activeSectionId;
+        let packagesFromAssigned: string[] | undefined;
 
-        // Read packages from the assigned-sections cache that was just populated above.
-        // This is the authoritative source for packages (set per section by the author).
-        const cachedAssigned = queryClient.getQueryData<{
-          result: { items: Array<{ id: string; packages?: string[] | null }> };
-        }>(
-          getAssignedSectionsQueryOptions(
-            derivedPaperId ?? '',
-            assignedSectionsParams,
-          ).queryKey,
-        );
-        const packagesFromAssigned =
-          cachedAssigned?.result?.items?.find((item) => item.id === resolvedId)
-            ?.packages ?? undefined;
+        if (!readOnly) {
+          const markSectionId = (
+            activeSection.markSectionId || activeSection.id
+          ).trim();
+          resolvedId =
+            (await resolveLatestSectionIdFromAssignedSections(
+              markSectionId,
+              activeSection,
+            )) || activeSectionId;
+
+          // Read packages from the assigned-sections cache that was just populated above.
+          const cachedAssigned = queryClient.getQueryData<{
+            result: {
+              items: Array<{ id: string; packages?: string[] | null }>;
+            };
+          }>(
+            getAssignedSectionsQueryOptions(
+              derivedPaperId ?? '',
+              assignedSectionsParams,
+            ).queryKey,
+          );
+          packagesFromAssigned =
+            cachedAssigned?.result?.items?.find(
+              (item) => item.id === resolvedId,
+            )?.packages ?? undefined;
+        }
 
         if (disposed) return;
 
@@ -3289,6 +3299,7 @@ export const LatexPaperEditor = ({
       disposed = true;
     };
   }, [
+    readOnly,
     editorSections,
     activeSectionId,
     compileAndRender,
@@ -3369,7 +3380,11 @@ export const LatexPaperEditor = ({
 
         let sectionIdForReferences = section.id;
 
-        if (!alreadyResolved) {
+        // In read-only mode, skip assigned-sections resolution entirely —
+        // the sectionId is already the exact version we want to display.
+        if (readOnly || alreadyResolved) {
+          setResolvedActiveSectionId(section.id);
+        } else {
           const markSectionId = (section.markSectionId || section.id).trim();
           const resolvedSectionId =
             (await resolveLatestSectionIdFromAssignedSections(
@@ -3400,8 +3415,6 @@ export const LatexPaperEditor = ({
               return prev;
             });
           }
-        } else {
-          setResolvedActiveSectionId(section.id);
         }
 
         const data = await getSectionReferenceInUseForEditor(
@@ -3437,6 +3450,7 @@ export const LatexPaperEditor = ({
       disposed = true;
     };
   }, [
+    readOnly,
     activeSectionId,
     activeSectionMarkId,
     inUseReferenceReloadKey,

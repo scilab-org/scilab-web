@@ -615,6 +615,8 @@ export const PaperOldSectionsManager = ({
                                   isMainSection:
                                     version.isOldMainSection ??
                                     version.isMainSection,
+                                  isOldMainSection:
+                                    version.isOldMainSection ?? false,
                                   parentSectionId: version.parentSectionId,
                                   previousVersionSectionId: null,
                                   nextVersionSectionId: null,

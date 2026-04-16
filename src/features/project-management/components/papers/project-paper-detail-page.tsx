@@ -5,6 +5,7 @@ import {
   RefreshCw,
   Search,
   Users,
+  UserPlus,
   X,
   Trash2,
   FileText,
@@ -75,6 +76,7 @@ import type { CombineDto } from '@/features/paper-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
+import { useRemovePaperMembers } from '@/features/project-management/api/papers/remove-paper-members';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
 import { ProjectMember } from '@/features/project-management/types';
@@ -217,6 +219,9 @@ export const ProjectPaperDetailPage = ({
     locationState?.initialSectionId ?? null,
   );
   const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<
+    string | null
+  >(null);
   const [isEditPaperOpen, setIsEditPaperOpen] = useState(false);
   const [editPaperForm, setEditPaperForm] = useState({
     context: '',
@@ -414,6 +419,14 @@ export const ProjectPaperDetailPage = ({
     subProjectId: paperSubProjectId,
     params: { pageNumber: 1, pageSize: 1000 },
     queryConfig: { enabled: !!paperSubProjectId } as any,
+  });
+
+  const removePaperMemberMutation = useRemovePaperMembers({
+    subProjectId: paperSubProjectId,
+    mutationConfig: {
+      onSuccess: () => toast.success('Contributor removed'),
+      onError: () => toast.error('Failed to remove contributor'),
+    },
   });
 
   const sectionsQuery = useGetPaperSections({
@@ -901,6 +914,16 @@ export const ProjectPaperDetailPage = ({
                     </p>
                   </div>
 
+                  {/* Research Aim */}
+                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      Research Aim
+                    </h3>
+                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                      {paper.researchAim || 'No research aim defined.'}
+                    </p>
+                  </div>
+
                   {/* Context */}
                   <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
@@ -925,16 +948,6 @@ export const ProjectPaperDetailPage = ({
                         Type: {paper.gapType}
                       </span>
                     )}
-                  </div>
-
-                  {/* Research Aim */}
-                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
-                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
-                      Research Aim
-                    </h3>
-                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
-                      {paper.researchAim || 'No research aim defined.'}
-                    </p>
                   </div>
 
                   {/* Main Contribution */}
@@ -1149,7 +1162,15 @@ export const ProjectPaperDetailPage = ({
                   <Button
                     variant="outline"
                     size="action"
-                    onClick={() => sectionsQuery.refetch()}
+                    onClick={() => {
+                      sectionsQuery.refetch();
+                      queryClient.invalidateQueries({
+                        queryKey: [
+                          PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+                          paperId,
+                        ],
+                      });
+                    }}
                     disabled={sectionsQuery.isFetching}
                     title="Refresh"
                     className="border-transparent"
@@ -1188,32 +1209,34 @@ export const ProjectPaperDetailPage = ({
                       {totalPaperMembers !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  {(isAuthor || isManager) && (
+                  <div className="flex items-center gap-1">
+                    {(isAuthor || isManager) && (
+                      <Button
+                        size="action"
+                        variant="action"
+                        onClick={() => setIsMembersOpen(true)}
+                        className="gap-1.5"
+                      >
+                        <UserPlus className="size-4" />
+                        Add Contributor
+                      </Button>
+                    )}
                     <Button
+                      variant="outline"
                       size="action"
-                      variant="action"
-                      onClick={() => setIsMembersOpen(true)}
-                      className="gap-1.5"
+                      onClick={() => paperMembersQuery.refetch()}
+                      disabled={paperMembersQuery.isFetching}
+                      title="Refresh"
+                      className="border-transparent"
                     >
-                      <Users className="size-4" />
-                      Manage Contributors
+                      <RefreshCw
+                        className={cn(
+                          'size-4',
+                          paperMembersQuery.isFetching && 'animate-spin',
+                        )}
+                      />
                     </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="action"
-                    onClick={() => paperMembersQuery.refetch()}
-                    disabled={paperMembersQuery.isFetching}
-                    title="Refresh"
-                    className="border-transparent"
-                  >
-                    <RefreshCw
-                      className={cn(
-                        'size-4',
-                        paperMembersQuery.isFetching && 'animate-spin',
-                      )}
-                    />
-                  </Button>
+                  </div>
                 </div>
 
                 {paperMembersQuery.isLoading ? (
@@ -1233,54 +1256,91 @@ export const ProjectPaperDetailPage = ({
                           <TableHead>User</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
+                          {(isAuthor || isManager) && (
+                            <TableHead className="w-16 text-center">
+                              Actions
+                            </TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paperMembersList.map((member: any) => (
-                          <TableRow
-                            key={member.id}
-                            className="hover:bg-muted/30"
-                          >
-                            <TableCell className="text-foreground font-medium">
-                              {member.firstName || member.lastName
-                                ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
-                                : member.username}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {member.email}
-                            </TableCell>
-                            <TableCell>
-                              {(() => {
-                                const parts = (member.role ?? '').split(':');
-                                const raw =
-                                  parts.length > 1
-                                    ? parts[parts.length - 1]
-                                    : parts[0];
-                                let label: string;
-                                if (raw === 'author') label = 'Author';
-                                else if (raw === 'member') label = 'Member';
-                                else if (raw === 'edit') label = 'Editor';
-                                else if (raw === 'read' || raw === 'view')
-                                  label = 'Viewer';
-                                else
-                                  label = raw
-                                    ? raw.charAt(0).toUpperCase() + raw.slice(1)
-                                    : (member.role ?? '');
-                                const cls =
-                                  raw === 'author'
-                                    ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
-                                    : raw === 'member' || raw === 'edit'
-                                      ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
-                                      : '';
-                                return (
-                                  <Badge variant="outline" className={cls}>
-                                    {label}
-                                  </Badge>
-                                );
-                              })()}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {paperMembersList.map((member: any) => {
+                          const parts = (member.role ?? '').split(':');
+                          const raw =
+                            parts.length > 1
+                              ? parts[parts.length - 1]
+                              : parts[0];
+                          let label: string;
+                          if (raw === 'author') label = 'Author';
+                          else if (raw === 'member') label = 'Contributor';
+                          else if (raw === 'edit') label = 'Editor';
+                          else if (raw === 'read' || raw === 'view')
+                            label = 'Viewer';
+                          else
+                            label = raw
+                              ? raw.charAt(0).toUpperCase() + raw.slice(1)
+                              : (member.role ?? '');
+                          const cls =
+                            raw === 'author'
+                              ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
+                              : raw === 'member' || raw === 'edit'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
+                                : '';
+                          const canDelete =
+                            (isAuthor || isManager) && raw === 'member';
+                          return (
+                            <TableRow
+                              key={member.id ?? member.memberId}
+                              className="hover:bg-muted/30"
+                            >
+                              <TableCell className="text-foreground font-medium">
+                                {member.firstName || member.lastName
+                                  ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
+                                  : member.username}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {member.email}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={cls}>
+                                  {label}
+                                </Badge>
+                              </TableCell>
+                              {(isAuthor || isManager) && (
+                                <TableCell className="text-center">
+                                  {canDelete && (
+                                    <Button
+                                      size="action"
+                                      variant="destructive"
+                                      title="Remove contributor"
+                                      disabled={
+                                        removePaperMemberMutation.isPending &&
+                                        confirmDeleteMemberId ===
+                                          member.memberId
+                                      }
+                                      onClick={() =>
+                                        setConfirmDeleteMemberId(
+                                          member.memberId,
+                                        )
+                                      }
+                                    >
+                                      {removePaperMemberMutation.isPending &&
+                                      confirmDeleteMemberId ===
+                                        member.memberId ? (
+                                        <>
+                                          <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                          REMOVE
+                                        </>
+                                      ) : (
+                                        'REMOVE'
+                                      )}
+                                    </Button>
+                                  )}
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -2565,6 +2625,45 @@ export const ProjectPaperDetailPage = ({
               }}
             >
               {deleteTaskMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Remove Contributor Confirm ─────────────────────────────── */}
+      <AlertDialog
+        open={!!confirmDeleteMemberId}
+        onOpenChange={(o) => {
+          if (!o) setConfirmDeleteMemberId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove contributor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this contributor from the paper?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={BTN.CANCEL}
+              onClick={() => setConfirmDeleteMemberId(null)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className={BTN.DANGER}
+              disabled={removePaperMemberMutation.isPending}
+              onClick={() => {
+                if (!confirmDeleteMemberId) return;
+                removePaperMemberMutation.mutate({
+                  memberIds: [confirmDeleteMemberId],
+                });
+                setConfirmDeleteMemberId(null);
+              }}
+            >
+              {removePaperMemberMutation.isPending ? 'Removing...' : 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

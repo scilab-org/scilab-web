@@ -270,6 +270,7 @@ export type AssignedSection = {
   createdOnUtc?: string;
   lastModifiedOnUtc?: string;
   packages?: string[] | null;
+  status?: number;
 };
 
 export type AssignedSectionsResult = {
@@ -411,6 +412,10 @@ export type MarkSectionItem = {
   markSectionId: string;
   title: string;
   isMainSection: boolean;
+  isOldMainSection: boolean;
+  version?: string | null;
+  status?: number | null;
+  createdBy?: string | null;
   parentSectionId: string | null;
   previousVersionSectionId: string | null;
   nextVersionSectionId: string | null;

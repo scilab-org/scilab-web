@@ -251,7 +251,7 @@ export const ProjectPapersList = ({
                     </TableCell>
 
                     {/* Title */}
-                    <TableCell className="px-2 break-words whitespace-normal">
+                    <TableCell className="px-2 wrap-break-word whitespace-normal">
                       <Link
                         to={
                           getPaperHref
@@ -266,12 +266,12 @@ export const ProjectPapersList = ({
                     </TableCell>
 
                     {/* Authors */}
-                    <TableCell className="px-2 break-words whitespace-normal">
+                    <TableCell className="px-2 wrap-break-word whitespace-normal">
                       {truncateAuthors(paper.authors)}
                     </TableCell>
 
                     {/* Venue */}
-                    <TableCell className="px-2 break-words whitespace-normal">
+                    <TableCell className="px-2 wrap-break-word whitespace-normal">
                       {paper.journalName ? (
                         <span className="line-clamp-2 text-sm">
                           {paper.journalName}
