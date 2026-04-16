@@ -95,13 +95,6 @@ const STATUS_CLASS: Record<number, string> = {
   4: 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
 };
 
-const BORDER_CLASS: Record<number, string> = {
-  1: 'border-l-gray-400',
-  2: 'border-l-[#630F0F]',
-  3: 'border-l-green-500',
-  4: 'border-l-amber-500',
-};
-
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -277,7 +270,6 @@ const ProjectDetailRoute = () => {
   const project = projectQuery.data.result.project;
   const statusLabel = STATUS_LABEL[project.status] ?? 'Unknown';
   const statusClass = STATUS_CLASS[project.status] ?? STATUS_CLASS[1];
-  const borderClass = BORDER_CLASS[project.status] ?? BORDER_CLASS[1];
 
   return (
     <>
@@ -287,7 +279,7 @@ const ProjectDetailRoute = () => {
           <div className="space-y-5">
             {/* Project banner */}
             <div
-              className={`border-border bg-card rounded-md border border-l-4 px-6 py-5 shadow-sm ${borderClass}`}
+              className={`border-border bg-card rounded-md border px-6 py-5 shadow-sm`}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 {/* Left: name, code, description */}

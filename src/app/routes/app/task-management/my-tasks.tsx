@@ -1,23 +1,13 @@
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Calendar, Trash2, X } from 'lucide-react';
-import { useSearchParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { FormEvent, useMemo, useRef, useState } from 'react';
+import { Calendar, BookOpen, Trash2, X } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { ContentLayout } from '@/components/layouts';
 import { Head } from '@/components/seo';
 
 import { Button } from '@/components/ui/button';
-import { CreateButton } from '@/components/ui/create-button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from '@/components/ui/dialog';
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
 
 import { Input } from '@/components/ui/input';
@@ -33,12 +23,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { BTN } from '@/lib/button-styles';
-import { useUser } from '@/lib/auth';
 import {
-  getMyTasksQueryOptions,
-  useMyAssignedPapers,
-  useCreateTask,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { BTN } from '@/lib/button-styles';
+import { paths } from '@/config/paths';
+import { useUser, getUserGroups } from '@/lib/auth';
+import {
   useDeleteTask,
   useMyTasks,
   useUpdateTask,
@@ -47,6 +44,7 @@ import {
   DATE_TASK_FILTER_OPTIONS,
   TASK_MANAGEMENT_QUERY_KEYS,
   TASK_STATUS_OPTIONS,
+  TASK_TYPE_LABELS,
 } from '@/features/task-management/constants';
 import { cn } from '@/utils/cn';
 import {
@@ -56,33 +54,7 @@ import {
   UpdateTaskDto,
 } from '@/features/task-management/types';
 
-export const clientLoader =
-  (queryClient: QueryClient) =>
-  async ({ request }: { request: Request }) => {
-    const url = new URL(request.url);
-    const query = getMyTasksQueryOptions({
-      PageNumber: Number(url.searchParams.get('page') || 1),
-      PageSize: Number(url.searchParams.get('pageSize') || 10),
-      AssignedToUserName:
-        url.searchParams.get('AssignedToUserName') || undefined,
-      Status: url.searchParams.get('Status') || undefined,
-      PaperId: url.searchParams.get('PaperId') || undefined,
-      DateField:
-        (url.searchParams.get('DateField') as DateTaskFilterField | null) ??
-        undefined,
-      FromDate: url.searchParams.get('FromDate') || undefined,
-      ToDate: url.searchParams.get('ToDate') || undefined,
-    });
-
-    try {
-      return (
-        queryClient.getQueryData(query.queryKey) ??
-        (await queryClient.fetchQuery(query))
-      );
-    } catch {
-      return null;
-    }
-  };
+export const clientLoader = () => async () => null;
 
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('en-US', {
@@ -164,12 +136,10 @@ const createInitialTaskForm = (): TaskFormState => ({
 const MyTasksRoute = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const navigate = useNavigate();
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [viewingTask, setViewingTask] = useState<TaskItem | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskItem | null>(null);
-  const [createForm, setCreateForm] = useState<TaskFormState>(
-    createInitialTaskForm,
-  );
   const [updateForm, setUpdateForm] = useState<TaskFormState>(
     createInitialTaskForm,
   );
@@ -182,17 +152,11 @@ const MyTasksRoute = () => {
   const dndMutatingRef = useRef<Set<string>>(new Set());
   const { data: user } = useUser();
   const currentUsername = (user?.preferredUsername || '').trim().toLowerCase();
+  const isAuthor = getUserGroups().some((g) =>
+    g.toLowerCase().includes('author'),
+  );
 
   // Auto-fill assigned username when opening create dialog
-  useEffect(() => {
-    if (isCreateOpen && user?.preferredUsername) {
-      setCreateForm((prev) => ({
-        ...prev,
-        assignedToUserName: user.preferredUsername || '',
-      }));
-    }
-  }, [isCreateOpen, user]);
-
   const [localFilters, setLocalFilters] = useState({
     Status: searchParams.get('Status') || '',
     PaperId: searchParams.get('PaperId') || '',
@@ -201,23 +165,6 @@ const MyTasksRoute = () => {
     FromDate: searchParams.get('FromDate') || '',
     ToDate: searchParams.get('ToDate') || '',
   });
-
-  const assignedPapersQuery = useMyAssignedPapers({
-    params: { PageNumber: 1, PageSize: 1000 },
-  });
-  const assignedPapers = useMemo(
-    () => assignedPapersQuery.data?.result?.items ?? [],
-    [assignedPapersQuery.data?.result?.items],
-  );
-  const isDateFieldSelected = Boolean(localFilters.DateField);
-  const paperFilterOptions = useMemo(
-    () =>
-      assignedPapers.map((paper) => ({
-        label: paper.title,
-        value: paper.id,
-      })),
-    [assignedPapers],
-  );
 
   const queryParams: GetMyTasksParams = {
     PageNumber: 1,
@@ -233,29 +180,26 @@ const MyTasksRoute = () => {
   };
 
   const tasksQuery = useMyTasks({ params: queryParams });
-  const items: TaskItem[] = tasksQuery.data?.result?.items ?? [];
+  const items: TaskItem[] = useMemo(
+    () => tasksQuery.data?.result?.items ?? [],
+    [tasksQuery.data],
+  );
 
-  const createTaskMutation = useCreateTask({
-    mutationConfig: {
-      onSuccess: () => {
-        toast.success('Task created successfully');
-        setIsCreateOpen(false);
-        setCreateForm(createInitialTaskForm());
-      },
-      onError: (error: any) => {
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.detail ||
-          error?.response?.data?.code ||
-          '';
-        if (errorMessage.includes('PAPER_CONTRIBUTOR_NOT_FOUND')) {
-          toast.error('You have not been assigned to this section yet.');
-        } else {
-          toast.error('Failed to create task');
-        }
-      },
-    },
-  });
+  const isDateFieldSelected = Boolean(localFilters.DateField);
+  const paperFilterOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return items
+      .filter(
+        (t) =>
+          t.paperId &&
+          t.paperTitle &&
+          !seen.has(t.paperId) &&
+          seen.add(t.paperId),
+      )
+      .map((t) => ({ label: t.paperTitle!, value: t.paperId }));
+  }, [items]);
+
+  // Create task is handled from the paper detail page (author only)
 
   const updateTaskMutation = useUpdateTask({
     mutationConfig: {
@@ -322,42 +266,13 @@ const MyTasksRoute = () => {
 
   const activeFilterCount = Object.values(localFilters).filter(Boolean).length;
 
-  const handleCreate = (e: FormEvent) => {
-    e.preventDefault();
-    if (
-      !createForm.paperId ||
-      !createForm.name ||
-      !createForm.assignedToUserName
-    ) {
-      toast.error('Paper name, task name and assignee are required');
-      return;
-    }
-
-    createTaskMutation.mutate({
-      paperId: createForm.paperId.trim(),
-      name: createForm.name.trim(),
-      description: createForm.description.trim(),
-      assignedToUserName: createForm.assignedToUserName.trim(),
-      status: Number(createForm.status),
-      startDate: createForm.startDate
-        ? new Date(createForm.startDate).toISOString()
-        : new Date().toISOString(),
-      nextReviewDate: createForm.nextReviewDate
-        ? new Date(createForm.nextReviewDate).toISOString()
-        : null,
-      completeDate: createForm.completeDate
-        ? new Date(createForm.completeDate).toISOString()
-        : null,
-    });
-  };
-
   const openEdit = (task: TaskItem) => {
     setEditingTask(task);
     setUpdateForm({
       paperId: task.paperId,
       name: task.name,
       description: task.description || '',
-      assignedToUserName: task.assignedToUserName,
+      assignedToUserName: task.assignedToUserName || '',
       status: String(task.status),
       startDate: toDateTimeLocalValue(task.startDate),
       nextReviewDate: toDateTimeLocalValue(task.nextReviewDate),
@@ -383,7 +298,7 @@ const MyTasksRoute = () => {
         : editingTask.description || '',
       assignedToUserName: isOwnedTask
         ? updateForm.assignedToUserName.trim()
-        : editingTask.assignedToUserName,
+        : editingTask.assignedToUserName || '',
       status: Number(updateForm.status),
       startDate: updateForm.startDate
         ? new Date(updateForm.startDate).toISOString()
@@ -408,7 +323,7 @@ const MyTasksRoute = () => {
         data: {
           name: task.name,
           description: task.description || '',
-          assignedToUserName: task.assignedToUserName,
+          assignedToUserName: task.assignedToUserName ?? '',
           status: newStatus,
           startDate: task.startDate || new Date().toISOString(),
           nextReviewDate: task.nextReviewDate || null,
@@ -449,20 +364,11 @@ const MyTasksRoute = () => {
         title="My Task"
         description="Track, filter and manage your paper tasks"
       >
-        <div className="mb-4 flex items-center justify-end">
-          <CreateButton
-            className="uppercase"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            CREATE TASK
-          </CreateButton>
-        </div>
-
         <form
           onSubmit={applyFilters}
           className="mb-6 flex flex-wrap items-end gap-2 rounded-md border bg-[#E9E1D8] p-2"
         >
-          <div className="bg-background h-10 min-w-[220px] flex-1 rounded-md">
+          <div className="bg-background h-10 min-w-55 flex-1 rounded-md">
             <FilterDropdown
               value={localFilters.PaperId}
               onChange={(value) => handleFilterChange('PaperId', value)}
@@ -503,14 +409,14 @@ const MyTasksRoute = () => {
             value={localFilters.FromDate}
             disabled={!isDateFieldSelected}
             onChange={(e) => handleFilterChange('FromDate', e.target.value)}
-            className="bg-background h-10 w-[170px]"
+            className="bg-background h-10 w-42.5"
           />
           <Input
             type="date"
             value={localFilters.ToDate}
             disabled={!isDateFieldSelected}
             onChange={(e) => handleFilterChange('ToDate', e.target.value)}
-            className="bg-background h-10 w-[170px]"
+            className="bg-background h-10 w-42.5"
           />
 
           {activeFilterCount > 0 && (
@@ -645,11 +551,15 @@ const MyTasksRoute = () => {
                               setDraggedTaskId(null);
                               setDragOverCol(null);
                             }}
-                            onClick={() => openEdit(task)}
+                            onClick={() => {
+                              if (isAuthor) openEdit(task);
+                              else setViewingTask(task);
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                openEdit(task);
+                                if (isAuthor) openEdit(task);
+                                else setViewingTask(task);
                               }
                             }}
                             role="button"
@@ -685,6 +595,13 @@ const MyTasksRoute = () => {
                               )}
                             </div>
 
+                            {/* Task type */}
+                            {task.taskType && (
+                              <span className="text-muted-foreground font-mono text-[10px] tracking-wider uppercase">
+                                {TASK_TYPE_LABELS[task.taskType] ?? 'Task'}
+                              </span>
+                            )}
+
                             {/* Description */}
                             {task.description && (
                               <p className="text-muted-foreground line-clamp-2 text-xs">
@@ -695,17 +612,54 @@ const MyTasksRoute = () => {
                             {/* Paper name */}
                             {task.paperTitle && (
                               <p className="text-muted-foreground truncate text-[11px]">
-                                📄 {task.paperTitle}
+                                {task.paperTitle}
                               </p>
+                            )}
+
+                            {/* Section (writing tasks) */}
+                            {task.sectionTitle && (
+                              <div className="flex items-center gap-1">
+                                <p className="text-muted-foreground flex-1 truncate text-[11px]">
+                                  {task.sectionTitle}
+                                </p>
+                                {task.sectionId &&
+                                  task.subProjectId &&
+                                  task.subProjectId !==
+                                    '00000000-0000-0000-0000-000000000000' && (
+                                    <Button
+                                      size="icon-sm"
+                                      variant="ghost"
+                                      title="Open Editor"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(
+                                          paths.app.assignedProjects.paperDetail.getHref(
+                                            task.subProjectId!,
+                                            task.paperId,
+                                          ),
+                                          {
+                                            state: {
+                                              initialTab: 'sections',
+                                              initialSectionId: task.sectionId,
+                                            },
+                                          },
+                                        );
+                                      }}
+                                      className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                    >
+                                      <BookOpen className="size-3.5 text-blue-600" />
+                                    </Button>
+                                  )}
+                              </div>
                             )}
 
                             {/* Assignee */}
                             <div className="flex items-center gap-1.5">
                               <div className="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
-                                {task.assignedToUserName.charAt(0)}
+                                {task.assignedToUserName?.charAt(0) ?? '?'}
                               </div>
                               <span className="text-muted-foreground truncate text-xs">
-                                {task.assignedToUserName}
+                                {task.assignedToUserName ?? '—'}
                               </span>
                             </div>
 
@@ -751,212 +705,137 @@ const MyTasksRoute = () => {
           </div>
         )}
 
+        {/* ── View Task Info Dialog (non-authors, read-only) ───────── */}
         <Dialog
-          open={isCreateOpen}
-          onOpenChange={(open) => {
-            setIsCreateOpen(open);
-            if (!open) setCreateForm(createInitialTaskForm());
-          }}
+          open={!!viewingTask}
+          onOpenChange={(open) => !open && setViewingTask(null)}
         >
-          <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
+              <DialogTitle>{viewingTask?.name}</DialogTitle>
               <DialogDescription>
-                Fill in the details to create a new task. Fields marked with *
-                are required.
+                <span className="font-mono text-[10px] tracking-wider uppercase">
+                  {TASK_TYPE_LABELS[viewingTask?.taskType ?? 0] ?? 'Task'}
+                </span>
               </DialogDescription>
             </DialogHeader>
-            <form
-              id="create-task-form"
-              onSubmit={handleCreate}
-              className="scrollbar-dialog grid flex-1 gap-4 overflow-y-auto px-4 py-2 sm:grid-cols-2"
-            >
-              <div className="space-y-2 sm:col-span-2">
-                <label
-                  htmlFor="create-paper-id"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Paper Name *
-                </label>
-                <select
-                  id="create-paper-id"
-                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  value={createForm.paperId}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      paperId: e.target.value,
-                    }))
-                  }
-                >
-                  <option value="">Select paper</option>
-                  {assignedPapers.map((paper) => (
-                    <option key={paper.id} value={paper.id}>
-                      {paper.title}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-4 py-2">
+              {viewingTask?.description && (
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground font-mono text-[10px] font-semibold tracking-widest uppercase">
+                    Description
+                  </p>
+                  <p className="bg-muted/50 rounded-md border px-3 py-2 text-sm leading-relaxed">
+                    {viewingTask.description}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground font-mono text-[10px] font-semibold tracking-widest uppercase">
+                    Assigned To
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <div className="bg-muted flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase">
+                      {viewingTask?.assignedToUserName?.charAt(0) ?? '?'}
+                    </div>
+                    <span className="text-sm">
+                      {viewingTask?.assignedToUserName ?? '—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground font-mono text-[10px] font-semibold tracking-widest uppercase">
+                    Status
+                  </p>
+                  <span className="text-sm">
+                    {TASK_STATUS_OPTIONS.find(
+                      (s) => s.value === viewingTask?.status,
+                    )?.label ?? '—'}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-assignee"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Assigned To
-                </label>
-                <Input
-                  id="create-assignee"
-                  placeholder="Assigned to (You)"
-                  value={createForm.assignedToUserName}
-                  readOnly
-                  className="bg-muted text-muted-foreground cursor-not-allowed"
-                />
-              </div>
+              {viewingTask?.sectionTitle && (
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground font-mono text-[10px] font-semibold tracking-widest uppercase">
+                    Section
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="flex-1 text-sm">{viewingTask.sectionTitle}</p>
+                    {viewingTask.sectionId &&
+                      viewingTask.subProjectId &&
+                      viewingTask.subProjectId !==
+                        '00000000-0000-0000-0000-000000000000' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setViewingTask(null);
+                            navigate(
+                              paths.app.assignedProjects.paperDetail.getHref(
+                                viewingTask.subProjectId!,
+                                viewingTask.paperId,
+                              ),
+                              {
+                                state: {
+                                  initialTab: 'sections',
+                                  initialSectionId: viewingTask.sectionId,
+                                  parentProjectId: viewingTask.projectId,
+                                },
+                              },
+                            );
+                          }}
+                        >
+                          <BookOpen className="size-3.5" />
+                          Open Editor
+                        </Button>
+                      )}
+                  </div>
+                </div>
+              )}
 
-              <div className="space-y-2 sm:col-span-2">
-                <label
-                  htmlFor="create-name"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Task Name *
-                </label>
-                <Input
-                  id="create-name"
-                  placeholder="Enter task name"
-                  value={createForm.name}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                />
-              </div>
+              {viewingTask?.paperTitle && (
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground font-mono text-[10px] font-semibold tracking-widest uppercase">
+                    Paper
+                  </p>
+                  <p className="text-sm">{viewingTask.paperTitle}</p>
+                </div>
+              )}
 
-              <div className="space-y-2 sm:col-span-2">
-                <label
-                  htmlFor="create-desc"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="create-desc"
-                  className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  placeholder="Enter task description"
-                  value={createForm.description}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-status"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Status
-                </label>
-                <select
-                  id="create-status"
-                  className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                  value={createForm.status}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      status: e.target.value,
-                    }))
-                  }
-                >
-                  {TASK_STATUS_OPTIONS.map((s) => (
-                    <option key={s.value} value={String(s.value)}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-start"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Start Date
-                </label>
-                <Input
-                  id="create-start"
-                  type="datetime-local"
-                  value={createForm.startDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      startDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="create-review"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Next Review
-                </label>
-                <Input
-                  id="create-review"
-                  type="datetime-local"
-                  value={createForm.nextReviewDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      nextReviewDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2 sm:col-span-2">
-                <label
-                  htmlFor="create-complete"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Complete Date
-                </label>
-                <Input
-                  id="create-complete"
-                  type="datetime-local"
-                  value={createForm.completeDate}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      completeDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </form>
-            <DialogFooter className="gap-2 px-4 pb-2">
+              {(viewingTask?.startDate ||
+                viewingTask?.nextReviewDate ||
+                viewingTask?.completeDate) && (
+                <div className="space-y-2 border-t pt-3">
+                  {viewingTask.startDate && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Start Date</span>
+                      <span>{formatDate(viewingTask.startDate)}</span>
+                    </div>
+                  )}
+                  {viewingTask.nextReviewDate && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Next Review</span>
+                      <span>{formatDate(viewingTask.nextReviewDate)}</span>
+                    </div>
+                  )}
+                  {viewingTask.completeDate && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Due Date</span>
+                      <span>{formatDate(viewingTask.completeDate)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
               <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={`min-w-25 ${BTN.CANCEL}`}
-                  onClick={() => setIsCreateOpen(false)}
-                >
-                  Cancel
+                <Button type="button" variant="outline" className={BTN.CANCEL}>
+                  Close
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                form="create-task-form"
-                className={`min-w-25 ${BTN.CREATE}`}
-                disabled={createTaskMutation.isPending}
-              >
-                {createTaskMutation.isPending ? 'Saving...' : 'Save'}
-              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

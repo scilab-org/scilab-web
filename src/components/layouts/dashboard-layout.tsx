@@ -232,6 +232,11 @@ const navigation: SideNavigationItem[] = [
     icon: Bookmark,
   },
   {
+    name: 'Assigned Papers',
+    to: paths.app.myAssignedPapers.getHref(),
+    icon: FileText,
+  },
+  {
     name: 'My Task',
     to: paths.app.myTasks.getHref(),
     icon: ClipboardList,
@@ -260,11 +265,16 @@ const navigation: SideNavigationItem[] = [
 ];
 
 const adminNavigation = navigation.filter(
-  (item) => item.name !== 'Assigned Projects' && item.name !== 'My Task',
+  (item) =>
+    item.name !== 'Assigned Projects' &&
+    item.name !== 'My Task' &&
+    item.name !== 'Assigned Papers',
 );
 
 const memberNavigation = navigation.filter((item) =>
-  ['Assigned Projects', 'My Task', 'Settings'].includes(item.name),
+  ['Assigned Projects', 'Assigned Papers', 'My Task', 'Settings'].includes(
+    item.name,
+  ),
 );
 
 function AppSidebar() {

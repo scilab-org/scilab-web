@@ -262,6 +262,7 @@ export type AssignedSection = {
   content: string;
   sectionSumary: string;
   description?: string;
+  mainIdea?: string;
   displayOrder: number;
   numbered: boolean;
   filePath: string | null;

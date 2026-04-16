@@ -138,7 +138,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
             variant="darkRed"
             className="uppercase"
           >
-            {updateJournalMutation.isPending ? 'UPDATING...' : 'UPDATE'}
+            {updateJournalMutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
         </DialogFooter>
       </DialogContent>

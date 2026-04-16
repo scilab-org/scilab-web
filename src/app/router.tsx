@@ -129,6 +129,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
             ),
         },
         {
+          path: paths.app.myAssignedPapers.path,
+          lazy: () =>
+            import('./routes/app/task-management/my-assigned-papers').then(
+              convert(queryClient),
+            ),
+        },
+        {
           path: paths.app.aiResearch.path,
           lazy: () =>
             import('./routes/app/ai-research').then(convert(queryClient)),

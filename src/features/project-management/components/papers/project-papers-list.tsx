@@ -197,11 +197,13 @@ export const ProjectPapersList = ({
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="w-[3%] px-2 font-semibold">#</TableHead>
-                  <TableHead className="w-[13%] px-2 font-semibold">
+                  <TableHead className="w-[4%] px-2 text-center font-semibold">
+                    #
+                  </TableHead>
+                  <TableHead className="w-[15%] px-2 font-semibold">
                     DOI
                   </TableHead>
-                  <TableHead className="w-[20%] px-2 font-semibold">
+                  <TableHead className="w-[25%] px-2 font-semibold">
                     Title
                   </TableHead>
                   <TableHead className="w-[15%] px-2 font-semibold">
@@ -210,10 +212,10 @@ export const ProjectPapersList = ({
                   <TableHead className="w-[15%] px-2 font-semibold">
                     Journal / Conference
                   </TableHead>
-                  <TableHead className="w-[15%] px-2 font-semibold">
+                  <TableHead className="w-[8%] px-2 text-center font-semibold">
                     Tags
                   </TableHead>
-                  <TableHead className="w-[10%] px-2 text-center font-semibold">
+                  <TableHead className="w-[18%] px-2 text-center font-semibold">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -249,7 +251,7 @@ export const ProjectPapersList = ({
                     </TableCell>
 
                     {/* Title */}
-                    <TableCell className="px-2 whitespace-normal">
+                    <TableCell className="px-2 break-words whitespace-normal">
                       <Link
                         to={
                           getPaperHref
@@ -264,12 +266,12 @@ export const ProjectPapersList = ({
                     </TableCell>
 
                     {/* Authors */}
-                    <TableCell className="px-2 wrap-break-word whitespace-normal">
+                    <TableCell className="px-2 break-words whitespace-normal">
                       {truncateAuthors(paper.authors)}
                     </TableCell>
 
                     {/* Venue */}
-                    <TableCell className="px-2 wrap-break-word whitespace-normal">
+                    <TableCell className="px-2 break-words whitespace-normal">
                       {paper.journalName ? (
                         <span className="line-clamp-2 text-sm">
                           {paper.journalName}
@@ -290,7 +292,7 @@ export const ProjectPapersList = ({
 
                     {/* Status removed */}
                     {/* Tags */}
-                    <TableCell>
+                    <TableCell className="px-2 text-center whitespace-normal">
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="action" size="xs">
@@ -324,8 +326,8 @@ export const ProjectPapersList = ({
                         </PopoverContent>
                       </Popover>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
+                    <TableCell className="px-2 text-center align-middle">
+                      <div className="flex flex-wrap items-center justify-center gap-2">
                         {paper.filePath && (
                           <Button
                             variant="action"

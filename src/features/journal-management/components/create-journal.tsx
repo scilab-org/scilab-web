@@ -239,7 +239,7 @@ export const CreateJournal = () => {
             variant="darkRed"
             className="uppercase"
           >
-            {createJournalMutation.isPending ? 'CREATING...' : 'CREATE'}
+            {createJournalMutation.isPending ? 'SAVING...' : 'SAVE'}
           </Button>
         </DialogFooter>
       </DialogContent>
