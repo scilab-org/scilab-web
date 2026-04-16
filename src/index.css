@@ -67,6 +67,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-empty-state: var(--empty-state);
+  --color-editor-bg: var(--editor-bg);
+  --color-editor-content-bg: var(--editor-content-bg);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -231,6 +233,10 @@
   --accent-foreground: #181512;
   --empty-state: #f7f0e3;
 
+  /* LaTeX editor surfaces */
+  --editor-bg: #f7f0e3;
+  --editor-content-bg: #fffaf1;
+
   /* Borders — tonal shifts */
   --border: #dbdad7;
   --input: #dbdad7;
@@ -295,6 +301,13 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--primary-fixed-dim);
+}
+
+/* Monaco editor background override to match editor-content-bg */
+.monaco-editor,
+.monaco-editor .overflow-guard,
+.monaco-editor-background {
+  background-color: #fffaf1 !important;
 }
 
 /* Custom Scrollbar for Dialogs to match the #FFFAF1 background */

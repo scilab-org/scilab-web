@@ -629,7 +629,7 @@ const SectionVersionsPanel = ({
   return (
     <div className="relative flex flex-col">
       {query.isFetching && (
-        <div className="sticky top-0 z-10 flex items-center justify-center bg-white/85 py-2 text-xs text-slate-400 backdrop-blur-sm dark:bg-slate-950/85">
+        <div className="bg-editor-bg/85 sticky top-0 z-10 flex items-center justify-center py-2 text-xs text-slate-400 backdrop-blur-sm dark:bg-slate-950/85">
           Loading sections...
         </div>
       )}
@@ -653,7 +653,7 @@ const SectionVersionsPanel = ({
             key={item.sectionId}
             type="button"
             onClick={() => onViewItem(item)}
-            className="group mx-3 my-1.5 flex w-auto items-start gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-slate-50 hover:shadow-md active:translate-y-0 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+            className="group bg-editor-bg hover:bg-editor-content-bg mx-3 my-1.5 flex w-auto items-start gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md active:translate-y-0 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
           >
             <div
               className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-[10px] font-bold text-white shadow-sm transition-transform duration-150 group-hover:scale-105 ${
@@ -865,8 +865,8 @@ const ReferencesTab = ({
       onClick={() => setSelectedReference({ type: 'in-use', index })}
       className={
         compact
-          ? 'flex w-full items-start gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
-          : 'flex w-full items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+          ? 'bg-editor-bg hover:bg-editor-content-bg flex w-full items-start gap-2 rounded-lg border border-slate-200 px-2 py-2 text-left transition-colors hover:border-blue-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+          : 'bg-editor-bg hover:bg-editor-content-bg flex w-full items-start gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 text-left shadow-sm transition-colors hover:border-blue-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
       }
     >
       <span className="shrink-0 text-[10px] font-bold text-slate-400">
@@ -967,8 +967,8 @@ const ReferencesTab = ({
                   onClick={() => setSelectedReference({ type: 'other', index })}
                   className={
                     compact
-                      ? 'flex w-full items-start gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
-                      : 'flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+                      ? 'bg-editor-bg hover:bg-editor-content-bg flex w-full items-start gap-2 rounded-lg border border-slate-200 px-2 py-2 text-left transition-colors hover:border-blue-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
+                      : 'bg-editor-bg hover:bg-editor-content-bg flex w-full items-start gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-left shadow-sm transition-colors hover:border-blue-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950/30'
                   }
                 >
                   <span className="shrink-0 text-[10px] font-bold text-slate-400">
@@ -1539,7 +1539,7 @@ const InlineReferenceSectionEditor = ({
 
   return (
     <>
-      <div className="relative shrink-0 border-t border-[#e8e8e6] bg-[#fafafa] dark:border-[#2a2a2a] dark:bg-[#151515]">
+      <div className="bg-editor-content-bg relative shrink-0 border-t border-[#e8e8e6] dark:border-[#2a2a2a] dark:bg-[#151515]">
         {isExpanded && mode === 'in-use' && (
           <button
             type="button"
@@ -1574,7 +1574,7 @@ const InlineReferenceSectionEditor = ({
               )}
             </button>
             {mode === 'in-use' && (
-              <div className="flex h-6 items-center rounded-md border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900">
+              <div className="bg-editor-content-bg flex h-6 items-center rounded-md border border-slate-200 p-0.5 dark:border-slate-700 dark:bg-slate-900">
                 <button
                   type="button"
                   onClick={() => handleSwitchTab('in-use')}
@@ -2458,16 +2458,16 @@ const registerLatexLanguage = (monaco: Monaco) => {
       { token: 'constant.numeric', foreground: '000000', fontStyle: '' },
     ],
     colors: {
-      'editor.background': '#ffffff',
+      'editor.background': '#fffaf1',
       'editor.foreground': '#000000',
-      'editor.lineHighlightBackground': '#f6f8fa',
+      'editor.lineHighlightBackground': '#f7f0e3',
       'editor.selectionBackground': '#dbeafe',
       'editor.inactiveSelectionBackground': '#e2e8f0',
       'editorLineNumber.foreground': '#94a3b8',
       'editorLineNumber.activeForeground': '#0550ae',
       'editorCursor.foreground': '#0550ae',
-      'editorIndentGuide.background': '#f1f5f9',
-      'editorIndentGuide.activeBackground': '#e2e8f0',
+      'editorIndentGuide.background': '#ede8df',
+      'editorIndentGuide.activeBackground': '#d9d0c4',
       'editorBracketMatch.background': '#dbeafe',
       'editorBracketMatch.border': '#93c5fd',
     },
@@ -4212,7 +4212,7 @@ export const LatexPaperEditor = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="bg-editor-bg fixed inset-0 z-50 flex">
       {/* Close confirmation dialog */}
       <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <AlertDialogContent>
@@ -4237,7 +4237,7 @@ export const LatexPaperEditor = ({
 
       {/* Left sidebar */}
       {isSidebarOpen && (
-        <div className="flex w-72 shrink-0 flex-col bg-[#f1f1f1] dark:bg-[#1e1e1e]">
+        <div className="bg-editor-bg flex w-72 shrink-0 flex-col dark:bg-[#1e1e1e]">
           {/* Sidebar header */}
           <div className="flex shrink-0 items-center gap-1 border-b border-[#e5e5e5] px-2 py-2 dark:border-[#2a2a2a]">
             <button
@@ -4379,7 +4379,7 @@ export const LatexPaperEditor = ({
               </>
             ) : (
               <div
-                className={`flex flex-col rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${pkgPanelOpen ? 'min-h-0 flex-1' : 'shrink-0'}`}
+                className={`bg-editor-bg flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 ${pkgPanelOpen ? 'min-h-0 flex-1' : 'shrink-0'}`}
               >
                 <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700">
                   <button
@@ -4465,7 +4465,7 @@ export const LatexPaperEditor = ({
                                   onBlur={() =>
                                     commitRefPkgEdit(idx, editingRefPkgValue)
                                   }
-                                  className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-sans text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                                  className="bg-editor-bg min-w-0 flex-1 rounded border border-violet-400 px-1.5 py-0.5 font-sans text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
                                 />
                               ) : (
                                 <button
@@ -4541,7 +4541,7 @@ export const LatexPaperEditor = ({
                                 onBlur={() =>
                                   commitPkgEdit(idx, editingPkgValue)
                                 }
-                                className="min-w-0 flex-1 rounded border border-violet-400 bg-white px-1.5 py-0.5 font-sans text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
+                                className="bg-editor-bg min-w-0 flex-1 rounded border border-violet-400 px-1.5 py-0.5 font-sans text-[11px] focus:outline-none dark:border-violet-500 dark:bg-slate-800 dark:text-slate-100"
                               />
                             ) : (
                               <button
@@ -4615,7 +4615,7 @@ export const LatexPaperEditor = ({
                             }}
                             placeholder="e.g.: \\usepackage{algorithm}"
                             autoComplete="off"
-                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-sans text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                            className="bg-editor-bg min-w-0 flex-1 rounded border border-slate-200 px-2 py-1 font-sans text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
                           />
                           <button
                             type="submit"
@@ -4643,7 +4643,7 @@ export const LatexPaperEditor = ({
                             );
                             if (!suggestions.length) return null;
                             return (
-                              <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                              <ul className="bg-editor-bg absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 shadow-md dark:border-slate-600 dark:bg-slate-800">
                                 {suggestions.map((p) => {
                                   const idx = p.toLowerCase().indexOf(q);
                                   return (
@@ -4713,7 +4713,7 @@ export const LatexPaperEditor = ({
                             }}
                             placeholder="Type directly, e.g.: \\usepackage{amsmath}"
                             autoComplete="off"
-                            className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-2 py-1 font-sans text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
+                            className="bg-editor-bg min-w-0 flex-1 rounded border border-slate-200 px-2 py-1 font-sans text-[11px] placeholder:text-slate-300 focus:border-violet-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-600"
                           />
                           <button
                             type="submit"
@@ -4740,7 +4740,7 @@ export const LatexPaperEditor = ({
                             );
                             if (!suggestions.length) return null;
                             return (
-                              <ul className="absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 bg-white shadow-md dark:border-slate-600 dark:bg-slate-800">
+                              <ul className="bg-editor-bg absolute right-2 bottom-full left-2 z-50 mb-1 max-h-36 overflow-y-auto rounded border border-slate-200 shadow-md dark:border-slate-600 dark:bg-slate-800">
                                 {suggestions.map((p) => {
                                   const qi = p.toLowerCase().indexOf(q);
                                   return (
@@ -4817,9 +4817,9 @@ export const LatexPaperEditor = ({
       )}
 
       {/* ── Content area: same color as sidebar, no left padding ── */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f1f1f1] p-2 pl-0 dark:bg-[#1a1a1a]">
+      <div className="bg-editor-bg flex min-h-0 flex-1 flex-col overflow-hidden p-2 pl-0 dark:bg-[#1a1a1a]">
         {/* Single outer card wrapping editor + right panel */}
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] bg-white shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+        <div className="bg-editor-content-bg flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
           <div
             ref={containerRef}
             className="flex min-h-0 flex-1 overflow-hidden"
@@ -4827,11 +4827,11 @@ export const LatexPaperEditor = ({
             {/* Editor column — always visible; Save is hidden when readOnly */}
             <div
               ref={editorColRef}
-              className="flex shrink-0 flex-col overflow-hidden bg-white dark:bg-[#1e1e1e]"
+              className="bg-editor-content-bg flex shrink-0 flex-col overflow-hidden dark:bg-[#1e1e1e]"
               style={{ width: `${editorWidthPct}%` }}
             >
               {/* Editor top bar */}
-              <div className="flex h-10 shrink-0 items-center border-b border-[#e0e0de] bg-white dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+              <div className="bg-editor-content-bg flex h-10 shrink-0 items-center border-b border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
                 {/* Sidebar toggle */}
                 <button
                   type="button"
@@ -5368,7 +5368,7 @@ export const LatexPaperEditor = ({
             {/* Drag separator — removed, now on right panel edge */}
 
             {/* Right panel — full height */}
-            <div className="relative m-2 flex flex-1 flex-col overflow-hidden rounded-xl bg-[#f1f1f1] dark:bg-[#111111]">
+            <div className="bg-editor-bg relative m-2 flex flex-1 flex-col overflow-hidden rounded-xl dark:bg-[#111111]">
               {/* Drag handle on left edge */}
               {!isActiveSectionReadOnly && (
                 <div
@@ -5390,7 +5390,7 @@ export const LatexPaperEditor = ({
               {isToolsOpen ? (
                 /* ── Tools panel ── */
                 <>
-                  <div className="flex h-10 shrink-0 items-center border-b border-[#e5e5e5] bg-[#f1f1f1] dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
+                  <div className="bg-editor-bg flex h-10 shrink-0 items-center border-b border-[#e5e5e5] dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
                     {/* In readOnly, show sidebar toggle + title */}
                     {isActiveSectionReadOnly && (
                       <>
@@ -5551,9 +5551,9 @@ export const LatexPaperEditor = ({
                 </>
               ) : (
                 /* ── PDF preview panel (react-pdf) ── */
-                <div className="flex flex-1 flex-col overflow-hidden bg-[#f1f1f1] dark:bg-[#111111]">
+                <div className="bg-editor-bg flex flex-1 flex-col overflow-hidden dark:bg-[#111111]">
                   {/* Top toolbar */}
-                  <div className="flex shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-[#f1f1f1] px-3 py-1.5 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
+                  <div className="bg-editor-bg flex shrink-0 items-center gap-2 border-b border-[#e5e5e5] px-3 py-1.5 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
                     {/* readOnly: sidebar toggle + title + divider */}
                     {isActiveSectionReadOnly && (
                       <>

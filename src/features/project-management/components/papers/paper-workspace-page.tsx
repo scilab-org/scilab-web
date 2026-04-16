@@ -543,7 +543,6 @@ const SectionVersionDialog = ({
   sectionStatus,
   currentMemberId,
   canEdit,
-  isFullEditor = false,
   hasOwnDraft = false,
   onOpenEditor,
 }: {
@@ -741,7 +740,9 @@ const SectionVersionDialog = ({
                           if (item.isMainSection) {
                             itemReadOnly = hasOwnDraft ? true : !canEdit;
                           } else {
-                            itemReadOnly = !(canEdit && (isFullEditor || isMe));
+                            // Authors do NOT get special edit rights on other people's versions.
+                            // Only the owner of a version (isMe) may edit it.
+                            itemReadOnly = !(canEdit && isMe);
                           }
                           onOpenEditor(item.sectionId, itemReadOnly);
                           onClose();
@@ -753,9 +754,7 @@ const SectionVersionDialog = ({
                               ? 'Open Editor'
                               : 'View';
                           }
-                          return canEdit && (isFullEditor || isMe)
-                            ? 'Open Editor'
-                            : 'View';
+                          return canEdit && isMe ? 'Open Editor' : 'View';
                         })()}
                       </Button>
                     </div>
@@ -781,6 +780,7 @@ export const PaperWorkspacePage = ({
   embedded = false,
   initialSectionId,
   onInitialSectionOpened,
+  onEditorClose,
 }: {
   projectId: string;
   paperId: string;
@@ -790,6 +790,7 @@ export const PaperWorkspacePage = ({
   embedded?: boolean;
   initialSectionId?: string;
   onInitialSectionOpened?: () => void;
+  onEditorClose?: () => void;
 }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -970,13 +971,22 @@ export const PaperWorkspacePage = ({
   });
 
   // Map sectionId -> contributor count from paper contributors
+  // Index by both sectionId and markSectionId to maximise lookup coverage.
   const sectionContributorCounts = useMemo(() => {
     const items = (paperContributorsQuery.data as any)?.result?.items ?? [];
-    const map = new Map<string, number>();
+    // Use sets to deduplicate multiple IDs per contributor per section key.
+    const perSection = new Map<string, Set<string>>();
     items.forEach((c: any) => {
-      const id = c.sectionId || c.markSectionId;
-      if (id) map.set(id, (map.get(id) ?? 0) + 1);
+      const cKey = c.id || `${c.memberId}:${c.sectionId}`;
+      [c.sectionId, c.markSectionId]
+        .filter(Boolean)
+        .forEach((secId: string) => {
+          if (!perSection.has(secId)) perSection.set(secId, new Set());
+          perSection.get(secId)!.add(cKey);
+        });
     });
+    const map = new Map<string, number>();
+    perSection.forEach((set, key) => map.set(key, set.size));
     return map;
   }, [paperContributorsQuery.data]);
 
@@ -1219,6 +1229,7 @@ export const PaperWorkspacePage = ({
           queryClient.invalidateQueries({
             queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS],
           });
+          onEditorClose?.();
         }}
       />
     );
