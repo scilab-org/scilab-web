@@ -623,8 +623,8 @@ const MyTasksRoute = () => {
                                   {task.sectionTitle}
                                 </p>
                                 {task.sectionId &&
-                                  task.subProjectId &&
-                                  task.subProjectId !==
+                                  task.projectId &&
+                                  task.projectId !==
                                     '00000000-0000-0000-0000-000000000000' && (
                                     <Button
                                       size="icon-sm"
@@ -634,13 +634,14 @@ const MyTasksRoute = () => {
                                         e.stopPropagation();
                                         navigate(
                                           paths.app.assignedProjects.paperDetail.getHref(
-                                            task.subProjectId!,
+                                            task.projectId!,
                                             task.paperId,
                                           ),
                                           {
                                             state: {
                                               initialTab: 'sections',
                                               initialSectionId: task.sectionId,
+                                              subProjectId: task.subProjectId,
                                             },
                                           },
                                         );
@@ -944,7 +945,7 @@ const MyTasksRoute = () => {
                           </label>
                           <textarea
                             id="edit-desc"
-                            className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                            className="border-input text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
                             placeholder="Description"
                             value={updateForm.description}
                             onChange={(e) =>
@@ -967,7 +968,7 @@ const MyTasksRoute = () => {
                       </label>
                       <select
                         id="edit-status"
-                        className="border-input bg-card text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                        className="border-input text-foreground focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
                         value={updateForm.status}
                         onChange={(e) =>
                           setUpdateForm((prev) => ({

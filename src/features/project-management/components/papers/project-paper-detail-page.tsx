@@ -203,6 +203,7 @@ export const ProjectPaperDetailPage = ({
   const locationState = location.state as {
     initialTab?: Tab;
     initialSectionId?: string;
+    subProjectId?: string;
   } | null;
   const [activeTab, setActiveTab] = useState<Tab>(
     locationState?.initialTab ?? 'overview',
@@ -368,7 +369,10 @@ export const ProjectPaperDetailPage = ({
   );
 
   const paperSubProjectId =
-    paper?.subProjectId || matchedSubProject?.subProjectId || '';
+    paper?.subProjectId ||
+    matchedSubProject?.subProjectId ||
+    locationState?.subProjectId ||
+    '';
 
   const combinePaperMutation = useCombinePaper({
     mutationConfig: {
@@ -803,7 +807,7 @@ export const ProjectPaperDetailPage = ({
               )}
               {isAuthor && (
                 <Button
-                  size="action"
+                  size="default"
                   variant="outline"
                   onClick={handleEditPaperOpen}
                 >
@@ -2174,7 +2178,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <select
                 id="createTaskType"
-                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                className="border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                 value={createForm.taskType}
                 onChange={(e) =>
                   setCreateForm((prev) => ({
@@ -2204,7 +2208,7 @@ export const ProjectPaperDetailPage = ({
                 </label>
                 <select
                   id="createTaskSection"
-                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={createForm.sectionId}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
@@ -2251,7 +2255,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="createTaskDesc"
-                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                className="border-surface-container-highest text-primary focus-visible:ring-ring min-h-22.5 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                 value={createForm.description}
                 onChange={(e) =>
                   setCreateForm((prev) => ({
@@ -2272,7 +2276,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <select
                 id="createTaskAssignee"
-                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                className="border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                 value={createForm.memberId}
                 onChange={(e) =>
                   setCreateForm((prev) => ({
@@ -2301,7 +2305,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <select
                 id="createTaskStatus"
-                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                className="border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                 value={createForm.status}
                 onChange={(e) =>
                   setCreateForm((prev) => ({
@@ -2361,7 +2365,7 @@ export const ProjectPaperDetailPage = ({
             </div>
 
             {/* Complete Date */}
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5">
               <label
                 htmlFor="createTaskComplete"
                 className="text-secondary font-sans text-[10px]"
