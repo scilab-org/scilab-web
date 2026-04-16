@@ -25,21 +25,23 @@ import { Badge } from '@/components/ui/badge';
 import { paths } from '@/config/paths';
 import { useMyAssignedPapers } from '@/features/task-management/api/get-my-assigned-papers';
 import { useMyProjects } from '@/features/project-management/api/projects/get-my-projects';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
 
 const PAGE_SIZE = 10;
 
-// Status 1=Draft, 2=Processing, 3=Submitted, 4=Released (no Sampled in assign context)
-const PAPER_STATUS_OPTIONS = [
+const SUBMISSION_STATUS_OPTIONS = [
   { label: 'Draft', value: '1' },
-  { label: 'Processing', value: '2' },
-  { label: 'Submitted', value: '3' },
-  { label: 'Released', value: '4' },
+  { label: 'Submitted', value: '2' },
+  { label: 'Revision Required', value: '3' },
+  { label: 'Resubmitted', value: '4' },
+  { label: 'Accepted', value: '5' },
+  { label: 'Published', value: '6' },
+  { label: 'Rejected', value: '7' },
 ];
 
 type BadgeVariant = 'draft' | 'active' | 'outline' | 'success' | 'secondary';
 
-const getPaperStatusVariant = (status: number | null): BadgeVariant => {
+const getSubmissionStatusVariant = (status: number | null): BadgeVariant => {
   switch (status) {
     case 1:
       return 'draft';
@@ -48,9 +50,15 @@ const getPaperStatusVariant = (status: number | null): BadgeVariant => {
     case 3:
       return 'outline';
     case 4:
+      return 'active';
+    case 5:
       return 'success';
-    default:
+    case 6:
+      return 'success';
+    case 7:
       return 'secondary';
+    default:
+      return 'draft';
   }
 };
 
@@ -155,9 +163,9 @@ const MyAssignedPapersRoute = () => {
 
   const hasFilters = !!(titleParam || projectCodeParam || statusParam);
 
-  // Filter by status client-side (API doesn't support status filter)
+  // Filter by submission status client-side
   const filteredPapers = statusParam
-    ? papers.filter((p) => String(p.status) === statusParam)
+    ? papers.filter((p) => String(p.submissionStatus ?? 1) === statusParam)
     : papers;
 
   return (
@@ -223,7 +231,7 @@ const MyAssignedPapersRoute = () => {
             <FilterDropdown
               value={filters.status}
               onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
-              options={PAPER_STATUS_OPTIONS}
+              options={SUBMISSION_STATUS_OPTIONS}
               placeholder="All status"
               className="h-10 w-full justify-between px-4 font-sans"
             />
@@ -274,7 +282,7 @@ const MyAssignedPapersRoute = () => {
                     {filteredPapers.map((paper) => {
                       const projectId: string | undefined =
                         paper.projectId ?? paper.subProjectId ?? undefined;
-                      const status: number | null = paper.status ?? null;
+                      const status: number = paper.submissionStatus ?? 1;
                       const projectCode: string = paper.projectCode ?? '—';
                       const template: string = paper.template ?? '—';
 
@@ -295,15 +303,9 @@ const MyAssignedPapersRoute = () => {
                             {template}
                           </TableCell>
                           <TableCell>
-                            {status != null ? (
-                              <Badge variant={getPaperStatusVariant(status)}>
-                                {PAPER_STATUS_MAP[status] ?? 'Unknown'}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                —
-                              </span>
-                            )}
+                            <Badge variant={getSubmissionStatusVariant(status)}>
+                              {SUBMISSION_STATUS_LABELS[status] ?? 'Draft'}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <Button

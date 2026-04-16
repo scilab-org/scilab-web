@@ -8,8 +8,9 @@ import { Project } from '../../types';
 import { useProjectMembers } from '../../api/members/get-project-members';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
+import { useSubmissionStatusSummary } from '../../api/projects/get-submission-status-summary';
 import { useDatasets } from '@/features/dataset-management/api/get-datasets';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
 
 type ProjectViewProps = {
   project: Project;
@@ -62,16 +63,8 @@ export const ProjectView = ({
     (datasetsQuery.data as any)?.result?.paging?.totalCount ?? 0,
   );
 
-  const papers = (subProjectsQuery.data as any)?.result?.items ?? [];
-  const statusCounts = papers.reduce(
-    (acc: any, paper: any) => {
-      if (paper.status != null) {
-        acc[paper.status] = (acc[paper.status] || 0) + 1;
-      }
-      return acc;
-    },
-    {} as Record<number, number>,
-  );
+  const summaryQuery = useSubmissionStatusSummary(project.id);
+  const summaryItems = summaryQuery.data?.result?.items ?? [];
 
   const overviewCards = [
     {
@@ -216,19 +209,19 @@ export const ProjectView = ({
                   Paper Status Breakdown
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {Object.entries(statusCounts).map(([status, count]) => (
+                  {summaryItems.map(({ status, count }) => (
                     <div
                       key={status}
                       className="flex items-center gap-2 rounded-md border bg-white px-3 py-1.5 shadow-sm dark:bg-slate-950"
                     >
                       <span className="text-foreground text-sm font-medium">
-                        {PAPER_STATUS_MAP[Number(status)] || 'Unknown'}
+                        {SUBMISSION_STATUS_LABELS[status] ?? 'Unknown'}
                       </span>
                       <Badge
                         variant="secondary"
                         className="ml-1 px-1.5 text-xs"
                       >
-                        {String(count)}
+                        {count}
                       </Badge>
                     </div>
                   ))}

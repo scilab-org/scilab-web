@@ -67,7 +67,7 @@ import { useWritingPaperDetail } from '@/features/paper-management/api/get-writi
 import { useUpdateWritingPaper } from '@/features/paper-management/api/update-writing-paper';
 import {
   PAPER_INITIALIZE_STATUS_OPTIONS,
-  PAPER_STATUS_MAP,
+  SUBMISSION_STATUS_LABELS,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '@/features/paper-management/constants';
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
@@ -99,6 +99,7 @@ import {
   DateTaskFilterField,
   TaskItem,
 } from '@/features/task-management/types';
+import { PaperStatusHistory } from '@/features/paper-management/components/paper-status-history';
 
 // Kanban column definitions
 const KANBAN_COLUMNS = [
@@ -174,7 +175,8 @@ export type Tab =
   | 'compile-paper'
   | 'sections'
   | 'contributor'
-  | 'task';
+  | 'task'
+  | 'submission';
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'overview', label: 'Overview', icon: FileText },
@@ -182,6 +184,7 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'sections', label: 'Sections', icon: BookOpen },
   { id: 'contributor', label: 'Contributor', icon: Users },
   { id: 'task', label: 'Task', icon: ClipboardList },
+  { id: 'submission', label: 'Submission Status', icon: Calendar },
 ];
 
 export const ProjectPaperDetailPage = ({
@@ -770,7 +773,8 @@ export const ProjectPaperDetailPage = ({
             {/* Left: status + template + created-by */}
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="active">
-                {PAPER_STATUS_MAP[paper.status] || 'Unknown'}
+                {SUBMISSION_STATUS_LABELS[paper.submissionStatus ?? 1] ??
+                  'Draft'}
               </Badge>
               {paperType && <Badge variant="outline">{paperType}</Badge>}
               {paper.template && (
@@ -2000,6 +2004,11 @@ export const ProjectPaperDetailPage = ({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── Submission Status Panel ──────────────────────────── */}
+            {activeTab === 'submission' && (
+              <PaperStatusHistory paperId={paperId} projectId={projectId} />
             )}
           </div>
         </div>

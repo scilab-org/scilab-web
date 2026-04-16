@@ -2,7 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Loader2, X } from 'lucide-react';
 
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
 import { SubProjectPaper } from '../../types';
 
 type PaperInProjectDetailDialogProps = {
@@ -35,7 +35,7 @@ export const PaperInProjectDetailDialog = ({
   const context = detail?.context ?? paper?.context;
   const template = detail?.template ?? paper?.template;
   const paperType = detail?.paperType ?? paper?.paperType;
-  const status = detail?.status ?? paper?.status;
+  const submissionStatus = detail?.submissionStatus ?? paper?.submissionStatus;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -70,9 +70,8 @@ export const PaperInProjectDetailDialog = ({
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-xs">Status</p>
                     <p className="text-sm font-medium">
-                      {status != null
-                        ? (PAPER_STATUS_MAP[status] ?? 'Unknown')
-                        : '—'}
+                      {SUBMISSION_STATUS_LABELS[submissionStatus ?? 1] ??
+                        'Draft'}
                     </p>
                   </div>
                   <div className="space-y-1">

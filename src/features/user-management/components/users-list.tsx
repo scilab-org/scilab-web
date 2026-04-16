@@ -13,7 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paths } from '@/config/paths';
-import { cn } from '@/utils/cn';
 
 import { useUsers } from '../api/get-users';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -115,19 +114,11 @@ export const UsersList = () => {
                   {capitalize(user.firstName)} {capitalize(user.lastName)}
                 </TableCell>
 
-                {/* Status — dot indicator */}
+                {/* Status */}
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'size-2 shrink-0 rounded-full',
-                        user.enabled ? 'bg-green-500' : 'bg-destructive',
-                      )}
-                    />
-                    <span className="text-xs font-medium">
-                      {user.enabled ? 'Active' : 'Disabled'}
-                    </span>
-                  </div>
+                  <Badge variant={user.enabled ? 'success' : 'destructive'}>
+                    {user.enabled ? 'Active' : 'Disabled'}
+                  </Badge>
                 </TableCell>
 
                 {/* Role — subtle badge */}

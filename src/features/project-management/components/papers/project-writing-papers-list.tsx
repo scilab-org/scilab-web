@@ -31,27 +31,31 @@ import { useSubProjects } from '../../api/papers/get-sub-projects';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { usePaperMembers } from '../../api/papers/get-paper-members';
 import { SubProjectPaper } from '../../types';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
+import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
 import { useUser } from '@/lib/auth';
 import { paths } from '@/config/paths';
 import { BTN } from '@/lib/button-styles';
 
 type BadgeVariant = 'draft' | 'active' | 'outline' | 'success' | 'secondary';
 
-const getPaperStatusVariant = (status: number | null): BadgeVariant => {
+const getSubmissionStatusVariant = (status: number | null): BadgeVariant => {
   switch (status) {
     case 1:
-      return 'draft';
+      return 'draft'; // Draft
     case 2:
-      return 'active';
+      return 'active'; // Submitted
     case 3:
-      return 'outline';
+      return 'outline'; // Revision Required
     case 4:
-      return 'success';
+      return 'active'; // Resubmitted
     case 5:
-      return 'secondary';
+      return 'success'; // Accepted
+    case 6:
+      return 'success'; // Published
+    case 7:
+      return 'secondary'; // Rejected
     default:
-      return 'secondary';
+      return 'draft';
   }
 };
 
@@ -210,13 +214,15 @@ export const ProjectWritingPapersList = ({
                       </span>
                     </TableCell>
                     <TableCell>
-                      {paper.status != null ? (
-                        <Badge variant={getPaperStatusVariant(paper.status)}>
-                          {PAPER_STATUS_MAP[paper.status] ?? 'Unknown'}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
-                      )}
+                      <Badge
+                        variant={getSubmissionStatusVariant(
+                          paper.submissionStatus ?? 1,
+                        )}
+                      >
+                        {SUBMISSION_STATUS_LABELS[
+                          paper.submissionStatus ?? 1
+                        ] ?? 'Draft'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {paper.template || '—'}

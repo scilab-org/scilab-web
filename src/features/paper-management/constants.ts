@@ -52,6 +52,10 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/combine`,
   COMBINE_VERSION: (paperId: string, versionId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions/${versionId}/combine`,
+  PAPER_STATUS_HISTORY: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/status-history`,
+  PAPER_STATUS_TRANSITION: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/status-transition`,
 } as const;
 
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
@@ -70,7 +74,28 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   MARK_SECTION: 'mark-section',
   SECTION_HISTORY: 'section-history',
   MARK_SECTION_VERSIONS: 'mark-section-versions',
+  PAPER_STATUS_HISTORY: 'paper-status-history',
 } as const;
+
+export const SUBMISSION_STATUS_LABELS: Record<number, string> = {
+  1: 'Draft',
+  2: 'Submitted',
+  3: 'Revision Required',
+  4: 'Resubmitted',
+  5: 'Accepted',
+  6: 'Published',
+  7: 'Rejected',
+};
+
+export const SUBMISSION_STATUS_TRANSITIONS: Record<number, number[]> = {
+  1: [2],
+  2: [3, 5, 7],
+  3: [4],
+  4: [3, 5, 7],
+  5: [6],
+  6: [],
+  7: [],
+};
 
 export const PAPER_STATUS_MAP: Record<number, string> = {
   1: 'Draft',
