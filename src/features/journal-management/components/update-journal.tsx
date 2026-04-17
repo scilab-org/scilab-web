@@ -21,25 +21,26 @@ type UpdateJournalProps = {
   journal: JournalDto;
 };
 
-const toDatetimeLocal = (iso: string | null): string => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
 export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
-    startAt: toDatetimeLocal(journal.startAt),
-    endAt: toDatetimeLocal(journal.endAt),
+    name: journal.name ?? '',
+    ranking: journal.ranking ?? '',
+    url: journal.url ?? '',
+    style: journal.style ?? '',
+    texFile: null as File | null,
+    pdfFile: null as File | null,
   });
 
   React.useEffect(() => {
     if (open) {
       setFormData({
-        startAt: toDatetimeLocal(journal.startAt),
-        endAt: toDatetimeLocal(journal.endAt),
+        name: journal.name ?? '',
+        ranking: journal.ranking ?? '',
+        url: journal.url ?? '',
+        style: journal.style ?? '',
+        texFile: null,
+        pdfFile: null,
       });
     }
   }, [open, journal]);
@@ -64,12 +65,15 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.startAt || !formData.endAt) return;
     updateJournalMutation.mutate({
       journalId,
       data: {
-        startAt: new Date(formData.startAt).toISOString(),
-        endAt: new Date(formData.endAt).toISOString(),
+        name: formData.name.trim(),
+        ranking: formData.ranking.trim(),
+        url: formData.url.trim(),
+        style: formData.style.trim(),
+        texFile: formData.texFile,
+        pdfFile: formData.pdfFile,
       },
     });
   };
@@ -81,44 +85,103 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
           EDIT
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Update Journal</DialogTitle>
           <DialogDescription>
-            Update the journal&apos;s start and end dates.
+            Update the journal&apos;s information and files.
           </DialogDescription>
         </DialogHeader>
         <form
           id="update-journal-form"
           onSubmit={handleSubmit}
-          className="space-y-4 px-4 py-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-4"
         >
           <div className="space-y-1.5">
-            <label htmlFor="uj-startAt" className="text-sm font-medium">
-              Start Date <span className="text-destructive">*</span>
+            <label htmlFor="uj-name" className="text-sm font-medium">
+              Name
             </label>
             <Input
-              id="uj-startAt"
-              type="datetime-local"
-              value={formData.startAt}
+              id="uj-name"
+              value={formData.name}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, startAt: e.target.value }))
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              required
+              placeholder="Enter journal name"
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="uj-endAt" className="text-sm font-medium">
-              End Date <span className="text-destructive">*</span>
+            <label htmlFor="uj-ranking" className="text-sm font-medium">
+              Ranking
             </label>
             <Input
-              id="uj-endAt"
-              type="datetime-local"
-              value={formData.endAt}
+              id="uj-ranking"
+              value={formData.ranking}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, endAt: e.target.value }))
+                setFormData((prev) => ({ ...prev, ranking: e.target.value }))
               }
-              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="uj-url" className="text-sm font-medium">
+              URL
+            </label>
+            <Input
+              id="uj-url"
+              type="url"
+              value={formData.url}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, url: e.target.value }))
+              }
+              placeholder="https://example.com/journal"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="uj-style" className="text-sm font-medium">
+              Style
+            </label>
+            <textarea
+              id="uj-style"
+              value={formData.style}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, style: e.target.value }))
+              }
+              placeholder="Enter Journal / Conference Style"
+              className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-32 w-full rounded-md border bg-transparent px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="uj-texFile" className="text-sm font-medium">
+              TeX File
+            </label>
+            <input
+              id="uj-texFile"
+              type="file"
+              accept=".tex"
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  texFile: e.target.files?.[0] ?? null,
+                }))
+              }
+              className="border-input dark:bg-input/30 flex h-10 w-full cursor-pointer rounded-md border bg-transparent px-3 py-2 text-sm file:mr-2 file:border-0 file:bg-transparent file:text-sm file:font-medium"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="uj-pdfFile" className="text-sm font-medium">
+              PDF File
+            </label>
+            <input
+              id="uj-pdfFile"
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  pdfFile: e.target.files?.[0] ?? null,
+                }))
+              }
+              className="border-input dark:bg-input/30 flex h-10 w-full cursor-pointer rounded-md border bg-transparent px-3 py-2 text-sm file:mr-2 file:border-0 file:bg-transparent file:text-sm file:font-medium"
             />
           </div>
         </form>

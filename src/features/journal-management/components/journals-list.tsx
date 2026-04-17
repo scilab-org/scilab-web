@@ -77,19 +77,22 @@ export const JournalsList = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="text-muted-foreground w-[35%] text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[30%] text-xs font-medium tracking-wider uppercase">
                 Name
               </TableHead>
-              <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[12%] text-xs font-medium tracking-wider uppercase">
                 Structure
               </TableHead>
-              <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
-                Start Date
+              <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
+                Ranking
               </TableHead>
-              <TableHead className="text-muted-foreground w-[15%] text-xs font-medium tracking-wider uppercase">
-                End Date
+              <TableHead className="text-muted-foreground w-[12%] text-xs font-medium tracking-wider uppercase">
+                Created Date
               </TableHead>
-              <TableHead className="text-muted-foreground w-[20%] text-center text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[12%] text-xs font-medium tracking-wider uppercase">
+                Last Modified Date
+              </TableHead>
+              <TableHead className="text-muted-foreground w-[24%] text-center text-xs font-medium tracking-wider uppercase">
                 Actions
               </TableHead>
             </TableRow>
@@ -97,10 +100,27 @@ export const JournalsList = () => {
           <TableBody>
             {journals.map((journal) => (
               <TableRow key={journal.id} className="hover:bg-muted/30">
-                <TableCell className="font-medium">{journal.name}</TableCell>
+                <TableCell className="max-w-80">
+                  {journal.url ? (
+                    <a
+                      href={journal.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary block truncate font-medium hover:underline"
+                      title={journal.url}
+                    >
+                      {journal.name}
+                    </a>
+                  ) : (
+                    <div className="truncate font-medium" title={journal.name}>
+                      {journal.name}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{journal.templateCode || 'N/A'}</TableCell>
-                <TableCell>{fmt(journal.startAt)}</TableCell>
-                <TableCell>{fmt(journal.endAt)}</TableCell>
+                <TableCell>{journal.ranking || 'N/A'}</TableCell>
+                <TableCell>{fmt(journal.createdOnUtc)}</TableCell>
+                <TableCell>{fmt(journal.lastModifiedOnUtc)}</TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-2">
                     <Link

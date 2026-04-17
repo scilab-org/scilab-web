@@ -20,8 +20,8 @@ import { useCreateJournal } from '../api/create-journal';
 const initialFormData = {
   name: '',
   templateId: '',
-  startAt: '',
-  endAt: '',
+  ranking: '',
+  url: '',
   style: '',
   texFile: null as File | null,
   pdfFile: null as File | null,
@@ -51,22 +51,14 @@ export const CreateJournal = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.name.trim() ||
-      !formData.templateId ||
-      !formData.startAt ||
-      !formData.endAt ||
-      !formData.style.trim() ||
-      !formData.texFile ||
-      !formData.pdfFile
-    )
+    if (!formData.name.trim() || !formData.templateId || !formData.style.trim())
       return;
 
     createJournalMutation.mutate({
       name: formData.name.trim(),
       templateId: formData.templateId,
-      startAt: new Date(formData.startAt).toISOString(),
-      endAt: new Date(formData.endAt).toISOString(),
+      ranking: formData.ranking.trim(),
+      url: formData.url.trim(),
       style: formData.style.trim(),
       texFile: formData.texFile,
       pdfFile: formData.pdfFile,
@@ -133,6 +125,35 @@ export const CreateJournal = () => {
             </select>
           </div>
 
+          <div className="space-y-1.5">
+            <label htmlFor="cj-ranking" className="text-sm font-medium">
+              Ranking
+            </label>
+            <Input
+              id="cj-ranking"
+              value={formData.ranking}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, ranking: e.target.value }))
+              }
+              placeholder="Enter journal ranking"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="cj-url" className="text-sm font-medium">
+              URL
+            </label>
+            <Input
+              id="cj-url"
+              type="url"
+              value={formData.url}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, url: e.target.value }))
+              }
+              placeholder="https://example.com/journal"
+            />
+          </div>
+
           {/* Style */}
           <div className="space-y-1.5">
             <label htmlFor="cj-style" className="text-sm font-medium">
@@ -150,48 +171,15 @@ export const CreateJournal = () => {
             />
           </div>
 
-          {/* Start At */}
-          <div className="space-y-1.5">
-            <label htmlFor="cj-startAt" className="text-sm font-medium">
-              Start Date <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="cj-startAt"
-              type="datetime-local"
-              value={formData.startAt}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, startAt: e.target.value }))
-              }
-              required
-            />
-          </div>
-
-          {/* End At */}
-          <div className="space-y-1.5">
-            <label htmlFor="cj-endAt" className="text-sm font-medium">
-              End Date <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="cj-endAt"
-              type="datetime-local"
-              value={formData.endAt}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, endAt: e.target.value }))
-              }
-              required
-            />
-          </div>
-
           {/* TeX File */}
           <div className="space-y-1.5">
             <label htmlFor="cj-texFile" className="text-sm font-medium">
-              TeX File <span className="text-destructive">*</span>
+              TeX File
             </label>
             <input
               id="cj-texFile"
               type="file"
               accept=".tex"
-              required
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -205,13 +193,12 @@ export const CreateJournal = () => {
           {/* PDF File */}
           <div className="space-y-1.5">
             <label htmlFor="cj-pdfFile" className="text-sm font-medium">
-              PDF File <span className="text-destructive">*</span>
+              PDF File
             </label>
             <input
               id="cj-pdfFile"
               type="file"
               accept=".pdf,application/pdf"
-              required
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,

@@ -18,7 +18,35 @@ export const updateJournal = ({
   journalId,
   data,
 }: UpdateJournalPayload): Promise<BooleanApiUpdatedResponse> => {
-  return api.put(JOURNAL_MANAGEMENT_API.JOURNAL_BY_ID(journalId), data);
+  const formData = new FormData();
+
+  if (typeof data.name === 'string') {
+    formData.append('name', data.name);
+  }
+
+  if (typeof data.ranking === 'string') {
+    formData.append('ranking', data.ranking);
+  }
+
+  if (typeof data.url === 'string') {
+    formData.append('url', data.url);
+  }
+
+  if (typeof data.style === 'string') {
+    formData.append('style', data.style);
+  }
+
+  if (data.texFile) {
+    formData.append('texFile', data.texFile);
+  }
+
+  if (data.pdfFile) {
+    formData.append('pdfFile', data.pdfFile);
+  }
+
+  return api.put(JOURNAL_MANAGEMENT_API.JOURNAL_BY_ID(journalId), formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
 type UseUpdateJournalOptions = {
