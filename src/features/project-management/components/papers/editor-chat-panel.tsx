@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, MessageSquare, PenLine, Loader2 } from 'lucide-react';
+import { Send, MessageSquare, PenLine, Loader2, Bot } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -65,11 +65,7 @@ const CompactMessageBubble = ({ message }: { message: ChatMessage }) => {
 
   return (
     <div className="flex items-start gap-2">
-      <img
-        src="/Logo.svg"
-        alt="HyperDataLab Assistant"
-        className="mt-4 h-5 w-5 shrink-0"
-      />
+      <Bot className="text-primary mt-4 h-5 w-5 shrink-0" />
       <div className="min-w-0 flex-1">
         <span className="text-primary text-[10px] font-semibold">
           HyperDataLab Assistant
@@ -270,11 +266,7 @@ const CompactMessageList = ({
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <img
-              src="/Logo.svg"
-              alt="HyperDataLab Assistant"
-              className="mt-4 h-5 w-5 shrink-0"
-            />
+            <Bot className="text-primary mt-4 h-5 w-5 shrink-0" />
             <div className="min-w-0 flex-1">
               <span className="text-primary mb-1 block text-[10px] font-semibold">
                 HyperDataLab Assistant
@@ -310,7 +302,7 @@ const SessionList = ({
   onNewChat: () => void;
 }) => {
   const sessionsQuery = useSessions({
-    params: { projectId, sectionId, limit: 10, offset: 0 },
+    params: { projectId, sectionId: sectionId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
@@ -367,6 +359,7 @@ const SessionList = ({
 type EditorChatPanelProps = {
   projectId: string;
   sectionId?: string;
+  markSectionId?: string;
   sectionTitle?: string;
   sectionContent?: string;
   onWriteOutput?: (output: WritingOutput) => void;
@@ -375,6 +368,7 @@ type EditorChatPanelProps = {
 export const EditorChatPanel = ({
   projectId,
   sectionId,
+  markSectionId,
   sectionTitle,
   sectionContent,
   onWriteOutput,
@@ -399,22 +393,28 @@ export const EditorChatPanel = ({
     sectionId: sectionId ?? null,
   });
   const ruleset = sectionQuery.data?.result?.rule;
+  const sectionContext = sectionQuery.data?.result?.sectionContext;
 
-  // Reset session when section changes (session-per-section scoping)
-  const prevSectionIdRef = useRef(sectionId);
+  // Use markSectionId (stable across versions) for session scoping.
+  // Fall back to sectionId if markSectionId is not available.
+  const sessionScopeId = markSectionId ?? sectionId;
+
+  // Reset session only when the canonical section (markSectionId) changes,
+  // not on every version save that produces a new sectionId.
+  const prevSectionIdRef = useRef(sessionScopeId);
   useEffect(() => {
-    if (prevSectionIdRef.current !== sectionId) {
-      prevSectionIdRef.current = sectionId;
+    if (prevSectionIdRef.current !== sessionScopeId) {
+      prevSectionIdRef.current = sessionScopeId;
       isNewChatRef.current = false;
       setActiveSessionId(null);
       setPlanningQuestions(null);
       setRefreshKey((k) => k + 1);
     }
-  }, [sectionId]);
+  }, [sessionScopeId]);
 
   // Auto-select the most recent session when sessions load and none is active
   const sessionsQuery = useSessions({
-    params: { projectId, sectionId, limit: 10, offset: 0 },
+    params: { projectId, sectionId: sessionScopeId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
@@ -474,6 +474,7 @@ export const EditorChatPanel = ({
           writing: {
             currentSection: sectionContent,
             ruleset: ruleset || undefined,
+            sectionContext: sectionContext || undefined,
           },
         });
       } else {
@@ -620,7 +621,7 @@ export const EditorChatPanel = ({
       ) : (
         <SessionList
           projectId={projectId}
-          sectionId={sectionId}
+          sectionId={sessionScopeId}
           activeSessionId={activeSessionId}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}

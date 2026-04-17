@@ -5516,6 +5516,7 @@ export const LatexPaperEditor = ({
                       <EditorChatPanel
                         projectId={projectId}
                         sectionId={activeSection?.id}
+                        markSectionId={activeSection?.markSectionId}
                         sectionTitle={activeSection?.title || paperTitle}
                         sectionContent={content}
                         onWriteOutput={handleWriteOutput}
