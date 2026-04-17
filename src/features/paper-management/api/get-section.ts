@@ -22,6 +22,7 @@ type SectionDetail = {
   paperId?: string;
   sectionRole?: string;
   rule?: string;
+  sectionContext?: string;
 };
 
 type GetSectionApiResponse = {
@@ -81,6 +82,10 @@ const normalizeSectionDetail = (payload: unknown): GetSectionApiResponse => {
         section.rule === null || section.rule === undefined
           ? undefined
           : String(section.rule),
+      sectionContext:
+        section.sectionContext === null || section.sectionContext === undefined
+          ? undefined
+          : String(section.sectionContext),
     },
   };
 };

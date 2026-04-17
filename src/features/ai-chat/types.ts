@@ -65,6 +65,7 @@ export type WritingPayload = {
   currentSection?: string;
   referencedSections?: Array<{ sectionType: string; content: string }>;
   ruleset?: string;
+  sectionContext?: string;
 };
 
 export type SendMessageResponse = {
