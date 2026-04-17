@@ -1,8 +1,8 @@
 export type JournalDto = {
   id: string;
   name: string;
-  startAt: string | null;
-  endAt: string | null;
+  ranking: string | null;
+  url: string | null;
   texFile: string | null;
   pdfFile: string | null;
   style: string | null;
@@ -19,6 +19,13 @@ export type ProjectRef = {
   id: string;
   name: string;
   code: string;
+};
+
+export type PaperRef = {
+  id: string;
+  title: string;
+  conferenceJournalStartAt: string | null;
+  conferenceJournalEndAt: string | null;
 };
 
 export type PagingResult = {
@@ -44,6 +51,7 @@ export type GetJournalByIdResultApiResponse = {
   result: {
     journal: JournalDto;
     projects: ProjectRef[];
+    papers: PaperRef[];
   };
 };
 
@@ -60,16 +68,20 @@ export type GetJournalsParams = {
 export type CreateJournalDto = {
   name: string;
   templateId: string;
-  startAt: string;
-  endAt: string;
+  ranking: string;
+  url: string;
   style: string;
-  texFile: File;
-  pdfFile: File;
+  texFile?: File | null;
+  pdfFile?: File | null;
 };
 
 export type UpdateJournalDto = {
-  startAt?: string;
-  endAt?: string;
+  name?: string;
+  ranking?: string;
+  url?: string;
+  style?: string;
+  texFile?: File | null;
+  pdfFile?: File | null;
 };
 
 export type StringApiCreatedResponse = {

@@ -3,13 +3,14 @@ import * as React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { JournalDto, ProjectRef } from '../types';
+import { JournalDto, PaperRef, ProjectRef } from '../types';
 import { UpdateJournal } from './update-journal';
 import { DeleteJournal } from './delete-journal';
 
 type ViewJournalProps = {
   journal: JournalDto;
   projects?: ProjectRef[];
+  papers?: PaperRef[];
 };
 
 const fmt = (iso: string | null) =>
@@ -20,11 +21,16 @@ type DetailField = {
   value: React.ReactNode;
 };
 
-export const ViewJournal = ({ journal, projects }: ViewJournalProps) => {
+export const ViewJournal = ({
+  journal,
+  projects,
+  papers,
+}: ViewJournalProps) => {
   const journalInfo: DetailField[] = [
     { label: 'Structure', value: journal.templateCode || 'N/A' },
-    { label: 'Start Date', value: fmt(journal.startAt) },
-    { label: 'End Date', value: fmt(journal.endAt) },
+    { label: 'Ranking', value: journal.ranking || 'N/A' },
+    { label: 'Created Date', value: fmt(journal.createdOnUtc) },
+    { label: 'Last Modified Date', value: fmt(journal.lastModifiedOnUtc) },
   ];
 
   return (
@@ -34,6 +40,17 @@ export const ViewJournal = ({ journal, projects }: ViewJournalProps) => {
           {/* Action buttons */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
+              {journal.url && (
+                <Button variant="action" asChild>
+                  <a
+                    href={journal.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Origin Info
+                  </a>
+                </Button>
+              )}
               {journal.texFile && (
                 <Button variant="action" asChild>
                   <a
@@ -68,7 +85,7 @@ export const ViewJournal = ({ journal, projects }: ViewJournalProps) => {
           {/* Journal Info card */}
           <div className="bg-card space-y-4 rounded-md border p-5">
             <h2 className="text-xl font-semibold">Journal Info</h2>
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-3">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-2 xl:grid-cols-4">
               {journalInfo.map((field) => (
                 <div key={field.label} className="space-y-1">
                   <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
@@ -114,6 +131,48 @@ export const ViewJournal = ({ journal, projects }: ViewJournalProps) => {
               ) : (
                 <p className="text-muted-foreground text-base">
                   No associated projects.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-card space-y-4 rounded-md border p-5">
+            <h2 className="text-xl font-semibold">Associated Papers</h2>
+            <div className="border-t pt-4">
+              {papers && papers.length > 0 ? (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="text-muted-foreground pb-3 text-left text-xs font-semibold tracking-wider uppercase">
+                        Title
+                      </th>
+                      <th className="text-muted-foreground pb-3 text-left text-xs font-semibold tracking-wider uppercase">
+                        Start Date
+                      </th>
+                      <th className="text-muted-foreground pb-3 text-left text-xs font-semibold tracking-wider uppercase">
+                        End Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {papers.map((paper) => (
+                      <tr key={paper.id}>
+                        <td className="text-foreground py-2.5 text-base font-medium">
+                          {paper.title}
+                        </td>
+                        <td className="text-foreground py-2.5 text-sm font-medium">
+                          {fmt(paper.conferenceJournalStartAt)}
+                        </td>
+                        <td className="text-foreground py-2.5 text-sm font-medium">
+                          {fmt(paper.conferenceJournalEndAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-muted-foreground text-base">
+                  No associated papers.
                 </p>
               )}
             </div>

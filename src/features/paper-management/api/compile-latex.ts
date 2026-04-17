@@ -56,13 +56,15 @@ const LATEX_DOCUMENT_WRAPPER = (
   sectionPackages?: string[],
   referencePackages?: string[],
   referenceContent?: string,
+  documentClass?: string,
 ) => {
   const mergedPackages = mergeLatexPackages(sectionPackages, referencePackages);
   const referenceBlock = buildReferenceBlock(referenceContent);
   const finalBody = (content?.trim() ?? '').trim();
   const preambleReference = referenceBlock ? `\n\n${referenceBlock}` : '';
+  const docClassLine = documentClass?.trim() || '\\documentclass{article}';
 
-  return `\\documentclass{article}
+  return `${docClassLine}
 
 ${buildLatexPackageImportsRaw(mergedPackages)}
 
@@ -81,11 +83,13 @@ export const compileLatex = async ({
   packages,
   referencePackages,
   referenceContent,
+  documentClass,
 }: {
   content: string;
   packages?: string[];
   referencePackages?: string[];
   referenceContent?: string;
+  documentClass?: string;
 }): Promise<Blob> => {
   // If content is a section fragment (no \documentclass), wrap it in a full document
   const latexContent = content.includes('\\documentclass')
@@ -95,6 +99,7 @@ export const compileLatex = async ({
         packages,
         referencePackages,
         referenceContent,
+        documentClass,
       );
 
   const response = await api.post(
