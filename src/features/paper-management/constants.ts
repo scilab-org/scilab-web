@@ -48,6 +48,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}/versions`,
   MARK_MAIN_SECTION: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/mark-main-section`,
+  PAPER_VERSIONS: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions`,
   COMBINE_PAPER: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/combine`,
   COMBINE_VERSION: (paperId: string, versionId: string) =>
@@ -62,6 +64,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPERS: 'papers',
   PAPER: 'paper',
   COMBINE_VERSION: 'combine-version',
+  PAPER_VERSIONS: 'paper-versions',
   WRITING_PAPER: 'writing-paper',
   ASSIGNED_SECTIONS: 'paper-assigned-sections',
   ASSIGNED_SECTIONS_HISTORY: 'paper-assigned-sections-history',

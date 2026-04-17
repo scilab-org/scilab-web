@@ -7,11 +7,11 @@ import {
   PAPER_MANAGEMENT_API,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '../constants';
-import type { CombineDto } from '../types';
+import type { PaperVersionItem } from '../types';
 
 export type GetCombineVersionResponse = {
   result: {
-    combine: CombineDto;
+    version: PaperVersionItem;
   };
 };
 

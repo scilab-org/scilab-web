@@ -93,7 +93,19 @@ export type CombineDto = {
   name: string;
   content: string;
   references: string[] | null;
-  isSave: boolean;
+  isSave?: boolean;
+  createdBy: string | null;
+  createdOnUtc: string | null;
+  lastModifiedBy: string | null;
+  lastModifiedOnUtc: string | null;
+};
+
+export type PaperVersionItem = {
+  id: string;
+  name: string;
+  content: string;
+  references: string[] | null;
+  files?: string[];
   createdBy: string | null;
   createdOnUtc: string | null;
   lastModifiedBy: string | null;

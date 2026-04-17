@@ -60,7 +60,7 @@ const MyProjectPaperCombineEditorRoute = () => {
     queryConfig: { staleTime: 0, refetchOnMount: true, enabled: !isNullGuid },
   });
   const combine: CombineDto | undefined =
-    combineQuery.data?.result?.combine ?? stateData;
+    combineQuery.data?.result?.version ?? stateData;
 
   // If user F5-refreshes on a null-GUID page (no state, no DB record),
   // redirect them back to the paper detail
