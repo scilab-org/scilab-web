@@ -194,12 +194,8 @@ export type UpdateWritingPaperDto = {
   gapType?: string;
   mainContribution?: string;
   status?: number;
-  journal?: {
-    name: string;
-    styleName: string;
-    styleDescription: string;
-    styleRule: string;
-  } | null;
+  conferenceJournalName?: string | null;
+  conferenceJournalId?: string | null;
 };
 
 export type PaperSection = {

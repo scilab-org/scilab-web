@@ -136,7 +136,6 @@ export const CreatePaperInProject = ({
     e.preventDefault();
     if (!formData.title.trim()) return;
     if (!formData.context.trim()) return;
-    if (!formData.abstract.trim()) return;
     if (!formData.researchGap.trim()) return;
     if (!formData.gapType.trim()) return;
     if (!formData.mainContribution.trim()) return;
@@ -225,7 +224,7 @@ export const CreatePaperInProject = ({
 
           <div className="space-y-1.5">
             <label htmlFor="cpp-abstract" className="text-sm font-medium">
-              Abstract <span className="text-destructive">*</span>
+              Abstract
             </label>
             <textarea
               id="cpp-abstract"
@@ -235,7 +234,6 @@ export const CreatePaperInProject = ({
                 setFormData((prev) => ({ ...prev, abstract: e.target.value }))
               }
               placeholder="e.g. This paper presents..."
-              required
             />
           </div>
 
@@ -428,7 +426,6 @@ export const CreatePaperInProject = ({
               createMutation.isPending ||
               !formData.title.trim() ||
               !formData.context.trim() ||
-              !formData.abstract.trim() ||
               !formData.researchGap.trim() ||
               !formData.gapType.trim() ||
               !formData.mainContribution.trim() ||

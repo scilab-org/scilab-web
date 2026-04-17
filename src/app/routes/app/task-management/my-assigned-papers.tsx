@@ -288,7 +288,7 @@ const MyAssignedPapersRoute = () => {
 
                       return (
                         <TableRow key={paper.id} className="hover:bg-muted/30">
-                          <TableCell className="font-medium">
+                          <TableCell className="max-w-0 font-medium">
                             <span
                               className="block truncate"
                               title={paper.title || '(Untitled)'}
@@ -329,17 +329,15 @@ const MyAssignedPapersRoute = () => {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <Pagination
-                  paging={{
-                    pageNumber: page,
-                    totalPages,
-                    totalCount,
-                    hasPreviousPage: page > 1,
-                    hasNextPage: page < totalPages,
-                  }}
-                />
-              )}
+              <Pagination
+                paging={{
+                  pageNumber: page,
+                  totalPages,
+                  totalCount,
+                  hasPreviousPage: page > 1,
+                  hasNextPage: page < totalPages,
+                }}
+              />
             </>
           ) : (
             <div className="flex h-48 flex-col items-center justify-center gap-3">
