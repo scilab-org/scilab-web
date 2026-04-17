@@ -180,7 +180,7 @@ export type Tab =
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'overview', label: 'Overview', icon: FileText },
-  { id: 'compile-paper', label: 'Compile Paper', icon: Layers },
+  { id: 'compile-paper', label: 'Preprint', icon: Layers },
   { id: 'sections', label: 'Sections', icon: BookOpen },
   { id: 'contributor', label: 'Contributor', icon: Users },
   { id: 'task', label: 'Task', icon: ClipboardList },
@@ -222,6 +222,31 @@ export const ProjectPaperDetailPage = ({
   const [pendingSectionId, setPendingSectionId] = useState<string | null>(
     locationState?.initialSectionId ?? null,
   );
+  useEffect(() => {
+    if (!locationState?.initialSectionId) return;
+
+    const nextState = { ...locationState };
+    delete nextState.initialSectionId;
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: Object.keys(nextState).length > 0 ? nextState : null,
+      },
+    );
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    locationState,
+    navigate,
+  ]);
+
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<
     string | null
@@ -231,6 +256,7 @@ export const ProjectPaperDetailPage = ({
     context: '',
     abstract: '',
     researchGap: '',
+    researchAim: '',
     gapType: '',
     mainContribution: '',
     status: 1,
@@ -327,6 +353,7 @@ export const ProjectPaperDetailPage = ({
       context: paper.context ?? '',
       abstract: paper.abstract ?? '',
       researchGap: paper.researchGap ?? '',
+      researchAim: paper.researchAim ?? '',
       gapType: paper.gapType ?? '',
       mainContribution: paper.mainContribution ?? '',
       status: paper.status ?? 1,
@@ -338,24 +365,18 @@ export const ProjectPaperDetailPage = ({
 
   const handleEditPaperSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const journal = selectedJournal
-      ? {
-          name: selectedJournal.name,
-          styleName: selectedJournal.style ?? '',
-          styleDescription: '',
-          styleRule: '',
-        }
-      : null;
     updateWritingPaperMutation.mutate({
       paperId,
       data: {
         context: editPaperForm.context,
         abstract: editPaperForm.abstract,
         researchGap: editPaperForm.researchGap,
+        researchAim: editPaperForm.researchAim,
         gapType: editPaperForm.gapType,
         mainContribution: editPaperForm.mainContribution,
         status: editPaperForm.status,
-        journal,
+        conferenceJournalName: selectedJournal?.name ?? null,
+        conferenceJournalId: selectedJournal?.id ?? null,
       },
     });
   };
@@ -1015,7 +1036,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
                   {isAuthor && (
                     <Button
-                      variant="action"
+                      variant="darkRed"
                       className={cn('ml-auto gap-1.5')}
                       size="action"
                       disabled={combinePaperMutation.isPending}
@@ -1034,7 +1055,7 @@ export const ProjectPaperDetailPage = ({
                       ) : (
                         <Play className="size-4" />
                       )}
-                      Compile Paper
+                      Compile & Export
                     </Button>
                   )}
                   <Button
@@ -1062,7 +1083,7 @@ export const ProjectPaperDetailPage = ({
                       </p>
                       {isAuthor && (
                         <p className="text-secondary mt-1 text-xs">
-                          Click &ldquo;Compile Paper&rdquo; to generate a
+                          Click &ldquo;Compile &amp; Export&rdquo; to generate a
                           combined version.
                         </p>
                       )}
@@ -1221,7 +1242,7 @@ export const ProjectPaperDetailPage = ({
                     {(isAuthor || isManager) && (
                       <Button
                         size="action"
-                        variant="action"
+                        variant="darkRed"
                         onClick={() => setIsMembersOpen(true)}
                         className="gap-1.5"
                       >
@@ -1372,7 +1393,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
                   {isAuthor && (
                     <Button
-                      variant="action"
+                      variant="darkRed"
                       className={cn('ml-auto')}
                       size="action"
                       onClick={() => {
@@ -2416,30 +2437,21 @@ export const ProjectPaperDetailPage = ({
         open={!!editingTask}
         onOpenChange={(open) => !open && setEditingTask(null)}
       >
-        <DialogContent className="flex max-h-[90vh] w-full flex-col sm:max-w-xl">
-          <form onSubmit={handleUpdateTask} className="flex h-full flex-col">
-            <DialogHeader>
+        <DialogContent className="scrollbar-dialog flex max-h-[90vh] w-full flex-col overflow-hidden sm:max-w-xl">
+          <form
+            onSubmit={handleUpdateTask}
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
+            <DialogHeader className="shrink-0 pr-8">
               <DialogTitle>Update Task</DialogTitle>
               <DialogDescription>
-                {editingTask?.sectionTitle ? (
-                  <>
-                    {isAuthor
-                      ? 'Update task details'
-                      : 'Only status and your date fields can be updated'}
-                    {' · '}
-                    <span className="text-foreground font-medium">
-                      Section: {editingTask.sectionTitle}
-                    </span>
-                  </>
-                ) : isAuthor ? (
-                  'Update task details'
-                ) : (
-                  'Only status and your date fields can be updated'
-                )}
+                {isAuthor
+                  ? 'Update task details'
+                  : 'Only status and your date fields can be updated'}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
+            <div className="scrollbar-dialog min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
               {!isAuthor && (
                 <>
                   <div className="space-y-1.5">
@@ -2718,7 +2730,7 @@ export const ProjectPaperDetailPage = ({
 
       {/* ── Edit Paper Dialog (author only) ───────────────────────── */}
       <Dialog open={isEditPaperOpen} onOpenChange={setIsEditPaperOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="scrollbar-dialog flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Paper</DialogTitle>
             <DialogDescription>
@@ -2729,7 +2741,7 @@ export const ProjectPaperDetailPage = ({
           <form
             id="edit-paper-form"
             onSubmit={handleEditPaperSubmit}
-            className="space-y-4 overflow-y-auto px-4 py-4"
+            className="scrollbar-dialog min-w-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
           >
             <div className="space-y-1.5">
               <label htmlFor="ep-context" className="text-sm font-medium">
@@ -2737,7 +2749,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-context"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.context}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2756,7 +2768,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-abstract"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.abstract}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2775,7 +2787,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-research-gap"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.researchGap}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2807,6 +2819,25 @@ export const ProjectPaperDetailPage = ({
             </div>
 
             <div className="space-y-1.5">
+              <label htmlFor="ep-research-aim" className="text-sm font-medium">
+                Research Aim <span className="text-destructive">*</span>
+              </label>
+              <textarea
+                id="ep-research-aim"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={editPaperForm.researchAim}
+                onChange={(e) =>
+                  setEditPaperForm((prev) => ({
+                    ...prev,
+                    researchAim: e.target.value,
+                  }))
+                }
+                placeholder="Enter research aim"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <label
                 htmlFor="ep-main-contribution"
                 className="text-sm font-medium"
@@ -2815,7 +2846,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-main-contribution"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.mainContribution}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -2851,21 +2882,24 @@ export const ProjectPaperDetailPage = ({
               </select>
             </div>
 
-            <div className="space-y-2 rounded-lg border p-3">
+            <div className="min-w-0 space-y-2 rounded-lg border p-3">
               <p className="text-sm font-medium">Journal</p>
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <label htmlFor="ep-journal-id" className="text-sm font-medium">
                   Select Journal
                 </label>
                 <select
                   id="ep-journal-id"
-                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                   value={editPaperForm.selectedJournalId}
                   onChange={(e) =>
                     setEditPaperForm((prev) => ({
                       ...prev,
                       selectedJournalId: e.target.value,
-                      selectedStyleName: '',
+                      selectedStyleName:
+                        journalResults.find(
+                          (journal) => journal.id === e.target.value,
+                        )?.style ?? '',
                     }))
                   }
                 >
@@ -2877,13 +2911,18 @@ export const ProjectPaperDetailPage = ({
                   ))}
                 </select>
               </div>
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <label htmlFor="ep-style-name" className="text-sm font-medium">
                   Select Style
                 </label>
-                <p className="border-surface-container-highest bg-surface flex h-9 w-full items-center rounded-md border px-3 text-sm">
-                  {selectedJournal?.style || 'No style'}
-                </p>
+                <div
+                  id="ep-style-name"
+                  className="border-surface-container-highest bg-surface text-primary scrollbar-dialog max-h-48 min-h-24 w-full overflow-y-auto rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap"
+                >
+                  {(selectedJournal?.style ??
+                    editPaperForm.selectedStyleName) ||
+                    'No style'}
+                </div>
               </div>
             </div>
           </form>

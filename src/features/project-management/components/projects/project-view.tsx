@@ -219,7 +219,7 @@ export const ProjectView = ({
                       </span>
                       <Badge
                         variant="secondary"
-                        className="ml-1 px-1.5 text-xs"
+                        className="ml-1 px-1.5 text-xs text-white"
                       >
                         {count}
                       </Badge>
