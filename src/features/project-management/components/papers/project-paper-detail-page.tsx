@@ -71,8 +71,7 @@ import {
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '@/features/paper-management/constants';
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
-import { getCombineVersionQueryOptions } from '@/features/paper-management/api/get-combine-version';
-import type { CombineDto } from '@/features/paper-management/types';
+import { useGetPaperVersions } from '@/features/paper-management/api/get-paper-versions';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
@@ -400,29 +399,24 @@ export const ProjectPaperDetailPage = ({
 
   const combinePaperMutation = useCombinePaper({
     mutationConfig: {
-      onSuccess: (data) => {
+      onSuccess: () => {
+        toast.success('Combined version created successfully');
         queryClient.invalidateQueries({
           queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.WRITING_PAPER, paperId],
         });
-        const combine = data?.value?.combine;
-        if (combine?.id && combineEditorPath) {
-          // Pre-populate the combine version cache so the editor loads instantly
-          queryClient.setQueryData(
-            getCombineVersionQueryOptions(paperId, combine.id).queryKey,
-            { result: { combine } },
-          );
-          // Pass combine in navigation state as fallback when the page is
-          // refreshed with a null-GUID (preview-only version not in DB)
-          navigate(combineEditorPath(combine.id) + '?edit=true', {
-            state: { combine },
-          });
-        }
+        queryClient.invalidateQueries({
+          queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_VERSIONS, paperId],
+        });
       },
-      onError: () => toast.error('Failed to compile paper'),
+      onError: () => toast.error('Failed to create combined version'),
     },
   });
 
-  const combines: CombineDto[] = (paper as any)?.combines ?? [];
+  const paperVersionsQuery = useGetPaperVersions({
+    paperId,
+    queryConfig: { enabled: activeTab === 'compile-paper' && !!paperId } as any,
+  });
+  const paperVersions = paperVersionsQuery.data?.result?.items ?? [];
 
   const paperTasksQuery = usePaperTasks({
     paperId,
@@ -1030,8 +1024,8 @@ export const ProjectPaperDetailPage = ({
                       Combined Versions
                     </h2>
                     <p className="text-secondary mt-1 font-sans text-[10px]">
-                      {combines.length} version
-                      {combines.length !== 1 ? 's' : ''}
+                      {paperVersions.length} version
+                      {paperVersions.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                   {isAuthor && (
@@ -1044,7 +1038,6 @@ export const ProjectPaperDetailPage = ({
                         combinePaperMutation.mutate({
                           paperId,
                           data: {
-                            isPreview: true,
                             projectId: paperSubProjectId,
                           },
                         });
@@ -1055,27 +1048,33 @@ export const ProjectPaperDetailPage = ({
                       ) : (
                         <Play className="size-4" />
                       )}
-                      Create Combined Version
+                      Create New Version
                     </Button>
                   )}
                   <Button
                     variant="outline"
                     size="action"
-                    onClick={() => paperQuery.refetch()}
-                    disabled={paperQuery.isFetching}
+                    onClick={() => paperVersionsQuery.refetch()}
+                    disabled={paperVersionsQuery.isFetching}
                     title="Refresh"
                     className="border-transparent"
                   >
                     <RefreshCw
                       className={cn(
                         'size-4',
-                        paperQuery.isFetching && 'animate-spin',
+                        paperVersionsQuery.isFetching && 'animate-spin',
                       )}
                     />
                   </Button>
                 </div>
                 <div>
-                  {combines.length === 0 ? (
+                  {paperVersionsQuery.isLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                      ))}
+                    </div>
+                  ) : paperVersions.length === 0 ? (
                     <div className="bg-surface-container-low flex flex-col items-center justify-center rounded-xl border border-transparent py-10 text-center">
                       <Layers className="text-secondary mb-3 size-10 opacity-50" />
                       <p className="text-primary text-sm font-medium">
@@ -1083,30 +1082,38 @@ export const ProjectPaperDetailPage = ({
                       </p>
                       {isAuthor && (
                         <p className="text-secondary mt-1 text-xs">
-                          Click &ldquo;Compile &amp; Export&rdquo; to generate a
-                          combined version.
+                          Click &ldquo;Create Combined Version&rdquo; to
+                          generate a combined version.
                         </p>
                       )}
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {combines.map((combine) => (
+                      {paperVersions.map((version) => (
                         <div
-                          key={combine.id}
+                          key={version.id}
                           className="bg-surface flex items-center justify-between rounded-lg p-4 shadow-sm transition-shadow hover:shadow-md"
                         >
                           <div className="min-w-0 flex-1">
                             <p className="text-primary truncate text-sm font-semibold">
-                              {combine.name}
+                              {version.name}
                             </p>
                             <div className="text-secondary mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-sans text-[10px]">
-                              {combine.createdOnUtc && (
+                              {version.createdBy && (
+                                <span>
+                                  <span className="text-secondary font-medium">
+                                    By{' '}
+                                  </span>
+                                  {version.createdBy}
+                                </span>
+                              )}
+                              {version.createdOnUtc && (
                                 <span>
                                   <span className="text-secondary font-medium">
                                     Created{' '}
                                   </span>
                                   {new Date(
-                                    combine.createdOnUtc,
+                                    version.createdOnUtc,
                                   ).toLocaleString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -1116,13 +1123,13 @@ export const ProjectPaperDetailPage = ({
                                   })}
                                 </span>
                               )}
-                              {combine.lastModifiedOnUtc && (
+                              {version.lastModifiedOnUtc && (
                                 <span>
                                   <span className="text-secondary font-medium">
                                     Last modified{' '}
                                   </span>
                                   {new Date(
-                                    combine.lastModifiedOnUtc,
+                                    version.lastModifiedOnUtc,
                                   ).toLocaleString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -1143,7 +1150,7 @@ export const ProjectPaperDetailPage = ({
                                 onClick={() => {
                                   if (combineEditorPath) {
                                     navigate(
-                                      combineEditorPath(combine.id) +
+                                      combineEditorPath(version.id) +
                                         '?edit=true',
                                     );
                                   }
@@ -1159,7 +1166,7 @@ export const ProjectPaperDetailPage = ({
                               className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
                               onClick={() => {
                                 if (combineEditorPath) {
-                                  navigate(combineEditorPath(combine.id));
+                                  navigate(combineEditorPath(version.id));
                                 }
                               }}
                             >

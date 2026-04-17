@@ -548,7 +548,7 @@ export const CombineEditor = ({
   const editorRef = useRef<MonacoEditor.editor.IStandaloneCodeEditor | null>(
     null,
   );
-  const isReadOnly = !isEditMode && combine.isSave;
+  const isReadOnly = !isEditMode && (combine.isSave ?? true);
   const hasChanges = content !== savedContent;
 
   // Save handler: POST combine with isPreview=false (only when isSave=false)
@@ -679,7 +679,7 @@ export const CombineEditor = ({
     (editor: MonacoEditor.editor.IStandaloneCodeEditor, _monaco: Monaco) => {
       editorRef.current = editor;
       editor.addCommand(_monaco.KeyMod.CtrlCmd | _monaco.KeyCode.KeyS, () => {
-        if (!combine.isSave) handleSave();
+        if (!(combine.isSave ?? true)) handleSave();
         else if (isEditMode) handleUpdate();
       });
     },
@@ -858,7 +858,7 @@ export const CombineEditor = ({
                   </span>
 
                   {/* isSave=false: Save button (POST isPreview=false → return to detail) */}
-                  {isAuthor && !combine.isSave && (
+                  {isAuthor && !(combine.isSave ?? true) && (
                     <button
                       type="button"
                       className="flex items-center gap-1.5 rounded-lg bg-[#4f6ef7] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#3d5ce0] disabled:opacity-50"
@@ -875,7 +875,7 @@ export const CombineEditor = ({
                   )}
 
                   {/* isSave=true, view mode: Edit button for author */}
-                  {isAuthor && combine.isSave && !isEditMode && (
+                  {isAuthor && (combine.isSave ?? true) && !isEditMode && (
                     <button
                       type="button"
                       className="flex items-center gap-1.5 rounded-lg border-2 border-blue-300 px-4 py-1.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
@@ -887,7 +887,7 @@ export const CombineEditor = ({
                   )}
 
                   {/* isSave=true, edit mode: Cancel + Update */}
-                  {isAuthor && combine.isSave && isEditMode && (
+                  {isAuthor && (combine.isSave ?? true) && isEditMode && (
                     <>
                       <button
                         type="button"

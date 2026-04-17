@@ -17,6 +17,7 @@ import { useGetCombineVersion } from '@/features/paper-management/api/get-combin
 import { CombineEditor } from '@/features/project-management/components/papers/combine-editor';
 import { paths } from '@/config/paths';
 import { useSubProjects } from '@/features/project-management/api/papers/get-sub-projects';
+import { useMyProjectRole } from '@/features/project-management/api/projects/get-my-role';
 import type { CombineDto } from '@/features/paper-management/types';
 
 const NULL_GUID = '00000000-0000-0000-0000-000000000000';
@@ -56,7 +57,7 @@ const ProjectPaperCombineEditorRoute = () => {
     queryConfig: { staleTime: 0, refetchOnMount: true, enabled: !isNullGuid },
   });
   const combine: CombineDto | undefined =
-    combineQuery.data?.result?.combine ?? stateData;
+    combineQuery.data?.result?.version ?? stateData;
 
   useEffect(() => {
     if (isNullGuid && !stateData && !combineQuery.isLoading) {
@@ -84,6 +85,9 @@ const ProjectPaperCombineEditorRoute = () => {
   );
   const subProjectId =
     paper?.subProjectId || matchedSubProject?.subProjectId || '';
+
+  const roleQuery = useMyProjectRole({ projectId: projectId! });
+  const isAuthor = roleQuery.data?.result === 'project:author';
 
   if (paperQuery.isLoading || (!isNullGuid && combineQuery.isLoading)) {
     return (
@@ -119,7 +123,7 @@ const ProjectPaperCombineEditorRoute = () => {
         subProjectId={subProjectId}
         combine={combine}
         paperTitle={paper.title || 'Paper'}
-        isAuthor={false}
+        isAuthor={isAuthor}
         initialEditMode={isEditMode}
         onClose={() =>
           navigate(paths.app.projectPaperDetail.getHref(projectId!, paperId!))

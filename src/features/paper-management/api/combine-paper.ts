@@ -6,7 +6,7 @@ import { MutationConfig } from '@/lib/react-query';
 import { PAPER_MANAGEMENT_API } from '../constants';
 
 export type CombinePaperDto = {
-  isPreview: boolean;
+  isPreview?: boolean;
   content?: string;
   projectId: string;
 };
