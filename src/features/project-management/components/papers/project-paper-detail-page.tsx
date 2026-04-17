@@ -1055,7 +1055,7 @@ export const ProjectPaperDetailPage = ({
                       ) : (
                         <Play className="size-4" />
                       )}
-                      Compile & Export
+                      Create Combined Version
                     </Button>
                   )}
                   <Button
