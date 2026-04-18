@@ -80,8 +80,11 @@ export const LoginPage = () => {
               Confidence.
             </h1>
             <p className="text-muted-foreground max-w-sm text-base leading-relaxed">
-              Organize your ideas, work with friends, and build your paper step
-              by step - from your first draft to the final version.
+              Organize your ideas, work with colleagues, and build your paper
+              step by step - from your first draft to the final version.
+            </p>
+            <p className="text-muted-foreground max-w-sm text-base leading-relaxed">
+              From HyperDataLab with ❤️ for students, by students.
             </p>
           </div>
 
@@ -99,7 +102,7 @@ export const LoginPage = () => {
 
         {/* RIGHT — form panel */}
         <div
-          className="flex items-center justify-center bg-[#181512] bg-cover bg-center p-8"
+          className="flex items-center justify-center bg-[#270707] bg-cover bg-center p-8"
           style={{ backgroundImage: `url(${rightBg})` }}
         >
           <div className="bg-background w-full max-w-md space-y-8 rounded-2xl p-10 shadow-2xl">
@@ -173,13 +176,6 @@ export const LoginPage = () => {
 
               {/* Remember me + Forgot password */}
               <div className="flex items-center justify-between">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="border-input accent-foreground size-3.5 rounded"
-                  />
-                  <span className={fieldLabel}>Remember me</span>
-                </label>
                 <button
                   type="button"
                   className="text-muted-foreground hover:text-foreground font-mono text-[10px] tracking-widest uppercase transition-colors"
