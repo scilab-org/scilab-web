@@ -54,6 +54,8 @@ const getSubmissionStatusVariant = (status: number | null): BadgeVariant => {
       return 'success'; // Published
     case 7:
       return 'secondary'; // Rejected
+    case 8:
+      return 'outline'; // On Hold
     default:
       return 'draft';
   }

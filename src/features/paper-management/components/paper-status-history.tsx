@@ -11,6 +11,7 @@ import {
 } from '../constants';
 import { PaperStatusHistoryEntry } from '../types';
 import { StatusTransitionDialog } from './status-transition-dialog';
+import { ExternalLink } from 'lucide-react';
 
 const REVISION_TYPE_LABELS: Record<string, string> = {
   minor: 'Minor revisions',
@@ -26,6 +27,8 @@ const getStatusClasses = (
       return { indicator: 'bg-tertiary', label: 'text-tertiary' };
     case 7: // Rejected
       return { indicator: 'bg-destructive', label: 'text-destructive' };
+    case 8: // OnHold
+      return { indicator: 'bg-amber-500', label: 'text-amber-600' };
     default:
       return { indicator: 'bg-foreground', label: 'text-foreground' };
   }
@@ -54,6 +57,28 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
             <p className="text-sm leading-relaxed">
               {REVISION_TYPE_LABELS[entry.revisionType] ?? entry.revisionType}
             </p>
+          </div>
+        </div>
+      )}
+
+      {entry.pdfFileUrl && (
+        <div className="space-y-1.5">
+          <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+            Attached PDF
+          </p>
+          <div className="bg-card flex items-center justify-between rounded-sm border p-4">
+            <p className="text-sm leading-relaxed">
+              {entry.pdfFileName ?? 'PDF File'}
+            </p>
+            <a
+              href={entry.pdfFileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
+            >
+              <ExternalLink className="size-3" />
+              View PDF
+            </a>
           </div>
         </div>
       )}
@@ -189,7 +214,8 @@ export const PaperStatusHistory = ({
   // Keep selected entry in sync when data loads or refreshes
   React.useEffect(() => {
     setSelectedEntry(latestEntry);
-  }, [latestEntry, latestEntry?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestEntry?.id]);
 
   const displayEntry = selectedEntry ?? latestEntry;
 
@@ -238,16 +264,23 @@ export const PaperStatusHistory = ({
           </p>
         )}
 
-      {/* Detail for selected (or latest) entry */}
-      {displayEntry && <CurrentStatusDetail entry={displayEntry} />}
-
-      {/* Full timeline */}
+      {/* Two-column layout: timeline left, detail right */}
       {history.length > 0 && (
-        <StatusTimeline
-          entries={history}
-          selectedId={displayEntry?.id ?? ''}
-          onSelect={setSelectedEntry}
-        />
+        <div className="flex flex-col gap-6 md:flex-row">
+          {/* Left: timeline */}
+          <div className="md:w-1/2">
+            <StatusTimeline
+              entries={history}
+              selectedId={displayEntry?.id ?? ''}
+              onSelect={setSelectedEntry}
+            />
+          </div>
+
+          {/* Right: detail */}
+          <div className="md:w-1/2">
+            {displayEntry && <CurrentStatusDetail entry={displayEntry} />}
+          </div>
+        </div>
       )}
     </div>
   );

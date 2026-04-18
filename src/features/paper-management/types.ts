@@ -503,6 +503,9 @@ export type PaperStatusHistoryEntry = {
   actorUserName: string;
   note?: string | null;
   revisionType?: string | null;
+  pdfFileId?: string | null;
+  pdfFileName?: string | null;
+  pdfFileUrl?: string | null;
   createdOnUtc: string;
   createdBy: string;
 };
@@ -518,6 +521,26 @@ export type TransitionPaperStatusDto = {
   targetStatus: number;
   note?: string;
   revisionType?: string;
+  pdfFileId?: string;
+};
+
+export type PaperVersionFileItem = {
+  id: string;
+  paperVersionId: string;
+  fileName: string;
+  fileUrl: string;
+  note?: string | null;
+  createdOnUtc: string;
+  createdBy?: string | null;
+};
+
+export type GetPaperVersionFilesApiResponse = {
+  items: PaperVersionFileItem[];
+};
+
+export type CreatePaperVersionFilePayload = {
+  file: File;
+  note?: string;
 };
 
 export type TransitionPaperStatusApiResponse = {

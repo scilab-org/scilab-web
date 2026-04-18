@@ -18,15 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
+import { useGetPaperVersionFiles } from '../api/get-paper-version-files';
+import { useGetPaperVersions } from '../api/get-paper-versions';
 import { useTransitionPaperStatus } from '../api/transition-paper-status';
 import {
   SUBMISSION_STATUS_LABELS,
   SUBMISSION_STATUS_TRANSITIONS,
 } from '../constants';
-import { Loader } from 'lucide-react';
+import { ExternalLink, Loader } from 'lucide-react';
 
 const REVISION_REQUIRED_STATUS = 3;
+const SUBMITTED_STATUS = 2;
+const RESUBMITTED_STATUS = 4;
 
 const REVISION_TYPE_OPTIONS = [
   {
@@ -42,6 +47,114 @@ const REVISION_TYPE_OPTIONS = [
       'The manuscript requires significant revisions and further review before a final decision.',
   },
 ];
+
+const requiresPdf = (status: number) =>
+  status === SUBMITTED_STATUS || status === RESUBMITTED_STATUS;
+
+// ── FileVersionSelector ────────────────────────────────────────────────────
+
+type FileVersionSelectorProps = {
+  paperId: string;
+  selectedVersionId: string;
+  onVersionChange: (versionId: string) => void;
+  selectedFileId: string;
+  onFileChange: (fileId: string) => void;
+};
+
+const FileVersionSelector = ({
+  paperId,
+  selectedVersionId,
+  onVersionChange,
+  selectedFileId,
+  onFileChange,
+}: FileVersionSelectorProps) => {
+  const versionsQuery = useGetPaperVersions({ paperId });
+  const versions = (versionsQuery.data as any)?.result?.items ?? [];
+  const versionsLoading = versionsQuery.isLoading;
+
+  const filesQuery = useGetPaperVersionFiles({
+    paperId,
+    versionId: selectedVersionId,
+  });
+
+  const files = filesQuery.data?.items ?? [];
+
+  const selectedFile = files.find((f) => f.id === selectedFileId);
+
+  return (
+    <>
+      {/* Step 1: Select version */}
+      <div className="space-y-1.5">
+        <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+          Paper Version
+        </p>
+        {versionsLoading ? (
+          <Skeleton className="h-9 w-full" />
+        ) : versions.length === 0 ? (
+          <p className="text-muted-foreground text-xs">
+            No versions available. Combine your paper first.
+          </p>
+        ) : (
+          <Select value={selectedVersionId} onValueChange={onVersionChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a version…" />
+            </SelectTrigger>
+            <SelectContent>
+              {versions.map((v: { id: string; name: string }) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.name || `Version ${v.id.slice(0, 8)}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Step 2: Select file */}
+      {selectedVersionId && (
+        <div className="space-y-1.5">
+          <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+            PDF File
+          </p>
+          {filesQuery.isLoading ? (
+            <Skeleton className="h-9 w-full" />
+          ) : files.length === 0 ? (
+            <p className="text-destructive text-xs">
+              No files found for this version. Please generate or upload a file
+              first.
+            </p>
+          ) : (
+            <>
+              <Select value={selectedFileId} onValueChange={onFileChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a file…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {files.map((file) => (
+                    <SelectItem key={file.id} value={file.id}>
+                      {file.fileName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedFile && (
+                <a
+                  href={selectedFile.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
+                >
+                  <ExternalLink className="size-3" />
+                  View PDF
+                </a>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+};
 
 // ── StatusTransitionDialog ─────────────────────────────────────────────────
 
@@ -60,15 +173,20 @@ export const StatusTransitionDialog = ({
   const [targetStatus, setTargetStatus] = React.useState<string>('');
   const [revisionType, setRevisionType] = React.useState<string>('');
   const [note, setNote] = React.useState('');
+  const [selectedVersionId, setSelectedVersionId] = React.useState<string>('');
+  const [selectedPdfId, setSelectedPdfId] = React.useState<string>('');
 
   const availableTransitions =
     SUBMISSION_STATUS_TRANSITIONS[currentStatus] ?? [];
   const isRevisionRequired = Number(targetStatus) === REVISION_REQUIRED_STATUS;
+  const isPdfRequired = requiresPdf(Number(targetStatus));
 
   const reset = () => {
     setTargetStatus('');
     setRevisionType('');
     setNote('');
+    setSelectedVersionId('');
+    setSelectedPdfId('');
   };
 
   const transitionMutation = useTransitionPaperStatus({
@@ -89,12 +207,14 @@ export const StatusTransitionDialog = ({
     e.preventDefault();
     if (!targetStatus) return;
     if (isRevisionRequired && !revisionType) return;
+    if (isPdfRequired && !selectedPdfId) return;
 
     transitionMutation.mutate({
       projectId,
       targetStatus: Number(targetStatus),
       note: note.trim() || undefined,
       revisionType: isRevisionRequired ? revisionType : undefined,
+      pdfFileId: isPdfRequired ? selectedPdfId : undefined,
     });
   };
 
@@ -133,6 +253,8 @@ export const StatusTransitionDialog = ({
               onValueChange={(v) => {
                 setTargetStatus(v);
                 setRevisionType('');
+                setSelectedVersionId('');
+                setSelectedPdfId('');
               }}
             >
               <SelectTrigger className="w-full">
@@ -147,6 +269,20 @@ export const StatusTransitionDialog = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* File version selection — only for Submitted / Resubmitted */}
+          {isPdfRequired && (
+            <FileVersionSelector
+              paperId={paperId}
+              selectedVersionId={selectedVersionId}
+              onVersionChange={(versionId) => {
+                setSelectedVersionId(versionId);
+                setSelectedPdfId('');
+              }}
+              selectedFileId={selectedPdfId}
+              onFileChange={setSelectedPdfId}
+            />
+          )}
 
           {/* Revision type — only for Revision Required */}
           {isRevisionRequired && (
@@ -221,6 +357,7 @@ export const StatusTransitionDialog = ({
               disabled={
                 !targetStatus ||
                 (isRevisionRequired && !revisionType) ||
+                (isPdfRequired && !selectedPdfId) ||
                 transitionMutation.isPending
               }
             >

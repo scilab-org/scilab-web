@@ -497,6 +497,7 @@ export const EditorChatPanel = ({
       sectionId,
       sectionTitle,
       sectionContent,
+      sectionContext,
       activeSessionId,
       sendMessageMutation,
       projectPapersQuery.data,
