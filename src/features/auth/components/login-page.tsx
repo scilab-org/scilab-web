@@ -80,7 +80,8 @@ export const LoginPage = () => {
               Confidence.
             </h1>
             <p className="text-muted-foreground max-w-sm text-base leading-relaxed">
-              Organize your ideas, work with friends, and build your paper step by step - from your first draft to the final version.
+              Organize your ideas, work with friends, and build your paper step
+              by step - from your first draft to the final version.
             </p>
           </div>
 
