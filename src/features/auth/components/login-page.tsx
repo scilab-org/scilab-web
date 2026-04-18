@@ -71,17 +71,16 @@ export const LoginPage = () => {
 
           <div className="relative z-10 max-w-lg space-y-6">
             <h1 className="text-foreground font-serif text-5xl leading-[1.08] font-extrabold tracking-tight xl:text-6xl">
-              Structure Your
+              Shape Your
               <br />
-              Research.
+              Ideas.
               <br />
-              Publish With
+              Write With
               <br />
               Confidence.
             </h1>
             <p className="text-muted-foreground max-w-sm text-base leading-relaxed">
-              Manage sources, collaborate on papers, and maintain rigorous IMRaD
-              structure — from first draft to final submission.
+              Organize your ideas, work with friends, and build your paper step by step - from your first draft to the final version.
             </p>
           </div>
 
@@ -92,14 +91,6 @@ export const LoginPage = () => {
               </p>
               <p className="text-foreground/80 font-mono text-[10px] tracking-wide">
                 Academic Writing Suite
-              </p>
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-muted-foreground/60 font-mono text-[8px] tracking-[0.2em] uppercase">
-                Workflow
-              </p>
-              <p className="text-foreground/80 font-mono text-[10px] tracking-wide">
-                IMRaD Structured
               </p>
             </div>
           </div>

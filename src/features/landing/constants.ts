@@ -1,6 +1,6 @@
 export const BRAND = {
   name: 'HYPERDATALAB',
-  tagline: 'Academic Writing Platform',
+  tagline: 'A friendly space for student research',
 } as const;
 
 export const NAV_LINKS = [
@@ -10,15 +10,15 @@ export const NAV_LINKS = [
 ] as const;
 
 export const HERO = {
-  tag: 'ACADEMIC WRITING PLATFORM',
-  headline: 'Write Research\nPapers With\nStructure.',
+  tag: 'STUDENT RESEARCH PLATFORM',
+  headline: 'Grow Your Ideas\nWrite With\nConfidence.',
   subline:
-    'Organize your literature review, draft each section of your paper, and manage citations — all in one place.',
+    'Keep your ideas in one place, work with friends, and turn your thoughts into a complete paper step by step.',
   primaryCta: 'Get Started',
-  secondaryCta: 'View Features',
+  secondaryCta: 'Explore Features',
   artifactRef: 'DOC: 001–A',
-  artifactLabel: 'Research Paper Draft',
-  artifactSub: 'IMRaD Template · v1',
+  artifactLabel: 'Your First Paper',
+  artifactSub: 'Simple Template · v1',
 } as const;
 
 export const FEATURES = {
@@ -27,54 +27,54 @@ export const FEATURES = {
   items: [
     {
       ref: 'I',
-      title: 'Literature Review',
+      title: 'Collect Your Ideas',
       description:
-        'Collect, organize, and annotate your sources. Keep track of every paper before you start writing.',
+        'Save links, notes, and references in one place. Keep everything organized before you start writing.',
     },
     {
       ref: 'II',
-      title: 'Paper Structure',
+      title: 'Write Step by Step',
       description:
-        'Write with IMRaD templates. Introduction, Methods, Results, and Discussion — guided section by section.',
+        'Follow simple sections to build your paper. No need to worry about structure — we guide you.',
     },
     {
       ref: 'III',
-      title: 'Citation Management',
+      title: 'Add Citations Easily',
       description:
-        'Add citations and build your reference list automatically. Supports APA, MLA, Chicago, and IEEE.',
+        'Insert citations and build your reference list without stress. We help format everything for you.',
     },
   ],
 } as const;
 
 export const PROGRESSION = {
   ref: 'HOW IT WORKS',
-  title: 'Your Writing Process',
+  title: 'Your Writing Journey',
   steps: [
     {
       number: '01',
-      title: 'Gather Sources',
+      title: 'Start with Ideas',
       description:
-        'Search and save papers from your field. Annotate them and build your reference list.',
+        'Collect notes, links, and papers. Organize what you want to write about.',
     },
     {
       number: '02',
-      title: 'Write Your Paper',
+      title: 'Write Together',
       description:
-        'Use structured templates to draft each section. Collaborate with your team in real time.',
+        'Work on your paper step by step. Share and collaborate with your friends or teammates.',
     },
     {
       number: '03',
-      title: 'Cite & Submit',
+      title: 'Finish Your Paper',
       description:
-        'Format references automatically for any journal style. Review with your team and export.',
+        'Add citations, review your work, and export your final version with ease.',
     },
   ],
 } as const;
 
 export const STATEMENT = {
   ref: 'ABOUT',
-  text: 'From first draft\nto final submission.',
-  sub: 'One place for your entire academic writing process.',
+  text: 'From first idea\nto finished paper.',
+  sub: 'Everything you need to write and learn in one simple place.',
   primaryCta: 'Get Started',
   secondaryCta: 'Learn More',
 } as const;
@@ -85,7 +85,7 @@ export const FOOTER_LINKS = [
     links: [
       { label: 'Features', href: '#features' },
       { label: 'How It Works', href: '#workflow' },
-      { label: 'Documentation', href: '#docs' },
+      { label: 'Guide', href: '#docs' },
     ],
   },
   {
@@ -93,7 +93,7 @@ export const FOOTER_LINKS = [
     links: [
       { label: 'About', href: '#about' },
       { label: 'Contact', href: '#contact' },
-      { label: 'Privacy Policy', href: '#privacy' },
+      { label: 'Privacy', href: '#privacy' },
     ],
   },
 ] as const;
