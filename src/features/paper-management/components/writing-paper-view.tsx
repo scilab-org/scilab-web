@@ -248,6 +248,32 @@ export const WritingPaperView = ({
                 <p className="font-medium">{paper.conferenceName || 'N/A'}</p>
               </div>
             </div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-lg bg-amber-100 p-2 dark:bg-amber-900/40">
+                <Calendar className="size-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                  Conference / Journal Start
+                </p>
+                <p className="font-medium">
+                  {formatPublicationDate(paper.conferenceJournalStartAt)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/40">
+                <Calendar className="size-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                  Conference / Journal End
+                </p>
+                <p className="font-medium">
+                  {formatPublicationDate(paper.conferenceJournalEndAt)}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

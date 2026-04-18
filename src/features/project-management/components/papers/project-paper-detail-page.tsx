@@ -260,7 +260,8 @@ export const ProjectPaperDetailPage = ({
     mainContribution: '',
     status: 1,
     selectedJournalId: '',
-    selectedStyleName: '',
+    conferenceJournalStartAt: '',
+    conferenceJournalEndAt: '',
   });
   // Drag-and-drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
@@ -357,7 +358,12 @@ export const ProjectPaperDetailPage = ({
       mainContribution: paper.mainContribution ?? '',
       status: paper.status ?? 1,
       selectedJournalId: '',
-      selectedStyleName: paper.styleName ?? '',
+      conferenceJournalStartAt: toDateTimeLocalValue(
+        paper.conferenceJournalStartAt,
+      ),
+      conferenceJournalEndAt: toDateTimeLocalValue(
+        paper.conferenceJournalEndAt,
+      ),
     });
     setIsEditPaperOpen(true);
   };
@@ -376,6 +382,12 @@ export const ProjectPaperDetailPage = ({
         status: editPaperForm.status,
         conferenceJournalName: selectedJournal?.name ?? null,
         conferenceJournalId: selectedJournal?.id ?? null,
+        conferenceJournalStartAt: editPaperForm.conferenceJournalStartAt
+          ? new Date(editPaperForm.conferenceJournalStartAt).toISOString()
+          : null,
+        conferenceJournalEndAt: editPaperForm.conferenceJournalEndAt
+          ? new Date(editPaperForm.conferenceJournalEndAt).toISOString()
+          : null,
       },
     });
   };
@@ -1006,6 +1018,22 @@ export const ProjectPaperDetailPage = ({
                               Conference:
                             </span>
                             {(paper as any).conferenceName}
+                          </p>
+                        )}
+                        {(paper as any).conferenceJournalStartAt && (
+                          <p className="text-primary text-[14px] leading-relaxed">
+                            <span className="mr-2 font-semibold">Start:</span>
+                            {new Date(
+                              (paper as any).conferenceJournalStartAt,
+                            ).toLocaleDateString()}
+                          </p>
+                        )}
+                        {(paper as any).conferenceJournalEndAt && (
+                          <p className="text-primary text-[14px] leading-relaxed">
+                            <span className="mr-2 font-semibold">End:</span>
+                            {new Date(
+                              (paper as any).conferenceJournalEndAt,
+                            ).toLocaleDateString()}
                           </p>
                         )}
                       </div>
@@ -2903,10 +2931,16 @@ export const ProjectPaperDetailPage = ({
                     setEditPaperForm((prev) => ({
                       ...prev,
                       selectedJournalId: e.target.value,
-                      selectedStyleName:
+                      conferenceJournalStartAt: toDateTimeLocalValue(
                         journalResults.find(
                           (journal) => journal.id === e.target.value,
-                        )?.style ?? '',
+                        )?.conferenceJournalStartAt,
+                      ),
+                      conferenceJournalEndAt: toDateTimeLocalValue(
+                        journalResults.find(
+                          (journal) => journal.id === e.target.value,
+                        )?.conferenceJournalEndAt,
+                      ),
                     }))
                   }
                 >
@@ -2918,17 +2952,44 @@ export const ProjectPaperDetailPage = ({
                   ))}
                 </select>
               </div>
-              <div className="min-w-0 space-y-1.5">
-                <label htmlFor="ep-style-name" className="text-sm font-medium">
-                  Select Style
-                </label>
-                <div
-                  id="ep-style-name"
-                  className="border-surface-container-highest bg-surface text-primary scrollbar-dialog max-h-48 min-h-24 w-full overflow-y-auto rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap"
-                >
-                  {(selectedJournal?.style ??
-                    editPaperForm.selectedStyleName) ||
-                    'No style'}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="min-w-0 space-y-1.5">
+                  <label
+                    htmlFor="ep-conference-journal-start-at"
+                    className="text-sm font-medium"
+                  >
+                    Conference / Journal Start
+                  </label>
+                  <Input
+                    id="ep-conference-journal-start-at"
+                    type="datetime-local"
+                    value={editPaperForm.conferenceJournalStartAt}
+                    onChange={(e) =>
+                      setEditPaperForm((prev) => ({
+                        ...prev,
+                        conferenceJournalStartAt: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="min-w-0 space-y-1.5">
+                  <label
+                    htmlFor="ep-conference-journal-end-at"
+                    className="text-sm font-medium"
+                  >
+                    Conference / Journal End
+                  </label>
+                  <Input
+                    id="ep-conference-journal-end-at"
+                    type="datetime-local"
+                    value={editPaperForm.conferenceJournalEndAt}
+                    onChange={(e) =>
+                      setEditPaperForm((prev) => ({
+                        ...prev,
+                        conferenceJournalEndAt: e.target.value,
+                      }))
+                    }
+                  />
                 </div>
               </div>
             </div>

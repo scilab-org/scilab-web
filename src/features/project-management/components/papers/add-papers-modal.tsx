@@ -22,22 +22,16 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { TagAutocompleteInput } from '@/features/paper-management/components/tag-autocomplete-input';
-import { PAPER_STATUS_MAP } from '@/features/paper-management/constants';
 import { useAvailablePapers } from '../../api/papers/get-available-papers';
 import { useAddProjectPapers } from '../../api/papers/add-project-papers';
 import { ProjectPaper } from '../../types';
 
 const TAG_COLORS = [
-  'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
-  'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800',
-  'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800',
-  'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-800',
-  'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
-  'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-800',
-  'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800',
-  'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
-  'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800',
-  'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
+  'border-border bg-muted text-muted-foreground',
+  'border-primary/20 bg-primary/10 text-primary',
+  'border-secondary/25 bg-secondary/15 text-secondary',
+  'border-tertiary/20 bg-tertiary/10 text-tertiary',
+  'border-outline bg-muted/70 text-on-surface-variant',
 ];
 
 const getTagColor = (tag: string) => {
@@ -89,18 +83,11 @@ const PaperCard = ({ paper, isSelected, onToggleSelect }: PaperCardProps) => (
         <p className="text-foreground truncate text-sm font-medium">
           {paper.title || '(Untitled)'}
         </p>
-        {paper.abstract && (
-          <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
-            {paper.abstract}
-          </p>
-        )}
         <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
           {paper.doi && <span>DOI: {paper.doi}</span>}
-          {paper.journalName && <span>{paper.journalName}</span>}
-          {paper.status !== null && paper.status !== undefined && (
-            <span className="font-medium capitalize">
-              {PAPER_STATUS_MAP[paper.status] ?? paper.status}
-            </span>
+          {paper.journalName && <span>Journal: {paper.journalName}</span>}
+          {!paper.journalName && paper.conferenceName && (
+            <span>Conference: {paper.conferenceName}</span>
           )}
         </div>
         {paper.tagNames && paper.tagNames.length > 0 && (
@@ -110,7 +97,7 @@ const PaperCard = ({ paper, isSelected, onToggleSelect }: PaperCardProps) => (
                 <Button
                   variant="outline"
                   size="xs"
-                  className="gap-1 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                  className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/15 gap-1"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Tags className="size-3" />
@@ -213,7 +200,7 @@ export const AddPapersModal = ({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl">
         <div className="shrink-0 px-6 pt-6">
           <DialogHeader>
             <div className="flex items-center gap-2">

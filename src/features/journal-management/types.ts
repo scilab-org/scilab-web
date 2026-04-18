@@ -6,6 +6,8 @@ export type JournalDto = {
   texFile: string | null;
   pdfFile: string | null;
   style: string | null;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
   templateId: string | null;
   templateCode: string | null;
   projectIds: string[];
@@ -77,8 +79,8 @@ export type CreateJournalDto = {
 
 export type UpdateJournalDto = {
   name?: string;
-  ranking?: string;
-  url?: string;
+  ranking: string;
+  url: string;
   style?: string;
   texFile?: File | null;
   pdfFile?: File | null;

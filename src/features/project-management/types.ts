@@ -173,6 +173,8 @@ export type ProjectPaper = {
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
   tagNames: string[];
 };
 
@@ -214,6 +216,8 @@ export type SubProjectPaper = {
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
   tagNames: string[];
   createdBy: string | null;
   createdOnUtc?: string;

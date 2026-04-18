@@ -19,6 +19,8 @@ export type PaperDto = {
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
   tagNames: string[];
   createdOnUtc: string | null;
   createdBy: string | null;
@@ -72,6 +74,8 @@ export type WritingPaperDto = {
   paperType: string | null;
   journalName: string | null;
   conferenceName: string | null;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
   tagNames: string[];
   createdOnUtc?: string | null;
   createdBy?: string | null;
@@ -208,6 +212,8 @@ export type UpdateWritingPaperDto = {
   status?: number;
   conferenceJournalName?: string | null;
   conferenceJournalId?: string | null;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
 };
 
 export type PaperSection = {
@@ -257,6 +263,8 @@ export type CreatePaperInProjectDto = {
   status?: number;
   conferenceJournalName?: string;
   conferenceJournalId?: string;
+  conferenceJournalStartAt?: string | null;
+  conferenceJournalEndAt?: string | null;
   sections?: CreateSectionDto[];
 };
 

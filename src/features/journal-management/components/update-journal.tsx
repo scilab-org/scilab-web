@@ -65,6 +65,8 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.ranking.trim() || !formData.url.trim()) return;
+
     updateJournalMutation.mutate({
       journalId,
       data: {
@@ -112,7 +114,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
           </div>
           <div className="space-y-1.5">
             <label htmlFor="uj-ranking" className="text-sm font-medium">
-              Ranking
+              Ranking <span className="text-destructive">*</span>
             </label>
             <Input
               id="uj-ranking"
@@ -120,11 +122,12 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, ranking: e.target.value }))
               }
+              required
             />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="uj-url" className="text-sm font-medium">
-              URL
+              URL <span className="text-destructive">*</span>
             </label>
             <Input
               id="uj-url"
@@ -134,6 +137,7 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
                 setFormData((prev) => ({ ...prev, url: e.target.value }))
               }
               placeholder="https://example.com/journal"
+              required
             />
           </div>
           <div className="space-y-1.5">
@@ -197,7 +201,11 @@ export const UpdateJournal = ({ journalId, journal }: UpdateJournalProps) => {
           <Button
             type="submit"
             form="update-journal-form"
-            disabled={updateJournalMutation.isPending}
+            disabled={
+              updateJournalMutation.isPending ||
+              !formData.ranking.trim() ||
+              !formData.url.trim()
+            }
             variant="darkRed"
             className="uppercase"
           >

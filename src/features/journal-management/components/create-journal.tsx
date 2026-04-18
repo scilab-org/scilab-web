@@ -51,7 +51,13 @@ export const CreateJournal = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.templateId || !formData.style.trim())
+    if (
+      !formData.name.trim() ||
+      !formData.templateId ||
+      !formData.ranking.trim() ||
+      !formData.url.trim() ||
+      !formData.style.trim()
+    )
       return;
 
     createJournalMutation.mutate({
@@ -127,7 +133,7 @@ export const CreateJournal = () => {
 
           <div className="space-y-1.5">
             <label htmlFor="cj-ranking" className="text-sm font-medium">
-              Ranking
+              Ranking <span className="text-destructive">*</span>
             </label>
             <Input
               id="cj-ranking"
@@ -136,12 +142,13 @@ export const CreateJournal = () => {
                 setFormData((prev) => ({ ...prev, ranking: e.target.value }))
               }
               placeholder="Enter journal ranking"
+              required
             />
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="cj-url" className="text-sm font-medium">
-              URL
+              URL <span className="text-destructive">*</span>
             </label>
             <Input
               id="cj-url"
@@ -151,6 +158,7 @@ export const CreateJournal = () => {
                 setFormData((prev) => ({ ...prev, url: e.target.value }))
               }
               placeholder="https://example.com/journal"
+              required
             />
           </div>
 
@@ -222,7 +230,14 @@ export const CreateJournal = () => {
           <Button
             type="submit"
             form="create-journal-form"
-            disabled={createJournalMutation.isPending || !formData.style.trim()}
+            disabled={
+              createJournalMutation.isPending ||
+              !formData.name.trim() ||
+              !formData.templateId ||
+              !formData.ranking.trim() ||
+              !formData.url.trim() ||
+              !formData.style.trim()
+            }
             variant="darkRed"
             className="uppercase"
           >

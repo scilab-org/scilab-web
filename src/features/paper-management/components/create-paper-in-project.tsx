@@ -37,6 +37,14 @@ type CreatePaperInProjectProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+const toDateTimeLocalValue = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const tzOffset = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+};
+
 const initialFormData = {
   title: '',
   context: '',
@@ -46,6 +54,8 @@ const initialFormData = {
   mainContribution: '',
   researchAim: '',
   selectedJournalId: '',
+  conferenceJournalStartAt: '',
+  conferenceJournalEndAt: '',
   status: 1,
 };
 
@@ -155,6 +165,12 @@ export const CreatePaperInProject = ({
       status: formData.status,
       conferenceJournalName: selectedJournal?.name || undefined,
       conferenceJournalId: selectedJournal?.id || undefined,
+      conferenceJournalStartAt: formData.conferenceJournalStartAt
+        ? new Date(formData.conferenceJournalStartAt).toISOString()
+        : null,
+      conferenceJournalEndAt: formData.conferenceJournalEndAt
+        ? new Date(formData.conferenceJournalEndAt).toISOString()
+        : null,
       template: selectedJournal?.templateCode || undefined,
       sections: sections.map((sec) => ({
         title: sec.title,
@@ -320,7 +336,18 @@ export const CreatePaperInProject = ({
             <FilterDropdown
               value={formData.selectedJournalId}
               onChange={(v) =>
-                setFormData((prev) => ({ ...prev, selectedJournalId: v }))
+                setFormData((prev) => ({
+                  ...prev,
+                  selectedJournalId: v,
+                  conferenceJournalStartAt: toDateTimeLocalValue(
+                    journalResults.find((journal) => journal.id === v)
+                      ?.conferenceJournalStartAt,
+                  ),
+                  conferenceJournalEndAt: toDateTimeLocalValue(
+                    journalResults.find((journal) => journal.id === v)
+                      ?.conferenceJournalEndAt,
+                  ),
+                }))
               }
               options={journalResults.map((j) => ({
                 label: j.name,
@@ -330,11 +357,47 @@ export const CreatePaperInProject = ({
               clearLabel="No journal"
               variant="outline"
             />
-            {selectedJournal && (
-              <p className="text-muted-foreground text-xs">
-                Style: {selectedJournal.style || 'No style'}
-              </p>
-            )}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="cpp-conference-journal-start-at"
+                className="text-sm font-medium"
+              >
+                Conference / Journal Start
+              </label>
+              <Input
+                id="cpp-conference-journal-start-at"
+                type="datetime-local"
+                value={formData.conferenceJournalStartAt}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    conferenceJournalStartAt: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="cpp-conference-journal-end-at"
+                className="text-sm font-medium"
+              >
+                Conference / Journal End
+              </label>
+              <Input
+                id="cpp-conference-journal-end-at"
+                type="datetime-local"
+                value={formData.conferenceJournalEndAt}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    conferenceJournalEndAt: e.target.value,
+                  }))
+                }
+              />
+            </div>
           </div>
 
           {/* ── Sections from journal template ── */}

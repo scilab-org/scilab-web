@@ -4385,7 +4385,7 @@ export const LatexPaperEditor = ({
                     {activeSection?.description && (
                       <div className="px-1 py-1">
                         <p className="mb-1 text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                          Description
+                          Section Guidelines
                         </p>
                         <p className="text-[12px] leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300">
                           {activeSection.description.replace(/\\n/g, '\n')}

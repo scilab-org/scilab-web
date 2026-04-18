@@ -25,6 +25,8 @@ export const createPaperInProject = (
     status: data.status,
     conferenceJournalName: data.conferenceJournalName,
     conferenceJournalId: data.conferenceJournalId,
+    conferenceJournalStartAt: data.conferenceJournalStartAt,
+    conferenceJournalEndAt: data.conferenceJournalEndAt,
     sections: data.sections?.map((section) => ({
       title: section.title,
       displayOrder: section.displayOrder,
