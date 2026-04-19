@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { useSubProjects } from '../../api/papers/get-sub-projects';
+import { useMyAssignedPapers } from '@/features/task-management/api/get-my-assigned-papers';
 import { useDeleteSubProject } from '../../api/papers/delete-sub-project';
 import { usePaperMembers } from '../../api/papers/get-paper-members';
 import { SubProjectPaper } from '../../types';
@@ -112,14 +113,27 @@ export const ProjectWritingPapersList = ({
     return () => clearTimeout(t);
   }, [searchText]);
 
-  const papersQuery = useSubProjects({
+  const subProjectsQuery = useSubProjects({
     projectId,
     params: {
       PageNumber: 1,
       PageSize: 100,
       title: searchDebounce || undefined,
     },
+    queryConfig: { enabled: isManager },
   });
+
+  const assignedPapersQuery = useMyAssignedPapers({
+    params: {
+      ProjectId: projectId,
+      PageNumber: 1,
+      PageSize: 100,
+      title: searchDebounce || undefined,
+    },
+    queryConfig: { enabled: !isManager },
+  });
+
+  const papersQuery = isManager ? subProjectsQuery : assignedPapersQuery;
 
   const deleteSubProjectMutation = useDeleteSubProject({
     projectId,

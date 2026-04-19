@@ -28,6 +28,8 @@ import {
   X,
   RefreshCw,
   LayoutGrid,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
@@ -120,18 +122,16 @@ const registerLatexLanguage = (monaco: Monaco) => {
       { token: 'number', foreground: '000000', fontStyle: '' },
     ],
     colors: {
-      'editor.background': '#ffffff',
+      'editor.background': '#fffaf1',
       'editor.foreground': '#000000',
-      'editor.lineHighlightBackground': '#f6f8fa',
+      'editorCursor.foreground': '#2f6b5b',
       'editor.selectionBackground': '#dbeafe',
       'editor.inactiveSelectionBackground': '#e2e8f0',
       'editorLineNumber.foreground': '#94a3b8',
-      'editorLineNumber.activeForeground': '#0550ae',
-      'editorCursor.foreground': '#0550ae',
-      'editorIndentGuide.background': '#f1f5f9',
-      'editorIndentGuide.activeBackground': '#e2e8f0',
+      'editorLineNumber.activeForeground': '#94a3b8',
+      'editorIndentGuide.background': '#ede8df',
+      'editorIndentGuide.activeBackground': '#d9d0c4',
       'editorBracketMatch.background': '#dbeafe',
-      'editorBracketMatch.border': '#93c5fd',
     },
   });
 };
@@ -478,7 +478,7 @@ const CombineReferencesPanel = ({ paperId }: { paperId: string }) => {
               key={bank.id}
               type="button"
               onClick={() => setSelectedPaper({ paper: bank, index: i })}
-              className="flex w-full items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-3 text-left transition-colors hover:border-blue-200 hover:bg-blue-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900 dark:hover:bg-blue-950/30"
+              className="bg-editor-content-bg flex w-full items-start gap-2.5 rounded-lg border border-[#e0e0de] p-3 text-left transition-colors hover:border-[#cfc4b3] hover:bg-[#f7f1e7] dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/80"
             >
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 {i + 1}
@@ -537,8 +537,8 @@ export const CombineEditor = ({
   const [pdfContainerWidth, setPdfContainerWidth] = useState(0);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
-  const [isReferencesOpen, setIsReferencesOpen] = useState(true);
   const [editorWidthPct, setEditorWidthPct] = useState(50);
   const [pdfZoom, setPdfZoom] = useState(100);
   const isDraggingRef = useRef(false);
@@ -687,33 +687,41 @@ export const CombineEditor = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="latex-paper-editor-shell bg-editor-bg fixed inset-0 z-50 flex">
+      <style>{`
+        .latex-paper-editor-shell .monaco-editor .margin-view-overlays .line-numbers,
+        .latex-paper-editor-shell .monaco-editor .line-numbers {
+          font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+          font-size: 14px !important;
+        }
+
+        .latex-paper-editor-shell .monaco-editor .current-line,
+        .latex-paper-editor-shell .monaco-editor .current-line-margin {
+          background: transparent !important;
+          border: 0 !important;
+        }
+
+        .latex-paper-editor-shell .monaco-editor .cursors-layer .cursor {
+          background-color: #2f6b5b !important;
+          border-color: #2f6b5b !important;
+        }
+      `}</style>
       {/* ── Content area: same bg as section editor ────────────── */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f1f1f1] p-2 dark:bg-[#1a1a1a]">
+      <div className="bg-editor-bg flex min-h-0 flex-1 flex-col overflow-hidden p-2 dark:bg-[#1a1a1a]">
         {/* Single outer card wrapping left sidebar + editor + right panel */}
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] bg-white shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+        <div className="bg-editor-content-bg flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
           {/* ── Left References Sidebar ────────────────────────── */}
-          {isReferencesOpen && (
-            <div className="flex w-72 shrink-0 flex-col overflow-hidden border-r border-[#e0e0de] bg-white dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-              <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#e0e0de] px-3 dark:border-[#2a2a2a]">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
-                    <BookMarked className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {isSidebarOpen && (
+            <div className="bg-editor-bg flex w-72 shrink-0 flex-col overflow-hidden border-r border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1">
+                <div className="px-3 py-1">
+                  <p className="mb-1 text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
                     References
-                  </span>
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsReferencesOpen(false)}
-                  className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <CombineReferencesPanel paperId={paperId} />
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <CombineReferencesPanel paperId={paperId} />
+                </div>
               </div>
             </div>
           )}
@@ -725,16 +733,25 @@ export const CombineEditor = ({
             {/* ── Editor column ─────────────────────────────────── */}
             <div
               ref={editorColRef}
-              className="flex shrink-0 flex-col overflow-hidden bg-white dark:bg-[#1e1e1e]"
+              className="bg-editor-content-bg flex shrink-0 flex-col overflow-hidden dark:bg-[#1e1e1e]"
               style={{ width: `${editorWidthPct}%` }}
             >
               {/* Editor top bar */}
-              <div className="flex h-10 shrink-0 items-center border-b border-[#e0e0de] bg-white dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-                {/* Icon + Title */}
+              <div className="bg-editor-content-bg flex h-10 shrink-0 items-center border-b border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarOpen((prev) => !prev)}
+                  className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  title={isSidebarOpen ? 'Hide references' : 'Show references'}
+                >
+                  {isSidebarOpen ? (
+                    <PanelLeftClose className="h-4 w-4" />
+                  ) : (
+                    <PanelLeftOpen className="h-4 w-4" />
+                  )}
+                </button>
+
                 <div className="flex min-w-0 items-center gap-2 px-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
-                    <FileText className="h-3.5 w-3.5 text-white" />
-                  </div>
                   <span className="max-w-52 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {combine.name}
                   </span>
@@ -742,7 +759,7 @@ export const CombineEditor = ({
 
                 {/* SOURCE indicator */}
                 <div className="ml-1 flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#4f6ef7]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#2f6b5b]" />
                   <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase dark:text-slate-500">
                     Combined
                   </span>
@@ -770,27 +787,13 @@ export const CombineEditor = ({
                   Close
                 </button>
 
-                {/* References toggle */}
-                <button
-                  type="button"
-                  onClick={() => setIsReferencesOpen((v) => !v)}
-                  className={`mr-1 flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
-                    isReferencesOpen
-                      ? 'bg-[#4f6ef7] text-white'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <BookMarked className="h-3.5 w-3.5" />
-                  References
-                </button>
-
                 {/* Tools toggle */}
                 <button
                   type="button"
                   onClick={() => setIsToolsOpen((v) => !v)}
                   className={`mr-2 flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
                     isToolsOpen
-                      ? 'bg-[#4fc3a1] text-white'
+                      ? 'bg-[#2f6b5b] text-white'
                       : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -837,7 +840,7 @@ export const CombineEditor = ({
               </div>
 
               {/* Status bar at bottom of editor column */}
-              <div className="flex h-9 shrink-0 items-center justify-between border-t border-[#e0e0de] bg-white px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+              <div className="bg-editor-content-bg flex h-9 shrink-0 items-center justify-between border-t border-[#e0e0de] px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
                 <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
                   <span>Words: {stats.totalWords}</span>
                   <span>Headers: {stats.numHeaders}</span>
@@ -861,7 +864,7 @@ export const CombineEditor = ({
                   {isAuthor && !(combine.isSave ?? true) && (
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 rounded-lg bg-[#4f6ef7] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#3d5ce0] disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
                       onClick={handleSave}
                       disabled={saveMutation.isPending}
                     >
@@ -878,7 +881,7 @@ export const CombineEditor = ({
                   {isAuthor && (combine.isSave ?? true) && !isEditMode && (
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 rounded-lg border-2 border-blue-300 px-4 py-1.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                      className="flex items-center gap-1.5 rounded-lg border border-[#d0d0ce] px-4 py-1.5 text-sm font-semibold text-[#2f6b5b] hover:bg-[#f3efe6] dark:border-slate-700 dark:text-[#4eab8f] dark:hover:bg-slate-800"
                       onClick={() => setIsEditMode(true)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -901,7 +904,7 @@ export const CombineEditor = ({
                       </button>
                       <button
                         type="button"
-                        className="flex items-center gap-1.5 rounded-lg bg-[#4f6ef7] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#3d5ce0] disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
                         onClick={handleUpdate}
                         disabled={updateMutation.isPending || !hasChanges}
                       >
@@ -919,10 +922,10 @@ export const CombineEditor = ({
             </div>
 
             {/* ── Right panel ──────────────────────────────────── */}
-            <div className="relative m-2 flex flex-1 flex-col overflow-hidden rounded-xl bg-[#f1f1f1] dark:bg-[#111111]">
+            <div className="bg-editor-bg relative m-2 flex flex-1 flex-col overflow-hidden rounded-xl dark:bg-[#111111]">
               {/* Drag handle on left edge */}
               <div
-                className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-col-resize rounded-l-xl hover:bg-[#4f6ef7]/30 active:bg-[#4f6ef7]/40"
+                className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-col-resize rounded-l-xl hover:bg-[#2f6b5b]/20 active:bg-[#2f6b5b]/30"
                 onPointerDown={(e) => {
                   e.currentTarget.setPointerCapture(e.pointerId);
                   isDraggingRef.current = true;
@@ -940,13 +943,13 @@ export const CombineEditor = ({
               {isToolsOpen ? (
                 /* ── Tools panel (AI only) ── */
                 <>
-                  <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[#e0e0de] bg-white px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-                    <MessageSquareText className="size-3.5 text-[#4f6ef7]" />
+                  <div className="bg-editor-content-bg flex h-10 shrink-0 items-center gap-2 border-b border-[#e0e0de] px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+                    <MessageSquareText className="size-3.5 text-[#2f6b5b]" />
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       AI
                     </span>
                   </div>
-                  <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-[#1e1e1e]">
+                  <div className="bg-editor-content-bg flex flex-1 flex-col overflow-hidden dark:bg-[#1e1e1e]">
                     <EditorChatPanel
                       projectId={projectId}
                       sectionTitle={combine.name}
@@ -959,13 +962,9 @@ export const CombineEditor = ({
                   {/* PDF toolbar */}
                   <div
                     ref={pdfContainerRef}
-                    className="flex h-10 shrink-0 items-center gap-1 border-b border-transparent bg-transparent px-3"
+                    className="bg-editor-content-bg flex h-10 shrink-0 items-center gap-1 border-b border-[#e0e0de] px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]"
                   >
-                    {/* Section icon + title */}
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
-                        <FileText className="h-3.5 w-3.5 text-white" />
-                      </div>
                       <span className="max-w-48 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
                         {combine.name}
                       </span>
@@ -1070,7 +1069,7 @@ export const CombineEditor = ({
                     {isCompiling ? (
                       <div className="flex h-full items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
-                          <Loader2 className="size-8 animate-spin text-[#4f6ef7]" />
+                          <Loader2 className="size-8 animate-spin text-[#2f6b5b]" />
                           <span className="text-sm text-slate-500">
                             Compiling…
                           </span>

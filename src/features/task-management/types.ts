@@ -87,6 +87,7 @@ export type AssignedPaperItem = {
 export type GetMyAssignedPapersParams = {
   title?: string;
   ProjectCode?: string;
+  ProjectId?: string;
   PageNumber?: number;
   PageSize?: number;
 };

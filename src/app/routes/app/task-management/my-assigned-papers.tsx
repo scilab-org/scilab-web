@@ -155,15 +155,17 @@ const MyAssignedPapersRoute = () => {
     setSearchParams(params);
   };
 
-  const handleClearProject = () => {
-    setFilters((prev) => ({ ...prev, projectCode: '' }));
-    const params = new URLSearchParams(searchParams);
-    params.delete('projectCode');
-    params.set('page', '1');
-    setSearchParams(params);
-  };
-
   const hasFilters = !!(titleParam || projectCodeParam || statusParam);
+  const hasDraftFilters = !!(
+    filters.title ||
+    filters.projectCode ||
+    filters.status
+  );
+
+  const handleClearFilters = () => {
+    setFilters({ title: '', projectCode: '', status: '' });
+    setSearchParams(new URLSearchParams({ page: '1' }));
+  };
 
   // Filter by submission status client-side
   const filteredPapers = statusParam
@@ -217,16 +219,6 @@ const MyAssignedPapersRoute = () => {
             />
             {filters.projectCode && <input type="hidden" />}
           </div>
-          {filters.projectCode && (
-            <button
-              type="button"
-              onClick={handleClearProject}
-              className="text-muted-foreground hover:text-foreground -ml-1"
-              title="Clear project filter"
-            >
-              <X className="size-4" />
-            </button>
-          )}
 
           {/* Status filter */}
           <div className="bg-background h-10 w-40 rounded-md">
@@ -238,6 +230,18 @@ const MyAssignedPapersRoute = () => {
               className="h-10 w-full justify-between px-4 font-sans"
             />
           </div>
+
+          {hasDraftFilters && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClearFilters}
+              className="border-input h-10 px-4 font-sans text-sm font-medium"
+            >
+              <X className="mr-2 size-4" />
+              Clear filters
+            </Button>
+          )}
 
           <Button
             type="submit"
@@ -353,10 +357,7 @@ const MyAssignedPapersRoute = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setFilters({ title: '', projectCode: '', status: '' });
-                    setSearchParams(new URLSearchParams({ page: '1' }));
-                  }}
+                  onClick={handleClearFilters}
                 >
                   Clear filters
                 </Button>
