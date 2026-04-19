@@ -11,7 +11,8 @@ import {
 } from '../constants';
 import { PaperStatusHistoryEntry } from '../types';
 import { StatusTransitionDialog } from './status-transition-dialog';
-import { ExternalLink } from 'lucide-react';
+import { Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const REVISION_TYPE_LABELS: Record<string, string> = {
   minor: 'Minor revisions',
@@ -42,6 +43,7 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
       <div className="space-y-1">
         <h3 className="font-newsreader text-2xl leading-tight font-normal">
           {SUBMISSION_STATUS_LABELS[entry.status] ?? `Status ${entry.status}`}
+          {` By ${entry.actorUserName}`}
         </h3>
         <p className="text-muted-foreground text-xs">
           Logged: {formatLocalDateTime(entry.createdOnUtc)}
@@ -53,10 +55,15 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
           <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
             Revision Type
           </p>
-          <div className="bg-card rounded-sm border p-4">
-            <p className="text-sm leading-relaxed">
-              {REVISION_TYPE_LABELS[entry.revisionType] ?? entry.revisionType}
-            </p>
+          <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <p className="text-muted-foreground font-sans text-xs font-bold">
+                  {REVISION_TYPE_LABELS[entry.revisionType] ??
+                    entry.revisionType}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -66,19 +73,31 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
           <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
             Attached PDF
           </p>
-          <div className="bg-card flex items-center justify-between rounded-sm border p-4">
-            <p className="text-sm leading-relaxed">
-              {entry.pdfFileName ?? 'PDF File'}
-            </p>
-            <a
-              href={entry.pdfFileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
-            >
-              <ExternalLink className="size-3" />
-              View PDF
-            </a>
+          <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <p className="text-muted-foreground font-sans text-sm leading-relaxed font-bold">
+                  {entry.pdfFileName ?? 'PDF File'}
+                </p>
+
+                <Button
+                  asChild
+                  variant="outline"
+                  size="action"
+                  className="bg-surface-container-low text-primary hover:bg-surface-container ml-auto gap-1.5 border-transparent"
+                >
+                  <a
+                    href={entry.pdfFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1"
+                  >
+                    <Eye className="size-4" />
+                    View
+                  </a>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -88,10 +107,14 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
           <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
             Note
           </p>
-          <div className="bg-card rounded-sm border p-4">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {entry.note}
-            </p>
+          <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <p className="text-muted-foreground font-sans text-sm leading-relaxed font-bold">
+                  {entry.note ?? 'No Note'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -148,11 +171,6 @@ const StatusTimelineItem = ({
         >
           {SUBMISSION_STATUS_LABELS[entry.status] ?? `Status ${entry.status}`}
         </p>
-        {entry.note && (
-          <p className="text-muted-foreground line-clamp-1 text-xs leading-snug">
-            {entry.note}
-          </p>
-        )}
       </div>
     </button>
   );
