@@ -11,7 +11,6 @@ import {
   Star,
   UserPlus,
   Users,
-  BookMarked,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -222,12 +222,8 @@ const SectionMembersSheet = ({
                 <ArrowLeft className="size-4" />
               </button>
             )}
-            <Users className="size-5 text-green-600" />
-            {view === 'assign' ? 'Assign Writers' : 'Section Writers'}
+            {`${sectionTitle} Writers`}
           </DialogTitle>
-          <DialogDescription className="truncate text-xs">
-            {sectionTitle}
-          </DialogDescription>
         </DialogHeader>
 
         {view === 'members' ? (
@@ -799,6 +795,7 @@ const PickBestDialog = ({
         new Date(b.createdOnUtc || '').getTime() -
         new Date(a.createdOnUtc || '').getTime(),
     );
+  const selectedVersion = versions.find((v) => v.sectionId === confirmId);
 
   const markMutation = useMarkMainSection({
     mutationConfig: {
@@ -843,7 +840,10 @@ const PickBestDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
+        <DialogContent
+          className="flex max-h-[85vh] flex-col sm:max-w-lg"
+          showCloseButton={false}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Star className="size-4 text-amber-500" />
@@ -884,7 +884,7 @@ const PickBestDialog = ({
                           : 'bg-card hover:bg-muted/40',
                       )}
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                             {v.version && (
@@ -933,8 +933,8 @@ const PickBestDialog = ({
                         {!isMain && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-7 shrink-0 px-2.5 text-xs"
+                            variant="darkRed"
+                            className="h-6 shrink-0 px-2 text-[11px]"
                             disabled={isPending || markMutation.isPending}
                             onClick={() => {
                               setPendingVersionId(v.sectionId);
@@ -944,7 +944,7 @@ const PickBestDialog = ({
                             {isPending && markMutation.isPending ? (
                               <Loader2 className="size-3 animate-spin" />
                             ) : (
-                              'Pick'
+                              'Pick Version'
                             )}
                           </Button>
                         )}
@@ -958,6 +958,14 @@ const PickBestDialog = ({
               </div>
             )}
           </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outlineAction" size="action">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -972,21 +980,24 @@ const PickBestDialog = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark as main version?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Pick this version as best version for {sectionTitle}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will set the selected version as the main version for this
-              section. The previous main version will be replaced.
+              {`You are selecting version created by "${selectedVersion?.createdBy || 'unknown'}". This will replace the current best version.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
+              variant="outlineAction"
+              size="action"
               disabled={markMutation.isPending}
-              className={BTN.CANCEL}
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className={BTN.EDIT}
+              variant="darkRed"
+              className="h-7 px-3 text-[11px] tracking-wide"
               disabled={markMutation.isPending}
               onClick={(e) => {
                 e.preventDefault();
@@ -1925,13 +1936,9 @@ export const PaperWorkspacePage = ({
       >
         <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BookMarked className="size-5 text-violet-600" />
-              Section Description
+            <DialogTitle>
+              {guidelineSheet ? `${guidelineSheet.title} Description` : ''}
             </DialogTitle>
-            <DialogDescription className="truncate text-xs">
-              {guidelineSheet?.title}
-            </DialogDescription>
           </DialogHeader>
 
           <form
@@ -1979,8 +1986,8 @@ export const PaperWorkspacePage = ({
           <DialogFooter className="gap-2">
             <Button
               type="button"
-              variant="outline"
-              className={BTN.CANCEL}
+              variant="outlineAction"
+              size="default"
               onClick={() => setGuidelineSheet(null)}
             >
               Cancel

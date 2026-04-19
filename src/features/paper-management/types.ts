@@ -529,6 +529,7 @@ export type PaperVersionFileItem = {
   paperVersionId: string;
   fileName: string;
   fileUrl: string;
+  status?: number | null;
   note?: string | null;
   createdOnUtc: string;
   createdBy?: string | null;
