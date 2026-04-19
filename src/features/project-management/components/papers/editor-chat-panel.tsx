@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, MessageSquare, PenLine, Loader2, Bot } from 'lucide-react';
+import { Send, MessageSquare, PenLine, Loader2, Bot, MoreHorizontal, Pencil, Trash2, Check, X } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -11,6 +11,8 @@ import { cn } from '@/utils/cn';
 import { useSendMessage } from '@/features/ai-chat/api/send-message';
 import { useSessionMessages } from '@/features/ai-chat/api/get-session-messages';
 import { useSessions } from '@/features/ai-chat/api/get-sessions';
+import { useDeleteSession } from '@/features/ai-chat/api/delete-session';
+import { useRenameSession } from '@/features/ai-chat/api/rename-session';
 import type {
   ChatMessage,
   PlanningQuestion,
@@ -104,11 +106,13 @@ const CompactChatInput = ({
   isSending,
   mode,
   onModeChange,
+  canWrite = false,
 }: {
   onSend: (content: string) => void;
   isSending: boolean;
   mode: ChatMode;
   onModeChange: (mode: ChatMode) => void;
+  canWrite?: boolean;
 }) => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -151,19 +155,21 @@ const CompactChatInput = ({
           <MessageSquare className="h-3 w-3" />
           Chat
         </button>
-        <button
-          type="button"
-          onClick={() => onModeChange(CHAT_MODE.WRITE)}
-          className={cn(
-            'flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
-            mode === CHAT_MODE.WRITE
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:text-foreground',
-          )}
-        >
-          <PenLine className="h-3 w-3" />
-          Write
-        </button>
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => onModeChange(CHAT_MODE.WRITE)}
+            className={cn(
+              'flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
+              mode === CHAT_MODE.WRITE
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <PenLine className="h-3 w-3" />
+            Write
+          </button>
+        )}
       </div>
 
       {/* Input row */}
@@ -294,17 +300,85 @@ const SessionList = ({
   activeSessionId,
   onSelectSession,
   onNewChat,
+  onSessionDeleted,
 }: {
   projectId: string;
   sectionId?: string;
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
   onNewChat: () => void;
+  onSessionDeleted?: (sessionId: string) => void;
 }) => {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
   const sessionsQuery = useSessions({
     params: { projectId, sectionId: sectionId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
+
+  const deleteSessionMutation = useDeleteSession({
+    projectId,
+    mutationConfig: {
+      onSuccess: (_data, variables) => {
+        setConfirmDeleteId(null);
+        setOpenMenuId(null);
+        onSessionDeleted?.(variables.sessionId);
+      },
+    },
+  });
+
+  const renameSessionMutation = useRenameSession({
+    projectId,
+    mutationConfig: {
+      onSuccess: () => {
+        setRenamingId(null);
+        setOpenMenuId(null);
+      },
+    },
+  });
+
+  // Focus rename input when editing starts
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingId]);
+
+  const handleStartRename = (sessionId: string, currentTitle: string) => {
+    setRenamingId(sessionId);
+    setRenameValue(currentTitle);
+    setOpenMenuId(null);
+    setConfirmDeleteId(null);
+  };
+
+  const handleConfirmRename = (sessionId: string) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) return;
+    renameSessionMutation.mutate({ sessionId, title: trimmed });
+  };
+
+  const handleCancelRename = () => {
+    setRenamingId(null);
+    setRenameValue('');
+  };
+
+  const handleStartDelete = (sessionId: string) => {
+    setConfirmDeleteId(sessionId);
+    setOpenMenuId(null);
+  };
+
+  const handleConfirmDelete = (sessionId: string) => {
+    deleteSessionMutation.mutate({ sessionId });
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDeleteId(null);
+  };
 
   const sessions = sessionsQuery.data?.sessions ?? [];
 
@@ -331,22 +405,146 @@ const SessionList = ({
           </p>
         ) : (
           sessions.map((session) => (
-            <button
+            <div
               key={session.id}
-              onClick={() => onSelectSession(session.id)}
               className={cn(
-                'w-full truncate rounded-md px-2.5 py-2 text-left text-xs transition-colors',
+                'group relative rounded-md transition-colors',
                 activeSessionId === session.id
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-foreground/70 hover:bg-muted',
+                  ? 'bg-primary/10'
+                  : 'hover:bg-muted',
               )}
-              title={session.title}
             >
-              <span className="block truncate">{session.title}</span>
-              <span className="text-muted-foreground mt-0.5 block text-[10px]">
-                {new Date(session.updatedAt).toLocaleDateString()}
-              </span>
-            </button>
+              {/* Delete confirmation overlay */}
+              {confirmDeleteId === session.id ? (
+                <div className="flex items-center justify-between px-2.5 py-2">
+                  <span className="text-destructive text-xs font-medium">
+                    Delete this session?
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmDelete(session.id)}
+                      disabled={deleteSessionMutation.isPending}
+                      className="text-destructive hover:bg-destructive/10 rounded p-0.5 transition-colors disabled:opacity-50"
+                      title="Confirm delete"
+                    >
+                      {deleteSessionMutation.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelDelete}
+                      disabled={deleteSessionMutation.isPending}
+                      className="text-muted-foreground hover:text-foreground rounded p-0.5 transition-colors"
+                      title="Cancel"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : renamingId === session.id ? (
+                /* Inline rename input */
+                <div className="flex items-center gap-1 px-2.5 py-1.5">
+                  <input
+                    ref={renameInputRef}
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleConfirmRename(session.id);
+                      if (e.key === 'Escape') handleCancelRename();
+                    }}
+                    className="border-input bg-background text-foreground focus:ring-ring min-w-0 flex-1 rounded border px-2 py-0.5 text-xs outline-none focus:ring-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmRename(session.id)}
+                    disabled={renameSessionMutation.isPending || !renameValue.trim()}
+                    className="text-primary hover:bg-primary/10 rounded p-0.5 transition-colors disabled:opacity-50"
+                    title="Save"
+                  >
+                    {renameSessionMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelRename}
+                    className="text-muted-foreground hover:text-foreground rounded p-0.5 transition-colors"
+                    title="Cancel"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                /* Normal session row */
+                <div className="flex items-center">
+                  <button
+                    onClick={() => onSelectSession(session.id)}
+                    className={cn(
+                      'min-w-0 flex-1 px-2.5 py-2 text-left text-xs',
+                      activeSessionId === session.id
+                        ? 'text-primary font-medium'
+                        : 'text-foreground/70',
+                    )}
+                    title={session.title}
+                  >
+                    <span className="block truncate">{session.title}</span>
+                    <span className="text-muted-foreground mt-0.5 block text-[10px]">
+                      {new Date(session.updatedAt).toLocaleDateString()}
+                    </span>
+                  </button>
+
+                  {/* Actions menu */}
+                  <div className="relative shrink-0 pr-1">
+                    {openMenuId === session.id ? (
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStartRename(session.id, session.title)}
+                          className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+                          title="Rename"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartDelete(session.id)}
+                          className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOpenMenuId(null)}
+                          className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+                          title="Close"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(session.id);
+                        }}
+                        className="text-muted-foreground hover:text-foreground rounded p-1 opacity-0 transition-colors group-hover:opacity-100"
+                        title="Session options"
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           ))
         )}
       </div>
@@ -363,6 +561,7 @@ type EditorChatPanelProps = {
   sectionTitle?: string;
   sectionContent?: string;
   onWriteOutput?: (output: WritingOutput) => void;
+  canWrite?: boolean;
 };
 
 export const EditorChatPanel = ({
@@ -372,6 +571,7 @@ export const EditorChatPanel = ({
   sectionTitle,
   sectionContent,
   onWriteOutput,
+  canWrite = false,
 }: EditorChatPanelProps) => {
   const [chatTab, setChatTab] = useState<'chat' | 'sessions'>('chat');
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -531,10 +731,26 @@ export const EditorChatPanel = ({
     setRefreshKey((k) => k + 1);
   }, []);
 
+  const handleSessionDeleted = useCallback((sessionId: string) => {
+    if (activeSessionId === sessionId) {
+      isNewChatRef.current = true;
+      setActiveSessionId(null);
+      setPlanningQuestions(null);
+      setChatTab('chat');
+    }
+  }, [activeSessionId]);
+
   const handleModeChange = useCallback((newMode: 'chat' | 'write') => {
     setMode(newMode);
     setPlanningQuestions(null);
   }, []);
+
+  // Reset to chat mode if write access is revoked (e.g. user switches to a read-only section)
+  useEffect(() => {
+    if (!canWrite && mode === CHAT_MODE.WRITE) {
+      setMode(CHAT_MODE.CHAT);
+    }
+  }, [canWrite, mode]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -616,6 +832,7 @@ export const EditorChatPanel = ({
               isSending={sendMessageMutation.isPending}
               mode={mode}
               onModeChange={handleModeChange}
+              canWrite={canWrite}
             />
           )}
         </div>
@@ -626,6 +843,7 @@ export const EditorChatPanel = ({
           activeSessionId={activeSessionId}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}
+          onSessionDeleted={handleSessionDeleted}
         />
       )}
     </div>
