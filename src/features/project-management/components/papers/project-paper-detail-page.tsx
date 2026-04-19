@@ -480,6 +480,17 @@ export const ProjectPaperDetailPage = ({
 
   const currentUsername = (user?.preferredUsername || '').trim().toLowerCase();
 
+  // Paper-level author: current user must have the 'author' role on this specific paper
+  const isPaperAuthor =
+    !paperMembersQuery.isLoading &&
+    paperMembersList.some((m: any) => {
+      const raw = (m.role ?? '').split(':').pop() ?? '';
+      return (
+        (m.username || '').trim().toLowerCase() === currentUsername &&
+        raw === 'author'
+      );
+    });
+
   const memberOptions = useMemo(() => {
     const members: ProjectMember[] =
       (paperMembersQuery.data as any)?.result?.items ?? [];
@@ -750,11 +761,11 @@ export const ProjectPaperDetailPage = ({
     updateTaskMutation.mutate({
       id: editingTask.id,
       data: {
-        name: isAuthor ? updateForm.name : editingTask.name,
-        description: isAuthor
+        name: isPaperAuthor ? updateForm.name : editingTask.name,
+        description: isPaperAuthor
           ? updateForm.description
           : editingTask.description || '',
-        assignedToUserName: isAuthor
+        assignedToUserName: isPaperAuthor
           ? updateForm.assignedToUserName
           : (editingTask.assignedToUserName ?? ''),
         status: Number(updateForm.status),
@@ -836,7 +847,7 @@ export const ProjectPaperDetailPage = ({
                   </a>
                 </Button>
               )}
-              {isAuthor && (
+              {isPaperAuthor && (
                 <Button
                   size="default"
                   variant="outline"
@@ -1056,7 +1067,7 @@ export const ProjectPaperDetailPage = ({
                       {paperVersions.length !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  {isAuthor && (
+                  {isPaperAuthor && (
                     <Button
                       variant="darkRed"
                       className={cn('ml-auto gap-1.5')}
@@ -1108,7 +1119,7 @@ export const ProjectPaperDetailPage = ({
                       <p className="text-primary text-sm font-medium">
                         No combined versions yet.
                       </p>
-                      {isAuthor && (
+                      {isPaperAuthor && (
                         <p className="text-secondary mt-1 text-xs">
                           Click &ldquo;Create Combined Version&rdquo; to
                           generate a combined version.
@@ -1170,7 +1181,7 @@ export const ProjectPaperDetailPage = ({
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {isAuthor && (
+                            {isPaperAuthor && (
                               <Button
                                 variant="outline"
                                 size="action"
@@ -1250,7 +1261,7 @@ export const ProjectPaperDetailPage = ({
                 <PaperWorkspacePage
                   projectId={projectId}
                   paperId={paperId}
-                  isAuthor={isAuthor}
+                  isAuthor={isPaperAuthor}
                   isManager={isManager}
                   backPath={backPath}
                   embedded={true}
@@ -1274,7 +1285,7 @@ export const ProjectPaperDetailPage = ({
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    {(isAuthor || isManager) && (
+                    {(isPaperAuthor || isManager) && (
                       <Button
                         size="action"
                         variant="darkRed"
@@ -1320,7 +1331,7 @@ export const ProjectPaperDetailPage = ({
                           <TableHead>User</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
-                          {(isAuthor || isManager) && (
+                          {(isPaperAuthor || isManager) && (
                             <TableHead className="w-16 text-center">
                               Actions
                             </TableHead>
@@ -1328,83 +1339,96 @@ export const ProjectPaperDetailPage = ({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paperMembersList.map((member: any) => {
-                          const parts = (member.role ?? '').split(':');
-                          const raw =
-                            parts.length > 1
-                              ? parts[parts.length - 1]
-                              : parts[0];
-                          let label: string;
-                          if (raw === 'author') label = 'Author';
-                          else if (raw === 'member') label = 'Contributor';
-                          else if (raw === 'edit') label = 'Editor';
-                          else if (raw === 'read' || raw === 'view')
-                            label = 'Viewer';
-                          else
-                            label = raw
-                              ? raw.charAt(0).toUpperCase() + raw.slice(1)
-                              : (member.role ?? '');
-                          const cls =
-                            raw === 'author'
-                              ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
-                              : raw === 'member' || raw === 'edit'
-                                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
-                                : '';
-                          const canDelete =
-                            (isAuthor || isManager) && raw === 'member';
-                          return (
-                            <TableRow
-                              key={member.id ?? member.memberId}
-                              className="hover:bg-muted/30"
-                            >
-                              <TableCell className="text-foreground font-medium">
-                                {member.firstName || member.lastName
-                                  ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
-                                  : member.username}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {member.email}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={cls}>
-                                  {label}
-                                </Badge>
-                              </TableCell>
-                              {(isAuthor || isManager) && (
-                                <TableCell className="text-center">
-                                  {canDelete && (
-                                    <Button
-                                      size="action"
-                                      variant="destructive"
-                                      title="Remove contributor"
-                                      disabled={
-                                        removePaperMemberMutation.isPending &&
-                                        confirmDeleteMemberId ===
-                                          member.memberId
-                                      }
-                                      onClick={() =>
-                                        setConfirmDeleteMemberId(
-                                          member.memberId,
-                                        )
-                                      }
-                                    >
-                                      {removePaperMemberMutation.isPending &&
-                                      confirmDeleteMemberId ===
-                                        member.memberId ? (
-                                        <>
-                                          <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                          REMOVE
-                                        </>
-                                      ) : (
-                                        'REMOVE'
-                                      )}
-                                    </Button>
-                                  )}
+                        {[...paperMembersList]
+                          .sort((a: any, b: any) => {
+                            const roleOrder = (role: string) => {
+                              const raw = (role ?? '').split(':').pop() ?? '';
+                              if (raw === 'author') return 0;
+                              if (raw === 'member' || raw === 'edit') return 1;
+                              return 2;
+                            };
+                            return roleOrder(a.role) - roleOrder(b.role);
+                          })
+                          .map((member: any) => {
+                            const parts = (member.role ?? '').split(':');
+                            const raw =
+                              parts.length > 1
+                                ? parts[parts.length - 1]
+                                : parts[0];
+                            let label: string;
+                            if (raw === 'author') label = 'Author';
+                            else if (raw === 'member') label = 'Contributor';
+                            else if (raw === 'edit') label = 'Editor';
+                            else if (raw === 'read' || raw === 'view')
+                              label = 'Viewer';
+                            else
+                              label = raw
+                                ? raw.charAt(0).toUpperCase() + raw.slice(1)
+                                : (member.role ?? '');
+                            const cls =
+                              raw === 'author'
+                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
+                                : raw === 'member' || raw === 'edit'
+                                  ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
+                                  : '';
+                            const canDelete = isPaperAuthor
+                              ? raw === 'member'
+                              : isManager
+                                ? raw === 'author'
+                                : false;
+                            return (
+                              <TableRow
+                                key={member.id ?? member.memberId}
+                                className="hover:bg-muted/30"
+                              >
+                                <TableCell className="text-foreground font-medium">
+                                  {member.firstName || member.lastName
+                                    ? `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()
+                                    : member.username}
                                 </TableCell>
-                              )}
-                            </TableRow>
-                          );
-                        })}
+                                <TableCell className="text-muted-foreground">
+                                  {member.email}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={cls}>
+                                    {label}
+                                  </Badge>
+                                </TableCell>
+                                {(isPaperAuthor || isManager) && (
+                                  <TableCell className="text-center">
+                                    {canDelete && (
+                                      <Button
+                                        size="action"
+                                        variant="destructive"
+                                        title="Remove contributor"
+                                        disabled={
+                                          removePaperMemberMutation.isPending &&
+                                          confirmDeleteMemberId ===
+                                            member.memberId
+                                        }
+                                        onClick={() =>
+                                          setConfirmDeleteMemberId(
+                                            member.memberId,
+                                          )
+                                        }
+                                      >
+                                        {removePaperMemberMutation.isPending &&
+                                        confirmDeleteMemberId ===
+                                          member.memberId ? (
+                                          <>
+                                            <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                            REMOVE
+                                          </>
+                                        ) : (
+                                          'REMOVE'
+                                        )}
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            );
+                          })}
                       </TableBody>
                     </Table>
                   </div>
@@ -1426,7 +1450,7 @@ export const ProjectPaperDetailPage = ({
                         : 'Paper tasks'}
                     </p>
                   </div>
-                  {isAuthor && (
+                  {isPaperAuthor && (
                     <Button
                       variant="darkRed"
                       className={cn('ml-auto')}
@@ -1736,7 +1760,7 @@ export const ProjectPaperDetailPage = ({
                                           setDragOverCol(null);
                                         }}
                                         onClick={() =>
-                                          isAuthor
+                                          isPaperAuthor
                                             ? openUpdateTask(task)
                                             : setViewingTask(task)
                                         }
@@ -1746,7 +1770,8 @@ export const ProjectPaperDetailPage = ({
                                             e.key === ' '
                                           ) {
                                             e.preventDefault();
-                                            if (isAuthor) openUpdateTask(task);
+                                            if (isPaperAuthor)
+                                              openUpdateTask(task);
                                             else setViewingTask(task);
                                           }
                                         }}
@@ -1994,7 +2019,7 @@ export const ProjectPaperDetailPage = ({
                                         setDragOverCol(null);
                                       }}
                                       onClick={() =>
-                                        isAuthor
+                                        isPaperAuthor
                                           ? openUpdateTask(task)
                                           : setViewingTask(task)
                                       }
@@ -2004,7 +2029,8 @@ export const ProjectPaperDetailPage = ({
                                           e.key === ' '
                                         ) {
                                           e.preventDefault();
-                                          if (isAuthor) openUpdateTask(task);
+                                          if (isPaperAuthor)
+                                            openUpdateTask(task);
                                           else setViewingTask(task);
                                         }
                                       }}
@@ -2480,14 +2506,14 @@ export const ProjectPaperDetailPage = ({
             <DialogHeader className="shrink-0 pr-8">
               <DialogTitle>Update Task</DialogTitle>
               <DialogDescription>
-                {isAuthor
+                {isPaperAuthor
                   ? 'Update task details'
                   : 'Only status and your date fields can be updated'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="scrollbar-dialog min-h-0 flex-1 space-y-4 overflow-y-auto py-4 pr-1">
-              {!isAuthor && (
+              {!isPaperAuthor && (
                 <>
                   <div className="space-y-1.5">
                     <p className="text-secondary font-sans text-[10px]">
@@ -2513,7 +2539,7 @@ export const ProjectPaperDetailPage = ({
                 </>
               )}
 
-              {isAuthor && (
+              {isPaperAuthor && (
                 <>
                   <div className="space-y-1.5">
                     <label
@@ -2665,7 +2691,7 @@ export const ProjectPaperDetailPage = ({
                 >
                   {updateTaskMutation.isPending ? 'UPDATING...' : 'UPDATE'}
                 </Button>
-                {isAuthor && (
+                {isPaperAuthor && (
                   <Button
                     type="button"
                     variant="outline"
@@ -2757,7 +2783,7 @@ export const ProjectPaperDetailPage = ({
       <PaperMembersDialog
         subProjectId={paperSubProjectId}
         isManager={isManager}
-        isAuthor={isAuthor}
+        isAuthor={isPaperAuthor}
         paperTitle={paper.title || 'Untitled'}
         open={isMembersOpen}
         onOpenChange={setIsMembersOpen}

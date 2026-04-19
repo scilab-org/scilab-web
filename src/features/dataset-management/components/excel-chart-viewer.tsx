@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Chart as ChartJS,
@@ -11,6 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Decimation,
 } from 'chart.js';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Download, FileSpreadsheet, AlertCircle } from 'lucide-react';
@@ -29,7 +30,52 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  Decimation,
 );
+
+// Maximum data points to render in a chart to keep the browser responsive
+const MAX_CHART_POINTS = 500;
+
+// Parse a cell value to number, handling $, commas, k/m/b suffixes
+const parseNumericValue = (value: unknown): number | null => {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return null;
+  const cleaned = value
+    .trim()
+    .replace(/[$,]/g, '')
+    .replace(/[^\d.kmb-]/gi, '');
+  const multipliers: Record<string, number> = {
+    k: 1_000,
+    m: 1_000_000,
+    b: 1_000_000_000,
+  };
+  const lastChar = cleaned.slice(-1).toLowerCase();
+  if (multipliers[lastChar]) {
+    const n = parseFloat(cleaned.slice(0, -1));
+    return isNaN(n) ? null : n * multipliers[lastChar];
+  }
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+};
+
+// Evenly sample arrays down to maxPoints elements
+const sampleEvenly = (
+  labels: string[],
+  values: number[],
+  maxPoints: number,
+): { labels: string[]; values: number[] } => {
+  const total = labels.length;
+  if (total <= maxPoints) return { labels, values };
+  const step = total / maxPoints;
+  const sl: string[] = [];
+  const sv: number[] = [];
+  for (let i = 0; i < maxPoints; i++) {
+    const idx = Math.min(Math.round(i * step), total - 1);
+    sl.push(labels[idx]);
+    sv.push(values[idx]);
+  }
+  return { labels: sl, values: sv };
+};
 
 // Fixed color palette suitable for scientific papers
 const SCIENTIFIC_COLORS = [
@@ -53,11 +99,6 @@ type ExcelChartViewerProps = {
   onClose: () => void;
 };
 
-type ChartData = {
-  labels: string[];
-  values: number[];
-};
-
 type RawData = {
   headers: string[];
   rows: any[][];
@@ -69,11 +110,10 @@ export const ExcelChartViewer = ({
   onClose,
 }: ExcelChartViewerProps) => {
   const [chartType, setChartType] = useState<ChartType>('bar');
-  const [chartData, setChartData] = useState<ChartData | null>(null);
   const [rawData, setRawData] = useState<RawData | null>(null);
   const [labelColumnIndex, setLabelColumnIndex] = useState<number>(0);
   const [valueColumnIndex, setValueColumnIndex] = useState<number>(1);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const chartRef = useRef<any>(null);
 
@@ -96,40 +136,12 @@ export const ExcelChartViewer = ({
     }
   };
 
-  // Helper function to parse numeric values (handles $, k, m, commas, etc.)
-  const parseNumericValue = (value: any): number | null => {
-    if (typeof value === 'number') return value;
-    if (typeof value !== 'string') return null;
-
-    // Remove common non-numeric characters
-    const cleaned = value
-      .trim()
-      .replace(/[$,]/g, '') // Remove $ and commas
-      .replace(/[^\d.kmb-]/gi, ''); // Keep digits, dot, k, m, b, minus
-
-    // Handle k, m, b multipliers
-    const multipliers: { [key: string]: number } = {
-      k: 1000,
-      m: 1000000,
-      b: 1000000000,
-    };
-
-    const lastChar = cleaned.slice(-1).toLowerCase();
-    if (multipliers[lastChar]) {
-      const num = parseFloat(cleaned.slice(0, -1));
-      return isNaN(num) ? null : num * multipliers[lastChar];
-    }
-
-    const num = parseFloat(cleaned);
-    return isNaN(num) ? null : num;
-  };
-
   // Load and parse data file (Excel or CSV)
   useEffect(() => {
     const loadDataFile = async () => {
       try {
         setLoading(true);
-        setError(null);
+        setLoadError(null);
 
         // Fetch the data file
         const response = await fetch(fileUrl);
@@ -185,7 +197,7 @@ export const ExcelChartViewer = ({
         setValueColumnIndex(autoValueColIndex);
       } catch (err) {
         console.error('Error loading data file:', err);
-        setError(
+        setLoadError(
           err instanceof Error ? err.message : 'Failed to load data file',
         );
       } finally {
@@ -196,52 +208,94 @@ export const ExcelChartViewer = ({
     loadDataFile();
   }, [fileUrl]);
 
-  // Process chart data whenever columns change
-  useEffect(() => {
-    if (!rawData) return;
-
-    try {
-      const labels: string[] = [];
-      const values: number[] = [];
-
-      // Extract data from selected columns
-      for (let i = 0; i < rawData.rows.length; i++) {
-        const row = rawData.rows[i];
-        if (!row || row.length === 0) continue;
-
-        // Get label from selected column
-        const label = String(row[labelColumnIndex] ?? `Row ${i + 1}`);
-
-        // Get value from selected column and parse it
-        const rawValue = row[valueColumnIndex];
-        const value = parseNumericValue(rawValue);
-
-        if (value !== null) {
-          labels.push(label);
-          values.push(value);
-        }
+  // Detect which columns contain numeric data (>= 50% of non-empty rows parse as number)
+  const numericColumnIndices = useMemo(() => {
+    if (!rawData) return new Set<number>();
+    const numeric = new Set<number>();
+    for (let col = 0; col < rawData.headers.length; col++) {
+      let numericCount = 0;
+      let nonEmptyCount = 0;
+      for (const row of rawData.rows) {
+        const cell = row[col];
+        if (cell === null || cell === undefined || cell === '') continue;
+        nonEmptyCount++;
+        if (parseNumericValue(cell) !== null) numericCount++;
       }
-
-      if (labels.length === 0 || values.length === 0) {
-        throw new Error('No valid numeric data found in selected value column');
+      if (nonEmptyCount > 0 && numericCount / nonEmptyCount >= 0.5) {
+        numeric.add(col);
       }
-
-      setChartData({ labels, values });
-      setError(null);
-    } catch (err) {
-      console.error('Error processing chart data:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to process chart data',
-      );
-      setChartData(null);
     }
-  }, [rawData, labelColumnIndex, valueColumnIndex]);
+    return numeric;
+  }, [rawData]);
 
-  // Prepare chart data in Chart.js format
-  const getChartJsData = () => {
+  // If current valueColumnIndex is no longer a numeric column, reset to first numeric one
+  useEffect(() => {
+    if (numericColumnIndices.size === 0) return;
+    if (!numericColumnIndices.has(valueColumnIndex)) {
+      setValueColumnIndex(numericColumnIndices.values().next().value ?? 0);
+    }
+  }, [numericColumnIndices, valueColumnIndex]);
+
+  const { chartData, chartDataError, isSampled, originalCount } =
+    useMemo(() => {
+      if (!rawData) {
+        return {
+          chartData: null,
+          chartDataError: null,
+          isSampled: false,
+          originalCount: 0,
+        };
+      }
+
+      try {
+        const allLabels: string[] = [];
+        const allValues: number[] = [];
+
+        for (let i = 0; i < rawData.rows.length; i++) {
+          const row = rawData.rows[i];
+          if (!row || row.length === 0) continue;
+
+          const label = String(row[labelColumnIndex] ?? `Row ${i + 1}`);
+          const value = parseNumericValue(row[valueColumnIndex]);
+
+          if (value !== null) {
+            allLabels.push(label);
+            allValues.push(value);
+          }
+        }
+
+        if (allLabels.length === 0 || allValues.length === 0) {
+          throw new Error(
+            'No valid numeric data found in selected value column',
+          );
+        }
+
+        const originalCount = allLabels.length;
+        const sampled = sampleEvenly(allLabels, allValues, MAX_CHART_POINTS);
+
+        return {
+          chartData: sampled,
+          chartDataError: null,
+          isSampled: originalCount > MAX_CHART_POINTS,
+          originalCount,
+        };
+      } catch (err) {
+        console.error('Error processing chart data:', err);
+        return {
+          chartData: null,
+          chartDataError:
+            err instanceof Error ? err.message : 'Failed to process chart data',
+          isSampled: false,
+          originalCount: 0,
+        };
+      }
+    }, [rawData, labelColumnIndex, valueColumnIndex]);
+
+  const displayError = loadError ?? chartDataError;
+
+  const chartJsData = useMemo(() => {
     if (!chartData) return null;
 
-    // For pie chart, use multiple colors; for bar/line, use single color
     const backgroundColor =
       chartType === 'pie'
         ? chartData.labels.map(
@@ -270,85 +324,137 @@ export const ExcelChartViewer = ({
         },
       ],
     };
-  };
+  }, [chartData, chartType]);
 
-  // Chart.js options
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        display: chartType === 'pie',
-        position: 'bottom' as const,
-        align: 'center' as const,
-        maxHeight: 250,
-        labels: {
-          boxWidth: 15,
-          padding: 8,
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false as const,
+      plugins: {
+        decimation: {
+          enabled: chartType === 'line',
+          algorithm: 'lttb' as const,
+          samples: MAX_CHART_POINTS,
+          threshold: MAX_CHART_POINTS,
+        },
+        legend: {
+          display: chartType === 'pie',
+          position: 'bottom' as const,
+          align: 'center' as const,
+          maxHeight: 250,
+          labels: {
+            boxWidth: 15,
+            padding: 8,
+            font: {
+              size: 10,
+            },
+            generateLabels: (chart: any) => {
+              const data = chart.data;
+              if (data.labels.length && data.datasets.length) {
+                return data.labels.map((label: string, i: number) => {
+                  const value = data.datasets[0].data[i];
+                  // Truncate long labels
+                  const truncatedLabel =
+                    label.length > 30 ? label.substring(0, 30) + '...' : label;
+                  return {
+                    text: `${truncatedLabel}: ${value}`,
+                    fillStyle: data.datasets[0].backgroundColor[i],
+                    hidden: false,
+                    index: i,
+                  };
+                });
+              }
+              return [];
+            },
+          },
+        },
+        title: {
+          display: true,
+          text: fileName,
+          position: 'top' as const,
           font: {
-            size: 10,
+            size: 20,
+            weight: 'bold' as const,
           },
-          generateLabels: (chart: any) => {
-            const data = chart.data;
-            if (data.labels.length && data.datasets.length) {
-              return data.labels.map((label: string, i: number) => {
-                const value = data.datasets[0].data[i];
-                // Truncate long labels
-                const truncatedLabel =
-                  label.length > 30 ? label.substring(0, 30) + '...' : label;
-                return {
-                  text: `${truncatedLabel}: ${value}`,
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  hidden: false,
-                  index: i,
-                };
-              });
+          padding: {
+            top: 10,
+            bottom: 20,
+          },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: {
+            size: 14,
+          },
+          bodyFont: {
+            size: 13,
+          },
+        },
+      },
+      scales:
+        chartType !== 'pie'
+          ? {
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.1)',
+                },
+                ticks: {
+                  autoSkip: true,
+                  maxTicksLimit: 12,
+                },
+              },
+              x: {
+                grid: {
+                  display: false,
+                },
+                ticks: {
+                  autoSkip: true,
+                  maxRotation: 45,
+                  minRotation: 30,
+                  maxTicksLimit: 14,
+                },
+              },
             }
-            return [];
-          },
-        },
-      },
-      title: {
-        display: true,
-        text: fileName,
-        position: 'top' as const,
-        font: {
-          size: 20,
-          weight: 'bold' as const,
-        },
-        padding: {
-          top: 10,
-          bottom: 20,
-        },
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        titleFont: {
-          size: 14,
-        },
-        bodyFont: {
-          size: 13,
-        },
-      },
-    },
-    scales:
-      chartType !== 'pie'
-        ? {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.1)',
-              },
-            },
-            x: {
-              grid: {
-                display: false,
-              },
-            },
-          }
-        : undefined,
-  };
+          : undefined,
+    }),
+    [chartType, fileName],
+  );
+
+  const chartElement = useMemo(() => {
+    if (!chartJsData) return null;
+
+    switch (chartType) {
+      case 'bar':
+        return <Bar ref={chartRef} data={chartJsData} options={chartOptions} />;
+      case 'line':
+        return (
+          <Line ref={chartRef} data={chartJsData} options={chartOptions} />
+        );
+      case 'pie':
+        return <Pie ref={chartRef} data={chartJsData} options={chartOptions} />;
+      default:
+        return null;
+    }
+  }, [chartJsData, chartOptions, chartType]);
+
+  const chartContainerStyle = useMemo(() => {
+    if (chartType === 'pie') {
+      return {
+        width: '100%',
+        maxWidth: '840px',
+        height: '640px',
+      };
+    }
+
+    return {
+      width: '100%',
+      height: '560px',
+      maxWidth: '100%',
+    };
+  }, [chartType]);
 
   // Export chart as PNG image
   const handleExportChart = () => {
@@ -394,23 +500,6 @@ export const ExcelChartViewer = ({
     }
   };
 
-  // Render the appropriate chart type
-  const renderChart = () => {
-    const data = getChartJsData();
-    if (!data) return null;
-
-    switch (chartType) {
-      case 'bar':
-        return <Bar ref={chartRef} data={data} options={chartOptions} />;
-      case 'line':
-        return <Line ref={chartRef} data={data} options={chartOptions} />;
-      case 'pie':
-        return <Pie ref={chartRef} data={data} options={chartOptions} />;
-      default:
-        return null;
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -424,7 +513,7 @@ export const ExcelChartViewer = ({
       role="button"
       tabIndex={0}
     >
-      <div className="bg-card max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-lg shadow-xl">
+      <div className="bg-card max-h-[95vh] w-full max-w-[96vw] overflow-y-auto rounded-lg shadow-xl 2xl:max-w-400">
         {/* Header */}
         <div className="border-border flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
@@ -457,7 +546,7 @@ export const ExcelChartViewer = ({
                 variant={chartType === 'bar' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setChartType('bar')}
-                disabled={loading || !!error}
+                disabled={loading || !!loadError}
               >
                 Bar Chart
               </Button>
@@ -465,7 +554,7 @@ export const ExcelChartViewer = ({
                 variant={chartType === 'line' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setChartType('line')}
-                disabled={loading || !!error}
+                disabled={loading || !!loadError}
               >
                 Line Chart
               </Button>
@@ -473,7 +562,7 @@ export const ExcelChartViewer = ({
                 variant={chartType === 'pie' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setChartType('pie')}
-                disabled={loading || !!error}
+                disabled={loading || !!loadError}
               >
                 Pie Chart
               </Button>
@@ -493,7 +582,7 @@ export const ExcelChartViewer = ({
                   value={labelColumnIndex}
                   onChange={(e) => setLabelColumnIndex(Number(e.target.value))}
                   className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  disabled={loading || !!error}
+                  disabled={loading || !!loadError}
                 >
                   {rawData.headers.map((header, index) => (
                     <option key={index} value={index}>
@@ -510,13 +599,15 @@ export const ExcelChartViewer = ({
                   value={valueColumnIndex}
                   onChange={(e) => setValueColumnIndex(Number(e.target.value))}
                   className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  disabled={loading || !!error}
+                  disabled={loading || !!loadError}
                 >
-                  {rawData.headers.map((header, index) => (
-                    <option key={index} value={index}>
-                      {header}
-                    </option>
-                  ))}
+                  {rawData.headers.map((header, index) =>
+                    numericColumnIndices.has(index) ? (
+                      <option key={index} value={index}>
+                        {header}
+                      </option>
+                    ) : null,
+                  )}
                 </select>
               </div>
             </div>
@@ -536,14 +627,14 @@ export const ExcelChartViewer = ({
             </div>
           )}
 
-          {error && (
+          {displayError && (
             <div className="bg-destructive/10 border-destructive/20 flex h-96 items-center justify-center rounded-lg border">
               <div className="text-center">
                 <AlertCircle className="text-destructive mx-auto mb-3 h-12 w-12" />
                 <h3 className="text-foreground mb-2 text-lg font-semibold">
                   Error Loading Chart
                 </h3>
-                <p className="text-muted-foreground text-sm">{error}</p>
+                <p className="text-muted-foreground text-sm">{displayError}</p>
                 <p className="text-muted-foreground mt-2 text-xs">
                   Please ensure the file has at least 2 columns with valid data
                 </p>
@@ -551,19 +642,12 @@ export const ExcelChartViewer = ({
             </div>
           )}
 
-          {!loading && !error && chartData && (
+          {!loading && !displayError && chartData && (
             <div className="space-y-4">
               {/* Chart Display */}
               <div className="bg-muted/30 rounded-lg p-6">
-                <div
-                  className="mx-auto"
-                  style={
-                    chartType === 'pie'
-                      ? { maxWidth: '700px', height: '600px' }
-                      : { maxWidth: '800px', maxHeight: '500px' }
-                  }
-                >
-                  {renderChart()}
+                <div className="mx-auto" style={chartContainerStyle}>
+                  {chartElement}
                 </div>
               </div>
 
@@ -574,8 +658,15 @@ export const ExcelChartViewer = ({
                     <span>
                       Data Points:{' '}
                       <strong className="text-foreground">
-                        {chartData.labels.length}
+                        {isSampled
+                          ? `${MAX_CHART_POINTS.toLocaleString()} / ${originalCount.toLocaleString()}`
+                          : chartData.labels.length.toLocaleString()}
                       </strong>
+                      {isSampled && (
+                        <span className="text-warning bg-warning/10 ml-2 rounded px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                          sampled
+                        </span>
+                      )}
                     </span>
                     {rawData && (
                       <>

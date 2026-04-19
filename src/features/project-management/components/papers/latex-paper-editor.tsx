@@ -173,6 +173,28 @@ const computeLatexStats = (latexContent: string) => {
   };
 };
 
+const renderDocumentClassPreview = (value: string) => {
+  const match = value.match(/^(\\documentclass)(\{)([^}]*)(\})(.*)$/);
+
+  if (!match) {
+    return <span className="text-[#2f6b5b] dark:text-[#4eab8f]">{value}</span>;
+  }
+
+  const [, command, openBrace, className, closeBrace, suffix] = match;
+
+  return (
+    <>
+      <span className="text-[#2f6b5b] dark:text-[#4eab8f]">{command}</span>
+      <span className="text-black dark:text-slate-100">{openBrace}</span>
+      <span className="text-black dark:text-slate-100">{className}</span>
+      <span className="text-black dark:text-slate-100">{closeBrace}</span>
+      {!!suffix && (
+        <span className="text-[#2f6b5b] dark:text-[#4eab8f]">{suffix}</span>
+      )}
+    </>
+  );
+};
+
 // ─── Write-mode diff view: line-by-line comparison ────────────────────────────
 
 type DiffLine = {
@@ -1343,7 +1365,7 @@ const InlineReferenceSectionEditor = ({
   /** Paper IDs returned by the writing LLM — auto-populates the Preview tab. */
   pendingReferencedPaperIds?: string[];
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isBankDetailDialogOpen, setIsBankDetailDialogOpen] = useState(false);
   const [isBankDetailLoading, setIsBankDetailLoading] = useState(false);
@@ -1679,10 +1701,11 @@ const InlineReferenceSectionEditor = ({
                         automaticLayout: true,
                         tabSize: 2,
                         lineNumbers: 'on',
-                        renderLineHighlight: 'line',
+                        renderLineHighlight: 'none',
                         fontFamily:
                           "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                        fontLigatures: true,
+                        fontWeight: '400',
+                        fontLigatures: false,
                         smoothScrolling: true,
                         scrollbar: {
                           verticalScrollbarSize: 6,
@@ -1726,10 +1749,11 @@ const InlineReferenceSectionEditor = ({
                       automaticLayout: true,
                       tabSize: 2,
                       lineNumbers: 'on',
-                      renderLineHighlight: 'line',
+                      renderLineHighlight: 'none',
                       fontFamily:
                         "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                      fontLigatures: true,
+                      fontWeight: '400',
+                      fontLigatures: false,
                       smoothScrolling: true,
                       scrollbar: {
                         verticalScrollbarSize: 6,
@@ -1766,6 +1790,10 @@ const InlineReferenceSectionEditor = ({
                   padding: { top: 10, bottom: 10 },
                   automaticLayout: true,
                   tabSize: 2,
+                  fontFamily:
+                    "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                  fontWeight: '400',
+                  fontLigatures: false,
                   lineNumbers: 'on',
                   scrollbar: {
                     verticalScrollbarSize: 6,
@@ -2008,10 +2036,11 @@ const InlineReferenceSectionEditor = ({
                           glyphMargin: false,
                           lineDecorationsWidth: 0,
                           folding: false,
-                          renderLineHighlight: 'line',
+                          renderLineHighlight: 'none',
                           fontFamily:
                             "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                          fontLigatures: true,
+                          fontWeight: '400',
+                          fontLigatures: false,
                           smoothScrolling: true,
                           scrollbar: {
                             verticalScrollbarSize: 6,
@@ -2461,25 +2490,23 @@ const registerLatexLanguage = (monaco: Monaco) => {
     colors: {
       'editor.background': '#fffaf1',
       'editor.foreground': '#000000',
-      'editor.lineHighlightBackground': '#f7f0e3',
+      'editorCursor.foreground': '#2f6b5b',
       'editor.selectionBackground': '#dbeafe',
       'editor.inactiveSelectionBackground': '#e2e8f0',
       'editorLineNumber.foreground': '#94a3b8',
-      'editorLineNumber.activeForeground': '#0550ae',
-      'editorCursor.foreground': '#0550ae',
+      'editorLineNumber.activeForeground': '#94a3b8',
       'editorIndentGuide.background': '#ede8df',
       'editorIndentGuide.activeBackground': '#d9d0c4',
       'editorBracketMatch.background': '#dbeafe',
-      'editorBracketMatch.border': '#93c5fd',
     },
   });
 };
 
 type SectionProp = {
   id: string;
+  title: string;
   markSectionId?: string;
   paperId?: string;
-  title: string;
   content: string;
   packages?: string[];
   memberId: string;
@@ -2496,7 +2523,7 @@ type LatexPaperEditorProps = {
   projectId?: string;
   draftStorageScope?: string;
   initialContent?: string;
-  sections?: SectionProp[];
+  sections: SectionProp[];
   initialSectionId?: string;
   onClose: () => void;
   onSave?: (content: string, sectionId?: string) => void;
@@ -2514,8 +2541,7 @@ const getFileNameFromUrl = (fileUrl: string): string => {
     const value = pathname.split('/').filter(Boolean).pop();
     return value ? decodeURIComponent(value) : fileUrl;
   } catch {
-    const value = fileUrl.split('/').filter(Boolean).pop();
-    return value ? decodeURIComponent(value) : fileUrl;
+    return fileUrl;
   }
 };
 
@@ -2576,7 +2602,7 @@ export const LatexPaperEditor = ({
   const [pdfContainerWidth, setPdfContainerWidth] = useState(0);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sidebarResourceTab, setSidebarResourceTab] = useState<
     'files' | 'info'
   >('info');
@@ -2602,7 +2628,7 @@ export const LatexPaperEditor = ({
   const [toolsTab, setToolsTab] = useState<
     'chat' | 'drafts' | 'versions' | 'comments' | 'datasets'
   >('chat');
-  const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(true);
+  const [isSidebarRefOpen, setIsSidebarRefOpen] = useState(false);
   const [editorWidthPct, setEditorWidthPct] = useState(50);
   const [pdfZoom, setPdfZoom] = useState(100);
   // Version preview state: when set, editor shows a read-only version tab
@@ -4305,7 +4331,25 @@ export const LatexPaperEditor = ({
   );
 
   return (
-    <div className="bg-editor-bg fixed inset-0 z-50 flex">
+    <div className="latex-paper-editor-shell bg-editor-bg fixed inset-0 z-50 flex">
+      <style>{`
+        .latex-paper-editor-shell .monaco-editor .margin-view-overlays .line-numbers,
+        .latex-paper-editor-shell .monaco-editor .line-numbers {
+          font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+          font-size: 14px !important;
+        }
+
+        .latex-paper-editor-shell .monaco-editor .current-line,
+        .latex-paper-editor-shell .monaco-editor .current-line-margin {
+          background: transparent !important;
+          border: 0 !important;
+        }
+
+        .latex-paper-editor-shell .monaco-editor .cursors-layer .cursor {
+          background-color: #2f6b5b !important;
+          border-color: #2f6b5b !important;
+        }
+      `}</style>
       {/* Close confirmation dialog */}
       <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <AlertDialogContent>
@@ -4674,29 +4718,34 @@ export const LatexPaperEditor = ({
                     <div className="w-7 shrink-0 pt-px text-right text-slate-400 select-none dark:text-slate-500">
                       1
                     </div>
-                    <input
-                      data-preamble
-                      data-preamble-doc="true"
-                      type="text"
-                      value={documentClass}
-                      onChange={(e) => setDocumentClass(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (!focusPreambleInput(e.currentTarget, 1)) {
-                            insertPreamblePackageLine('current', -1);
+                    <div className="relative w-full">
+                      <div className="pointer-events-none absolute inset-0 overflow-hidden font-mono text-[14px] leading-5.5 whitespace-pre text-transparent">
+                        {renderDocumentClassPreview(documentClass)}
+                      </div>
+                      <input
+                        data-preamble
+                        data-preamble-doc="true"
+                        type="text"
+                        value={documentClass}
+                        onChange={(e) => setDocumentClass(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!focusPreambleInput(e.currentTarget, 1)) {
+                              insertPreamblePackageLine('current', -1);
+                            }
+                          } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            focusPreambleInput(e.currentTarget, 1);
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            focusPreambleInput(e.currentTarget, -1);
                           }
-                        } else if (e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          focusPreambleInput(e.currentTarget, 1);
-                        } else if (e.key === 'ArrowUp') {
-                          e.preventDefault();
-                          focusPreambleInput(e.currentTarget, -1);
-                        }
-                      }}
-                      spellCheck={false}
-                      className="w-full bg-transparent font-mono text-[14px] leading-5.5 text-[#2f6b5b] outline-none placeholder:text-slate-300 dark:text-[#4eab8f] dark:placeholder:text-slate-700"
-                    />
+                        }}
+                        spellCheck={false}
+                        className="w-full bg-transparent font-mono text-[14px] leading-5.5 text-transparent caret-[#2f6b5b] outline-none selection:bg-slate-200 dark:caret-[#4eab8f] dark:selection:bg-slate-700"
+                      />
+                    </div>
                   </div>
                   {localPackages.map((pkg, i) => {
                     const isSuggesting =
@@ -5033,7 +5082,8 @@ export const LatexPaperEditor = ({
                             automaticLayout: true,
                             fontFamily:
                               "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                            fontLigatures: true,
+                            fontWeight: '400',
+                            fontLigatures: false,
                             lineNumbers: 'on',
                             scrollbar: {
                               verticalScrollbarSize: 6,
@@ -5079,7 +5129,8 @@ export const LatexPaperEditor = ({
                               automaticLayout: true,
                               fontFamily:
                                 "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                              fontLigatures: true,
+                              fontWeight: '400',
+                              fontLigatures: false,
                               lineNumbers: 'on',
                               scrollbar: {
                                 verticalScrollbarSize: 6,
@@ -5288,10 +5339,11 @@ export const LatexPaperEditor = ({
                         padding: { top: 16, bottom: 16 },
                         automaticLayout: true,
                         tabSize: 2,
-                        renderLineHighlight: 'line',
+                        renderLineHighlight: 'none',
                         fontFamily:
                           "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                        fontLigatures: true,
+                        fontWeight: '400',
+                        fontLigatures: false,
                         cursorBlinking: 'smooth',
                         cursorSmoothCaretAnimation: 'on',
                         smoothScrolling: true,
@@ -5434,26 +5486,10 @@ export const LatexPaperEditor = ({
                 /* ── Tools panel ── */
                 <>
                   <div className="bg-editor-bg flex h-10 shrink-0 items-center border-b border-[#e5e5e5] dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
-                    {/* In readOnly, show sidebar toggle */}
-                    {isActiveSectionReadOnly && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                          className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                        >
-                          {isSidebarOpen ? (
-                            <PanelLeftClose className="h-4 w-4" />
-                          ) : (
-                            <PanelLeftOpen className="h-4 w-4" />
-                          )}
-                        </button>
-                      </>
-                    )}
                     <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden">
                       {(
                         [
-                          ...(projectId && !isActiveSectionReadOnly
+                          ...(projectId
                             ? [
                                 {
                                   key: 'chat',
@@ -5508,16 +5544,6 @@ export const LatexPaperEditor = ({
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
-                    {/* Close editor (readOnly only) */}
-                    {isActiveSectionReadOnly && (
-                      <button
-                        type="button"
-                        onClick={handleClose}
-                        className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
 
                   <div className="flex flex-1 flex-col overflow-hidden">
@@ -5589,34 +5615,6 @@ export const LatexPaperEditor = ({
                 <div className="bg-editor-bg flex flex-1 flex-col overflow-hidden dark:bg-[#111111]">
                   {/* Top toolbar */}
                   <div className="bg-editor-bg flex shrink-0 items-center gap-2 border-b border-[#e5e5e5] px-3 py-1.5 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
-                    {/* readOnly: sidebar toggle + title + divider */}
-                    {isActiveSectionReadOnly && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                        >
-                          {isSidebarOpen ? (
-                            <PanelLeftClose className="h-4 w-4" />
-                          ) : (
-                            <PanelLeftOpen className="h-4 w-4" />
-                          )}
-                        </button>
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#4f6ef7]">
-                            <FileText className="h-3.5 w-3.5 text-white" />
-                          </div>
-                          <span className="max-w-48 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {activeSectionId && editorSections
-                              ? activeSectionTitle || paperTitle
-                              : paperTitle}
-                          </span>
-                        </div>
-                        <div className="mx-1 h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
-                      </>
-                    )}
-
                     {/* Compile button — transparent, hover white */}
                     <button
                       type="button"
@@ -5717,29 +5715,6 @@ export const LatexPaperEditor = ({
                         <Download className="h-3.5 w-3.5" />
                         Download
                       </a>
-                    )}
-
-                    {/* Tools toggle (readOnly: always show; non-readOnly: also show in PDF toolbar) */}
-                    {isActiveSectionReadOnly && (
-                      <button
-                        type="button"
-                        onClick={() => setIsToolsOpen(true)}
-                        className="flex h-7 items-center gap-1.5 rounded border border-transparent px-2.5 text-xs font-medium text-slate-600 transition-all hover:border-slate-300 hover:bg-white hover:text-slate-800 hover:shadow-sm dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-[#333] dark:hover:text-slate-200"
-                      >
-                        <LayoutGrid className="h-3.5 w-3.5" />
-                        Tools
-                      </button>
-                    )}
-
-                    {/* Close editor (readOnly only) */}
-                    {isActiveSectionReadOnly && (
-                      <button
-                        type="button"
-                        onClick={handleClose}
-                        className="mx-1 flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
                     )}
                   </div>
 
