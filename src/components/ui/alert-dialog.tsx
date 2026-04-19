@@ -135,18 +135,30 @@ function AlertDialogAction({
   );
 }
 
-type CancelVariant = 'ghost' | 'outline';
+type CancelVariant = 'ghost' | 'outline' | 'outlineAction';
+type CancelSize =
+  | 'default'
+  | 'action'
+  | 'xs'
+  | 'sm'
+  | 'lg'
+  | 'icon'
+  | 'icon-xs'
+  | 'icon-sm'
+  | 'icon-lg';
 
 function AlertDialogCancel({
   className,
   variant = 'ghost',
+  size = 'default',
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> & {
   variant?: CancelVariant;
+  size?: CancelSize;
 }) {
   return (
     <AlertDialogPrimitive.Cancel
-      className={cn(buttonVariants({ variant }), className)}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     />
   );

@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dialog';
 
 import { CreateButton } from '@/components/ui/create-button';
-
 import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
@@ -550,9 +549,9 @@ export const CreatePaper = () => {
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="gap-1.5 uppercase"
+                  variant="darkRed"
+                  size="action"
+                  className="gap-1 uppercase"
                   onClick={handleAutoTag}
                   disabled={
                     isAutoTagging ||

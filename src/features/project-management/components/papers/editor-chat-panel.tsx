@@ -1,5 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, MessageSquare, PenLine, Loader2, Bot, MoreHorizontal, Pencil, Trash2, Check, X } from 'lucide-react';
+import {
+  Send,
+  MessageSquare,
+  PenLine,
+  Loader2,
+  Bot,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Check,
+  X,
+} from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -461,7 +472,9 @@ const SessionList = ({
                   <button
                     type="button"
                     onClick={() => handleConfirmRename(session.id)}
-                    disabled={renameSessionMutation.isPending || !renameValue.trim()}
+                    disabled={
+                      renameSessionMutation.isPending || !renameValue.trim()
+                    }
                     className="text-primary hover:bg-primary/10 rounded p-0.5 transition-colors disabled:opacity-50"
                     title="Save"
                   >
@@ -505,7 +518,9 @@ const SessionList = ({
                       <div className="flex items-center gap-0.5">
                         <button
                           type="button"
-                          onClick={() => handleStartRename(session.id, session.title)}
+                          onClick={() =>
+                            handleStartRename(session.id, session.title)
+                          }
                           className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
                           title="Rename"
                         >
@@ -731,14 +746,17 @@ export const EditorChatPanel = ({
     setRefreshKey((k) => k + 1);
   }, []);
 
-  const handleSessionDeleted = useCallback((sessionId: string) => {
-    if (activeSessionId === sessionId) {
-      isNewChatRef.current = true;
-      setActiveSessionId(null);
-      setPlanningQuestions(null);
-      setChatTab('chat');
-    }
-  }, [activeSessionId]);
+  const handleSessionDeleted = useCallback(
+    (sessionId: string) => {
+      if (activeSessionId === sessionId) {
+        isNewChatRef.current = true;
+        setActiveSessionId(null);
+        setPlanningQuestions(null);
+        setChatTab('chat');
+      }
+    },
+    [activeSessionId],
+  );
 
   const handleModeChange = useCallback((newMode: 'chat' | 'write') => {
     setMode(newMode);

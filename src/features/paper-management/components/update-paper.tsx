@@ -1,4 +1,4 @@
-import { Loader2, Tags } from 'lucide-react';
+import { Loader2, Tags, Upload, X } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ import {
 
 import { useUpdatePaper } from '../api/update-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
+import { parsePaperFile } from '../api/parse-paper';
 import { PaperDto } from '../types';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
@@ -137,6 +138,12 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     paper?.isAutoTagged || false,
   );
   const [cooldownSeconds, setCooldownSeconds] = React.useState(0);
+  const [file, setFile] = React.useState<File | undefined>(undefined);
+  const [isParsing, setIsParsing] = React.useState(false);
+  const [localParsedText, setLocalParsedText] = React.useState<string | null>(
+    null,
+  );
+  const abortControllerRef = React.useRef<AbortController | null>(null);
   const [lastAutoTagTime, setLastAutoTagTime] = React.useState<number | null>(
     () => {
       const stored = localStorage.getItem(`autoTagCooldown_${paperId}`);
@@ -204,6 +211,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setTagList(paper.tagNames || []);
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
+      setFile(undefined);
+      setLocalParsedText(null);
+      setIsParsing(false);
 
       // Calculate cooldown based on stored timestamp
       if (lastAutoTagTime) {
@@ -227,9 +237,58 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     }
   }, [cooldownSeconds, lastAutoTagTime, paperId]);
 
+  const handleFileChange = async (selectedFile: File | undefined) => {
+    if (!selectedFile) return;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    setFile(selectedFile);
+    setLocalParsedText(null);
+    setIsParsing(true);
+    try {
+      const response = await parsePaperFile(
+        selectedFile,
+        undefined,
+        abortControllerRef.current.signal,
+      );
+      setLocalParsedText(response.parsedText || null);
+    } catch (error) {
+      if (
+        (error as any)?.name === 'CanceledError' ||
+        (error as any)?.code === 'ERR_CANCELED'
+      ) {
+        toast.info('Upload cancelled');
+      } else {
+        setLocalParsedText('');
+        toast.warning(
+          'PDF parsing is unavailable. Continuing without parsed text.',
+        );
+      }
+    } finally {
+      setIsParsing(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelUpload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setFile(undefined);
+    setLocalParsedText(null);
+    setIsParsing(false);
+  };
+
+  const handleRemoveFile = () => {
+    setFile(undefined);
+    setLocalParsedText(null);
+  };
+
   const handleAutoTag = async () => {
     if (!paper) return;
-    const currentParsedText = paper.parsedText;
+    const currentParsedText = localParsedText || paper.parsedText;
     if (!currentParsedText) {
       toast.warning('No parsed text available for auto-tagging');
       return;
@@ -246,7 +305,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
     try {
       const response = await autoTagPaper({
-        parsedText: currentParsedText,
+        parsedText: currentParsedText!,
         existingTags: tagList,
       });
 
@@ -416,19 +475,93 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             />
           </div>
 
+          {/* File upload for re-parsing */}
+          <div className="space-y-1.5">
+            <label htmlFor="update-paper-file" className="text-sm font-medium">
+              Re-upload PDF for Auto Tag
+            </label>
+            {file ? (
+              <div className="space-y-2">
+                <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
+                  <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                    <Upload className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{file.name}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                    onClick={isParsing ? handleCancelUpload : handleRemoveFile}
+                    title={isParsing ? 'Cancel upload' : 'Remove file'}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+                {isParsing && (
+                  <div className="bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <Loader2 className="size-3 animate-spin" />
+                        Parsing PDF...
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1" aria-hidden="true">
+                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.3s]" />
+                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.15s]" />
+                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full" />
+                    </div>
+                  </div>
+                )}
+                {!isParsing && localParsedText && (
+                  <p className="text-muted-foreground text-xs">
+                    ✓ PDF parsed successfully
+                  </p>
+                )}
+              </div>
+            ) : (
+              <label
+                htmlFor="update-paper-file"
+                className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 transition-colors"
+              >
+                <div className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-full">
+                  <Upload className="size-4" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">Click to upload PDF</p>
+                  <p className="text-muted-foreground text-xs">
+                    PDF files only
+                  </p>
+                </div>
+                <input
+                  id="update-paper-file"
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                />
+              </label>
+            )}
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">
                 Tags {tagList.length > 0 && `(${tagList.length})`}
               </label>
-              {paper?.parsedText && (
+              {(paper?.parsedText || localParsedText) && (
                 <Button
                   type="button"
-                  variant="outline"
-                  size="sm"
+                  variant="darkRed"
+                  size="action"
                   onClick={handleAutoTag}
-                  disabled={isAutoTagging || cooldownSeconds > 0}
-                  className="h-7 gap-1 text-xs"
+                  disabled={isAutoTagging || cooldownSeconds > 0 || isParsing}
+                  className="gap-1 uppercase"
                 >
                   {isAutoTagging ? (
                     <>

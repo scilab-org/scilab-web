@@ -102,7 +102,7 @@ const DEFAULT_SECTIONS: CreateTemplateSectionInput[] = [
     displayOrder: 7,
   },
   {
-    title: 'Reference',
+    title: 'References',
     sectionRule:
       '- Include all cited works.\n' +
       '- Ensure references are accurate.\n' +

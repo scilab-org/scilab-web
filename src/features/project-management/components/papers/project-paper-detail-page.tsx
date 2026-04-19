@@ -15,9 +15,10 @@ import {
   ExternalLink,
   Pencil,
   Layers,
-  Eye,
   Loader2,
   Play,
+  ChevronDown,
+  FileIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -72,6 +73,8 @@ import {
 } from '@/features/paper-management/constants';
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
 import { useGetPaperVersions } from '@/features/paper-management/api/get-paper-versions';
+import { useGetCombineVersion } from '@/features/paper-management/api/get-combine-version';
+import type { PaperVersionFileItem } from '@/features/paper-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
@@ -169,6 +172,17 @@ const toDateTimeLocalValue = (value?: string | null) => {
   return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
 };
 
+const VERSION_FILE_STATUS_CLS: Record<number, string> = {
+  1: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
+  2: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
+  3: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+  4: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400',
+  5: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
+  6: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400',
+  7: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400',
+  8: 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-400',
+};
+
 export type Tab =
   | 'overview'
   | 'compile-paper'
@@ -177,19 +191,47 @@ export type Tab =
   | 'task'
   | 'submission';
 
-const TABS: { id: Tab; label: string; icon: any }[] = [
-  { id: 'overview', label: 'Overview', icon: FileText },
-  { id: 'compile-paper', label: 'Preprint', icon: Layers },
-  { id: 'sections', label: 'Sections', icon: BookOpen },
-  { id: 'contributor', label: 'Contributor', icon: Users },
-  { id: 'task', label: 'Task', icon: ClipboardList },
-  { id: 'submission', label: 'Submission Status', icon: Calendar },
+const TAB_GROUPS: {
+  id: string;
+  label: string;
+  icon: any;
+  defaultTab: Tab;
+  tabs: { id: Tab; label: string; icon: any }[];
+}[] = [
+  {
+    id: 'information',
+    label: 'Information',
+    icon: FileText,
+    defaultTab: 'overview' as Tab,
+    tabs: [
+      { id: 'overview', label: 'Overview', icon: FileText },
+      { id: 'submission', label: 'Submission Status', icon: Calendar },
+    ],
+  },
+  {
+    id: 'working',
+    label: 'Working',
+    icon: BookOpen,
+    defaultTab: 'sections' as Tab,
+    tabs: [
+      { id: 'sections', label: 'Sections', icon: BookOpen },
+      { id: 'compile-paper', label: 'Versions', icon: Layers },
+      { id: 'task', label: 'Task', icon: ClipboardList },
+    ],
+  },
+  {
+    id: 'member',
+    label: 'Member',
+    icon: Users,
+    defaultTab: 'contributor' as Tab,
+    tabs: [{ id: 'contributor', label: 'Contributor', icon: Users }],
+  },
 ];
 
 export const ProjectPaperDetailPage = ({
   projectId,
   paperId,
-  isAuthor = false,
+  isAuthor: _isAuthor = false,
   isManager = false,
   backPath,
   combineEditorPath,
@@ -210,6 +252,11 @@ export const ProjectPaperDetailPage = ({
   const [activeTab, setActiveTab] = useState<Tab>(
     locationState?.initialTab ?? 'overview',
   );
+  const [openGroup, setOpenGroup] = useState<string | null>(() => {
+    const initial = locationState?.initialTab ?? 'overview';
+    const group = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === initial));
+    return group?.id ?? TAB_GROUPS[0].id;
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: user } = useUser();
@@ -247,6 +294,7 @@ export const ProjectPaperDetailPage = ({
   ]);
 
   const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [viewingVersionId, setViewingVersionId] = useState<string | null>(null);
   const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<
     string | null
   >(null);
@@ -429,6 +477,17 @@ export const ProjectPaperDetailPage = ({
     queryConfig: { enabled: activeTab === 'compile-paper' && !!paperId } as any,
   });
   const paperVersions = paperVersionsQuery.data?.result?.items ?? [];
+
+  const versionDetailQuery = useGetCombineVersion({
+    paperId,
+    versionId: viewingVersionId ?? '',
+    queryConfig: { enabled: !!viewingVersionId } as any,
+  });
+  const viewingVersion = versionDetailQuery.data?.result?.version as
+    | (Record<string, string | null | PaperVersionFileItem[]> & {
+        versionFiles?: PaperVersionFileItem[];
+      })
+    | undefined;
 
   const paperTasksQuery = usePaperTasks({
     paperId,
@@ -807,55 +866,189 @@ export const ProjectPaperDetailPage = ({
         {/* ── Single unified card ──────────────────────────────────── */}
         <div className="overflow-hidden rounded-md border bg-[#fffaf1] py-0 shadow-sm">
           {/* Action bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
-            {/* Left: status + template + created-by */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="active">
-                {SUBMISSION_STATUS_LABELS[paper.submissionStatus ?? 1] ??
-                  'Draft'}
-              </Badge>
-              {paperType && <Badge variant="outline">{paperType}</Badge>}
-              {paper.template && (
-                <Badge variant="outline">{paper.template}</Badge>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+            {/* Left: dropdown */}
+            <div className="relative flex items-center">
+              <button
+                onClick={() =>
+                  setOpenGroup(
+                    openGroup === '__menu__'
+                      ? (TAB_GROUPS.find((g) =>
+                          g.tabs.some((t) => t.id === activeTab),
+                        )?.id ?? TAB_GROUPS[0].id)
+                      : '__menu__',
+                  )
+                }
+                className={cn(
+                  'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-all',
+                  'border-[#630F0F] bg-[#630F0F] text-white hover:bg-[#630F0F]/90',
+                )}
+              >
+                {(() => {
+                  const displayGroup =
+                    openGroup && openGroup !== '__menu__'
+                      ? TAB_GROUPS.find((g) => g.id === openGroup)
+                      : TAB_GROUPS.find((g) =>
+                          g.tabs.some((t) => t.id === activeTab),
+                        );
+                  const Icon = displayGroup?.icon ?? FileText;
+                  return (
+                    <>
+                      <Icon className="size-3.5" />
+                      <span>{displayGroup?.label ?? 'Select'}</span>
+                    </>
+                  );
+                })()}
+                <ChevronDown
+                  className={cn(
+                    'size-3.5 text-white/70 transition-transform',
+                    openGroup === '__menu__' && 'rotate-180',
+                  )}
+                />
+              </button>
+
+              {openGroup === '__menu__' && (
+                <>
+                  <div
+                    role="button"
+                    tabIndex={-1}
+                    aria-label="Close menu"
+                    className="fixed inset-0 z-10"
+                    onClick={() => {
+                      const group = TAB_GROUPS.find((g) =>
+                        g.tabs.some((t) => t.id === activeTab),
+                      );
+                      setOpenGroup(group?.id ?? TAB_GROUPS[0].id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        const group = TAB_GROUPS.find((g) =>
+                          g.tabs.some((t) => t.id === activeTab),
+                        );
+                        setOpenGroup(group?.id ?? TAB_GROUPS[0].id);
+                      }
+                    }}
+                  />
+                  <div className="bg-card border-border absolute top-full left-0 z-20 mt-1 min-w-44 rounded-lg border py-1 shadow-lg">
+                    {TAB_GROUPS.map((group) => {
+                      const isGroupActive = group.tabs.some(
+                        (t) => t.id === activeTab,
+                      );
+                      return (
+                        <button
+                          key={group.id}
+                          onClick={() => {
+                            setOpenGroup(group.id);
+                            const alreadyInGroup = group.tabs.some(
+                              (t) => t.id === activeTab,
+                            );
+                            if (!alreadyInGroup) {
+                              setActiveTab(group.defaultTab);
+                            }
+                          }}
+                          className={cn(
+                            'flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors',
+                            isGroupActive
+                              ? 'text-primary bg-primary/5 font-medium'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+                          )}
+                        >
+                          <group.icon className="size-3.5" />
+                          {group.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
               )}
-              {paper.createdBy && (
+            </div>
+
+            {/* Right: badges + actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-muted-foreground border-border bg-muted/40 ml-1 cursor-default rounded border px-2 py-0.5 text-xs font-medium">
-                        {paper.createdBy}
+                      <span className="border-border inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium">
+                        {SUBMISSION_STATUS_LABELS[
+                          paper.submissionStatus ?? 1
+                        ] ?? 'Draft'}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      Created by {paper.createdBy}
+                      Submission Status:{' '}
+                      {SUBMISSION_STATUS_LABELS[paper.submissionStatus ?? 1] ??
+                        'Draft'}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              )}
-            </div>
-            {/* Right: actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              {paper.filePath && (
-                <Button variant="action" size="action" asChild>
-                  <a
-                    href={paper.filePath}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                {paperType && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="border-border inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium">
+                          {paperType}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Paper Type: {paperType}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {paper.template && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="border-border inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium">
+                          {paper.template}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Paper Structure: {paper.template}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {paper.createdBy && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="border-border inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium">
+                          {paper.createdBy}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Created by {paper.createdBy}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+              <div className="bg-border/60 h-9 w-px" />
+              <div className="flex items-center gap-2">
+                {paper.filePath && (
+                  <Button variant="action" size="action" asChild>
+                    <a
+                      href={paper.filePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="size-3" />
+                      View PDF
+                    </a>
+                  </Button>
+                )}
+                {isPaperAuthor && (
+                  <Button
+                    size="default"
+                    variant="outline"
+                    onClick={handleEditPaperOpen}
                   >
-                    <ExternalLink className="size-3" />
-                    View PDF
-                  </a>
-                </Button>
-              )}
-              {isPaperAuthor && (
-                <Button
-                  size="default"
-                  variant="outline"
-                  onClick={handleEditPaperOpen}
-                >
-                  Edit Paper
-                </Button>
-              )}
+                    Edit Paper
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -863,19 +1056,24 @@ export const ProjectPaperDetailPage = ({
 
           {/* Tab bar */}
           <div className="border-border border-b px-6">
-            <nav className="-mb-px flex gap-1">
-              {TABS.map((tab) => {
+            <nav className="-mb-px flex items-stretch gap-1">
+              {(openGroup === '__menu__'
+                ? TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === activeTab))
+                : TAB_GROUPS.find((g) => g.id === openGroup)
+              )?.tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    className={cn(
+                      'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
                       isActive
                         ? 'border-primary text-primary'
-                        : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                    }`}
+                        : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent',
+                    )}
                   >
+                    <tab.icon className="size-3.5" />
                     {tab.label}
                   </button>
                 );
@@ -888,7 +1086,7 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'overview' && (
               <>
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
-                  <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
                         <div className="bg-muted text-primary rounded-md p-1.5">
@@ -908,7 +1106,7 @@ export const ProjectPaperDetailPage = ({
                     </div>
                   </div>
 
-                  <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
                         <div className="bg-muted text-primary rounded-md p-1.5">
@@ -928,7 +1126,7 @@ export const ProjectPaperDetailPage = ({
                     </div>
                   </div>
 
-                  <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
                         <div className="bg-muted text-primary rounded-md p-1.5">
@@ -951,7 +1149,7 @@ export const ProjectPaperDetailPage = ({
 
                 <div className="space-y-4">
                   {/* Abstract */}
-                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                       Abstract
                     </h3>
@@ -961,7 +1159,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   {/* Research Aim */}
-                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                       Research Aim
                     </h3>
@@ -971,7 +1169,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   {/* Context */}
-                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                       Context
                     </h3>
@@ -981,7 +1179,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   {/* Research Gap */}
-                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                       Research Gap
                     </h3>
@@ -997,7 +1195,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   {/* Main Contribution */}
-                  <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                       Main Contribution
                     </h3>
@@ -1010,7 +1208,7 @@ export const ProjectPaperDetailPage = ({
                   {((paper as any).journalName ||
                     (paper as any).journal ||
                     (paper as any).conferenceName) && (
-                    <div className="bg-card rounded-xl border p-5 transition-shadow hover:shadow-sm">
+                    <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                       <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                         Journal / Conference
                       </h3>
@@ -1127,94 +1325,98 @@ export const ProjectPaperDetailPage = ({
                       )}
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {paperVersions.map((version) => (
-                        <div
-                          key={version.id}
-                          className="bg-surface flex items-center justify-between rounded-lg p-4 shadow-sm transition-shadow hover:shadow-md"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-primary truncate text-sm font-semibold">
-                              {version.name}
-                            </p>
-                            <div className="text-secondary mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-sans text-[10px]">
-                              {version.createdBy && (
-                                <span>
-                                  <span className="text-secondary font-medium">
-                                    By{' '}
-                                  </span>
-                                  {version.createdBy}
-                                </span>
-                              )}
-                              {version.createdOnUtc && (
-                                <span>
-                                  <span className="text-secondary font-medium">
-                                    Created{' '}
-                                  </span>
-                                  {new Date(
-                                    version.createdOnUtc,
-                                  ).toLocaleString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                              )}
-                              {version.lastModifiedOnUtc && (
-                                <span>
-                                  <span className="text-secondary font-medium">
-                                    Last modified{' '}
-                                  </span>
-                                  {new Date(
-                                    version.lastModifiedOnUtc,
-                                  ).toLocaleString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isPaperAuthor && (
-                              <Button
-                                variant="outline"
-                                size="action"
-                                className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
-                                onClick={() => {
-                                  if (combineEditorPath) {
-                                    navigate(
-                                      combineEditorPath(version.id) +
-                                        '?edit=true',
-                                    );
-                                  }
-                                }}
-                              >
-                                <Pencil className="size-3.5" />
-                                Edit
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="action"
-                              className="bg-surface-container-low text-primary hover:bg-surface-container gap-1.5 border-transparent"
-                              onClick={() => {
-                                if (combineEditorPath) {
-                                  navigate(combineEditorPath(version.id));
-                                }
-                              }}
+                    <div className="overflow-hidden rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50 hover:bg-muted/50">
+                            <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                              Version
+                            </TableHead>
+                            <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                              Created By
+                            </TableHead>
+                            <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                              Created Date
+                            </TableHead>
+                            <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                              Last Modified Date
+                            </TableHead>
+                            <TableHead className="text-muted-foreground text-center text-xs font-semibold tracking-wider uppercase">
+                              Action
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paperVersions.map((version) => (
+                            <TableRow
+                              key={version.id}
+                              className="hover:bg-muted/30"
                             >
-                              <Eye className="size-4" />
-                              View
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                              <TableCell className="font-semibold">
+                                {version.name}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {version.createdBy ?? '—'}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                                {version.createdOnUtc
+                                  ? new Date(
+                                      version.createdOnUtc,
+                                    ).toLocaleString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : '—'}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                                {version.lastModifiedOnUtc
+                                  ? new Date(
+                                      version.lastModifiedOnUtc,
+                                    ).toLocaleString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : '—'}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    variant="action"
+                                    size="action"
+                                    onClick={() =>
+                                      setViewingVersionId(version.id)
+                                    }
+                                  >
+                                    View
+                                  </Button>
+                                  {isPaperAuthor && (
+                                    <Button
+                                      variant="darkRed"
+                                      size="action"
+                                      onClick={() => {
+                                        if (combineEditorPath) {
+                                          navigate(
+                                            combineEditorPath(version.id) +
+                                              '?edit=true',
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      Open Editor
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </div>
@@ -1225,14 +1427,13 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'sections' && (
               <div className="-mx-6 -mb-6">
                 <div className="border-border -mt-6 mb-0 flex items-center justify-between border-b px-6 py-4">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
                       Sections
                     </h2>
-                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
-                      {totalSections} section
-                      {totalSections !== 1 ? 's' : ''}
-                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                      {sectionsQuery.isLoading ? '—' : totalSections}
+                    </span>
                   </div>
                   <Button
                     variant="outline"
@@ -1482,7 +1683,7 @@ export const ProjectPaperDetailPage = ({
 
                 <form
                   onSubmit={applyTaskFilters}
-                  className="bg-muted/30 mb-4 rounded-xl p-4"
+                  className="bg-muted/30 mb-4 rounded-md p-4"
                 >
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                     <div className="space-y-1.5">
@@ -1573,6 +1774,7 @@ export const ProjectPaperDetailPage = ({
                       <Input
                         id="filterFromDate"
                         type="date"
+                        className="bg-surface"
                         value={localFilters.FromDate}
                         disabled={!isDateFieldSelected}
                         onChange={(e) =>
@@ -1591,6 +1793,7 @@ export const ProjectPaperDetailPage = ({
                       <Input
                         id="filterToDate"
                         type="date"
+                        className="bg-surface"
                         value={localFilters.ToDate}
                         disabled={!isDateFieldSelected}
                         onChange={(e) =>
@@ -1662,7 +1865,7 @@ export const ProjectPaperDetailPage = ({
                               {/* Column header */}
                               <div
                                 className={cn(
-                                  'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
+                                  'flex items-center gap-2 rounded-t-md border-t border-r border-l px-3 py-2.5',
                                   col.headerCls,
                                 )}
                               >
@@ -1693,7 +1896,7 @@ export const ProjectPaperDetailPage = ({
                               {/* Column body – drop zone */}
                               <div
                                 className={cn(
-                                  'min-h-36 flex-1 space-y-2 rounded-b-lg border p-2 transition-colors duration-150',
+                                  'min-h-36 flex-1 space-y-2 rounded-b-md border p-2 transition-colors duration-150',
                                   col.bodyCls,
                                   isDragTarget &&
                                     'ring-primary/40 ring-2 ring-inset',
@@ -1923,7 +2126,7 @@ export const ProjectPaperDetailPage = ({
                         <div className="flex min-w-0 flex-col">
                           <div
                             className={cn(
-                              'flex items-center gap-2 rounded-t-lg border-t border-r border-l px-3 py-2.5',
+                              'flex items-center gap-2 rounded-t-md border-t border-r border-l px-3 py-2.5',
                               closedCol.headerCls,
                             )}
                           >
@@ -1952,7 +2155,7 @@ export const ProjectPaperDetailPage = ({
                           </div>
                           <div
                             className={cn(
-                              'rounded-b-lg border p-2 transition-colors duration-150',
+                              'rounded-b-md border p-2 transition-colors duration-150',
                               closedCol.bodyCls,
                               isDragTarget &&
                                 'ring-primary/40 ring-2 ring-inset',
@@ -2788,6 +2991,205 @@ export const ProjectPaperDetailPage = ({
         open={isMembersOpen}
         onOpenChange={setIsMembersOpen}
       />
+
+      {/* ── Version Detail Dialog ────────────────────────────────── */}
+      <Dialog
+        open={!!viewingVersionId}
+        onOpenChange={(open) => !open && setViewingVersionId(null)}
+      >
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {versionDetailQuery.isLoading
+                ? 'Loading…'
+                : ((viewingVersion?.name as string) ?? 'Version Detail')}
+            </DialogTitle>
+            <DialogDescription>
+              Version information and attached files.
+            </DialogDescription>
+          </DialogHeader>
+
+          {versionDetailQuery.isLoading ? (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="mt-6 h-20 w-full" />
+            </div>
+          ) : viewingVersion ? (
+            <div className="flex-1 space-y-5 overflow-y-auto pr-1">
+              {/* Meta info */}
+              <div className="bg-muted/30 space-y-2 rounded-lg p-4 text-sm">
+                {viewingVersion.createdBy && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-32 shrink-0 font-sans text-xs">
+                      Created by
+                    </span>
+                    <span className="text-foreground font-medium">
+                      {viewingVersion.createdBy as string}
+                    </span>
+                  </div>
+                )}
+                {viewingVersion.createdOnUtc && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-32 shrink-0 font-sans text-xs">
+                      Created
+                    </span>
+                    <span className="text-foreground">
+                      {new Date(
+                        viewingVersion.createdOnUtc as string,
+                      ).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                )}
+                {viewingVersion.lastModifiedOnUtc && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-32 shrink-0 font-sans text-xs">
+                      Last modified
+                    </span>
+                    <span className="text-foreground">
+                      {new Date(
+                        viewingVersion.lastModifiedOnUtc as string,
+                      ).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Files */}
+              <div>
+                <h3 className="text-foreground mb-2 font-sans text-sm font-semibold">
+                  Files
+                </h3>
+                {!viewingVersion.versionFiles ||
+                viewingVersion.versionFiles.length === 0 ? (
+                  <p className="text-muted-foreground py-4 text-center text-sm">
+                    No files attached to this version.
+                  </p>
+                ) : (
+                  <div className="overflow-hidden rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                            File name
+                          </TableHead>
+                          <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                            Submit state
+                          </TableHead>
+                          <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                            Uploaded by
+                          </TableHead>
+                          <TableHead className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                            Date
+                          </TableHead>
+                          <TableHead className="text-muted-foreground text-center text-xs font-semibold tracking-wider uppercase">
+                            Action
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewingVersion.versionFiles.map(
+                          (file: PaperVersionFileItem) => (
+                            <TableRow
+                              key={file.id}
+                              className="hover:bg-muted/30"
+                            >
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <FileIcon className="text-muted-foreground size-3.5 shrink-0" />
+                                  <span className="text-foreground max-w-48 truncate text-sm font-medium">
+                                    {file.fileName}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {file.status != null &&
+                                SUBMISSION_STATUS_LABELS[file.status] ? (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      'h-5 rounded-sm px-1.5 py-0 text-[10px] font-semibold',
+                                      VERSION_FILE_STATUS_CLS[file.status] ??
+                                        '',
+                                    )}
+                                  >
+                                    {SUBMISSION_STATUS_LABELS[file.status]}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">
+                                    —
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {file.createdBy ?? '—'}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                                {file.createdOnUtc
+                                  ? new Date(
+                                      file.createdOnUtc,
+                                    ).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })
+                                  : '—'}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Button variant="action" size="action" asChild>
+                                  <a
+                                    href={file.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    View PDF
+                                  </a>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="action" size="default">
+                Close
+              </Button>
+            </DialogClose>
+            {combineEditorPath && viewingVersionId && (
+              <Button
+                size="default"
+                variant="darkRed"
+                onClick={() => {
+                  navigate(combineEditorPath(viewingVersionId));
+                  setViewingVersionId(null);
+                }}
+              >
+                Open Editor
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Edit Paper Dialog (author only) ───────────────────────── */}
       <Dialog open={isEditPaperOpen} onOpenChange={setIsEditPaperOpen}>

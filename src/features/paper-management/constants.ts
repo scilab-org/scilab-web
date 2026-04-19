@@ -51,9 +51,9 @@ export const PAPER_MANAGEMENT_API = {
   PAPER_VERSIONS: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions`,
   COMBINE_PAPER: (paperId: string) =>
-    `${LAB_SERVICE_PREFIX}/papers/${paperId}/combine`,
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions`,
   COMBINE_VERSION: (paperId: string, versionId: string) =>
-    `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions/${versionId}/combine`,
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions/${versionId}`,
   PAPER_STATUS_HISTORY: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/status-history`,
   PAPER_STATUS_TRANSITION: (paperId: string) =>

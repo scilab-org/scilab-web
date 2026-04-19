@@ -6,11 +6,9 @@ import {
   Check,
   Loader2,
   ChevronDown,
-  ChevronRight,
   Users,
   Trash2,
   Pencil,
-  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -47,7 +46,6 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useGroups } from '@/features/group-role-management/api/get-groups';
 import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
-import { useUser } from '@/lib/auth';
 
 import { useAssignedSections } from '../api/get-assigned-sections';
 import { useGetPaperSections } from '../api/get-paper-sections';
@@ -56,7 +54,7 @@ import { useAvailableSectionMembers } from '../api/get-available-section-members
 import { useGetSectionMembers } from '../api/get-section-members';
 import { useDeletePaperContributor } from '../api/delete-paper-contributor';
 import { useUpdatePaperContributor } from '../api/update-paper-contributor';
-import { getMarkSection, useMarkSection } from '../api/get-mark-section';
+import { getMarkSection } from '../api/get-mark-section';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '../constants';
 import {
   AssignedSection,
@@ -87,13 +85,6 @@ const stripLatex = (input: string): string => {
     .replace(/\\-/g, '-')
     .replace(/\\\\/g, '');
   return s.replace(/[{}]/g, '').trim() || '(Untitled)';
-};
-
-const formatDisplayDate = (value?: string | null) => {
-  if (!value) return '—';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '—';
-  return parsed.toLocaleDateString('vi-VN');
 };
 
 // ─── Tree builder ─────────────────────────────────────────────────────────────
@@ -507,202 +498,6 @@ const flattenTree = (
   });
 };
 
-// ─── Section Expanded View ───────────────────────────────────────────────────
-
-const SectionExpandedView = ({
-  markSectionId,
-  excludeSectionId: _excludeSectionId,
-  isAuthor,
-  currentUserEmail,
-  onEditSection,
-  onViewSection,
-}: {
-  markSectionId: string;
-  excludeSectionId: string;
-  isAuthor?: boolean;
-  currentUserEmail?: string;
-  onEditSection?: (item: MarkSectionItem) => void;
-  onViewSection?: (item: MarkSectionItem) => void;
-}) => {
-  const query = useMarkSection({ markSectionId });
-
-  if (query.isLoading) {
-    return (
-      <TableRow className="bg-blue-50/20 hover:bg-transparent">
-        <TableCell
-          colSpan={5}
-          className="border-t border-blue-100 p-4 dark:border-blue-900/30"
-        >
-          <div className="space-y-3">
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-          </div>
-        </TableCell>
-      </TableRow>
-    );
-  }
-
-  const items = query.data?.result?.items ?? [];
-  const normalizedCurrentEmail = (currentUserEmail || '').trim().toLowerCase();
-  const sorted = [...items]
-    .filter((item) => {
-      const normalizedItemEmail = (item.email || '').trim().toLowerCase();
-
-      if (
-        normalizedCurrentEmail &&
-        normalizedItemEmail === normalizedCurrentEmail
-      ) {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      const getPriority = (item: MarkSectionItem) => {
-        const isMain =
-          item.isMainSection || item.sectionId === item.markSectionId;
-        if (isMain && item.sectionRole === 'paper:author') return 0;
-        if (isMain) return 1;
-        if (item.sectionRole === 'paper:author') return 2;
-        return 3;
-      };
-
-      return getPriority(a) - getPriority(b);
-    });
-
-  const preferredMainItem =
-    sorted.find(
-      (item) =>
-        (item.isMainSection || item.sectionId === item.markSectionId) &&
-        item.sectionRole === 'paper:author',
-    ) ??
-    sorted.find(
-      (item) => item.isMainSection || item.sectionId === item.markSectionId,
-    );
-
-  if (sorted.length === 0) {
-    return (
-      <TableRow className="bg-blue-50/20 hover:bg-transparent">
-        <TableCell
-          colSpan={5}
-          className="text-muted-foreground border-t border-blue-100 px-3 py-4 text-center text-xs dark:border-blue-900/30"
-        >
-          No other versions
-        </TableCell>
-      </TableRow>
-    );
-  }
-
-  return (
-    <>
-      {sorted.map((item) => {
-        const initials = item.name
-          ? item.name
-              .split(' ')
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase()
-          : '?';
-        const isMe =
-          normalizedCurrentEmail &&
-          (item.email || '').trim().toLowerCase() === normalizedCurrentEmail;
-
-        const isMain =
-          item.isMainSection || item.sectionId === item.markSectionId;
-        const showEdit = isAuthor && onEditSection && !isMain;
-
-        return (
-          <TableRow
-            key={item.sectionId}
-            className="border-t border-blue-100 bg-blue-50/40 transition-colors hover:bg-blue-100/40 dark:border-blue-900/30 dark:bg-blue-950/15 dark:hover:bg-blue-950/25"
-          >
-            {/* Empty # column */}
-            <TableCell className="w-8 border-none" />
-
-            {/* Section — member info */}
-            <TableCell className="border-none py-3 pl-8">
-              <div className="flex items-center gap-2.5">
-                {item.name ? (
-                  <div className="bg-primary/10 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
-                    {initials}
-                  </div>
-                ) : (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    M
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-foreground text-xs font-medium">
-                      {item.name || 'Origin section'}
-                    </span>
-                    {item === preferredMainItem && (
-                      <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                        main
-                      </span>
-                    )}
-                    {isMe && (
-                      <span className="rounded-full border border-blue-200 bg-blue-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-blue-700 uppercase dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        me
-                      </span>
-                    )}
-                  </div>
-                  {item.email && (
-                    <p className="text-muted-foreground truncate text-[10px]">
-                      {item.email}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </TableCell>
-
-            {/* Created At */}
-            <TableCell className="w-40 border-none py-3">
-              <span className="text-muted-foreground text-sm font-medium">
-                {formatDisplayDate(item.createdOnUtc)}
-              </span>
-            </TableCell>
-
-            {/* Last Modified */}
-            <TableCell className="w-40 border-none py-3">
-              <span className="text-muted-foreground text-sm font-medium">
-                {formatDisplayDate(item.lastModifiedOnUtc)}
-              </span>
-            </TableCell>
-
-            {/* Actions */}
-            <TableCell className="w-52 border-none py-3 text-center">
-              <div className="ml-auto flex items-center justify-end gap-1">
-                {showEdit && (
-                  <button
-                    type="button"
-                    onClick={() => onEditSection(item)}
-                    className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-medium text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-transparent dark:text-blue-300 dark:hover:bg-blue-950/30"
-                  >
-                    <Pencil className="h-2.5 w-2.5" />
-                    Edit
-                  </button>
-                )}
-                {onViewSection && (
-                  <button
-                    type="button"
-                    onClick={() => onViewSection(item)}
-                    className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/30"
-                  >
-                    <Eye className="h-2.5 w-2.5" />
-                    View
-                  </button>
-                )}
-              </div>
-            </TableCell>
-          </TableRow>
-        );
-      })}
-    </>
-  );
-};
-
 // ─── View Members Panel ───────────────────────────────────────────────────────
 
 type ViewMembersPanelProps = {
@@ -811,7 +606,7 @@ const ViewMembersPanel = ({
               </p>
             </div>
           ) : (
-            <div className="min-h-[400px] overflow-x-auto rounded-xl border shadow-sm">
+            <div className="min-h-100 overflow-x-auto rounded-xl border shadow-sm">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
@@ -1027,8 +822,6 @@ export const PaperSectionsManager = ({
   isAuthor = false,
   isManager = false,
 }: PaperSectionsManagerProps) => {
-  const { data: user } = useUser();
-  const currentUserEmail = (user?.email || '').trim().toLowerCase();
   const [activeDialog, setActiveDialog] = useState<{
     type: 'view' | 'assign';
     section: AssignedSection;
@@ -1043,22 +836,10 @@ export const PaperSectionsManager = ({
   const [editTargetItem, setEditTargetItem] = useState<MarkSectionItem | null>(
     null,
   );
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(),
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null,
   );
   const queryClient = useQueryClient();
-  const toggleExpand = (id: string, markSectionId: string) => {
-    void queryClient.invalidateQueries({
-      queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION, markSectionId],
-    });
-
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const assignedSectionsQuery = useAssignedSections({
     paperId,
@@ -1142,254 +923,219 @@ export const PaperSectionsManager = ({
 
   const totalCount = displaySections.length;
 
+  useEffect(() => {
+    if (displaySections.length > 0) {
+      setSelectedSectionId((prev) => {
+        if (prev && displaySections.some((s) => s.id === prev)) return prev;
+        const sorted = [...displaySections].sort(
+          (a, b) => a.displayOrder - b.displayOrder,
+        );
+        return sorted[0]?.id ?? null;
+      });
+    }
+  }, [displaySections]);
+
+  const SECTION_STATUS_MAP: Record<number, { label: string; cls: string }> = {
+    1: {
+      label: 'Not started',
+      cls: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
+    },
+    2: {
+      label: 'In progress',
+      cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
+    },
+    3: {
+      label: 'In review',
+      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+    },
+    4: {
+      label: 'Completed',
+      cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
+    },
+  };
+
+  const getMemberCount = (markSectionId: string): number => {
+    const data = queryClient.getQueryData([
+      PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION,
+      markSectionId,
+    ]) as any;
+    return (data?.result?.items?.length as number) ?? 0;
+  };
+
+  const flatRows = flattenTree(tree);
+  const selectedNode =
+    flatRows.find((r) => r.node.id === selectedSectionId)?.node ?? null;
+
   return (
     <div className="border-border bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm">
       {!editingEditorMode && !viewingReadOnlyMode && (
-        <>
-          <div className="border-border bg-muted/30 border-b px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
-                <Layers className="text-primary h-5 w-5" />
-              </div>
-              <h3 className="text-foreground text-lg font-semibold">
+        <div className="flex h-150">
+          {/* ── Left sidebar ──────────────────────────────────────── */}
+          <div className="border-border flex w-72 shrink-0 flex-col overflow-hidden border-r">
+            <div className="border-border shrink-0 border-b px-4 py-3">
+              <p className="text-foreground text-sm font-semibold">
                 {isManager ? 'All Sections' : 'Assigned Sections'}
-              </h3>
-            </div>
-            {!isLoading && (
-              <p className="text-muted-foreground mt-3 text-sm">
-                {totalCount} section{totalCount !== 1 ? 's' : ''}{' '}
-                {isManager ? 'in total' : 'assigned'}
               </p>
-            )}
+              {!isLoading && (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {totalCount} section{totalCount !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="space-y-1 p-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : isError ? (
+                <div className="py-10 text-center">
+                  <Layers className="text-muted-foreground mx-auto mb-2 h-8 w-8 opacity-30" />
+                  <p className="text-muted-foreground text-xs">
+                    {isManager
+                      ? 'Failed to load sections.'
+                      : 'No sections assigned.'}
+                  </p>
+                </div>
+              ) : flatRows.length === 0 ? (
+                <div className="py-10 text-center">
+                  <Layers className="text-muted-foreground mx-auto mb-2 h-8 w-8 opacity-30" />
+                  <p className="text-muted-foreground text-xs">
+                    {isManager
+                      ? 'No sections found.'
+                      : 'No sections assigned yet'}
+                  </p>
+                </div>
+              ) : (
+                flatRows.map(({ node, depth }) => {
+                  const isSelected = selectedSectionId === node.id;
+                  const markSectionId = node.markSectionId || node.id;
+                  const memberCount = getMemberCount(markSectionId);
+                  const statusInfo =
+                    node.status != null
+                      ? SECTION_STATUS_MAP[node.status]
+                      : null;
+                  return (
+                    <button
+                      key={node.id}
+                      type="button"
+                      onClick={() => setSelectedSectionId(node.id)}
+                      style={{ paddingLeft: `${16 + depth * 16}px` }}
+                      className={cn(
+                        'border-border hover:bg-muted/40 w-full border-b py-3 pr-4 text-left transition-colors',
+                        isSelected && 'bg-muted/60',
+                      )}
+                    >
+                      <p
+                        className={cn(
+                          'leading-snug',
+                          depth === 0
+                            ? 'text-foreground text-sm font-semibold'
+                            : 'text-foreground text-xs font-medium',
+                        )}
+                      >
+                        {stripLatex(node.title)}
+                      </p>
+                      {(statusInfo || memberCount > 0) && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          {statusInfo && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'h-5 rounded-full px-1.5 py-0 text-[10px]',
+                                statusInfo.cls,
+                              )}
+                            >
+                              {statusInfo.label}
+                            </Badge>
+                          )}
+                          {memberCount > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-100 px-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                              {memberCount}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
 
-          <div className="bg-background overflow-x-auto">
-            {isLoading ? (
-              <div className="space-y-2 p-6">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : isError ? (
-              <div className="py-16 text-center">
-                <Layers className="text-muted-foreground mx-auto mb-3 h-12 w-12 opacity-30" />
-                <p className="text-muted-foreground text-sm font-medium">
-                  {isManager
-                    ? 'Failed to load sections.'
-                    : 'No sections have been assigned to you.'}
-                </p>
-              </div>
-            ) : tree.length === 0 ? (
-              <div className="py-16 text-center">
-                <Layers className="text-muted-foreground mx-auto mb-3 h-12 w-12 opacity-30" />
-                <p className="text-muted-foreground text-sm font-medium">
-                  {isManager
-                    ? 'No sections found.'
-                    : 'No sections assigned yet'}
+          {/* ── Right content panel ───────────────────────────────── */}
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            {!selectedNode ? (
+              <div className="flex flex-1 items-center justify-center">
+                <p className="text-muted-foreground text-sm">
+                  Select a section to view details
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                      <TableHead className="w-8 text-center font-semibold text-green-900 dark:text-green-200">
-                        #
-                      </TableHead>
-                      <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                        Section Title
-                      </TableHead>
-                      <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
-                        Created At
-                      </TableHead>
-                      <TableHead className="w-40 font-semibold text-green-900 dark:text-green-200">
-                        Last Modified
-                      </TableHead>
-                      <TableHead className="w-52 text-center font-semibold text-green-900 dark:text-green-200">
-                        Action
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {flattenTree(tree).flatMap(
-                      ({ node, depth, label }, idx) => {
-                        const isParent = depth === 0;
-                        const isLeaf = node.children.length === 0;
-                        const canExpand =
-                          node.sectionRole === 'section:edit' ||
-                          (node.sectionRole === 'paper:author' &&
-                            !!node.markSectionId);
-                        const isExpanded = expandedSections.has(node.id);
-                        const mainRow = (
-                          <TableRow
-                            key={node.id}
-                            onClick={() => {
-                              if (canExpand) {
-                                toggleExpand(
-                                  node.id,
-                                  node.markSectionId || node.id,
-                                );
-                              }
-                            }}
-                            className={cn(
-                              'transition-colors hover:bg-green-50/50 dark:hover:bg-green-950/20',
-                              canExpand && 'cursor-pointer',
-                              idx % 2 === 0
-                                ? 'bg-white dark:bg-transparent'
-                                : 'bg-slate-50/50 dark:bg-slate-900/20',
-                            )}
-                          >
-                            <TableCell className="text-muted-foreground text-center text-xs">
-                              {node.numbered
-                                ? label
-                                : node.children.length === 0
-                                  ? '—'
-                                  : ''}
-                            </TableCell>
-                            <TableCell>
-                              <div
-                                className="flex items-center gap-2"
-                                style={{
-                                  paddingLeft: `${depth * 20}px`,
-                                }}
-                              >
-                                {depth === 0 && (
-                                  <Layers className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                                )}
-                                <span
-                                  className={cn(
-                                    'leading-snug',
-                                    isParent
-                                      ? 'text-foreground text-sm font-semibold'
-                                      : 'text-foreground text-xs font-medium',
-                                  )}
-                                >
-                                  {stripLatex(node.title)}
-                                </span>
-                                {canExpand && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleExpand(
-                                        node.id,
-                                        node.markSectionId || node.id,
-                                      );
-                                    }}
-                                    className="text-muted-foreground hover:text-foreground ml-1 flex items-center gap-1 text-xs transition-colors"
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronDown className="h-3.5 w-3.5" />
-                                    ) : (
-                                      <ChevronRight className="h-3.5 w-3.5" />
-                                    )}
-                                  </button>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {formatDisplayDate(node.createdOnUtc)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {formatDisplayDate(node.lastModifiedOnUtc)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {isLeaf && (
-                                <div className="flex items-center justify-center gap-1">
-                                  {isAuthor && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveDialog({
-                                          type: 'view',
-                                          section: node,
-                                        });
-                                      }}
-                                      className={cn(
-                                        'flex h-7 items-center gap-1 px-2 text-xs',
-                                        BTN.VIEW_OUTLINE,
-                                      )}
-                                    >
-                                      <Users className="h-3 w-3" />
-                                      Members
-                                    </Button>
-                                  )}
-                                  {(node.sectionRole === 'paper:author' ||
-                                    node.sectionRole === 'section:edit') && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setInitialEditSectionId(node.id);
-                                        setEditingEditorMode(true);
-                                      }}
-                                      className={cn(
-                                        'flex h-7 items-center gap-1 px-2 text-xs',
-                                        BTN.EDIT_OUTLINE,
-                                      )}
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                      Edit
-                                    </Button>
-                                  )}
-                                  {(node.sectionRole === 'section:read' ||
-                                    node.sectionRole === 'project:manager') && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setInitialEditSectionId(node.id);
-                                        setViewingReadOnlyMode(true);
-                                      }}
-                                      className={cn(
-                                        'flex h-7 items-center gap-1 px-2 text-xs',
-                                        BTN.VIEW_OUTLINE,
-                                      )}
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                      View
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                        if (!canExpand || !isExpanded) return [mainRow];
-                        const subRow = (
-                          <SectionExpandedView
-                            key={`${node.id}-contributors`}
-                            markSectionId={node.markSectionId || node.id}
-                            excludeSectionId={node.id}
-                            isAuthor={isAuthor}
-                            currentUserEmail={currentUserEmail}
-                            onEditSection={
-                              isAuthor
-                                ? (item) => {
-                                    setEditTargetItem(item);
-                                    setEditingEditorMode(true);
-                                  }
-                                : undefined
-                            }
-                            onViewSection={(item) => {
-                              setEditTargetItem(item);
-                              setViewingReadOnlyMode(true);
-                            }}
-                          />
-                        );
-                        return [mainRow, subRow];
-                      },
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              <>
+                {/* Action buttons row */}
+                <div className="border-border flex shrink-0 items-center gap-2 border-b px-4 py-3">
+                  <Button size="sm" className="h-8 px-3 text-xs font-semibold">
+                    Pickbest
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setInitialEditSectionId(selectedNode.id);
+                      setViewingReadOnlyMode(true);
+                    }}
+                    className="h-8 px-3 text-xs"
+                  >
+                    View
+                  </Button>
+                  {isAuthor && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setActiveDialog({ type: 'view', section: selectedNode })
+                      }
+                      className="h-8 px-3 text-xs"
+                    >
+                      Writer
+                    </Button>
+                  )}
+                  {(selectedNode.sectionRole === 'paper:author' ||
+                    selectedNode.sectionRole === 'section:edit') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setInitialEditSectionId(selectedNode.id);
+                        setEditingEditorMode(true);
+                      }}
+                      className="h-8 px-3 text-xs"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+
+                {/* Main idea content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  <p className="text-foreground mb-3 text-base font-medium">
+                    Main Idea
+                  </p>
+                  <div className="border-border bg-background min-h-64 rounded-lg border p-4 text-sm leading-relaxed whitespace-pre-wrap">
+                    {(selectedNode as any).mainIdea ||
+                      selectedNode.description ||
+                      selectedNode.sectionSumary ||
+                      ''}
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
+          {/* ── Members dialog ────────────────────────────────────── */}
           <Dialog
             open={!!activeDialog}
             onOpenChange={(open) => !open && setActiveDialog(null)}
@@ -1433,7 +1179,7 @@ export const PaperSectionsManager = ({
                 ))}
             </DialogContent>
           </Dialog>
-        </>
+        </div>
       )}
 
       {editingEditorMode && (
