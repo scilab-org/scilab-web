@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   BookOpen,
   Check,
-  ChevronDown,
-  ChevronRight,
   FileText,
   LayoutList,
   Loader2,
@@ -14,7 +12,6 @@ import {
   UserPlus,
   Users,
   BookMarked,
-  PenLine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +59,7 @@ import { useDeletePaperContributor } from '@/features/paper-management/api/delet
 import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
 import { useGetPaperContributors } from '@/features/paper-management/api/get-paper-contributors';
 import { useMarkSection } from '@/features/paper-management/api/get-mark-section';
+import { useMarkMainSection } from '@/features/paper-management/api/mark-main-section';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import {
   AssignedSection,
@@ -768,6 +766,246 @@ const SectionVersionDialog = ({
 
 type EditorState = { initialSectionId: string; readOnly: boolean } | null;
 
+// ── Pick Best Dialog ─────────────────────────────────────────────────────────
+const PickBestDialog = ({
+  open,
+  onClose,
+  sectionTitle,
+  markSectionId,
+  subProjectId,
+  paperId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  sectionTitle: string;
+  markSectionId: string;
+  subProjectId: string;
+  paperId: string;
+}) => {
+  const queryClient = useQueryClient();
+  const [pendingVersionId, setPendingVersionId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const versionsQuery = useMarkSection({
+    markSectionId: open ? markSectionId : null,
+  });
+  const allVersions = versionsQuery.data?.result?.items ?? [];
+
+  // Exclude the base/main section itself; keep contributor drafts
+  const versions = allVersions
+    .filter((v) => v.sectionId !== v.markSectionId)
+    .sort(
+      (a, b) =>
+        new Date(b.createdOnUtc || '').getTime() -
+        new Date(a.createdOnUtc || '').getTime(),
+    );
+
+  const markMutation = useMarkMainSection({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Main version updated successfully');
+        setConfirmId(null);
+        setPendingVersionId(null);
+        queryClient.invalidateQueries({
+          queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS, paperId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS, paperId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION, markSectionId],
+        });
+        onClose();
+      },
+      onError: () => toast.error('Failed to update main version'),
+    },
+  });
+
+  const statusMap: Record<number, { label: string; cls: string }> = {
+    1: {
+      label: 'Not started',
+      cls: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
+    },
+    2: {
+      label: 'In progress',
+      cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
+    },
+    3: {
+      label: 'In review',
+      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+    },
+    4: {
+      label: 'Completed',
+      cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
+    },
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="size-4 text-amber-500" />
+              Pick Best Version
+            </DialogTitle>
+            <DialogDescription className="truncate text-xs">
+              {sectionTitle}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {versionsQuery.isLoading ? (
+              <div className="flex flex-col gap-2 py-2">
+                <Skeleton className="h-20 w-full rounded-lg" />
+                <Skeleton className="h-20 w-full rounded-lg" />
+              </div>
+            ) : versions.length === 0 ? (
+              <div className="py-10 text-center">
+                <FileText className="text-muted-foreground/40 mx-auto mb-3 size-9" />
+                <p className="text-muted-foreground text-sm">
+                  No contributor versions found for this section.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 py-2">
+                {versions.map((v) => {
+                  const isMain = v.isMainSection;
+                  const isPending = pendingVersionId === v.sectionId;
+                  const statusInfo =
+                    v.status != null ? statusMap[v.status] : null;
+                  return (
+                    <div
+                      key={v.sectionId}
+                      className={cn(
+                        'border-border rounded-lg border p-3.5 transition-colors',
+                        isMain
+                          ? 'border-green-300 bg-green-50/60 dark:border-green-800 dark:bg-green-950/20'
+                          : 'bg-card hover:bg-muted/40',
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                            {v.version && (
+                              <span className="bg-muted text-muted-foreground rounded-full border px-1.5 py-0.5 text-[10px] font-medium">
+                                {v.version}
+                              </span>
+                            )}
+                            {isMain && (
+                              <span className="rounded-full border border-green-300 bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 dark:border-green-700 dark:bg-green-900/40 dark:text-green-400">
+                                Main
+                              </span>
+                            )}
+                            {statusInfo && (
+                              <span
+                                className={cn(
+                                  'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+                                  statusInfo.cls,
+                                )}
+                              >
+                                {statusInfo.label}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-foreground text-sm leading-snug font-medium">
+                            {v.name || v.createdBy || '—'}
+                          </p>
+                          {v.email && (
+                            <p className="text-muted-foreground mt-0.5 text-xs">
+                              {v.email}
+                            </p>
+                          )}
+                          {v.createdOnUtc && (
+                            <p className="text-muted-foreground mt-0.5 text-xs">
+                              Created{' '}
+                              {new Date(v.createdOnUtc).toLocaleDateString(
+                                'en-US',
+                                {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                },
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        {!isMain && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 shrink-0 px-2.5 text-xs"
+                            disabled={isPending || markMutation.isPending}
+                            onClick={() => {
+                              setPendingVersionId(v.sectionId);
+                              setConfirmId(v.sectionId);
+                            }}
+                          >
+                            {isPending && markMutation.isPending ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              'Pick'
+                            )}
+                          </Button>
+                        )}
+                        {isMain && (
+                          <Check className="mt-0.5 size-4 shrink-0 text-green-600" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!confirmId}
+        onOpenChange={(v) => {
+          if (!v) {
+            setConfirmId(null);
+            setPendingVersionId(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark as main version?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will set the selected version as the main version for this
+              section. The previous main version will be replaced.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={markMutation.isPending}
+              className={BTN.CANCEL}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className={BTN.EDIT}
+              disabled={markMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!confirmId) return;
+                markMutation.mutate({
+                  versionSectionId: confirmId,
+                  projectId: subProjectId,
+                });
+              }}
+            >
+              {markMutation.isPending ? 'Saving...' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
+
 export const PaperWorkspacePage = ({
   projectId,
   paperId,
@@ -807,8 +1045,8 @@ export const PaperWorkspacePage = ({
   } | null>(null);
   const [guidelineText, setGuidelineText] = useState('');
   const [guidelineMainIdea, setGuidelineMainIdea] = useState('');
-  const [expandedSectionIds, setExpandedSectionIds] = useState<Set<string>>(
-    new Set(),
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null,
   );
   const [versionDialog, setVersionDialog] = useState<{
     id: string;
@@ -824,6 +1062,7 @@ export const PaperWorkspacePage = ({
     (typeof editorSections)[0][]
   >([]);
   const [markMainOpen, setMarkMainOpen] = useState(false);
+  const [pickBestOpen, setPickBestOpen] = useState(false);
 
   const paperQuery = useWritingPaperDetail({ paperId });
 
@@ -1041,33 +1280,6 @@ export const PaperWorkspacePage = ({
     return editorSections[0]?.id;
   }, [editorSections, injectedSections, editorState]);
 
-  // Compute sequential numbers for numbered sections
-  const sectionNumbers = useMemo(() => {
-    const map = new Map<string, string>();
-    const sorted = (arr: typeof editorSections) =>
-      [...arr].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
-    const roots = sorted(editorSections.filter((s) => !s.parentSectionId));
-    let rootCount = 0;
-    roots.forEach((root) => {
-      if (root.numbered) rootCount++;
-      const rootNum = root.numbered ? `${rootCount}` : '';
-      if (rootNum) map.set(root.id, rootNum);
-      const children = sorted(
-        editorSections.filter((s) => s.parentSectionId === root.id),
-      );
-      let childCount = 0;
-      children.forEach((child) => {
-        if (child.numbered) childCount++;
-        if (child.numbered)
-          map.set(
-            child.id,
-            rootNum ? `${rootNum}.${childCount}` : `${childCount}`,
-          );
-      });
-    });
-    return map;
-  }, [editorSections]);
-
   const openSectionEditor = async (sectionId: string, readOnly: boolean) => {
     let resolvedSectionId = sectionId;
 
@@ -1213,6 +1425,18 @@ export const PaperWorkspacePage = ({
     });
   };
 
+  // Auto-select first section when sections load
+  useEffect(() => {
+    if (editorSections.length > 0) {
+      setSelectedSectionId((prev) => {
+        if (prev && editorSections.some((s) => s.id === prev)) return prev;
+        const firstRoot = editorSections.find((s) => !s.parentSectionId);
+        return firstRoot?.id ?? editorSections[0]?.id ?? null;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorSections.length]);
+
   // If editor is open, render it (fixed inset-0, overlays everything)
   if (editorState) {
     return (
@@ -1296,229 +1520,37 @@ export const PaperWorkspacePage = ({
   const childSections = (parentId: string) =>
     editorSections.filter((s) => s.parentSectionId === parentId);
 
-  const toggleSectionCollapse = (sectionId: string) => {
-    setExpandedSectionIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(sectionId)) next.delete(sectionId);
-      else next.add(sectionId);
-      return next;
-    });
-  };
+  const flatSections = rootSections.flatMap((root) => [
+    root,
+    ...childSections(root.id),
+  ]);
+  const selectedSection =
+    editorSections.find((s) => s.id === selectedSectionId) ?? null;
 
-  const renderSectionCard = (
-    s: (typeof editorSections)[0],
-    isChild = false,
-  ) => {
-    const normalizedTitle = stripLatex(s.title || '').toLowerCase();
-    const isReferencesSection =
-      normalizedTitle === 'references' || normalizedTitle === 'reference';
-    const canEdit =
-      !isReferencesSection &&
-      (canEditSection(s.sectionRole || '') ||
-        editableSectionIds.has(s.id) ||
-        editableSectionIds.has(s.markSectionId || ''));
-    const num = sectionNumbers.get(s.id);
-    const contributorCount =
-      sectionContributorCounts.get(s.id) ??
-      sectionContributorCounts.get(s.markSectionId || '') ??
-      0;
-    const isCollapsed = !expandedSectionIds.has(s.id);
-    const mainIdeaLines = (s as any).mainIdea
-      ? getIdeaLines((s as any).mainIdea)
+  const selectedNormalizedTitle = selectedSection
+    ? stripLatex(selectedSection.title || '').toLowerCase()
+    : '';
+  const isSelectedReferences =
+    selectedNormalizedTitle === 'references' ||
+    selectedNormalizedTitle === 'reference';
+  const canEditSelected =
+    !!selectedSection &&
+    !isSelectedReferences &&
+    (canEditSection(selectedSection.sectionRole || '') ||
+      editableSectionIds.has(selectedSection.id) ||
+      editableSectionIds.has(selectedSection.markSectionId || ''));
+  const assignedSelected = selectedSection
+    ? assignedByIdMap.get(selectedSection.id) ||
+      assignedByIdMap.get(selectedSection.markSectionId || selectedSection.id)
+    : undefined;
+  const selectedHasOwnDraft =
+    !!assignedSelected &&
+    !!assignedSelected.markSectionId &&
+    assignedSelected.id !== assignedSelected.markSectionId;
+  const selectedMainIdeaLines =
+    selectedSection && (selectedSection as any).mainIdea
+      ? getIdeaLines((selectedSection as any).mainIdea)
       : [];
-    return (
-      <div
-        key={s.id}
-        className={cn(
-          'bg-card border-border/70 overflow-hidden border transition-shadow hover:shadow-md',
-          isChild
-            ? 'ml-6 border-l-2 border-l-blue-200 dark:border-l-blue-800'
-            : 'border-border shadow-sm',
-        )}
-      >
-        <div
-          className="flex cursor-pointer items-start gap-4 px-5 py-5"
-          onClick={() => toggleSectionCollapse(s.id)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              toggleSectionCollapse(s.id);
-            }
-          }}
-        >
-          <div className="min-w-0 flex-1">
-            <h3 className="text-foreground text-xl leading-none font-semibold">
-              {s.numbered ? `${num ? ` ${num}.` : ''} ${s.title}` : s.title}
-            </h3>
-            <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              {s.lastModifiedOnUtc && (
-                <span>
-                  Modified{' '}
-                  {new Date(s.lastModifiedOnUtc).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              )}
-              {s.status != null && SECTION_STATUS_MAP[s.status] && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'h-6 rounded-full px-2.5 py-0 text-xs font-medium',
-                    SECTION_STATUS_MAP[s.status].cls,
-                  )}
-                >
-                  {SECTION_STATUS_MAP[s.status].label}
-                </Badge>
-              )}
-              {contributorCount > 0 && (
-                <span className="flex items-center">
-                  <span
-                    className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-100 px-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
-                    title={`${contributorCount} writer/author${contributorCount !== 1 ? 's' : ''}`}
-                    aria-label={`${contributorCount} writer or author${contributorCount !== 1 ? 's' : ''}`}
-                  >
-                    {contributorCount}
-                  </span>
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              size="action"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                const assigned =
-                  assignedByIdMap.get(s.id) ||
-                  assignedByIdMap.get(s.markSectionId || s.id);
-                const sectionHasOwnDraft =
-                  !!assigned &&
-                  !!assigned.markSectionId &&
-                  assigned.id !== assigned.markSectionId;
-                setVersionDialog({
-                  id: s.id,
-                  markSectionId: s.markSectionId || s.id,
-                  title: stripLatex(s.title),
-                  memberId: s.memberId || '',
-                  canEdit,
-                  isAssigned: !!assigned,
-                  status: s.status,
-                  hasOwnDraft: sectionHasOwnDraft,
-                });
-              }}
-              className="bg-background/70 hover:bg-muted shrink-0 rounded-lg px-3 text-xs font-semibold tracking-wide uppercase"
-            >
-              VIEW
-            </Button>
-            <Button
-              size="action"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMemberSheet({
-                  id: s.markSectionId || s.id,
-                  title: stripLatex(s.title),
-                });
-              }}
-              title="Writers"
-              className="bg-background/70 hover:bg-muted shrink-0 rounded-lg px-3 text-xs font-semibold tracking-wide uppercase"
-            >
-              Writer
-            </Button>
-
-            {isAuthor && (
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setGuidelineText(s.description || s.sectionSumary || '');
-                  setGuidelineMainIdea((s as any).mainIdea || '');
-                  setGuidelineSheet({
-                    id: s.id,
-                    title: stripLatex(s.title),
-                    description: s.description || s.sectionSumary || '',
-                    mainIdea: (s as any).mainIdea || '',
-                  });
-                }}
-                title="Open Description"
-                aria-label="Open Description"
-                className="bg-background/70 hover:bg-muted size-10 rounded-2xl"
-              >
-                <PenLine className="size-4" />
-              </Button>
-            )}
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleSectionCollapse(s.id);
-              }}
-              title={isCollapsed ? 'Expand' : 'Collapse'}
-              className="bg-background/70 hover:bg-muted size-10 rounded-full"
-            >
-              <ChevronDown
-                className={cn(
-                  'size-4 transition-transform',
-                  isCollapsed && '-rotate-90',
-                )}
-              />
-            </Button>
-          </div>
-        </div>
-
-        {!isCollapsed &&
-          (mainIdeaLines.length > 0 || childSections(s.id).length > 0) && (
-            <div className="border-border/70 border-t px-5 py-4">
-              {mainIdeaLines.length > 0 && (
-                <div>
-                  <p className="text-muted-foreground mb-3 text-xs font-bold tracking-[0.12em] uppercase">
-                    Main Idea
-                  </p>
-                  {mainIdeaLines.some(
-                    (line) => line.startsWith('-') || line.startsWith('*'),
-                  ) ? (
-                    <ul className="text-foreground marker:text-muted-foreground list-disc space-y-2 pl-5 text-sm leading-7">
-                      {mainIdeaLines.map((line, index) => (
-                        <li key={`${s.id}-idea-${index}`}>
-                          {line.replace(/^[-*]\s*/, '')}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-foreground space-y-2 text-sm leading-7">
-                      {mainIdeaLines.map((line, index) => (
-                        <p key={`${s.id}-idea-${index}`}>{line}</p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {childSections(s.id).length > 0 && (
-                <div className={cn(mainIdeaLines.length > 0 && 'mt-5')}>
-                  <p className="text-muted-foreground mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase">
-                    <ChevronRight className="size-3" />
-                    Sub-sections
-                  </p>
-                  <div className="space-y-3">
-                    {childSections(s.id).map((child) =>
-                      renderSectionCard(child, true),
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-      </div>
-    );
-  };
 
   return (
     <Wrapper {...(wrapperProps as any)}>
@@ -1560,50 +1592,291 @@ export const PaperWorkspacePage = ({
                     {paper.title}
                   </h1>
                   <p className="text-muted-foreground text-sm">
-                    Click Edit on any section to open the editor
+                    Select a section on the left to view or edit it
                   </p>
                 </div>
-                {(isAuthor || isManager) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setMarkMainOpen(true)}
-                    className="shrink-0 gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/30"
-                  >
-                    <Star className="size-4" />
-                    Mark Main Section
-                  </Button>
-                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Sections list */}
-        {editorSections.length === 0 ? (
-          <div className="border-border bg-card rounded-xl border py-16 text-center shadow-sm">
-            <LayoutList className="text-muted-foreground/40 mx-auto mb-3 size-10" />
-            <p className="text-muted-foreground font-medium">
-              No sections assigned
-            </p>
-            <p className="text-muted-foreground/70 mt-1 text-sm">
-              You do not have any sections assigned to this paper yet.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {rootSections.map((s) => renderSectionCard(s))}
-            {/* Sections with unknown parent (not in root list) */}
-            {editorSections
-              .filter(
-                (s) =>
-                  s.parentSectionId &&
-                  !editorSections.find((p) => p.id === s.parentSectionId),
-              )
-              .map((s) => renderSectionCard(s))}
-          </div>
-        )}
+        {/* Sections */}
+        <div className="bg-card border-border overflow-hidden rounded-b-md border border-t-0 shadow-sm">
+          {/* Body */}
+          {editorSections.length === 0 ? (
+            <div className="py-16 text-center">
+              <LayoutList className="text-muted-foreground/40 mx-auto mb-3 size-10" />
+              <p className="text-muted-foreground font-medium">
+                No sections assigned
+              </p>
+              <p className="text-muted-foreground/70 mt-1 text-sm">
+                You do not have any sections assigned to this paper yet.
+              </p>
+            </div>
+          ) : (
+            <div className="flex overflow-hidden">
+              {/* ── Left sidebar ─────────────────────────────────── */}
+              <div className="border-border flex w-60 shrink-0 flex-col overflow-hidden border-r">
+                <div className="bg-muted/20 max-h-170 overflow-y-auto [&>button:last-child]:border-b-0">
+                  {flatSections.map((s) => {
+                    const isChild = !!s.parentSectionId;
+                    const isSelected = selectedSectionId === s.id;
+                    const contributorCount =
+                      sectionContributorCounts.get(s.id) ??
+                      sectionContributorCounts.get(s.markSectionId || '') ??
+                      0;
+                    const statusInfo =
+                      s.status != null ? SECTION_STATUS_MAP[s.status] : null;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setSelectedSectionId(s.id)}
+                        className={cn(
+                          'group relative flex h-20 w-full flex-col justify-center border-b pr-4 text-left transition-all',
+                          'border-border/60 hover:bg-card dark:hover:bg-card',
+                          isChild ? 'pl-8' : 'pl-4',
+                          isSelected &&
+                            'dark:bg-card border-border/80 bg-card shadow-sm',
+                        )}
+                      >
+                        {isSelected && (
+                          <span className="btn-create absolute top-0 left-0 h-full w-0.5 rounded-r-full" />
+                        )}
+                        <p
+                          className={cn(
+                            isChild
+                              ? 'text-muted-foreground text-xs font-medium'
+                              : 'text-foreground text-sm font-semibold',
+                            isSelected && !isChild && 'text-foreground',
+                          )}
+                        >
+                          {stripLatex(s.title || '')}
+                        </p>
+                        {(statusInfo || contributorCount > 0) && (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            {statusInfo && (
+                              <span
+                                className={cn(
+                                  'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+                                  statusInfo.cls,
+                                )}
+                              >
+                                {statusInfo.label}
+                              </span>
+                            )}
+                            {contributorCount > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-100 px-1 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                                {contributorCount}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {/* Orphaned sections */}
+                  {editorSections
+                    .filter(
+                      (s) =>
+                        s.parentSectionId &&
+                        !editorSections.find((p) => p.id === s.parentSectionId),
+                    )
+                    .map((s) => {
+                      const isSelected = selectedSectionId === s.id;
+                      const statusInfo =
+                        s.status != null ? SECTION_STATUS_MAP[s.status] : null;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setSelectedSectionId(s.id)}
+                          className={cn(
+                            'group relative flex h-20 w-full flex-col justify-center border-b pr-4 pl-4 text-left transition-all',
+                            'border-border/60 hover:bg-card dark:hover:bg-card',
+                            isSelected &&
+                              'dark:bg-card border-border/80 bg-card shadow-sm',
+                          )}
+                        >
+                          {isSelected && (
+                            <span className="btn-create absolute top-0 left-0 h-full w-0.5 rounded-r-full" />
+                          )}
+                          <p className="text-foreground text-sm leading-snug font-semibold">
+                            {stripLatex(s.title || '')}
+                          </p>
+                          {statusInfo && (
+                            <span
+                              className={cn(
+                                'mt-1.5 inline-block rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+                                statusInfo.cls,
+                              )}
+                            >
+                              {statusInfo.label}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* ── Right content panel ───────────────────────────── */}
+              <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                {!selectedSection ? (
+                  <div className="flex flex-1 items-center justify-center">
+                    <p className="text-muted-foreground text-sm">
+                      Select a section to view details
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Action bar */}
+                    <div className="border-border bg-card flex h-20 shrink-0 items-center gap-2 border-b px-4">
+                      {(isAuthor || isManager) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5 px-3 text-xs font-medium"
+                          onClick={() => setPickBestOpen(true)}
+                        >
+                          <Star className="size-3.5 text-amber-500" />
+                          Pick Best
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3 text-xs font-medium"
+                        onClick={() => {
+                          setVersionDialog({
+                            id: selectedSection.id,
+                            markSectionId:
+                              selectedSection.markSectionId ||
+                              selectedSection.id,
+                            title: stripLatex(selectedSection.title),
+                            memberId: selectedSection.memberId || '',
+                            canEdit: canEditSelected,
+                            isAssigned: !!assignedSelected,
+                            status: selectedSection.status,
+                            hasOwnDraft: selectedHasOwnDraft,
+                          });
+                        }}
+                      >
+                        View
+                      </Button>
+                      {(isAuthor || isManager) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs font-medium"
+                          onClick={() =>
+                            setMemberSheet({
+                              id:
+                                selectedSection.markSectionId ||
+                                selectedSection.id,
+                              title: stripLatex(selectedSection.title),
+                            })
+                          }
+                        >
+                          Writer
+                        </Button>
+                      )}
+                      {(isAuthor || isManager) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs font-medium"
+                          onClick={() => {
+                            setGuidelineText(
+                              selectedSection.description ||
+                                selectedSection.sectionSumary ||
+                                '',
+                            );
+                            setGuidelineMainIdea(
+                              (selectedSection as any).mainIdea || '',
+                            );
+                            setGuidelineSheet({
+                              id: selectedSection.id,
+                              title: stripLatex(selectedSection.title),
+                              description:
+                                selectedSection.description ||
+                                selectedSection.sectionSumary ||
+                                '',
+                              mainIdea: (selectedSection as any).mainIdea || '',
+                            });
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {canEditSelected && (
+                        <Button
+                          size="sm"
+                          variant="darkRed"
+                          className="ml-auto h-8 px-3 text-xs"
+                          onClick={() =>
+                            void openSectionEditor(selectedSection.id, false)
+                          }
+                        >
+                          Open Editor
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Main Idea */}
+                    <div className="flex-1 overflow-y-auto p-6">
+                      {/* Main Idea */}
+                      <div>
+                        <p className="text-foreground mb-3 text-sm font-semibold">
+                          Main Idea
+                        </p>
+                        <div className="border-border bg-muted/20 min-h-32 rounded-lg border p-4 text-sm leading-relaxed">
+                          {selectedMainIdeaLines.length > 0 ? (
+                            selectedMainIdeaLines.some(
+                              (line) =>
+                                line.startsWith('-') || line.startsWith('*'),
+                            ) ? (
+                              <ul className="text-foreground/80 list-disc space-y-1.5 pl-4">
+                                {selectedMainIdeaLines.map((line, i) => (
+                                  <li key={i}>
+                                    {line.replace(/^[-*]\s*/, '')}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="text-foreground/80 space-y-2">
+                                {selectedMainIdeaLines.map((line, i) => (
+                                  <p key={i}>{line}</p>
+                                ))}
+                              </div>
+                            )
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">
+                              No main idea set for this section.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Pick Best Dialog */}
+      {selectedSection && (
+        <PickBestDialog
+          open={pickBestOpen}
+          onClose={() => setPickBestOpen(false)}
+          sectionTitle={stripLatex(selectedSection.title)}
+          markSectionId={selectedSection.markSectionId || selectedSection.id}
+          subProjectId={subProjectId}
+          paperId={paperId}
+        />
+      )}
 
       {/* Section Members Sheet */}
       {memberSheet && (

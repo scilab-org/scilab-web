@@ -179,7 +179,7 @@ export type Tab =
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'overview', label: 'Overview', icon: FileText },
-  { id: 'compile-paper', label: 'Preprint', icon: Layers },
+  { id: 'compile-paper', label: 'Versions', icon: Layers },
   { id: 'sections', label: 'Sections', icon: BookOpen },
   { id: 'contributor', label: 'Contributor', icon: Users },
   { id: 'task', label: 'Task', icon: ClipboardList },
@@ -1225,14 +1225,13 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'sections' && (
               <div className="-mx-6 -mb-6">
                 <div className="border-border -mt-6 mb-0 flex items-center justify-between border-b px-6 py-4">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
                       Sections
                     </h2>
-                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
-                      {totalSections} section
-                      {totalSections !== 1 ? 's' : ''}
-                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                      {sectionsQuery.isLoading ? '—' : totalSections}
+                    </span>
                   </div>
                   <Button
                     variant="outline"
