@@ -953,6 +953,7 @@ export const CombineEditor = ({
                     <EditorChatPanel
                       projectId={projectId}
                       sectionTitle={combine.name}
+                      canWrite={isAuthor && !isReadOnly}
                     />
                   </div>
                 </>

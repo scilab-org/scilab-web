@@ -5601,6 +5601,7 @@ export const LatexPaperEditor = ({
                         sectionTitle={activeSection?.title || paperTitle}
                         sectionContent={content}
                         onWriteOutput={handleWriteOutput}
+                        canWrite={!isActiveSectionReadOnly}
                       />
                     )}
                     {toolsTab === 'datasets' && projectId && (
