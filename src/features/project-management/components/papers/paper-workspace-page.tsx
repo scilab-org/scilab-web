@@ -89,6 +89,8 @@ const stripLatex = (input: string): string => {
 const formatDesc = (text: string) =>
   text.replace(/\\n/g, '\n').replace(/  +/g, ' ').trim();
 
+const NULL_GUID = '00000000-0000-0000-0000-000000000000';
+
 const getIdeaLines = (text: string) =>
   formatDesc(text)
     .replace(/^"+/, '')
@@ -130,6 +132,17 @@ const SectionMembersSheet = ({
     paperId,
   });
   const members: SectionMember[] = membersQuery.data?.result?.items ?? [];
+  const visibleMembers = members.filter((member) => {
+    const normalizedUserId = member.userId?.trim().toLowerCase();
+    const hasIdentity = Boolean(
+      member.username?.trim() ||
+      member.email?.trim() ||
+      member.firstName?.trim() ||
+      member.lastName?.trim(),
+    );
+
+    return normalizedUserId !== NULL_GUID && hasIdentity;
+  });
 
   const availableQuery = useAvailableSectionMembers({
     sectionId: sectionId || '',
@@ -150,7 +163,7 @@ const SectionMembersSheet = ({
     if (normalized.includes('read') || normalized.includes('view')) return 2;
     return 3;
   };
-  const sortedMembers = [...members].sort(
+  const sortedMembers = [...visibleMembers].sort(
     (a, b) =>
       getSectionRolePriority(a.sectionRole) -
       getSectionRolePriority(b.sectionRole),
@@ -257,7 +270,7 @@ const SectionMembersSheet = ({
                   <Skeleton className="h-12 w-full" />
                   <Skeleton className="h-12 w-full" />
                 </div>
-              ) : members.length === 0 ? (
+              ) : sortedMembers.length === 0 ? (
                 <div className="py-12 text-center">
                   <Users className="text-muted-foreground mx-auto mb-3 h-10 w-10 opacity-30" />
                   <p className="text-muted-foreground text-sm">

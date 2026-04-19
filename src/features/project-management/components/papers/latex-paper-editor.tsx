@@ -112,6 +112,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+const MONACO_EDITOR_FONT_FAMILY =
+  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
+const MONACO_EDITOR_FONT_SIZE = 14;
+const MONACO_EDITOR_LINE_HEIGHT = 22;
+const MONACO_EDITOR_FONT_WEIGHT = '400';
+
 // LaTeX stats helper
 const computeLatexStats = (latexContent: string) => {
   if (!latexContent)
@@ -4335,8 +4341,9 @@ export const LatexPaperEditor = ({
       <style>{`
         .latex-paper-editor-shell .monaco-editor .margin-view-overlays .line-numbers,
         .latex-paper-editor-shell .monaco-editor .line-numbers {
-          font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
-          font-size: 14px !important;
+          font-family: ${MONACO_EDITOR_FONT_FAMILY} !important;
+          font-size: ${MONACO_EDITOR_FONT_SIZE}px !important;
+          font-weight: ${MONACO_EDITOR_FONT_WEIGHT} !important;
         }
 
         .latex-paper-editor-shell .monaco-editor .current-line,
@@ -5073,16 +5080,15 @@ export const LatexPaperEditor = ({
                           theme="latex-light"
                           beforeMount={registerLatexLanguage}
                           options={{
-                            fontSize: 14,
-                            lineHeight: 22,
+                            fontSize: MONACO_EDITOR_FONT_SIZE,
+                            lineHeight: MONACO_EDITOR_LINE_HEIGHT,
                             minimap: { enabled: false },
                             wordWrap: 'on',
                             scrollBeyondLastLine: false,
                             padding: { top: 16, bottom: 16 },
                             automaticLayout: true,
-                            fontFamily:
-                              "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                            fontWeight: '400',
+                            fontFamily: MONACO_EDITOR_FONT_FAMILY,
+                            fontWeight: MONACO_EDITOR_FONT_WEIGHT,
                             fontLigatures: false,
                             lineNumbers: 'on',
                             scrollbar: {
@@ -5120,16 +5126,15 @@ export const LatexPaperEditor = ({
                             options={{
                               readOnly: true,
                               domReadOnly: true,
-                              fontSize: 14,
-                              lineHeight: 22,
+                              fontSize: MONACO_EDITOR_FONT_SIZE,
+                              lineHeight: MONACO_EDITOR_LINE_HEIGHT,
                               minimap: { enabled: false },
                               wordWrap: 'on',
                               scrollBeyondLastLine: false,
                               padding: { top: 16, bottom: 16 },
                               automaticLayout: true,
-                              fontFamily:
-                                "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                              fontWeight: '400',
+                              fontFamily: MONACO_EDITOR_FONT_FAMILY,
+                              fontWeight: MONACO_EDITOR_FONT_WEIGHT,
                               fontLigatures: false,
                               lineNumbers: 'on',
                               scrollbar: {
@@ -5331,8 +5336,8 @@ export const LatexPaperEditor = ({
                         });
                       }}
                       options={{
-                        fontSize: 14,
-                        lineHeight: 22,
+                        fontSize: MONACO_EDITOR_FONT_SIZE,
+                        lineHeight: MONACO_EDITOR_LINE_HEIGHT,
                         minimap: { enabled: false },
                         wordWrap: 'on',
                         scrollBeyondLastLine: false,
@@ -5340,9 +5345,8 @@ export const LatexPaperEditor = ({
                         automaticLayout: true,
                         tabSize: 2,
                         renderLineHighlight: 'none',
-                        fontFamily:
-                          "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                        fontWeight: '400',
+                        fontFamily: MONACO_EDITOR_FONT_FAMILY,
+                        fontWeight: MONACO_EDITOR_FONT_WEIGHT,
                         fontLigatures: false,
                         cursorBlinking: 'smooth',
                         cursorSmoothCaretAnimation: 'on',

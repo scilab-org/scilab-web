@@ -206,6 +206,7 @@ export const ProjectPaperDetailPage = ({
     initialTab?: Tab;
     initialSectionId?: string;
     subProjectId?: string;
+    openEditPaper?: boolean;
   } | null;
   const [activeTab, setActiveTab] = useState<Tab>(
     locationState?.initialTab ?? 'overview',
@@ -367,6 +368,39 @@ export const ProjectPaperDetailPage = ({
     });
     setIsEditPaperOpen(true);
   };
+
+  useEffect(() => {
+    if (!locationState?.openEditPaper || !paper || (!isAuthor && !isManager)) {
+      return;
+    }
+
+    handleEditPaperOpen();
+
+    const nextState = { ...locationState };
+    delete nextState.openEditPaper;
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: Object.keys(nextState).length > 0 ? nextState : null,
+      },
+    );
+  }, [
+    handleEditPaperOpen,
+    isAuthor,
+    isManager,
+    location.hash,
+    location.pathname,
+    location.search,
+    locationState,
+    navigate,
+    paper,
+  ]);
 
   const handleEditPaperSubmit = (e: FormEvent) => {
     e.preventDefault();

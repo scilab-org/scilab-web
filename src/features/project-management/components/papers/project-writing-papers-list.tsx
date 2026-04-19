@@ -272,29 +272,6 @@ export const ProjectWritingPapersList = ({
                         >
                           View
                         </Button>
-                        {isAuthor && !readOnly && (
-                          <Button
-                            variant="outline"
-                            size="action"
-                            className={`${BTN.EDIT_OUTLINE} uppercase`}
-                            onClick={() => {
-                              const href = getPaperHref
-                                ? getPaperHref(projectId, paper.id)
-                                : readOnly
-                                  ? paths.app.projectPaperDetail.getHref(
-                                      projectId,
-                                      paper.id,
-                                    )
-                                  : paths.app.assignedProjects.paperDetail.getHref(
-                                      projectId,
-                                      paper.id,
-                                    );
-                              navigate(href);
-                            }}
-                          >
-                            EDIT
-                          </Button>
-                        )}
                         {(user?.preferredUsername === paper.createdBy ||
                           isManager) &&
                           !readOnly && (

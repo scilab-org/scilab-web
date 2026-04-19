@@ -51,6 +51,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+const MONACO_EDITOR_FONT_FAMILY =
+  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
+const MONACO_EDITOR_FONT_SIZE = 14;
+const MONACO_EDITOR_LINE_HEIGHT = 22;
+const MONACO_EDITOR_FONT_WEIGHT = '400';
+
 // Throttled toast helper – same message won't re-appear within 3 s
 const _lastToastMap = new Map<string, number>();
 const throttledToast = {
@@ -691,8 +697,9 @@ export const CombineEditor = ({
       <style>{`
         .latex-paper-editor-shell .monaco-editor .margin-view-overlays .line-numbers,
         .latex-paper-editor-shell .monaco-editor .line-numbers {
-          font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
-          font-size: 14px !important;
+          font-family: ${MONACO_EDITOR_FONT_FAMILY} !important;
+          font-size: ${MONACO_EDITOR_FONT_SIZE}px !important;
+          font-weight: ${MONACO_EDITOR_FONT_WEIGHT} !important;
         }
 
         .latex-paper-editor-shell .monaco-editor .current-line,
@@ -815,21 +822,29 @@ export const CombineEditor = ({
                   beforeMount={registerLatexLanguage}
                   theme="latex-light"
                   options={{
-                    fontSize: 14,
-                    lineHeight: 22,
+                    fontSize: MONACO_EDITOR_FONT_SIZE,
+                    lineHeight: MONACO_EDITOR_LINE_HEIGHT,
                     minimap: { enabled: false },
                     wordWrap: 'on',
                     lineNumbers: 'on',
                     scrollBeyondLastLine: false,
                     automaticLayout: true,
                     readOnly: isReadOnly,
+                    domReadOnly: isReadOnly,
                     padding: { top: 16, bottom: 16 },
                     tabSize: 2,
-                    renderLineHighlight: 'line',
-                    fontFamily:
-                      "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                    fontLigatures: true,
+                    renderLineHighlight: 'none',
+                    fontFamily: MONACO_EDITOR_FONT_FAMILY,
+                    fontWeight: MONACO_EDITOR_FONT_WEIGHT,
+                    fontLigatures: false,
+                    cursorBlinking: 'smooth',
+                    cursorSmoothCaretAnimation: 'on',
                     smoothScrolling: true,
+                    bracketPairColorization: { enabled: true },
+                    glyphMargin: false,
+                    lineDecorationsWidth: 8,
+                    overviewRulerBorder: false,
+                    hideCursorInOverviewRuler: true,
                     scrollbar: {
                       verticalScrollbarSize: 6,
                       horizontalScrollbarSize: 6,
