@@ -476,8 +476,10 @@ export type GetMarkSectionVersionsApiResponse = {
 export type CommentDto = {
   id: string;
   sectionId: string;
+  sectionContent?: string | null;
   content: string;
   userName: string;
+  replyToUserName?: string | null;
   createdOnUtc: string | null;
   createdBy: string | null;
   lastModifiedOnUtc: string | null;
@@ -493,6 +495,8 @@ export type GetSectionCommentsApiResponse = {
 export type CreateCommentDto = {
   sectionId: string;
   content: string;
+  markSectionId?: string;
+  repliedToUserName?: string | null;
 };
 
 export type PaperStatusHistoryEntry = {

@@ -145,7 +145,7 @@ export const ProjectWritingPapersList = ({
       PageSize: 100,
       title: searchDebounce || undefined,
     },
-    queryConfig: { enabled: isManager },
+    queryConfig: { enabled: isManager, refetchOnMount: 'always' },
   });
 
   const assignedPapersQuery = useMyAssignedPapers({
@@ -155,7 +155,7 @@ export const ProjectWritingPapersList = ({
       PageSize: 100,
       title: searchDebounce || undefined,
     },
-    queryConfig: { enabled: !isManager },
+    queryConfig: { enabled: !isManager, refetchOnMount: 'always' },
   });
 
   const papersQuery = isManager ? subProjectsQuery : assignedPapersQuery;
@@ -199,6 +199,7 @@ export const ProjectWritingPapersList = ({
     });
   }, [editingPaper, editingPaperDetailQuery.data]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleEditOpen = (paper: SubProjectPaper) => {
     setEditPaperForm({
       context: paper.context ?? '',
@@ -288,7 +289,9 @@ export const ProjectWritingPapersList = ({
             <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="text-muted-foreground w-[38%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead
+                    className={`text-muted-foreground ${isManager ? 'w-[38%]' : 'w-[47%]'} text-xs font-medium tracking-wider uppercase`}
+                  >
                     Title
                   </TableHead>
                   <TableHead className="text-muted-foreground w-[13%] text-xs font-medium tracking-wider uppercase">
@@ -297,93 +300,96 @@ export const ProjectWritingPapersList = ({
                   <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
                     Template
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[9%] text-xs font-medium tracking-wider uppercase">
-                    Members
-                  </TableHead>
+                  {isManager && (
+                    <TableHead className="text-muted-foreground w-[9%] text-xs font-medium tracking-wider uppercase">
+                      Members
+                    </TableHead>
+                  )}
                   <TableHead className="text-muted-foreground w-[30%] pr-6 text-center text-xs font-medium tracking-wider uppercase">
                     Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {papers.map((paper) => (
-                  <TableRow key={paper.id} className="hover:bg-muted/30">
-                    <TableCell className="max-w-0 overflow-hidden font-medium">
-                      <span
-                        className="block truncate"
-                        title={paper.title || '(Untitled)'}
-                      >
-                        {paper.title || '(Untitled)'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={getSubmissionStatusVariant(
-                          paper.submissionStatus ?? 1,
-                        )}
-                      >
-                        {SUBMISSION_STATUS_LABELS[
-                          paper.submissionStatus ?? 1
-                        ] ?? 'Draft'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {paper.template || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {paper.subProjectId ? (
-                        <PaperMembersCount subProjectId={paper.subProjectId} />
-                      ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="pr-6 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="outlineAction"
-                          size="action"
-                          onClick={() => {
-                            const href = getPaperHref
-                              ? getPaperHref(projectId, paper.id)
-                              : readOnly
-                                ? paths.app.projectPaperDetail.getHref(
-                                    projectId,
-                                    paper.id,
-                                  )
-                                : paths.app.assignedProjects.paperDetail.getHref(
-                                    projectId,
-                                    paper.id,
-                                  );
-                            navigate(href);
-                          }}
+                {papers.map((paper) => {
+                  const resolvedSubProjectId: string | null =
+                    (paper as any).subProjectId ?? null;
+                  return (
+                    <TableRow key={paper.id} className="hover:bg-muted/30">
+                      <TableCell className="max-w-0 overflow-hidden font-medium">
+                        <span
+                          className="block truncate"
+                          title={paper.title || '(Untitled)'}
                         >
-                          VIEW
-                        </Button>
-                        {isAuthor && !readOnly && (
+                          {paper.title || '(Untitled)'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={getSubmissionStatusVariant(
+                            paper.submissionStatus ?? 1,
+                          )}
+                        >
+                          {SUBMISSION_STATUS_LABELS[
+                            paper.submissionStatus ?? 1
+                          ] ?? 'Draft'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {paper.template || '—'}
+                      </TableCell>
+                      {isManager && (
+                        <TableCell>
+                          {resolvedSubProjectId ? (
+                            <PaperMembersCount
+                              subProjectId={resolvedSubProjectId}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              —
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="pr-6 text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <Button
                             variant="outlineAction"
                             size="action"
-                            onClick={() => handleEditOpen(paper)}
+                            onClick={() => {
+                              const href = getPaperHref
+                                ? getPaperHref(projectId, paper.id)
+                                : readOnly
+                                  ? paths.app.projectPaperDetail.getHref(
+                                      projectId,
+                                      paper.id,
+                                    )
+                                  : paths.app.assignedProjects.paperDetail.getHref(
+                                      projectId,
+                                      paper.id,
+                                    );
+                              navigate(href);
+                            }}
                           >
-                            EDIT
+                            VIEW
                           </Button>
-                        )}
-                        {(user?.preferredUsername === paper.createdBy ||
-                          isManager) &&
-                          !readOnly && (
-                            <Button
-                              variant="destructive"
-                              size="action"
-                              className="uppercase"
-                              onClick={() => setPaperToDelete(paper)}
-                            >
-                              DELETE
-                            </Button>
-                          )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          {(user?.preferredUsername === paper.createdBy ||
+                            isManager) &&
+                            !readOnly && (
+                              <Button
+                                variant="destructive"
+                                size="action"
+                                className="uppercase"
+                                onClick={() => setPaperToDelete(paper)}
+                              >
+                                DELETE
+                              </Button>
+                            )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

@@ -159,8 +159,8 @@ const CompactChatInput = ({
           className={cn(
             'flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
             mode === CHAT_MODE.CHAT
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:text-foreground',
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
           )}
         >
           <MessageSquare className="h-3 w-3" />
@@ -173,8 +173,8 @@ const CompactChatInput = ({
             className={cn(
               'flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors',
               mode === CHAT_MODE.WRITE
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground',
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
             )}
           >
             <PenLine className="h-3 w-3" />
@@ -203,7 +203,7 @@ const CompactChatInput = ({
           onClick={handleSend}
           disabled={!content.trim() || isSending}
           size="icon"
-          className="bg-primary hover:bg-primary/90 h-8 w-8 shrink-0 rounded-lg"
+          className="h-8 w-8 shrink-0 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-300 disabled:text-white"
         >
           {isSending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

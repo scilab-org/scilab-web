@@ -71,6 +71,8 @@ import {
 import { MarkMainSectionDialog } from '@/features/paper-management/components/mark-main-section-dialog';
 import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
 
+const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
+
 const stripLatex = (input: string): string => {
   if (!input) return '(Untitled)';
   let s = input;
@@ -126,8 +128,12 @@ const SectionMembersSheet = ({
   const membersQuery = useGetSectionMembers({
     sectionId: open && sectionId ? sectionId : '',
     paperId,
+    queryConfig: { refetchOnMount: 'always' } as any,
   });
-  const members: SectionMember[] = membersQuery.data?.result?.items ?? [];
+  const members: SectionMember[] =
+    membersQuery.data?.result?.items?.filter(
+      (member) => member.userId?.toLowerCase() !== EMPTY_GUID,
+    ) ?? [];
 
   const availableQuery = useAvailableSectionMembers({
     sectionId: sectionId || '',
@@ -556,6 +562,7 @@ const SectionVersionDialog = ({
 }) => {
   const versionsQuery = useMarkSection({
     markSectionId: open && markSectionId ? markSectionId : null,
+    queryConfig: { refetchOnMount: 'always' } as any,
   });
 
   const allItems: MarkSectionItem[] = versionsQuery.data?.result?.items ?? [];
@@ -692,14 +699,18 @@ const SectionVersionDialog = ({
                             </Badge>
                           )}
                         </div>
-                        <p className="text-foreground text-sm font-medium">
-                          {displayName}
-                        </p>
-                        {item.email && (item.name || item.createdBy) && (
-                          <p className="text-muted-foreground text-xs">
-                            {item.email}
+                        {!item.isMainSection && (
+                          <p className="text-foreground text-sm font-medium">
+                            {displayName}
                           </p>
                         )}
+                        {!item.isMainSection &&
+                          item.email &&
+                          (item.name || item.createdBy) && (
+                            <p className="text-muted-foreground text-xs">
+                              {item.email}
+                            </p>
+                          )}
                         {item.createdOnUtc && (
                           <p className="text-muted-foreground mt-0.5 text-xs">
                             Created{' '}
@@ -1215,7 +1226,7 @@ export const PaperWorkspacePage = ({
 
   const paperContributorsQuery = useGetPaperContributors({
     paperId,
-    queryConfig: { enabled: !!paperId } as any,
+    queryConfig: { enabled: !!paperId, refetchOnMount: 'always' } as any,
   });
 
   // Map sectionId -> writer/author count from paper contributors.
