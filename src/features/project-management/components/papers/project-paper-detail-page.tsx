@@ -247,12 +247,12 @@ export const ProjectPaperDetailPage = ({
     subProjectId?: string;
   } | null;
   const [activeTab, setActiveTab] = useState<Tab>(
-    locationState?.initialTab ?? 'overview',
+    locationState?.initialTab ?? 'sections',
   );
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
-    const initial = locationState?.initialTab ?? 'overview';
+    const initial = locationState?.initialTab ?? 'sections';
     const group = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === initial));
-    return group?.id ?? TAB_GROUPS[0].id;
+    return group?.id ?? 'working';
   });
   const navigate = useNavigate();
   const queryClient = useQueryClient();

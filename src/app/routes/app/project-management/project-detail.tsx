@@ -47,8 +47,6 @@ import { ProjectMembersList } from '@/features/project-management/components/mem
 import { ProjectPapersList } from '@/features/project-management/components/papers/project-papers-list';
 import { ProjectWritingPapersList } from '@/features/project-management/components/papers/project-writing-papers-list';
 import { DatasetsList } from '@/features/dataset-management/components/datasets-list';
-import { ExcelChartViewer } from '@/features/dataset-management/components/excel-chart-viewer';
-import { Dataset } from '@/features/dataset-management/types';
 
 export const clientLoader =
   (queryClient: QueryClient) =>
@@ -131,8 +129,6 @@ const ProjectDetailRoute = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [openGroup, setOpenGroup] = useState<string>('information');
-  const [chartViewerOpen, setChartViewerOpen] = useState(false);
-  const [chartDataset, setChartDataset] = useState<Dataset | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<
     string | undefined
   >();
@@ -219,16 +215,6 @@ const ProjectDetailRoute = () => {
 
   const handleDelete = () => {
     setDeleteConfirmOpen(true);
-  };
-
-  const handleViewChart = (dataset: Dataset) => {
-    setChartDataset(dataset);
-    setChartViewerOpen(true);
-  };
-
-  const handleCloseChartViewer = () => {
-    setChartViewerOpen(false);
-    setChartDataset(null);
   };
 
   if (!projectId) {
@@ -550,11 +536,7 @@ const ProjectDetailRoute = () => {
               )}
 
               {activeTab === 'datasets' && (
-                <DatasetsList
-                  projectId={projectId}
-                  readOnly
-                  onViewChartClick={handleViewChart}
-                />
+                <DatasetsList projectId={projectId} readOnly />
               )}
             </div>
           </div>
@@ -572,14 +554,6 @@ const ProjectDetailRoute = () => {
               project={projectQuery.data?.result?.project ?? null}
               open={updateProjectOpen}
               onOpenChange={setUpdateProjectOpen}
-            />
-          )}
-
-          {chartViewerOpen && chartDataset && (
-            <ExcelChartViewer
-              fileUrl={chartDataset.filePath}
-              fileName={chartDataset.name}
-              onClose={handleCloseChartViewer}
             />
           )}
 

@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  BarChart3,
-  FileText,
-  RefreshCw,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, RefreshCw } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -33,17 +27,11 @@ import {
 import { useDatasets } from '../api/get-datasets';
 import { Dataset } from '../types';
 
-const canViewChart = (filePath: string) => {
-  const extension = filePath.split('.').pop()?.toLowerCase();
-  return extension === 'xlsx' || extension === 'xls' || extension === 'csv';
-};
-
 type DatasetsListProps = {
   projectId: string;
   onCreateClick?: () => void;
   onUpdateClick?: (dataset: Dataset) => void;
   onDeleteClick?: (datasetId: string) => void;
-  onViewChartClick?: (dataset: Dataset) => void;
   readOnly?: boolean;
 };
 
@@ -52,7 +40,6 @@ export const DatasetsList = ({
   onCreateClick,
   onUpdateClick,
   onDeleteClick,
-  onViewChartClick,
   readOnly = false,
 }: DatasetsListProps) => {
   const [page, setPage] = useState(1);
@@ -179,18 +166,6 @@ export const DatasetsList = ({
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {canViewChart(dataset.filePath) &&
-                              onViewChartClick && (
-                                <Button
-                                  variant="action"
-                                  size="icon"
-                                  onClick={() => onViewChartClick(dataset)}
-                                  className="size-8 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                                  title="Chart"
-                                >
-                                  <BarChart3 className="size-4" />
-                                </Button>
-                              )}
                             <Button
                               variant="action"
                               size="icon"

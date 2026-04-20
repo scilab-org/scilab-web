@@ -22,29 +22,18 @@ const buildLatexPackageImportsRaw = (packages?: string[]): string => {
     .join('\n');
 };
 
-const mergeLatexPackages = (
-  sectionPackages?: string[],
-  referencePackages?: string[],
-): string[] => {
-  const merged: string[] = [];
+const dedupePackages = (packages?: string[]): string[] => {
+  const result: string[] = [];
   const seen = new Set<string>();
-
-  const add = (pkgs?: string[]) => {
-    for (const raw of pkgs ?? []) {
-      const trimmed = raw.trim();
-      if (!trimmed) continue;
-      const name = extractPackageName(trimmed);
-      if (seen.has(name)) continue;
-      seen.add(name);
-      merged.push(trimmed);
-    }
-  };
-
-  // Current section packages win over reference packages when duplicated.
-  add(sectionPackages);
-  add(referencePackages);
-
-  return merged;
+  for (const raw of packages ?? []) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const name = extractPackageName(trimmed);
+    if (seen.has(name)) continue;
+    seen.add(name);
+    result.push(trimmed);
+  }
+  return result;
 };
 
 const buildReferenceBlock = (referenceContent?: string): string => {
@@ -54,19 +43,25 @@ const buildReferenceBlock = (referenceContent?: string): string => {
 const LATEX_DOCUMENT_WRAPPER = (
   content: string,
   sectionPackages?: string[],
-  referencePackages?: string[],
   referenceContent?: string,
-  documentClass?: string,
 ) => {
-  const mergedPackages = mergeLatexPackages(sectionPackages, referencePackages);
+  // Only use packages from the main section (reference packages are excluded).
+  const pkgs = dedupePackages(sectionPackages);
+
+  // Extract \documentclass line from packages (first match wins); keep order for the rest.
+  const docClassPkg = pkgs.find((p) => p.trim().startsWith('\\documentclass'));
+  const remainingPackages = pkgs.filter(
+    (p) => !p.trim().startsWith('\\documentclass'),
+  );
+
   const referenceBlock = buildReferenceBlock(referenceContent);
   const finalBody = (content?.trim() ?? '').trim();
   const preambleReference = referenceBlock ? `\n\n${referenceBlock}` : '';
-  const docClassLine = documentClass?.trim() || '\\documentclass{article}';
+  const docClassLine = docClassPkg?.trim() ?? '\\documentclass{article}';
 
   return `${docClassLine}
 
-${buildLatexPackageImportsRaw(mergedPackages)}
+${buildLatexPackageImportsRaw(remainingPackages)}
 
 ${preambleReference}
 
@@ -81,26 +76,16 @@ ${finalBody}
 export const compileLatex = async ({
   content,
   packages,
-  referencePackages,
   referenceContent,
-  documentClass,
 }: {
   content: string;
   packages?: string[];
-  referencePackages?: string[];
   referenceContent?: string;
-  documentClass?: string;
 }): Promise<Blob> => {
   // If content is a section fragment (no \documentclass), wrap it in a full document
   const latexContent = content.includes('\\documentclass')
     ? content
-    : LATEX_DOCUMENT_WRAPPER(
-        content,
-        packages,
-        referencePackages,
-        referenceContent,
-        documentClass,
-      );
+    : LATEX_DOCUMENT_WRAPPER(content, packages, referenceContent);
 
   const response = await api.post(
     PAPER_MANAGEMENT_API.COMPILE_LATEX,

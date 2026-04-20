@@ -38,7 +38,6 @@ import { CreatePaperInProject } from '@/features/paper-management/components/cre
 import { DatasetsList } from '@/features/dataset-management/components/datasets-list';
 import { CreateDataset } from '@/features/dataset-management/components/create-dataset';
 import { UpdateDataset } from '@/features/dataset-management/components/update-dataset';
-import { ExcelChartViewer } from '@/features/dataset-management/components/excel-chart-viewer';
 import { useDeleteDataset } from '@/features/dataset-management/api/delete-dataset';
 import { Dataset } from '@/features/dataset-management/types';
 
@@ -134,8 +133,6 @@ const MyProjectDetailRoute = () => {
     string | undefined
   >();
   const [removingPaperId, setRemovingPaperId] = useState<string | undefined>();
-  const [chartViewerOpen, setChartViewerOpen] = useState(false);
-  const [chartDataset, setChartDataset] = useState<Dataset | null>(null);
 
   // Detect role from API: GET /projects/{projectId}/my-role
   const roleQuery = useMyProjectRole({
@@ -213,16 +210,6 @@ const MyProjectDetailRoute = () => {
 
   const handleDeleteDataset = (datasetId: string) => {
     deleteDatasetMutation.mutate(datasetId);
-  };
-
-  const handleViewChart = (dataset: Dataset) => {
-    setChartDataset(dataset);
-    setChartViewerOpen(true);
-  };
-
-  const handleCloseChartViewer = () => {
-    setChartViewerOpen(false);
-    setChartDataset(null);
   };
 
   if (!projectId) {
@@ -523,7 +510,6 @@ const MyProjectDetailRoute = () => {
                   onUpdateClick={isManager ? handleUpdateDataset : undefined}
                   onDeleteClick={isManager ? handleDeleteDataset : undefined}
                   readOnly={!isManager}
-                  onViewChartClick={handleViewChart}
                 />
               )}
             </div>
@@ -575,14 +561,6 @@ const MyProjectDetailRoute = () => {
               dataset={selectedDataset}
               open={updateDatasetOpen}
               onOpenChange={setUpdateDatasetOpen}
-            />
-          )}
-
-          {chartViewerOpen && chartDataset && (
-            <ExcelChartViewer
-              fileUrl={chartDataset.filePath}
-              fileName={chartDataset.name}
-              onClose={handleCloseChartViewer}
             />
           )}
         </ContentLayout>
