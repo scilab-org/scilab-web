@@ -2,7 +2,17 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { Users, FileText, Database, Calendar, Hash, Info } from 'lucide-react';
+import {
+  Users,
+  FileText,
+  Database,
+  Calendar,
+  Hash,
+  Info,
+  ChevronDown,
+  Pencil,
+} from 'lucide-react';
+import { cn } from '@/utils/cn';
 
 import { ContentLayout } from '@/components/layouts';
 import { Head } from '@/components/seo';
@@ -50,18 +60,40 @@ export const clientLoader =
 
 type Tab = 'overview' | 'members' | 'papers' | 'writing-papers' | 'datasets';
 
-type TabConfig = {
-  id: Tab;
+const TAB_GROUPS: {
+  id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
-const TABS: TabConfig[] = [
-  { id: 'overview', label: 'Overview', icon: Info },
-  { id: 'writing-papers', label: 'Papers', icon: FileText },
-  { id: 'papers', label: 'References', icon: FileText },
-  { id: 'members', label: 'Members', icon: Users },
-  { id: 'datasets', label: 'Datasets', icon: Database },
+  icon: any;
+  defaultTab: Tab;
+  tabs: { id: Tab; label: string; icon: any }[];
+}[] = [
+  {
+    id: 'information',
+    label: 'Information',
+    icon: Info,
+    defaultTab: 'overview',
+    tabs: [{ id: 'overview', label: 'Overview', icon: Info }],
+  },
+  {
+    id: 'collaboration',
+    label: 'Collaboration',
+    icon: Users,
+    defaultTab: 'writing-papers',
+    tabs: [
+      { id: 'writing-papers', label: 'Papers', icon: FileText },
+      { id: 'members', label: 'Members', icon: Users },
+    ],
+  },
+  {
+    id: 'resources',
+    label: 'Resources',
+    icon: Database,
+    defaultTab: 'datasets',
+    tabs: [
+      { id: 'datasets', label: 'Datasets', icon: Database },
+      { id: 'papers', label: 'References', icon: FileText },
+    ],
+  },
 ];
 
 const STATUS_LABEL: Record<number, string> = {
@@ -90,6 +122,7 @@ const MyProjectDetailRoute = () => {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [openGroup, setOpenGroup] = useState<string>('information');
   const [updateOpen, setUpdateOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [addPapersOpen, setAddPapersOpen] = useState(false);
@@ -274,6 +307,17 @@ const MyProjectDetailRoute = () => {
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-3">
+                  {isManager && (
+                    <Button
+                      variant="outlineAction"
+                      size="action"
+                      onClick={() => setUpdateOpen(true)}
+                      title="Edit"
+                    >
+                      <Pencil className="mr-1 h-3 w-3" />
+                      EDIT
+                    </Button>
+                  )}
                   <div className="flex flex-col gap-1.5 text-sm">
                     <div className="flex items-center gap-2">
                       <Calendar className="text-muted-foreground h-4 w-4" />
@@ -296,28 +340,130 @@ const MyProjectDetailRoute = () => {
               </div>
             </div>
 
-            {/* Tab bar */}
+            {/* Tab navigation */}
             <div className="border-border border-b">
-              <nav className="-mb-px flex gap-1">
-                {TABS.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'border-primary text-primary'
-                          : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </nav>
+              <div className="flex items-stretch justify-between">
+                {/* Left: sub-tabs for current group */}
+                <nav className="-mb-px flex items-stretch gap-1">
+                  {(openGroup === '__menu__'
+                    ? TAB_GROUPS.find((g) =>
+                        g.tabs.some((t) => t.id === activeTab),
+                      )
+                    : TAB_GROUPS.find((g) => g.id === openGroup)
+                  )?.tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          'flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+                          isActive
+                            ? 'border-primary text-primary'
+                            : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent',
+                        )}
+                      >
+                        <tab.icon className="h-4 w-4" />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+                {/* Right: group dropdown */}
+                <div className="relative flex items-center pb-2">
+                  <button
+                    onClick={() =>
+                      setOpenGroup(
+                        openGroup === '__menu__'
+                          ? (TAB_GROUPS.find((g) =>
+                              g.tabs.some((t) => t.id === activeTab),
+                            )?.id ?? TAB_GROUPS[0].id)
+                          : '__menu__',
+                      )
+                    }
+                    className={cn(
+                      'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm transition-all',
+                      'border-[#630F0F] bg-[#630F0F] text-white hover:bg-[#630F0F]/90',
+                    )}
+                  >
+                    {(() => {
+                      const displayGroup =
+                        openGroup && openGroup !== '__menu__'
+                          ? TAB_GROUPS.find((g) => g.id === openGroup)
+                          : TAB_GROUPS.find((g) =>
+                              g.tabs.some((t) => t.id === activeTab),
+                            );
+                      const Icon = displayGroup?.icon ?? Info;
+                      return (
+                        <>
+                          <Icon className="h-3.5 w-3.5" />
+                          <span>{displayGroup?.label ?? 'Select'}</span>
+                        </>
+                      );
+                    })()}
+                    <ChevronDown
+                      className={cn(
+                        'h-3.5 w-3.5 text-white/70 transition-transform',
+                        openGroup === '__menu__' && 'rotate-180',
+                      )}
+                    />
+                  </button>
+                  {openGroup === '__menu__' && (
+                    <>
+                      <div
+                        role="button"
+                        tabIndex={-1}
+                        aria-label="Close menu"
+                        className="fixed inset-0 z-10"
+                        onClick={() => {
+                          const group = TAB_GROUPS.find((g) =>
+                            g.tabs.some((t) => t.id === activeTab),
+                          );
+                          setOpenGroup(group?.id ?? TAB_GROUPS[0].id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            const group = TAB_GROUPS.find((g) =>
+                              g.tabs.some((t) => t.id === activeTab),
+                            );
+                            setOpenGroup(group?.id ?? TAB_GROUPS[0].id);
+                          }
+                        }}
+                      />
+                      <div className="bg-card border-border absolute top-full right-0 z-20 mt-1 min-w-44 rounded-lg border py-1 shadow-lg">
+                        {TAB_GROUPS.map((group) => {
+                          const isGroupActive = group.tabs.some(
+                            (t) => t.id === activeTab,
+                          );
+                          return (
+                            <button
+                              key={group.id}
+                              onClick={() => {
+                                setOpenGroup(group.id);
+                                const alreadyInGroup = group.tabs.some(
+                                  (t) => t.id === activeTab,
+                                );
+                                if (!alreadyInGroup) {
+                                  setActiveTab(group.defaultTab);
+                                }
+                              }}
+                              className={cn(
+                                'flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors',
+                                isGroupActive
+                                  ? 'text-primary bg-primary/5 font-medium'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+                              )}
+                            >
+                              <group.icon className="h-3.5 w-3.5" />
+                              {group.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Tab content */}

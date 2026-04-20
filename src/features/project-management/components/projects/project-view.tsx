@@ -3,12 +3,12 @@ import { Loader2, Users, FileText, Database, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { Project } from '../../types';
+import { Project, SubProjectPaper } from '../../types';
 
 import { useProjectMembers } from '../../api/members/get-project-members';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
-import { useSubmissionStatusSummary } from '../../api/projects/get-submission-status-summary';
+
 import { useDatasets } from '@/features/dataset-management/api/get-datasets';
 import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
 
@@ -30,24 +30,24 @@ export const ProjectView = ({
   const membersQuery = useProjectMembers({
     projectId: project.id,
     params: { pageNumber: 1, pageSize: 1 },
-    queryConfig: { enabled: true },
+    queryConfig: { enabled: true, refetchOnMount: 'always' },
   });
 
   const subProjectsQuery = useSubProjects({
     projectId: project.id,
     params: { PageNumber: 1, PageSize: 100 },
-    queryConfig: { enabled: true },
+    queryConfig: { enabled: true, refetchOnMount: 'always' },
   });
 
   const referencesQuery = useProjectPapers({
     projectId: project.id,
     params: { PageNumber: 1, PageSize: 1 },
-    queryConfig: { enabled: true },
+    queryConfig: { enabled: true, refetchOnMount: 'always' },
   });
 
   const datasetsQuery = useDatasets({
     params: { projectId: project.id, PageNumber: 1, PageSize: 1 },
-    queryConfig: { enabled: true },
+    queryConfig: { enabled: true, refetchOnMount: 'always' },
   });
 
   const totalMembers = Number(
@@ -63,8 +63,15 @@ export const ProjectView = ({
     (datasetsQuery.data as any)?.result?.paging?.totalCount ?? 0,
   );
 
-  const summaryQuery = useSubmissionStatusSummary(project.id);
-  const summaryItems = summaryQuery.data?.result?.items ?? [];
+  const subProjectItems: SubProjectPaper[] =
+    (subProjectsQuery.data as any)?.result?.items ?? [];
+  const summaryItems = Object.entries(
+    subProjectItems.reduce<Record<number, number>>((acc, paper) => {
+      const s = paper.submissionStatus ?? 1;
+      acc[s] = (acc[s] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).map(([status, count]) => ({ status: Number(status), count }));
 
   const overviewCards = [
     {

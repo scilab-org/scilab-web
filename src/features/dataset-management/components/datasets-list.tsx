@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, BarChart3, FileText } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  BarChart3,
+  FileText,
+  RefreshCw,
+} from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -73,7 +79,7 @@ export const DatasetsList = ({
   const paging = datasetsQuery.data?.result?.paging;
 
   return (
-    <div className="border-border min-h-[400px] rounded-xl border shadow-sm">
+    <div className="border-border min-h-100 rounded-xl border shadow-sm">
       <div className="border-border bg-empty-state border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
@@ -87,14 +93,30 @@ export const DatasetsList = ({
               </p>
             )}
           </div>
-          {!readOnly && (
-            <CreateButton
-              onClick={onCreateClick}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
               size="sm"
-              className="flex items-center gap-2"
-              label="Upload Dataset"
-            />
-          )}
+              onClick={() => datasetsQuery.refetch()}
+              disabled={datasetsQuery.isFetching}
+              title="Refresh"
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw
+                className={`h-4 w-4 text-slate-500 ${
+                  datasetsQuery.isFetching ? 'animate-spin' : ''
+                }`}
+              />
+            </Button>
+            {!readOnly && (
+              <CreateButton
+                onClick={onCreateClick}
+                size="sm"
+                className="flex items-center gap-2"
+                label="Upload Dataset"
+              />
+            )}
+          </div>
         </div>
       </div>
       <div>

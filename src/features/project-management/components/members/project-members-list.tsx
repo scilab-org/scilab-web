@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
@@ -342,7 +343,7 @@ export const ProjectMembersList = ({
     string | null
   >(null);
   const [pendingRemoveType, setPendingRemoveType] = useState<
-    'member' | 'manager' | null
+    'member' | 'author' | 'manager' | null
   >(null);
   const pageSize = 20;
 
@@ -361,6 +362,7 @@ export const ProjectMembersList = ({
       pageNumber: page,
       pageSize,
     },
+    queryConfig: { staleTime: 0 },
   });
 
   const groupsQuery = useGroups({
@@ -427,6 +429,20 @@ export const ProjectMembersList = ({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => membersQuery.refetch()}
+              disabled={membersQuery.isFetching}
+              title="Refresh"
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw
+                className={`h-4 w-4 text-slate-500 ${
+                  membersQuery.isFetching ? 'animate-spin' : ''
+                }`}
+              />
+            </Button>
             {viewerIsSystemAdmin && !!onAddManagersClick && (
               <CreateButton
                 onClick={onAddManagersClick}
@@ -507,7 +523,12 @@ export const ProjectMembersList = ({
                       viewerIsProjectManager={viewerIsProjectManager}
                       onRemove={(id) => {
                         setPendingRemoveMemberId(id);
-                        setPendingRemoveType('member');
+                        const role = member.role?.toLowerCase() ?? '';
+                        if (role.includes('author')) {
+                          setPendingRemoveType('author');
+                        } else {
+                          setPendingRemoveType('member');
+                        }
                       }}
                       onRemoveManager={(id) => {
                         setPendingRemoveMemberId(id);
@@ -653,12 +674,32 @@ export const ProjectMembersList = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Remove {pendingRemoveType === 'manager' ? 'Manager' : 'Member'}
+              Remove{' '}
+              {pendingRemoveType === 'manager'
+                ? 'Manager'
+                : pendingRemoveType === 'author'
+                  ? 'Paper Owner'
+                  : 'Member'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this{' '}
-              {pendingRemoveType === 'manager' ? 'manager' : 'member'} from the
-              project? This action cannot be undone.
+              {pendingRemoveType === 'author' ? (
+                <>
+                  This member is a{' '}
+                  <span className="text-foreground font-semibold">
+                    paper owner
+                  </span>{' '}
+                  who may own multiple papers in this project. Removing them
+                  will revoke their access to all associated papers. Are you
+                  sure you want to remove this paper owner from the project?
+                  This action cannot be undone.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to remove this{' '}
+                  {pendingRemoveType === 'manager' ? 'manager' : 'member'} from
+                  the project? This action cannot be undone.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -98,6 +98,7 @@ import { useGetSectionFiles } from '@/features/paper-management/api/get-section-
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
 import { useSectionComments } from '@/features/paper-management/api/get-section-comments';
 import { SectionComments } from '@/features/paper-management/components/section-comments';
+import type { CommentDto } from '@/features/paper-management/types';
 import { PaperOldSectionsManager } from '@/features/paper-management/components/paper-old-sections-manager';
 import { useDatasets } from '@/features/dataset-management/api/get-datasets';
 import { useProjectPapers } from '@/features/project-management/api/papers/get-project-papers';
@@ -2946,6 +2947,7 @@ export const LatexPaperEditor = ({
     setVersionPreview(null);
     setPreviewEditContent(null);
   }, []);
+
   const hasEditPermissionForActiveSection =
     !activeSection?.sectionRole ||
     editableSectionRoles.has(activeSection.sectionRole);
@@ -2975,6 +2977,50 @@ export const LatexPaperEditor = ({
     string | null
   >(null);
   const queryClient = useQueryClient();
+
+  const handleGoToSection = useCallback(
+    (comment: CommentDto) => {
+      const markId = activeSection?.markSectionId || activeSectionId || '';
+      if (!markId) return;
+
+      // Look up cached MarkSection items (pre-warmed by the Drafts/Comments pre-warm hooks)
+      const cached = queryClient.getQueryData<any>([
+        PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION,
+        markId,
+      ]);
+      const items: MarkSectionItem[] = cached?.result?.items ?? [];
+
+      // Match by exact sectionId — the most reliable key
+      const matchedItem = items.find(
+        (item) => item.sectionId === comment.sectionId,
+      );
+
+      if (matchedItem) {
+        // Override cached content with fresh sectionContent from the comment response
+        const itemWithContent: MarkSectionItem =
+          comment.sectionContent != null
+            ? { ...matchedItem, content: comment.sectionContent }
+            : matchedItem;
+        handleOpenVersionPreview(itemWithContent);
+      } else {
+        // Cache miss — fetch MarkSection items then preview
+        getMarkSection(markId).then((res) => {
+          const fetched = res?.result?.items ?? [];
+          const found = fetched.find(
+            (item) => item.sectionId === comment.sectionId,
+          );
+          if (!found) return;
+          const itemWithContent: MarkSectionItem =
+            comment.sectionContent != null
+              ? { ...found, content: comment.sectionContent }
+              : found;
+          handleOpenVersionPreview(itemWithContent);
+        });
+      }
+    },
+    [activeSection, activeSectionId, handleOpenVersionPreview, queryClient],
+  );
+
   const assignedSectionsParams = useMemo(
     () => ({ PageNumber: 1, PageSize: 1000 }),
     [],
@@ -3069,6 +3115,7 @@ export const LatexPaperEditor = ({
 
   useSectionComments({
     sectionId: resolvedActiveSectionId ?? '',
+    markSectionId: activeSection?.markSectionId || undefined,
     queryConfig: {
       enabled: !!resolvedActiveSectionId,
     },
@@ -3077,6 +3124,7 @@ export const LatexPaperEditor = ({
   // Pre-warm comments for the contributor section as soon as preview opens.
   useSectionComments({
     sectionId: versionPreview?.item.sectionId ?? '',
+    markSectionId: activeSection?.markSectionId || undefined,
     queryConfig: {
       enabled:
         !!versionPreview?.item.sectionId &&
@@ -5498,7 +5546,7 @@ export const LatexPaperEditor = ({
                                 },
                               ]
                             : []),
-                          { key: 'drafts', icon: FileEdit, label: 'Drafts' },
+                          { key: 'drafts', icon: FileEdit, label: 'Writers' },
                           { key: 'versions', icon: History, label: 'Versions' },
                           {
                             key: 'comments',
@@ -5565,25 +5613,16 @@ export const LatexPaperEditor = ({
                     )}
                     {toolsTab === 'comments' && (
                       <div className="flex flex-1 flex-col overflow-hidden">
-                        {versionPreview && (
-                          <div className="flex shrink-0 items-center gap-2 border-b border-blue-200 bg-blue-50 px-4 py-2 text-xs dark:border-blue-800 dark:bg-blue-950">
-                            <span className="text-blue-600 dark:text-blue-300">
-                              Showing comments for{' '}
-                              <strong>
-                                {versionPreview.item.isMainSection
-                                  ? 'Origin section'
-                                  : versionPreview.item.name ||
-                                    versionPreview.item.email}
-                              </strong>
-                            </span>
-                          </div>
-                        )}
                         <div className="flex flex-1 flex-col overflow-hidden p-1">
                           {commentsSectionId ? (
                             <SectionComments
                               sectionId={commentsSectionId}
+                              markSectionId={
+                                activeSection?.markSectionId || undefined
+                              }
                               isReadOnly={false}
                               className="flex-1 overflow-hidden"
+                              onGoToSection={handleGoToSection}
                             />
                           ) : (
                             <p className="mt-8 text-center text-sm text-slate-400">

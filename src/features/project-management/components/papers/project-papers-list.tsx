@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Loader2, Search, Building2, FileText } from 'lucide-react';
+import { Loader2, Search, Building2, FileText, RefreshCw } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -133,6 +133,20 @@ export const ProjectPapersList = ({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => papersQuery.refetch()}
+              disabled={papersQuery.isFetching}
+              title="Refresh"
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw
+                className={`h-4 w-4 text-slate-500 ${
+                  papersQuery.isFetching ? 'animate-spin' : ''
+                }`}
+              />
+            </Button>
             {!!onCreatePaperClick && (
               <CreateButton
                 onClick={onCreatePaperClick}

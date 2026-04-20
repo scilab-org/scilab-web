@@ -113,7 +113,7 @@ export const PaperOldSectionsManager = ({
   return (
     <div className="border-border bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm">
       {/* Header */}
-      <div className="border-border bg-muted/30 border-b px-4 py-3">
+      <div className="border-border bg-editor-bg border-b px-5 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
@@ -176,46 +176,36 @@ export const PaperOldSectionsManager = ({
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-linear-to-r from-green-50 to-emerald-50 hover:from-green-50 hover:to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                <TableHead className="w-10 text-center font-semibold text-green-900 dark:text-green-200">
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="text-muted-foreground w-10 text-center">
                   #
                 </TableHead>
-                <TableHead className="font-semibold text-green-900 dark:text-green-200">
-                  Version
-                </TableHead>
-                <TableHead className="w-24 font-semibold text-green-900 dark:text-green-200">
+                <TableHead className="text-muted-foreground">Version</TableHead>
+                <TableHead className="text-muted-foreground w-24">
                   Created
                 </TableHead>
-                <TableHead className="w-24 font-semibold text-green-900 dark:text-green-200">
+                <TableHead className="text-muted-foreground w-24">
                   Modified
                 </TableHead>
-                <TableHead className="w-20 text-center font-semibold text-green-900 dark:text-green-200">
+                <TableHead className="text-muted-foreground w-20 text-center">
                   Action
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item, idx) => (
-                <TableRow
-                  key={item.id}
-                  className={cn(
-                    'transition-colors',
-                    idx % 2 === 0
-                      ? 'bg-editor-content-bg dark:bg-transparent'
-                      : 'bg-editor-bg/50 dark:bg-slate-900/20',
-                  )}
-                >
+                <TableRow key={item.id} className="hover:bg-muted/30">
                   <TableCell className="text-center text-sm font-semibold">
                     {idx + 1}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
                       <span className="text-foreground text-sm font-medium">
                         {item.version || '—'}
                       </span>
                       {item.isOldMainSection && (
-                        <span className="w-fit rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                          main
+                        <span className="rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                          Main
                         </span>
                       )}
                     </div>

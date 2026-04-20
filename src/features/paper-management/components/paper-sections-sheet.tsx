@@ -91,6 +91,7 @@ const SectionItem = ({
       {showComments && (
         <SectionComments
           sectionId={section.id}
+          markSectionId={section.markSectionId || undefined}
           isReadOnly={
             !['paper:author', 'section:edit'].includes(section.sectionRole)
           }

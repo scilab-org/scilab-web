@@ -67,7 +67,6 @@ import { useUser } from '@/lib/auth';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useUpdateWritingPaper } from '@/features/paper-management/api/update-writing-paper';
 import {
-  PAPER_INITIALIZE_STATUS_OPTIONS,
   SUBMISSION_STATUS_LABELS,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '@/features/paper-management/constants';
@@ -75,8 +74,6 @@ import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
 import { useGetPaperVersions } from '@/features/paper-management/api/get-paper-versions';
 import { useGetCombineVersion } from '@/features/paper-management/api/get-combine-version';
 import type { PaperVersionFileItem } from '@/features/paper-management/types';
-import { useJournals } from '@/features/journal-management/api/get-journals';
-import { JournalDto } from '@/features/journal-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { useRemovePaperMembers } from '@/features/project-management/api/papers/remove-paper-members';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
@@ -306,8 +303,6 @@ export const ProjectPaperDetailPage = ({
     researchAim: '',
     gapType: '',
     mainContribution: '',
-    status: 1,
-    selectedJournalId: '',
     conferenceJournalStartAt: '',
     conferenceJournalEndAt: '',
   });
@@ -356,32 +351,6 @@ export const ProjectPaperDetailPage = ({
   const paper = paperQuery.data?.result?.paper;
   const paperType = paper?.paperType?.trim();
 
-  const journalsQuery = useJournals({
-    params: { PageNumber: 1, PageSize: 200 },
-    queryConfig: { enabled: isEditPaperOpen } as any,
-  });
-  const journalResults: JournalDto[] = useMemo(
-    () => (journalsQuery.data as any)?.result?.items ?? [],
-    [journalsQuery.data],
-  );
-  const selectedJournal = useMemo(
-    () =>
-      journalResults.find((j) => j.id === editPaperForm.selectedJournalId) ??
-      null,
-    [journalResults, editPaperForm.selectedJournalId],
-  );
-
-  // When the journal list loads (after sheet opens), auto-select the paper's existing journal by name.
-  useEffect(() => {
-    if (!isEditPaperOpen || !journalResults.length || !paper?.journalName)
-      return;
-    const match = journalResults.find((j) => j.name === paper.journalName);
-    setEditPaperForm((prev) => ({
-      ...prev,
-      selectedJournalId: prev.selectedJournalId || match?.id || '',
-    }));
-  }, [isEditPaperOpen, journalResults, paper?.journalName]);
-
   const updateWritingPaperMutation = useUpdateWritingPaper({
     mutationConfig: {
       onSuccess: () => {
@@ -404,8 +373,6 @@ export const ProjectPaperDetailPage = ({
       researchAim: paper.researchAim ?? '',
       gapType: paper.gapType ?? '',
       mainContribution: paper.mainContribution ?? '',
-      status: paper.status ?? 1,
-      selectedJournalId: '',
       conferenceJournalStartAt: toDateTimeLocalValue(
         paper.conferenceJournalStartAt,
       ),
@@ -427,9 +394,6 @@ export const ProjectPaperDetailPage = ({
         researchAim: editPaperForm.researchAim,
         gapType: editPaperForm.gapType,
         mainContribution: editPaperForm.mainContribution,
-        status: editPaperForm.status,
-        conferenceJournalName: selectedJournal?.name ?? null,
-        conferenceJournalId: selectedJournal?.id ?? null,
         conferenceJournalStartAt: editPaperForm.conferenceJournalStartAt
           ? new Date(editPaperForm.conferenceJournalStartAt).toISOString()
           : null,
@@ -1205,19 +1169,24 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   {/* Journal / Conference */}
-                  {((paper as any).journalName ||
+                  {((paper as any).conferenceJournalName ||
+                    (paper as any).journalName ||
                     (paper as any).journal ||
-                    (paper as any).conferenceName) && (
+                    (paper as any).conferenceName ||
+                    (paper as any).conferenceJournalStartAt ||
+                    (paper as any).conferenceJournalEndAt) && (
                     <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                       <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
                         Journal / Conference
                       </h3>
                       <div className="space-y-2">
-                        {((paper as any).journalName ||
+                        {((paper as any).conferenceJournalName ||
+                          (paper as any).journalName ||
                           (paper as any).journal) && (
                           <p className="text-primary text-[14px] leading-relaxed">
                             <span className="mr-2 font-semibold">Journal:</span>
-                            {(paper as any).journalName ||
+                            {(paper as any).conferenceJournalName ||
+                              (paper as any).journalName ||
                               (paper as any).journal}
                           </p>
                         )}
@@ -1234,7 +1203,7 @@ export const ProjectPaperDetailPage = ({
                             <span className="mr-2 font-semibold">Start:</span>
                             {new Date(
                               (paper as any).conferenceJournalStartAt,
-                            ).toLocaleDateString()}
+                            ).toLocaleString()}
                           </p>
                         )}
                         {(paper as any).conferenceJournalEndAt && (
@@ -1242,7 +1211,7 @@ export const ProjectPaperDetailPage = ({
                             <span className="mr-2 font-semibold">End:</span>
                             {new Date(
                               (paper as any).conferenceJournalEndAt,
-                            ).toLocaleDateString()}
+                            ).toLocaleString()}
                           </p>
                         )}
                       </div>
@@ -3322,103 +3291,44 @@ export const ProjectPaperDetailPage = ({
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="ep-status" className="text-sm font-medium">
-                Status
-              </label>
-              <select
-                id="ep-status"
-                className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                value={editPaperForm.status}
-                onChange={(e) =>
-                  setEditPaperForm((prev) => ({
-                    ...prev,
-                    status: Number(e.target.value),
-                  }))
-                }
-              >
-                {PAPER_INITIALIZE_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="min-w-0 space-y-2 rounded-lg border p-3">
-              <p className="text-sm font-medium">Journal</p>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="min-w-0 space-y-1.5">
-                <label htmlFor="ep-journal-id" className="text-sm font-medium">
-                  Select Journal
+                <label
+                  htmlFor="ep-conference-journal-start-at"
+                  className="text-sm font-medium"
+                >
+                  Conference / Journal Start
                 </label>
-                <select
-                  id="ep-journal-id"
-                  className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                  value={editPaperForm.selectedJournalId}
+                <Input
+                  id="ep-conference-journal-start-at"
+                  type="datetime-local"
+                  value={editPaperForm.conferenceJournalStartAt}
                   onChange={(e) =>
                     setEditPaperForm((prev) => ({
                       ...prev,
-                      selectedJournalId: e.target.value,
-                      conferenceJournalStartAt: toDateTimeLocalValue(
-                        journalResults.find(
-                          (journal) => journal.id === e.target.value,
-                        )?.conferenceJournalStartAt,
-                      ),
-                      conferenceJournalEndAt: toDateTimeLocalValue(
-                        journalResults.find(
-                          (journal) => journal.id === e.target.value,
-                        )?.conferenceJournalEndAt,
-                      ),
+                      conferenceJournalStartAt: e.target.value,
                     }))
                   }
-                >
-                  <option value="">No journal</option>
-                  {journalResults.map((journal) => (
-                    <option key={journal.id} value={journal.id}>
-                      {journal.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="min-w-0 space-y-1.5">
-                  <label
-                    htmlFor="ep-conference-journal-start-at"
-                    className="text-sm font-medium"
-                  >
-                    Conference / Journal Start
-                  </label>
-                  <Input
-                    id="ep-conference-journal-start-at"
-                    type="datetime-local"
-                    value={editPaperForm.conferenceJournalStartAt}
-                    onChange={(e) =>
-                      setEditPaperForm((prev) => ({
-                        ...prev,
-                        conferenceJournalStartAt: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="min-w-0 space-y-1.5">
-                  <label
-                    htmlFor="ep-conference-journal-end-at"
-                    className="text-sm font-medium"
-                  >
-                    Conference / Journal End
-                  </label>
-                  <Input
-                    id="ep-conference-journal-end-at"
-                    type="datetime-local"
-                    value={editPaperForm.conferenceJournalEndAt}
-                    onChange={(e) =>
-                      setEditPaperForm((prev) => ({
-                        ...prev,
-                        conferenceJournalEndAt: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
+              <div className="min-w-0 space-y-1.5">
+                <label
+                  htmlFor="ep-conference-journal-end-at"
+                  className="text-sm font-medium"
+                >
+                  Conference / Journal End
+                </label>
+                <Input
+                  id="ep-conference-journal-end-at"
+                  type="datetime-local"
+                  value={editPaperForm.conferenceJournalEndAt}
+                  onChange={(e) =>
+                    setEditPaperForm((prev) => ({
+                      ...prev,
+                      conferenceJournalEndAt: e.target.value,
+                    }))
+                  }
+                />
               </div>
             </div>
           </form>

@@ -7,32 +7,35 @@ import { COMMENT_API, COMMENT_QUERY_KEYS } from '../constants';
 import { GetSectionCommentsApiResponse } from '../types';
 
 export const getSectionComments = ({
-  sectionId,
+  markSectionId,
 }: {
-  sectionId: string;
+  markSectionId: string;
 }): Promise<GetSectionCommentsApiResponse> => {
-  return api.get(COMMENT_API.SECTION_COMMENTS(sectionId));
+  return api.get(COMMENT_API.SECTION_COMMENTS(markSectionId));
 };
 
-export const getSectionCommentsQueryOptions = (sectionId: string) => {
+export const getSectionCommentsQueryOptions = (markSectionId: string) => {
   return queryOptions({
-    queryKey: [COMMENT_QUERY_KEYS.SECTION_COMMENTS, sectionId],
-    queryFn: () => getSectionComments({ sectionId }),
-    enabled: !!sectionId,
+    queryKey: [COMMENT_QUERY_KEYS.SECTION_COMMENTS, markSectionId],
+    queryFn: () => getSectionComments({ markSectionId }),
+    enabled: !!markSectionId,
   });
 };
 
 type UseSectionCommentsOptions = {
   sectionId: string;
+  markSectionId?: string;
   queryConfig?: QueryConfig<typeof getSectionCommentsQueryOptions>;
 };
 
 export const useSectionComments = ({
   sectionId,
+  markSectionId,
   queryConfig,
 }: UseSectionCommentsOptions) => {
+  const queryId = markSectionId || sectionId;
   return useQuery({
-    ...getSectionCommentsQueryOptions(sectionId),
+    ...getSectionCommentsQueryOptions(queryId),
     ...queryConfig,
   });
 };

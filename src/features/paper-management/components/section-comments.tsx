@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Send, Trash2, Edit2, MessageSquare, RefreshCw } from 'lucide-react';
+import {
+  Send,
+  Trash2,
+  Edit2,
+  MessageSquare,
+  RefreshCw,
+  Reply,
+  X,
+  ArrowUpRight,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +21,17 @@ import { useDeleteSectionComment } from '../api/delete-section-comment';
 import { CommentDto } from '../types';
 import { useUser } from '@/lib/auth';
 
+type ReplyTarget = {
+  userName: string;
+  sectionId: string;
+};
+
 type SectionCommentsProps = {
   sectionId: string;
+  markSectionId?: string;
   isReadOnly?: boolean;
   className?: string;
+  onGoToSection?: (comment: CommentDto) => void;
 };
 
 const CommentItem = ({
@@ -23,11 +39,15 @@ const CommentItem = ({
   sectionId,
   currentUser,
   isReadOnly,
+  onReply,
+  onGoToSection,
 }: {
   comment: CommentDto;
   sectionId: string;
   currentUser?: string;
   isReadOnly?: boolean;
+  onReply?: (target: ReplyTarget) => void;
+  onGoToSection?: () => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
@@ -58,134 +78,214 @@ const CommentItem = ({
   const avatarInitial = (comment.userName || '?').charAt(0).toUpperCase();
 
   return (
-    <div className="group bg-editor-bg flex flex-col gap-2 rounded-lg border border-slate-200 p-3 shadow-sm transition-all hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            {avatarInitial}
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                {comment.userName}
-              </span>
-              {isOwner && (
-                <span className="rounded bg-emerald-50 px-1 py-0.5 text-[9px] font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  You
-                </span>
-              )}
+    <div className={`flex w-full ${isOwner ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`group bg-editor-content-bg inline-flex max-w-[65%] min-w-0 flex-col gap-2 rounded-lg border px-5 py-3 shadow-sm transition-all hover:border-[#d9cfc2]`}
+      >
+        {/* Header */}
+        <div
+          className={`flex items-start justify-between ${isOwner ? 'flex-row-reverse' : ''}`}
+        >
+          <div
+            className={`flex items-center gap-2.5 ${isOwner ? 'flex-row-reverse' : ''}`}
+          >
+            <div
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                isOwner
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+              }`}
+            >
+              {avatarInitial}
             </div>
-            <span className="text-[10px] font-medium text-slate-400">
-              {comment.createdOnUtc
-                ? new Intl.DateTimeFormat('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }).format(new Date(comment.createdOnUtc))
-                : ''}
-            </span>
+            <div className={`flex flex-col ${isOwner ? 'items-end' : ''}`}>
+              <div
+                className={`flex items-center gap-1.5 ${isOwner ? 'flex-row-reverse' : ''}`}
+              >
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  {comment.userName}
+                </span>
+                {isOwner && (
+                  <span className="rounded bg-emerald-50 px-1 py-0.5 text-[9px] font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    You
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-slate-400">
+                {comment.createdOnUtc
+                  ? new Intl.DateTimeFormat('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }).format(new Date(comment.createdOnUtc))
+                  : ''}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions: edit/delete — hover only, owner only */}
+          <div className="flex items-center gap-1">
+            {!isEditing && isOwner && (
+              <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-slate-400 hover:bg-slate-50 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400"
+                  onClick={() => setIsEditing(true)}
+                  title="Edit Feedback"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+                {!isReadOnly && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                    onClick={handleDelete}
+                    title="Delete Feedback"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Actions (visible on hover) */}
-        {isOwner && !isEditing && (
-          <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 text-slate-400 hover:bg-slate-50 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-400"
-              onClick={() => setIsEditing(true)}
-              title="Edit Feedback"
+        {/* View section badge — own row */}
+        {!isEditing && onGoToSection && comment.sectionId !== sectionId && (
+          <div className={`flex ${isOwner ? 'justify-end' : 'justify-start'}`}>
+            <button
+              onClick={onGoToSection}
+              className="inline-flex cursor-pointer items-center gap-0.5 rounded-full border border-[#d9cfc2] bg-[#f5ede0] px-2 py-0.5 text-[10px] font-medium text-slate-600 transition-colors hover:bg-[#ecdfd0] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             >
-              <Edit2 className="h-3.5 w-3.5" />
-            </Button>
-            {!isReadOnly && (
+              <ArrowUpRight className="h-3 w-3" />
+              View section
+            </button>
+          </div>
+        )}
+
+        {/* Body */}
+        {isEditing ? (
+          <div className="bg-editor-content-bg mt-2 flex w-full flex-col gap-2 rounded-md p-2">
+            <Input
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="bg-editor-content-bg h-8 border-slate-200 px-2 text-sm shadow-sm focus-visible:ring-emerald-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleUpdate();
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                  setEditContent(comment.content);
+                }
+              }}
+            />
+            <div className="flex items-center justify-end gap-2">
               <Button
-                size="icon"
                 variant="ghost"
-                className="h-6 w-6 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                onClick={handleDelete}
-                title="Delete Feedback"
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditContent(comment.content);
+                }}
+                disabled={updateMutation.isPending}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                Cancel
               </Button>
+              <Button
+                size="sm"
+                className="h-6 gap-1 bg-emerald-600 px-3 text-[11px] text-white hover:bg-emerald-700"
+                onClick={handleUpdate}
+                disabled={updateMutation.isPending}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`mt-1 pb-1 text-[13px] leading-relaxed text-slate-700 dark:text-slate-300 ${
+              isOwner ? 'pr-9 pl-2 text-right' : 'pr-2 pl-9'
+            }`}
+          >
+            {comment.replyToUserName && (
+              <p className="mb-1 text-[11px] text-slate-400 dark:text-slate-500">
+                Replying to{' '}
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  @{comment.replyToUserName}
+                </span>
+              </p>
+            )}
+            <p className="wrap-break-word whitespace-pre-wrap">
+              {comment.content}
+            </p>
+            {!isReadOnly && onReply && (
+              <button
+                className={`mt-1.5 flex items-center gap-1 text-[11px] text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isOwner ? 'ml-auto' : ''
+                }`}
+                onClick={() =>
+                  onReply({
+                    userName: comment.userName,
+                    sectionId: comment.sectionId,
+                  })
+                }
+              >
+                <Reply className="h-3 w-3" />
+                Reply
+              </button>
             )}
           </div>
         )}
       </div>
-
-      {/* Body */}
-      {isEditing ? (
-        <div className="mt-2 flex w-full flex-col gap-2 rounded-md bg-slate-50 p-2 dark:bg-slate-800/50">
-          <Input
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="bg-editor-content-bg h-8 border-slate-200 px-2 text-sm shadow-sm focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleUpdate();
-              if (e.key === 'Escape') {
-                setIsEditing(false);
-                setEditContent(comment.content);
-              }
-            }}
-          />
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[11px]"
-              onClick={() => {
-                setIsEditing(false);
-                setEditContent(comment.content);
-              }}
-              disabled={updateMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              className="h-6 px-3 text-[11px]"
-              onClick={handleUpdate}
-              disabled={updateMutation.isPending}
-            >
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-1 pr-2 pb-1 pl-9 text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
-          <p className="wrap-break-word whitespace-pre-wrap">
-            {comment.content}
-          </p>
-        </div>
-      )}
     </div>
   );
 };
 
 export const SectionComments = ({
   sectionId,
+  markSectionId,
   isReadOnly = false,
   className,
+  onGoToSection,
 }: SectionCommentsProps) => {
   const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   const { data: user } = useUser();
 
-  const commentsQuery = useSectionComments({ sectionId });
-  const createMutation = useCreateSectionComment({ sectionId });
+  const queryMarkSectionId = markSectionId || sectionId;
+  const commentsQuery = useSectionComments({
+    sectionId,
+    markSectionId: queryMarkSectionId,
+  });
+  const createMutation = useCreateSectionComment({
+    sectionId: queryMarkSectionId,
+  });
 
   const comments = commentsQuery.data?.result?.items ?? [];
 
   const handleCreate = () => {
     if (!newComment.trim()) return;
+    const payload = replyTo
+      ? {
+          sectionId: replyTo.sectionId,
+          content: newComment,
+          markSectionId: markSectionId || sectionId,
+          repliedToUserName: replyTo.userName,
+        }
+      : {
+          sectionId,
+          content: newComment,
+          markSectionId: markSectionId || sectionId,
+        };
     createMutation.mutate(
-      { data: { sectionId, content: newComment } },
+      { data: payload },
       {
         onSuccess: () => {
           setNewComment('');
+          setReplyTo(null);
           document
             .getElementById(`comment-top-${sectionId}`)
             ?.scrollIntoView({ behavior: 'smooth' });
@@ -241,6 +341,10 @@ export const SectionComments = ({
               sectionId={sectionId}
               currentUser={user?.preferredUsername}
               isReadOnly={isReadOnly}
+              onReply={!isReadOnly ? (target) => setReplyTo(target) : undefined}
+              onGoToSection={
+                onGoToSection ? () => onGoToSection(comment) : undefined
+              }
             />
           ))}
           {comments.length === 0 && (
@@ -262,8 +366,29 @@ export const SectionComments = ({
       {/* Composer Input */}
       {!isReadOnly && (
         <div className="bg-editor-bg mt-2 flex shrink-0 flex-col gap-3 rounded-lg border border-slate-200 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+          {replyTo && (
+            <div className="flex items-center justify-between rounded bg-emerald-50 px-2 py-1 text-[11px] dark:bg-emerald-900/20">
+              <span className="text-slate-600 dark:text-slate-300">
+                Replying to{' '}
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                  @{replyTo.userName}
+                </span>
+              </span>
+              <button
+                className="text-slate-400 hover:text-red-500"
+                onClick={() => setReplyTo(null)}
+                title="Cancel reply"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
           <Input
-            placeholder="Leave a comment..."
+            placeholder={
+              replyTo
+                ? `Reply to @${replyTo.userName}...`
+                : 'Leave a comment...'
+            }
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="bg-editor-content-bg h-10 border-slate-200 px-3 text-sm shadow-sm focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:placeholder-slate-500"
