@@ -174,28 +174,6 @@ const computeLatexStats = (latexContent: string) => {
   };
 };
 
-const renderDocumentClassPreview = (value: string) => {
-  const match = value.match(/^(\\documentclass)(\{)([^}]*)(\})(.*)$/);
-
-  if (!match) {
-    return <span className="text-[#2f6b5b] dark:text-[#4eab8f]">{value}</span>;
-  }
-
-  const [, command, openBrace, className, closeBrace, suffix] = match;
-
-  return (
-    <>
-      <span className="text-[#2f6b5b] dark:text-[#4eab8f]">{command}</span>
-      <span className="text-black dark:text-slate-100">{openBrace}</span>
-      <span className="text-black dark:text-slate-100">{className}</span>
-      <span className="text-black dark:text-slate-100">{closeBrace}</span>
-      {!!suffix && (
-        <span className="text-[#2f6b5b] dark:text-[#4eab8f]">{suffix}</span>
-      )}
-    </>
-  );
-};
-
 // ─── Write-mode diff view: line-by-line comparison ────────────────────────────
 
 type DiffLine = {
@@ -1829,6 +1807,7 @@ const InlineReferenceSectionEditor = ({
             </Button>
             <Button
               type="button"
+              variant="darkRed"
               disabled={isSavingSectionContent}
               onClick={() => {
                 onSaveSectionContent?.();
@@ -2607,9 +2586,6 @@ export const LatexPaperEditor = ({
   const [sidebarResourceTab, setSidebarResourceTab] = useState<
     'files' | 'info'
   >('info');
-  const [documentClass, setDocumentClass] = useState(
-    '\\documentclass{article}',
-  );
   const [localPackages, setLocalPackages] = useState<string[]>([]);
   const [savedPackages, setSavedPackages] = useState<string[]>([]);
   // Packages for the reference section
@@ -2671,11 +2647,10 @@ export const LatexPaperEditor = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const preambleRef = useRef<HTMLDivElement | null>(null);
   const [preambleSuggestState, setPreambleSuggestState] = useState<{
-    list: 'current' | 'ref';
+    list: 'current';
     idx: number;
   } | null>(null);
-  const preambleEditableLineCount =
-    1 + localPackages.length + localRefPackages.length;
+  const preambleEditableLineCount = localPackages.length;
 
   const focusPreambleInput = (current: HTMLInputElement, delta: 1 | -1) => {
     if (!preambleRef.current) return;
@@ -2694,16 +2669,10 @@ export const LatexPaperEditor = ({
     return false;
   };
 
-  const focusNamedPreambleInput = (
-    list: 'documentClass' | 'current' | 'ref',
-    idx?: number,
-  ) => {
+  const focusNamedPreambleInput = (list: 'current' | 'ref', idx?: number) => {
     if (!preambleRef.current) return false;
 
-    const selector =
-      list === 'documentClass'
-        ? 'input[data-preamble-doc="true"]'
-        : `input[data-preamble-list="${list}"][data-preamble-idx="${idx}"]`;
+    const selector = `input[data-preamble-list="${list}"][data-preamble-idx="${idx}"]`;
 
     const input = preambleRef.current.querySelector<HTMLInputElement>(selector);
     if (!input) return false;
@@ -2761,8 +2730,6 @@ export const LatexPaperEditor = ({
           return;
         }
       }
-
-      focusNamedPreambleInput('documentClass');
     }, 0);
   };
 
@@ -3162,16 +3129,13 @@ export const LatexPaperEditor = ({
 
   const compileAndRender = useCallback(
     async (latexContent: string, packages?: string[], refContent?: string) => {
-      setIsCompiling(true); // documentClass captured via closure
+      setIsCompiling(true);
       setCompileError(null);
       try {
-        const refPkgs = localRefPackagesRef.current;
         const blob = await compileLatex({
           content: latexContent,
           packages,
-          referencePackages: refPkgs,
           referenceContent: refContent,
-          documentClass,
         });
         if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
         const newUrl = URL.createObjectURL(blob);
@@ -3189,7 +3153,7 @@ export const LatexPaperEditor = ({
         setIsCompiling(false);
       }
     },
-    [documentClass],
+    [],
   );
 
   // Compile LaTeX to PDF via API
@@ -4762,39 +4726,6 @@ export const LatexPaperEditor = ({
                       "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
                   }}
                 >
-                  <div className="flex items-start gap-6 font-mono text-[14px] leading-5.5">
-                    <div className="w-7 shrink-0 pt-px text-right text-slate-400 select-none dark:text-slate-500">
-                      1
-                    </div>
-                    <div className="relative w-full">
-                      <div className="pointer-events-none absolute inset-0 overflow-hidden font-mono text-[14px] leading-5.5 whitespace-pre text-transparent">
-                        {renderDocumentClassPreview(documentClass)}
-                      </div>
-                      <input
-                        data-preamble
-                        data-preamble-doc="true"
-                        type="text"
-                        value={documentClass}
-                        onChange={(e) => setDocumentClass(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (!focusPreambleInput(e.currentTarget, 1)) {
-                              insertPreamblePackageLine('current', -1);
-                            }
-                          } else if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            focusPreambleInput(e.currentTarget, 1);
-                          } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            focusPreambleInput(e.currentTarget, -1);
-                          }
-                        }}
-                        spellCheck={false}
-                        className="w-full bg-transparent font-mono text-[14px] leading-5.5 text-transparent caret-[#2f6b5b] outline-none selection:bg-slate-200 dark:caret-[#4eab8f] dark:selection:bg-slate-700"
-                      />
-                    </div>
-                  </div>
                   {localPackages.map((pkg, i) => {
                     const isSuggesting =
                       preambleSuggestState?.list === 'current' &&
@@ -4820,7 +4751,7 @@ export const LatexPaperEditor = ({
                         className="relative flex items-start gap-6 font-mono text-[14px] leading-5.5"
                       >
                         <div className="w-7 shrink-0 pt-px text-right text-slate-400 select-none dark:text-slate-500">
-                          {i + 2}
+                          {i + 1}
                         </div>
                         <input
                           data-preamble
@@ -4909,146 +4840,6 @@ export const LatexPaperEditor = ({
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       setLocalPackages((prev) =>
-                                        prev.map((lp, idx) =>
-                                          idx === i ? p : lp,
-                                        ),
-                                      );
-                                      setPreambleSuggestState(null);
-                                    }}
-                                    className="w-full px-2 py-1 text-left font-mono text-[14px] leading-5.5 hover:bg-[#e8f0ee] dark:hover:bg-[#2f6b5b]/20"
-                                  >
-                                    {qi >= 0 ? (
-                                      <>
-                                        <span className="text-slate-500 dark:text-slate-400">
-                                          {p.slice(0, qi)}
-                                        </span>
-                                        <span className="font-bold text-[#2f6b5b] dark:text-[#4eab8f]">
-                                          {p.slice(qi, qi + q.length)}
-                                        </span>
-                                        <span className="text-slate-500 dark:text-slate-400">
-                                          {p.slice(qi + q.length)}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      p
-                                    )}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {localRefPackages.map((pkg, i) => {
-                    const isSuggesting =
-                      preambleSuggestState?.list === 'ref' &&
-                      preambleSuggestState.idx === i;
-                    const q = pkg.trim().toLowerCase();
-                    const blockedPackageNames = getBlockedPreamblePackageNames(
-                      'ref',
-                      i,
-                    );
-                    const suggestions =
-                      isSuggesting && q
-                        ? KNOWN_LATEX_PACKAGES.filter(
-                            (p) =>
-                              p.toLowerCase().includes(q) &&
-                              !blockedPackageNames.has(
-                                extractPackageName(p).trim().toLowerCase(),
-                              ),
-                          ).slice(0, 8)
-                        : [];
-                    return (
-                      <div
-                        key={`ref-${i}`}
-                        className="relative flex items-start gap-6 font-mono text-[14px] leading-5.5"
-                      >
-                        <div className="w-7 shrink-0 pt-px text-right text-slate-400 select-none dark:text-slate-500">
-                          {localPackages.length + i + 2}
-                        </div>
-                        <input
-                          data-preamble
-                          data-preamble-list="ref"
-                          data-preamble-idx={i}
-                          type="text"
-                          value={pkg}
-                          onChange={(e) => {
-                            setLocalRefPackages((prev) =>
-                              prev.map((p, idx) =>
-                                idx === i ? e.target.value : p,
-                              ),
-                            );
-                            setPreambleSuggestState({ list: 'ref', idx: i });
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                              e.preventDefault();
-                              setPreambleSuggestState(null);
-                              return;
-                            }
-                            if (e.key === 'ArrowUp') {
-                              e.preventDefault();
-                              focusPreambleInput(e.currentTarget, -1);
-                              return;
-                            }
-                            if (e.key === 'ArrowDown' && !isSuggesting) {
-                              e.preventDefault();
-                              focusPreambleInput(e.currentTarget, 1);
-                              return;
-                            }
-                            if (
-                              (e.key === 'Backspace' || e.key === 'Delete') &&
-                              pkg === ''
-                            ) {
-                              e.preventDefault();
-                              removePreamblePackageLine('ref', i);
-                              return;
-                            }
-                            if (e.key === 'Enter' || e.key === 'Tab') {
-                              e.preventDefault();
-                              const inputEl = e.currentTarget;
-                              if (isSuggesting && suggestions.length > 0) {
-                                setLocalRefPackages((prev) =>
-                                  prev.map((p, idx) =>
-                                    idx === i ? suggestions[0] : p,
-                                  ),
-                                );
-                                setPreambleSuggestState(null);
-                                setTimeout(() => inputEl.focus(), 0);
-                              } else {
-                                setPreambleSuggestState(null);
-                                if (e.key === 'Enter') {
-                                  insertPreamblePackageLine('ref', i);
-                                  return;
-                                }
-
-                                focusPreambleInput(inputEl, 1);
-                              }
-                            }
-                          }}
-                          onFocus={() =>
-                            q &&
-                            setPreambleSuggestState({ list: 'ref', idx: i })
-                          }
-                          onBlur={() =>
-                            setTimeout(() => setPreambleSuggestState(null), 150)
-                          }
-                          spellCheck={false}
-                          className="w-full bg-transparent font-mono text-[14px] leading-5.5 text-[#2f6b5b] outline-none dark:text-[#4eab8f]"
-                        />
-                        {isSuggesting && suggestions.length > 0 && (
-                          <ul className="bg-editor-content-bg absolute top-full left-10 z-50 max-h-36 w-72 overflow-y-auto rounded border border-slate-200 shadow-md dark:border-slate-600 dark:bg-slate-800">
-                            {suggestions.map((p) => {
-                              const qi = p.toLowerCase().indexOf(q);
-                              return (
-                                <li key={p}>
-                                  <button
-                                    type="button"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      setLocalRefPackages((prev) =>
                                         prev.map((lp, idx) =>
                                           idx === i ? p : lp,
                                         ),
@@ -5772,11 +5563,15 @@ export const LatexPaperEditor = ({
                           </span>
                         </div>
                       ) : compileError ? (
-                        <div className="mx-auto w-full max-w-2xl rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-                          <p className="font-semibold">Compilation Error</p>
-                          <pre className="mt-2 max-h-60 overflow-auto text-xs whitespace-pre-wrap">
-                            {compileError}
-                          </pre>
+                        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+                          <div className="flex flex-col items-center gap-2 py-16 text-center">
+                            <p className="text-sm font-medium text-red-500">
+                              LaTeX compilation failed
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Fix errors and click Compile again
+                            </p>
+                          </div>
                         </div>
                       ) : pdfUrl ? (
                         <Document
