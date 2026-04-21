@@ -1,5 +1,12 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router';
 import {
   Plus,
   RefreshCw,
@@ -225,6 +232,10 @@ const TAB_GROUPS: {
   },
 ];
 
+const isPaperDetailTab = (value: string | null): value is Tab => {
+  return TAB_GROUPS.some((group) => group.tabs.some((tab) => tab.id === value));
+};
+
 export const ProjectPaperDetailPage = ({
   projectId,
   paperId,
@@ -241,18 +252,30 @@ export const ProjectPaperDetailPage = ({
   combineEditorPath?: (combineId: string) => string;
 }) => {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const locationState = location.state as {
     initialTab?: Tab;
     initialSectionId?: string;
     subProjectId?: string;
   } | null;
-  const [activeTab, setActiveTab] = useState<Tab>(
-    locationState?.initialTab ?? 'sections',
+  const searchTab = searchParams.get('tab');
+  const activeTab: Tab = isPaperDetailTab(searchTab)
+    ? searchTab
+    : (locationState?.initialTab ?? 'overview');
+  const setActiveTab = useCallback(
+    (nextTab: Tab) => {
+      if (nextTab === activeTab) return;
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('tab', nextTab);
+      setSearchParams(nextParams, { replace: true });
+    },
+    [activeTab, searchParams, setSearchParams],
   );
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
-    const initial = locationState?.initialTab ?? 'sections';
+    const initial = activeTab;
     const group = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === initial));
-    return group?.id ?? 'working';
+    return group?.id ?? TAB_GROUPS[0].id;
   });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -265,6 +288,27 @@ export const ProjectPaperDetailPage = ({
   const [pendingSectionId, setPendingSectionId] = useState<string | null>(
     locationState?.initialSectionId ?? null,
   );
+
+  useEffect(() => {
+    if (searchParams.get('tab') === activeTab) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', activeTab);
+    setSearchParams(nextParams, { replace: true });
+  }, [activeTab, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (openGroup === '__menu__') return;
+
+    const activeGroup = TAB_GROUPS.find((group) =>
+      group.tabs.some((tab) => tab.id === activeTab),
+    );
+
+    if (activeGroup?.id && activeGroup.id !== openGroup) {
+      setOpenGroup(activeGroup.id);
+    }
+  }, [activeTab, openGroup]);
+
   useEffect(() => {
     if (!locationState?.initialSectionId) return;
 

@@ -5569,7 +5569,8 @@ export const LatexPaperEditor = ({
                               LaTeX compilation failed
                             </p>
                             <p className="text-xs text-slate-400">
-                              Fix errors and click Compile again
+                              Please check the required packages and LaTeX
+                              commands, then click Compile again.
                             </p>
                           </div>
                         </div>

@@ -43,6 +43,10 @@ const MyProjectPaperCombineEditorRoute = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const isEditMode = searchParams.get('edit') === 'true';
+  const backHref = paths.app.assignedProjects.paperDetail.getHref(
+    projectId!,
+    paperId!,
+  );
 
   const isNullGuid = combineId === NULL_GUID;
   // Combine data passed via navigation state (survives within the session,
@@ -66,18 +70,33 @@ const MyProjectPaperCombineEditorRoute = () => {
   // redirect them back to the paper detail
   useEffect(() => {
     if (isNullGuid && !stateData && !combineQuery.isLoading) {
-      navigate(
-        paths.app.assignedProjects.paperDetail.getHref(projectId!, paperId!),
-        { replace: true },
-      );
+      navigate(backHref, {
+        replace: true,
+        state: { initialTab: 'sections' },
+      });
+    }
+  }, [isNullGuid, stateData, combineQuery.isLoading, navigate, backHref]);
+
+  useEffect(() => {
+    if (!projectId || !paperId) return;
+    if (paperQuery.isLoading || (!isNullGuid && combineQuery.isLoading)) return;
+
+    if (!paper || !combine) {
+      navigate(backHref, {
+        replace: true,
+        state: { initialTab: 'sections' },
+      });
     }
   }, [
-    isNullGuid,
-    stateData,
-    combineQuery.isLoading,
-    navigate,
     projectId,
     paperId,
+    paper,
+    combine,
+    backHref,
+    isNullGuid,
+    paperQuery.isLoading,
+    combineQuery.isLoading,
+    navigate,
   ]);
 
   const subProjectsQuery = useSubProjects({
@@ -103,18 +122,10 @@ const MyProjectPaperCombineEditorRoute = () => {
     );
   }
 
-  if (!paper) {
+  if (!paper || !combine) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Paper not found.</p>
-      </div>
-    );
-  }
-
-  if (!combine) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Combined version not found.</p>
+        <Skeleton className="h-12 w-48" />
       </div>
     );
   }
@@ -131,14 +142,7 @@ const MyProjectPaperCombineEditorRoute = () => {
         paperTitle={paper.title || 'Paper'}
         isAuthor={isAuthor}
         initialEditMode={isEditMode}
-        onClose={() =>
-          navigate(
-            paths.app.assignedProjects.paperDetail.getHref(
-              projectId!,
-              paperId!,
-            ),
-          )
-        }
+        onClose={() => navigate(backHref)}
       />
     </>
   );
