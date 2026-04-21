@@ -150,8 +150,21 @@ export const AddPapersModal = ({
   const papersQuery = useAvailablePapers({
     projectId,
     params: {
-      searchText: titleDebounce || undefined,
+      Title: titleDebounce || undefined,
+      Author: undefined,
+      Publisher: undefined,
+      Abstract: undefined,
+      Doi: undefined,
+      Status: undefined,
+      FromPublicationDate: undefined,
+      ToPublicationDate: undefined,
+      PaperType: undefined,
+      JournalName: undefined,
+      ConferenceName: undefined,
       Tag: tagList.length > 0 ? tagList : undefined,
+      ExistingPaperIds: undefined,
+      PageNumber: 1,
+      PageSize: 1000,
     },
     queryConfig: { enabled: open },
   });

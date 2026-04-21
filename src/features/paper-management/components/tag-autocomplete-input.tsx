@@ -212,7 +212,7 @@ export const TagAutocompleteInput = ({
                       {suggestion}
                     </span>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs text-white">
                       {suggestion}
                     </Badge>
                   )}

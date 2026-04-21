@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '../constants';
 import { PROJECT_MANAGEMENT_QUERY_KEYS } from '@/features/project-management/constants';
+import { TASK_MANAGEMENT_QUERY_KEYS } from '@/features/task-management/constants';
 import { usePaperTemplate } from '@/features/paper-template-management/api/get-paper-template';
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
@@ -126,6 +127,9 @@ export const CreatePaperInProject = ({
         });
         queryClient.invalidateQueries({
           queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.SUB_PROJECTS, _projectId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [TASK_MANAGEMENT_QUERY_KEYS.MY_ASSIGNED_PAPERS],
         });
         onOpenChange(false);
         resetForm();
