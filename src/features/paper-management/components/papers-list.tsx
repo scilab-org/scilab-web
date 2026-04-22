@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { Building2, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -55,14 +55,14 @@ export const PapersList = () => {
   const fromDate = searchParams.get('fromDate') || undefined;
   const toDate = searchParams.get('toDate') || undefined;
   const paperType = searchParams.get('paperType') || undefined;
-  const journalName = searchParams.get('journalName') || undefined;
-  const conferenceName = searchParams.get('conferenceName') || undefined;
+  const journalId = searchParams.get('journalId') || undefined;
+  const ranking = searchParams.get('ranking') || undefined;
   const authors = searchParams.getAll('author').length
     ? searchParams.getAll('author')
     : undefined;
   const isDeleted = searchParams.get('isDeleted') === 'true';
-  const tags = searchParams.getAll('tag').length
-    ? searchParams.getAll('tag')
+  const keywords = searchParams.getAll('keyword').length
+    ? searchParams.getAll('keyword')
     : undefined;
 
   const papersQuery = usePapers({
@@ -76,10 +76,10 @@ export const PapersList = () => {
       FromPublicationDate: fromDate,
       ToPublicationDate: toDate,
       PaperType: paperType,
-      JournalName: journalName,
-      ConferenceName: conferenceName,
+      JournalId: journalId,
+      Ranking: ranking,
       Author: authors,
-      Tag: tags,
+      Keyword: keywords,
       IsDeleted: isDeleted,
     },
   });
@@ -169,16 +169,11 @@ export const PapersList = () => {
                 {truncateAuthors(paper.authors)}
               </TableCell>
 
-              {/* Venue (Journal + Conference combined) */}
+              {/* Venue */}
               <TableCell className="px-3 wrap-break-word whitespace-normal">
-                {paper.journalName ? (
+                {paper.conferenceJournalName ? (
                   <span className="line-clamp-2 text-sm">
-                    {paper.journalName}
-                  </span>
-                ) : paper.conferenceName ? (
-                  <span className="flex items-start gap-1.5 text-sm">
-                    <Building2 className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
-                    <span className="line-clamp-2">{paper.conferenceName}</span>
+                    {paper.conferenceJournalName}
                   </span>
                 ) : (
                   <span className="text-muted-foreground text-xs italic">

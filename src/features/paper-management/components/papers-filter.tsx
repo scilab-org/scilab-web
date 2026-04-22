@@ -4,19 +4,23 @@ import { Search, X, SlidersHorizontal } from 'lucide-react';
 
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { Button } from '@/components/ui/button';
+import { useJournals } from '@/features/journal-management/api/get-journals';
 
 import { MultiValueInput } from './multi-value-input';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
 export const PapersFilter = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const journalsQuery = useJournals({ params: { PageSize: 1000 } });
+  const journals = journalsQuery.data?.result?.items ?? [];
+
   const [showMore, setShowMore] = React.useState(() => {
     return Boolean(
       searchParams.get('abstract') ||
       searchParams.get('publisher') ||
       searchParams.get('paperType') ||
-      searchParams.get('journalName') ||
-      searchParams.get('conferenceName') ||
+      searchParams.get('journalId') ||
+      searchParams.get('ranking') ||
       searchParams.get('isDeleted') === 'true' ||
       searchParams.get('fromDate') ||
       searchParams.get('toDate') ||
@@ -32,8 +36,8 @@ export const PapersFilter = () => {
     fromDate: searchParams.get('fromDate') || '',
     toDate: searchParams.get('toDate') || '',
     paperType: searchParams.get('paperType') || '',
-    journalName: searchParams.get('journalName') || '',
-    conferenceName: searchParams.get('conferenceName') || '',
+    journalId: searchParams.get('journalId') || '',
+    ranking: searchParams.get('ranking') || '',
     isDeleted: searchParams.get('isDeleted') || 'false',
   });
 
@@ -41,8 +45,8 @@ export const PapersFilter = () => {
     searchParams.getAll('author'),
   );
 
-  const [tagList, setTagList] = React.useState<string[]>(
-    searchParams.getAll('tag'),
+  const [keywordList, setKeywordList] = React.useState<string[]>(
+    searchParams.getAll('keyword'),
   );
   const [isFromDateFocused, setIsFromDateFocused] = React.useState(false);
   const [isToDateFocused, setIsToDateFocused] = React.useState(false);
@@ -63,18 +67,18 @@ export const PapersFilter = () => {
     setAuthorList((prev) => prev.filter((item) => item !== author));
   };
 
-  const handleAddTag = (value: string) => {
+  const handleAddKeyword = (value: string) => {
     const trimmed = value.trim();
     if (
       trimmed &&
-      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+      !keywordList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
     ) {
-      setTagList((prev) => [...prev, trimmed]);
+      setKeywordList((prev) => [...prev, trimmed]);
     }
   };
 
-  const handleRemoveTag = (tag: string) => {
-    setTagList((prev) => prev.filter((t) => t !== tag));
+  const handleRemoveKeyword = (kw: string) => {
+    setKeywordList((prev) => prev.filter((t) => t !== kw));
   };
 
   const activeFilterCount =
@@ -83,7 +87,7 @@ export const PapersFilter = () => {
     ).length +
     (authorList.length > 0 ? 1 : 0) +
     (filters.isDeleted !== 'false' ? 1 : 0) +
-    (tagList.length > 0 ? 1 : 0);
+    (keywordList.length > 0 ? 1 : 0);
 
   const fromDateInputType =
     isFromDateFocused || Boolean(filters.fromDate) ? 'date' : 'text';
@@ -100,11 +104,10 @@ export const PapersFilter = () => {
     if (filters.fromDate) params.set('fromDate', filters.fromDate);
     if (filters.toDate) params.set('toDate', filters.toDate);
     if (filters.paperType) params.set('paperType', filters.paperType);
-    if (filters.journalName) params.set('journalName', filters.journalName);
-    if (filters.conferenceName)
-      params.set('conferenceName', filters.conferenceName);
+    if (filters.journalId) params.set('journalId', filters.journalId);
+    if (filters.ranking) params.set('ranking', filters.ranking);
     authorList.forEach((author) => params.append('author', author));
-    tagList.forEach((tag) => params.append('tag', tag));
+    keywordList.forEach((kw) => params.append('keyword', kw));
     params.set('isDeleted', filters.isDeleted);
     params.set('page', '1');
     setSearchParams(params);
@@ -135,12 +138,12 @@ export const PapersFilter = () => {
       fromDate: '',
       toDate: '',
       paperType: '',
-      journalName: '',
-      conferenceName: '',
+      journalId: '',
+      ranking: '',
       isDeleted: 'false',
     });
     setAuthorList([]);
-    setTagList([]);
+    setKeywordList([]);
     setSearchParams({ page: '1' });
   };
 
@@ -193,13 +196,13 @@ export const PapersFilter = () => {
           )}
         </div>
 
-        {/* Tags */}
+        {/* Keywords */}
         <div className="w-72 shrink-0">
           <TagAutocompleteInput
-            tagList={tagList}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-            placeholder="Search by tags..."
+            tagList={keywordList}
+            onAddTag={handleAddKeyword}
+            onRemoveTag={handleRemoveKeyword}
+            placeholder="Search by keywords..."
             className="border-input bg-background focus-within:border-ring focus-within:ring-ring/50 h-10 rounded-md border px-4 py-0 shadow-none focus-within:ring-[3px]"
             inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans"
           />
@@ -351,21 +354,21 @@ export const PapersFilter = () => {
               </div>
               <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                 <input
-                  value={filters.journalName}
+                  value={filters.ranking}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
-                      journalName: e.target.value,
+                      ranking: e.target.value,
                     }))
                   }
-                  placeholder="Search by journal..."
+                  placeholder="Search by ranking..."
                   className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
                 />
-                {filters.journalName && (
+                {filters.ranking && (
                   <button
                     type="button"
                     onClick={() =>
-                      setFilters((prev) => ({ ...prev, journalName: '' }))
+                      setFilters((prev) => ({ ...prev, ranking: '' }))
                     }
                     className="text-muted-foreground hover:text-foreground"
                   >
@@ -373,29 +376,24 @@ export const PapersFilter = () => {
                   </button>
                 )}
               </div>
-              <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
-                <input
-                  value={filters.conferenceName}
+              <div>
+                <select
+                  value={filters.journalId}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
-                      conferenceName: e.target.value,
+                      journalId: e.target.value,
                     }))
                   }
-                  placeholder="Search by conference..."
-                  className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
-                />
-                {filters.conferenceName && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFilters((prev) => ({ ...prev, conferenceName: '' }))
-                    }
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="size-4" />
-                  </button>
-                )}
+                  className="border-input bg-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 font-sans text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  <option value="">Filter by journal / conference</option>
+                  {journals.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="sm:col-span-2 lg:col-span-2">
                 <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">

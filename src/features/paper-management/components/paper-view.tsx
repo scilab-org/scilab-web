@@ -72,17 +72,20 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
   if (!paper) return null;
 
   const publicationInfo: DetailField[] = [
-    { label: 'Journal Name', value: paper.journalName || 'N/A' },
-    { label: 'Volume', value: paper.volume || 'N/A' },
-    { label: 'Pages', value: paper.pages || 'N/A' },
+    {
+      label: 'Journal / Conference',
+      value: paper.conferenceJournalName || 'N/A',
+    },
+    { label: 'Ranking', value: paper.ranking || 'N/A' },
     {
       label: 'Publication Date',
       value: formatPublicationDate(paper.publicationDate),
     },
-    { label: 'DOI', value: paper.doi || 'N/A' },
-    { label: 'Conference Name', value: paper.conferenceName || 'N/A' },
-    { label: 'Publisher', value: paper.publisher || 'N/A' },
+    { label: 'Volume', value: paper.volume || 'N/A' },
+    { label: 'Pages', value: paper.pages || 'N/A' },
     { label: 'Number', value: paper.number || 'N/A' },
+    { label: 'DOI', value: paper.doi || 'N/A' },
+    { label: 'Publisher', value: paper.publisher || 'N/A' },
   ];
 
   const authorAndIdentifiers: DetailField[] = [
@@ -120,31 +123,55 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
                     </a>
                   </Button>
                 )}
+                {paper.bibFilePath && (
+                  <Button variant="action" asChild>
+                    <a
+                      href={paper.bibFilePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View Bib
+                    </a>
+                  </Button>
+                )}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="action">Tag</Button>
+                    <Button variant="action">Keywords</Button>
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-64 space-y-2">
                     <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                      Tags ({paper.tagNames?.length || 0})
+                      Keywords ({paper.keywords?.length || 0})
                     </p>
-                    {paper.tagNames && paper.tagNames.length > 0 ? (
+                    {paper.keywords && paper.keywords.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {paper.tagNames.map((tag) => (
+                        {paper.keywords.map((kw) => (
                           <Badge
-                            key={tag}
+                            key={kw}
                             variant="outline"
-                            className={`px-2.5 py-1 text-xs font-medium ${getTagColor(tag)}`}
+                            className={`px-2.5 py-1 text-xs font-medium ${getTagColor(kw)}`}
                           >
-                            {tag}
+                            {kw}
                           </Badge>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-muted-foreground text-sm">No tags.</p>
+                      <p className="text-muted-foreground text-sm">
+                        No keywords.
+                      </p>
                     )}
                   </PopoverContent>
                 </Popover>
+                {paper.url && (
+                  <Button variant="action" asChild>
+                    <a
+                      href={paper.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View Origin
+                    </a>
+                  </Button>
+                )}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="action">
@@ -177,7 +204,7 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
 
           <div className="bg-card space-y-4 rounded-md border p-5">
             <h2 className="text-xl font-semibold">Publication Info</h2>
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-4">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-3">
               {publicationInfo.map((field) => (
                 <div key={field.label} className="space-y-1">
                   <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">

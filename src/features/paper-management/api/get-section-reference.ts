@@ -43,16 +43,18 @@ const normalizePaperDto = (paper: unknown): PaperDto => {
     volume: (record.volume as string | null) ?? null,
     referenceContent: (record.referenceContent as string | null) ?? null,
     filePath: (record.filePath as string | null) ?? null,
-    status: Number(record.status ?? 0),
+    bibFilePath: (record.bibFilePath as string | null) ?? null,
+    ranking: (record.ranking as string | null) ?? null,
+    url: (record.url as string | null) ?? null,
     isIngested: Boolean(record.isIngested),
     isAutoTagged: Boolean(record.isAutoTagged),
     parsedText: (record.parsedText as string | null) ?? null,
     publicationDate: (record.publicationDate as string | null) ?? null,
     paperType: (record.paperType as string | null) ?? null,
-    journalName: (record.journalName as string | null) ?? null,
-    conferenceName: (record.conferenceName as string | null) ?? null,
-    tagNames: Array.isArray(record.tagNames)
-      ? record.tagNames.filter((tag): tag is string => typeof tag === 'string')
+    conferenceJournalName:
+      (record.conferenceJournalName as string | null) ?? null,
+    keywords: Array.isArray(record.keywords)
+      ? record.keywords.filter((kw): kw is string => typeof kw === 'string')
       : [],
     createdOnUtc: (record.createdOnUtc as string | null) ?? null,
     createdBy: (record.createdBy as string | null) ?? null,

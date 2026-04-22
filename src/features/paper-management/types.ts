@@ -10,18 +10,17 @@ export type PaperDto = {
   volume: string | null;
   referenceContent: string | null;
   filePath: string | null;
-  status: number;
+  bibFilePath: string | null;
+  ranking: string | null;
+  url: string | null;
   ingestStatus?: number;
   isIngested: boolean;
   isAutoTagged: boolean;
   parsedText: string | null;
   publicationDate: string | null;
   paperType: string | null;
-  journalName: string | null;
-  conferenceName: string | null;
-  conferenceJournalStartAt?: string | null;
-  conferenceJournalEndAt?: string | null;
-  tagNames: string[];
+  conferenceJournalName: string | null;
+  keywords: string[];
   createdOnUtc: string | null;
   createdBy: string | null;
   lastModifiedOnUtc: string | null;
@@ -135,14 +134,13 @@ export type GetPapersParams = {
   Publisher?: string;
   Abstract?: string;
   Doi?: string;
-  Status?: number;
   FromPublicationDate?: string;
   ToPublicationDate?: string;
   PaperType?: string;
-  JournalName?: string;
-  ConferenceName?: string;
+  JournalId?: string;
+  Ranking?: string;
   Author?: string[];
-  Tag?: string[];
+  Keyword?: string[];
   IsDeleted?: boolean;
   PageNumber?: number;
   PageSize?: number;
@@ -157,17 +155,18 @@ export type CreatePaperDto = {
   number: string;
   publicationDate: string;
   paperType: string;
-  journalName: string;
-  conferenceName: string;
+  conferenceJournalId?: string;
   pages: string;
   volume: string;
   referenceContent: string;
-  file: File;
+  pdfFile: File;
+  bibFile?: File;
   parsedText: string;
-  tagNames: string[];
+  keywords: string[];
+  ranking?: string;
+  url?: string;
   isAutoTagged: boolean;
   isIngested: boolean;
-  status: number;
 };
 
 export type ParsePaperResponse = {
@@ -192,14 +191,16 @@ export type UpdatePaperDto = {
   number?: string;
   publicationDate?: string;
   paperType?: string;
-  journalName?: string;
-  conferenceName?: string;
+  conferenceJournalId?: string;
   pages?: string;
   volume?: string;
   referenceContent?: string;
-  status?: number;
-  tagNames?: string[];
+  keywords?: string[];
+  ranking?: string;
+  url?: string;
+  bibFile?: File;
   isAutoTagged?: boolean;
+  isIngested?: boolean;
 };
 
 export type UpdateWritingPaperDto = {

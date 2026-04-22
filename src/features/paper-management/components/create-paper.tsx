@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog';
 
 import { CreateButton } from '@/components/ui/create-button';
+import { useJournals } from '@/features/journal-management/api/get-journals';
+import { findMatchingJournalId, parseBibTeXMetadata } from '../lib/bibtex';
 import { useCreatePaper } from '../api/create-paper';
 import { parsePaperFile } from '../api/parse-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
@@ -29,11 +31,11 @@ const initialFormData = {
   publisher: '',
   number: '',
   paperType: '',
-  journalName: '',
-  conferenceName: '',
+  conferenceJournalId: '',
   pages: '',
   volume: '',
-  status: 5,
+  ranking: '',
+  url: '',
 };
 
 const BIBTEX_MONTHS = [
@@ -50,6 +52,21 @@ const BIBTEX_MONTHS = [
   'nov',
   'dec',
 ];
+
+const BIBTEX_MONTH_TO_NUMBER: Record<string, string> = {
+  jan: '01',
+  feb: '02',
+  mar: '03',
+  apr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  aug: '08',
+  sep: '09',
+  oct: '10',
+  nov: '11',
+  dec: '12',
+};
 
 const getCitationKey = (authors: string, year: string) => {
   // Normalize separators only for key extraction, not for author field storage.
@@ -122,21 +139,22 @@ const buildReferenceContent = (params: {
 export const CreatePaper = () => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState(initialFormData);
-  const [file, setFile] = React.useState<File | undefined>(undefined);
+  const [pdfFile, setPdfFile] = React.useState<File | undefined>(undefined);
+  const [bibFile, setBibFile] = React.useState<File | undefined>(undefined);
+  const [bibReferenceContent, setBibReferenceContent] = React.useState('');
+  const [pendingBibVenueName, setPendingBibVenueName] = React.useState('');
 
   // Publication date parts (year required, month/day optional)
   const [pubYear, setPubYear] = React.useState('');
   const [pubMonth, setPubMonth] = React.useState('');
   const [pubDay, setPubDay] = React.useState('');
   const [pubYearError, setPubYearError] = React.useState('');
-  const [journalConferenceError, setJournalConferenceError] =
-    React.useState('');
   const [pagesError, setPagesError] = React.useState('');
 
   // Parse state
   const [isParsing, setIsParsing] = React.useState(false);
   const [parsedText, setParsedText] = React.useState<string | null>(null);
-  const [tagList, setTagList] = React.useState<string[]>([]);
+  const [keywordList, setKeywordList] = React.useState<string[]>([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
 
   // Auto-tag rate limiting state
@@ -161,16 +179,18 @@ export const CreatePaper = () => {
 
   const resetForm = () => {
     setFormData(initialFormData);
-    setFile(undefined);
+    setPdfFile(undefined);
+    setBibFile(undefined);
+    setBibReferenceContent('');
+    setPendingBibVenueName('');
     setParsedText(null);
-    setTagList([]);
+    setKeywordList([]);
     setIsAutoTagged(false);
     setAutoTagCooldown(0);
     setPubYear('');
     setPubMonth('');
     setPubDay('');
     setPubYearError('');
-    setJournalConferenceError('');
     setPagesError('');
   };
 
@@ -193,7 +213,7 @@ export const CreatePaper = () => {
     }
   }, [pubDay, maxDay]);
 
-  const handleFileChange = async (selectedFile: File | undefined) => {
+  const handlePdfFileChange = async (selectedFile: File | undefined) => {
     if (!selectedFile) return;
     // Cancel any ongoing upload
     if (abortControllerRef.current) {
@@ -201,8 +221,8 @@ export const CreatePaper = () => {
     }
     // Create new abort controller for this upload
     abortControllerRef.current = new AbortController();
-    setFile(selectedFile);
-    setTagList([]);
+    setPdfFile(selectedFile);
+    setKeywordList([]);
     setIsAutoTagged(false);
     setIsParsing(true);
 
@@ -262,18 +282,81 @@ export const CreatePaper = () => {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    handleRemoveFile();
+    handleRemovePdfFile();
   };
 
-  const handleRemoveFile = () => {
-    setFile(undefined);
+  const handleRemovePdfFile = () => {
+    setPdfFile(undefined);
     setParsedText(null);
-    setTagList([]);
+    setKeywordList([]);
     setIsAutoTagged(false);
   };
 
+  const handleRemoveBibFile = () => {
+    setBibFile(undefined);
+    setBibReferenceContent('');
+    setPendingBibVenueName('');
+  };
+
+  const handleBibFileChange = async (selectedFile: File | undefined) => {
+    if (!selectedFile) return;
+
+    try {
+      const rawContent = await selectedFile.text();
+      const parsedBib = parseBibTeXMetadata(rawContent);
+
+      setBibFile(selectedFile);
+      setBibReferenceContent(rawContent.trim());
+
+      if (!parsedBib) {
+        toast.warning(
+          'BibTeX file was attached, but its fields could not be parsed.',
+        );
+        return;
+      }
+
+      const matchedJournalId = findMatchingJournalId(
+        journals,
+        parsedBib.journalName,
+      );
+      setPendingBibVenueName(parsedBib.journalName || '');
+
+      setFormData((prev) => ({
+        ...prev,
+        title: parsedBib.title || prev.title,
+        abstract: parsedBib.abstract || prev.abstract,
+        doi: parsedBib.doi || prev.doi,
+        authors: parsedBib.authors || prev.authors,
+        publisher: parsedBib.publisher || prev.publisher,
+        number: parsedBib.number || prev.number,
+        pages: parsedBib.pages || prev.pages,
+        volume: parsedBib.volume || prev.volume,
+        conferenceJournalId: matchedJournalId || prev.conferenceJournalId,
+        ranking: parsedBib.ranking || prev.ranking,
+        url: parsedBib.url || prev.url,
+      }));
+
+      if (parsedBib.year) {
+        setPubYear(parsedBib.year);
+        setPubYearError('');
+      }
+
+      if (parsedBib.month) {
+        const normalizedMonth = parsedBib.month.trim().toLowerCase();
+        setPubMonth(
+          BIBTEX_MONTH_TO_NUMBER[normalizedMonth] ||
+            normalizedMonth.padStart(2, '0'),
+        );
+      }
+
+      toast.success('Filled fields from BibTeX file');
+    } catch {
+      toast.error('Failed to read BibTeX file');
+    }
+  };
+
   const handleAutoTag = async () => {
-    if (!file || !parsedText) {
+    if (!pdfFile || !parsedText) {
       toast.warning('Please wait for the PDF to finish parsing first');
       return;
     }
@@ -290,13 +373,13 @@ export const CreatePaper = () => {
     try {
       const response = await autoTagPaper({
         parsedText: parsedText,
-        existingTags: tagList,
+        existingTags: keywordList,
       });
 
       const suggestedTagsList = response.tags || [];
 
-      // Merge suggested tags with existing tags (avoiding duplicates)
-      setTagList((prev) => {
+      // Merge suggested keywords with existing ones (avoiding duplicates)
+      setKeywordList((prev) => {
         const merged = [...prev];
         suggestedTagsList.forEach((tag) => {
           const normalizedTag = tag.trim();
@@ -325,48 +408,52 @@ export const CreatePaper = () => {
     }
   };
 
-  const handleAddTag = (value: string) => {
+  const handleAddKeyword = (value: string) => {
     const trimmed = value.trim();
     if (
       trimmed &&
-      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+      !keywordList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
     ) {
-      setTagList((prev) => [...prev, trimmed]);
+      setKeywordList((prev) => [...prev, trimmed]);
     }
   };
 
-  const handleRemoveTag = (tag: string) => {
-    setTagList((prev) => prev.filter((t) => t !== tag));
+  const handleRemoveKeyword = (kw: string) => {
+    setKeywordList((prev) => prev.filter((t) => t !== kw));
   };
+
+  const journalsQuery = useJournals({ params: { PageSize: 1000 } });
+  const journals = React.useMemo(
+    () => journalsQuery.data?.result?.items ?? [],
+    [journalsQuery.data?.result?.items],
+  );
+
+  React.useEffect(() => {
+    if (
+      !pendingBibVenueName ||
+      !journals.length ||
+      formData.conferenceJournalId
+    ) {
+      return;
+    }
+
+    const matchedJournalId = findMatchingJournalId(
+      journals,
+      pendingBibVenueName,
+    );
+    if (!matchedJournalId) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      conferenceJournalId: prev.conferenceJournalId || matchedJournalId,
+    }));
+  }, [formData.conferenceJournalId, journals, pendingBibVenueName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.authors.trim() || !file) return;
-
-    const hasJournalName = formData.journalName.trim().length > 0;
-    const hasConferenceName = formData.conferenceName.trim().length > 0;
-    if (!hasJournalName && !hasConferenceName) {
-      setJournalConferenceError(
-        'Please fill at least one of Journal Name or Conference Name.',
-      );
-      return;
-    }
-    if (hasJournalName && hasConferenceName) {
-      setJournalConferenceError(
-        'Please fill either Journal Name or Conference Name, not both.',
-      );
-      return;
-    }
-
-    if (formData.pages.trim()) {
-      const pagesPattern = /^\d+--\d+$/;
-      if (!pagesPattern.test(formData.pages.trim())) {
-        setPagesError(
-          'Pages must be in the format Number--Number (e.g. 436--444).',
-        );
-        return;
-      }
-    }
+    if (!formData.title.trim() || !formData.authors.trim() || !pdfFile) return;
 
     if (!pubYear.trim()) {
       setPubYearError('Publication year is required.');
@@ -389,6 +476,11 @@ export const CreatePaper = () => {
       return;
     }
 
+    const selectedJournal = journals.find(
+      (j) => j.id === formData.conferenceJournalId,
+    );
+    const journalNameForRef = selectedJournal?.name ?? '';
+
     createPaperMutation.mutate({
       title: formData.title,
       abstract: formData.abstract,
@@ -398,28 +490,31 @@ export const CreatePaper = () => {
       number: formData.number,
       publicationDate: composedDate,
       paperType: formData.paperType,
-      journalName: formData.journalName,
-      conferenceName: formData.conferenceName,
+      conferenceJournalId: formData.conferenceJournalId || undefined,
       pages: formData.pages,
       volume: formData.volume,
-      referenceContent: buildReferenceContent({
-        authors: formData.authors,
-        title: formData.title,
-        doi: formData.doi,
-        publisher: formData.publisher,
-        number: formData.number,
-        journalName: formData.journalName,
-        pages: formData.pages,
-        volume: formData.volume,
-        publicationYear: pubYear,
-        publicationMonth: pubMonth,
-      }),
-      file,
+      ranking: formData.ranking || undefined,
+      url: formData.url || undefined,
+      referenceContent:
+        bibReferenceContent ||
+        buildReferenceContent({
+          authors: formData.authors,
+          title: formData.title,
+          doi: formData.doi,
+          publisher: formData.publisher,
+          number: formData.number,
+          journalName: journalNameForRef,
+          pages: formData.pages,
+          volume: formData.volume,
+          publicationYear: pubYear,
+          publicationMonth: pubMonth,
+        }),
+      pdfFile,
+      bibFile,
       parsedText: parsedText || '',
-      tagNames: tagList,
+      keywords: keywordList,
       isAutoTagged,
       isIngested: false,
-      status: formData.status,
     });
   };
 
@@ -447,16 +542,18 @@ export const CreatePaper = () => {
             <label htmlFor="create-paper-file" className="text-sm font-medium">
               PDF File <span className="text-destructive">*</span>
             </label>
-            {file ? (
+            {pdfFile ? (
               <div className="space-y-3">
                 <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
                   <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
                     <Upload className="size-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{file.name}</p>
+                    <p className="truncate text-sm font-medium">
+                      {pdfFile.name}
+                    </p>
                     <p className="text-muted-foreground text-xs">
-                      {(file.size / 1024).toFixed(1)} KB
+                      {(pdfFile.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
                   <Button
@@ -464,7 +561,9 @@ export const CreatePaper = () => {
                     variant="ghost"
                     size="icon"
                     className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                    onClick={isParsing ? handleCancelUpload : handleRemoveFile}
+                    onClick={
+                      isParsing ? handleCancelUpload : handleRemovePdfFile
+                    }
                     title={isParsing ? 'Cancel upload' : 'Remove file'}
                   >
                     <X className="size-4" />
@@ -511,7 +610,61 @@ export const CreatePaper = () => {
                   type="file"
                   accept=".pdf"
                   className="hidden"
-                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                  onChange={(e) => handlePdfFileChange(e.target.files?.[0])}
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="create-paper-bibfile"
+              className="text-sm font-medium"
+            >
+              BibTeX File
+            </label>
+            {bibFile ? (
+              <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
+                <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                  <Upload className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{bibFile.name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {(bibFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                  onClick={handleRemoveBibFile}
+                  title="Remove file"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <label
+                htmlFor="create-paper-bibfile"
+                className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 transition-colors"
+              >
+                <div className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-full">
+                  <Upload className="size-4" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">Click to upload .bib</p>
+                  <p className="text-muted-foreground text-xs">
+                    BibTeX files only
+                  </p>
+                </div>
+                <input
+                  id="create-paper-bibfile"
+                  type="file"
+                  accept=".bib"
+                  className="hidden"
+                  onChange={(e) => handleBibFileChange(e.target.files?.[0])}
                 />
               </label>
             )}
@@ -532,20 +685,20 @@ export const CreatePaper = () => {
             />
           </div>
 
-          {/* Tags editor - always visible */}
+          {/* Keywords editor - always visible */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">
-              Tags {tagList.length > 0 && `(${tagList.length})`}
+              Keywords {keywordList.length > 0 && `(${keywordList.length})`}
             </label>
             <TagAutocompleteInput
-              tagList={tagList}
-              onAddTag={handleAddTag}
-              onRemoveTag={handleRemoveTag}
-              placeholder="Type a tag and press Enter..."
+              tagList={keywordList}
+              onAddTag={handleAddKeyword}
+              onRemoveTag={handleRemoveKeyword}
+              placeholder="Type a keyword and press Enter..."
               className="dark:bg-input/30 bg-transparent"
             />
             {/* Auto Tag button */}
-            {file && (
+            {pdfFile && (
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -731,52 +884,60 @@ export const CreatePaper = () => {
               htmlFor="create-paper-journal"
               className="text-sm font-medium"
             >
-              Journal Name <span className="text-destructive">*</span>
+              Conference / Journal
             </label>
-            <Input
+            <select
               id="create-paper-journal"
-              value={formData.journalName}
+              value={formData.conferenceJournalId}
               onChange={(e) =>
-                setFormData((prev) => {
-                  if (journalConferenceError) setJournalConferenceError('');
-                  return {
-                    ...prev,
-                    journalName: e.target.value,
-                  };
-                })
+                setFormData((prev) => ({
+                  ...prev,
+                  conferenceJournalId: e.target.value,
+                }))
               }
-              placeholder="e.g. Nature"
-              disabled={Boolean(formData.conferenceName.trim())}
-            />
+              className={cn(
+                'border-input dark:bg-input/30 ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                !formData.conferenceJournalId && 'text-muted-foreground',
+              )}
+            >
+              <option value="">Select conference / journal...</option>
+              {journals.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">
             <label
-              htmlFor="create-paper-conference"
+              htmlFor="create-paper-ranking"
               className="text-sm font-medium"
             >
-              Conference Name <span className="text-destructive">*</span>
+              Ranking
             </label>
             <Input
-              id="create-paper-conference"
-              value={formData.conferenceName}
+              id="create-paper-ranking"
+              value={formData.ranking}
               onChange={(e) =>
-                setFormData((prev) => {
-                  if (journalConferenceError) setJournalConferenceError('');
-                  return {
-                    ...prev,
-                    conferenceName: e.target.value,
-                  };
-                })
+                setFormData((prev) => ({ ...prev, ranking: e.target.value }))
               }
-              placeholder="e.g. NeurIPS"
-              disabled={Boolean(formData.journalName.trim())}
+              placeholder="e.g. Q1, A*"
             />
-            {journalConferenceError && (
-              <p className="text-destructive text-xs">
-                {journalConferenceError}
-              </p>
-            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="create-paper-url" className="text-sm font-medium">
+              URL
+            </label>
+            <Input
+              id="create-paper-url"
+              value={formData.url}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, url: e.target.value }))
+              }
+              placeholder="e.g. https://..."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -860,7 +1021,7 @@ export const CreatePaper = () => {
                 createPaperMutation.isPending ||
                 !formData.title.trim() ||
                 !formData.authors.trim() ||
-                !file ||
+                !pdfFile ||
                 isParsing
               }
               variant="darkRed"
