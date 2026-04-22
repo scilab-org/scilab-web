@@ -3,6 +3,8 @@ import * as React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+import { paths } from '@/config/paths';
+
 import { JournalDto, PaperRef, ProjectRef } from '../types';
 import { UpdateJournal } from './update-journal';
 import { DeleteJournal } from './delete-journal';
@@ -21,15 +23,32 @@ type DetailField = {
   value: React.ReactNode;
 };
 
+const JOURNAL_TYPE_LABEL: Record<number, string> = {
+  1: 'Journal',
+  2: 'Conference',
+};
+
 export const ViewJournal = ({
   journal,
   projects,
   papers,
 }: ViewJournalProps) => {
-  const journalInfo: DetailField[] = [
-    { label: 'Structure', value: journal.templateCode || 'N/A' },
+  const journalMain: DetailField[] = [
+    {
+      label: 'Type',
+      value:
+        journal.type != null
+          ? (JOURNAL_TYPE_LABEL[journal.type] ?? String(journal.type))
+          : 'N/A',
+    },
+    { label: 'ISSN', value: journal.issn || 'N/A' },
     { label: 'Ranking', value: journal.ranking || 'N/A' },
+  ];
+
+  const journalAudit: DetailField[] = [
+    { label: 'Created By', value: journal.createdBy || 'N/A' },
     { label: 'Created Date', value: fmt(journal.createdOnUtc) },
+    { label: 'Last Modified By', value: journal.lastModifiedBy || 'N/A' },
     { label: 'Last Modified Date', value: fmt(journal.lastModifiedOnUtc) },
   ];
 
@@ -86,7 +105,7 @@ export const ViewJournal = ({
           <div className="bg-card space-y-4 rounded-md border p-5">
             <h2 className="text-xl font-semibold">Journal Info</h2>
             <div className="grid gap-4 border-t pt-4 md:grid-cols-2 xl:grid-cols-4">
-              {journalInfo.map((field) => (
+              {journalMain.map((field) => (
                 <div key={field.label} className="space-y-1">
                   <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     {field.label}
@@ -96,6 +115,46 @@ export const ViewJournal = ({
                   </p>
                 </div>
               ))}
+            </div>
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-2 xl:grid-cols-4">
+              {journalAudit.map((field) => (
+                <div key={field.label} className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                    {field.label}
+                  </p>
+                  <p className="text-foreground text-base font-medium wrap-break-word">
+                    {field.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Associated Templates */}
+          <div className="bg-card space-y-4 rounded-md border p-5">
+            <h2 className="text-xl font-semibold">Associated Templates</h2>
+            <div className="border-t pt-4">
+              {journal.templates && journal.templates.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {journal.templates.map((t) => (
+                    <a
+                      key={t.id}
+                      href={paths.app.paperTemplateManagement.paperTemplate.getHref(
+                        t.id,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-muted text-foreground hover:bg-muted/70 rounded-md border px-3 py-1 font-mono text-sm font-medium transition-colors"
+                    >
+                      {t.code}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-base">
+                  No associated templates.
+                </p>
+              )}
             </div>
           </div>
 

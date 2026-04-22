@@ -28,9 +28,12 @@ export const JournalsList = () => {
 
   const page = +(searchParams.get('page') || 1);
   const name = searchParams.get('name') || undefined;
-  const templateCode = searchParams.get('templateCode') || undefined;
-  const projectName = searchParams.get('projectName') || undefined;
-  const projectCode = searchParams.get('projectCode') || undefined;
+  const issn = searchParams.get('issn') || undefined;
+  const ranking = searchParams.get('ranking') || undefined;
+  const type = searchParams.get('type') || undefined;
+  const templateId = searchParams.get('templateId') || undefined;
+  const projectId = searchParams.get('projectId') || undefined;
+  const paperId = searchParams.get('paperId') || undefined;
   const isDeleted = searchParams.get('isDeleted') === 'true';
 
   const journalsQuery = useJournals({
@@ -38,9 +41,12 @@ export const JournalsList = () => {
       PageNumber: page,
       PageSize: 10,
       Name: name,
-      TemplateCode: templateCode,
-      ProjectName: projectName,
-      ProjectCode: projectCode,
+      ISSN: issn,
+      Ranking: ranking,
+      Type: type,
+      TemplateId: templateId,
+      ProjectId: projectId,
+      PaperId: paperId,
       IsDeleted: isDeleted,
     },
   });
@@ -77,20 +83,20 @@ export const JournalsList = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="text-muted-foreground w-[30%] text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[28%] text-xs font-medium tracking-wider uppercase">
                 Name
               </TableHead>
+              <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
+                Type
+              </TableHead>
               <TableHead className="text-muted-foreground w-[12%] text-xs font-medium tracking-wider uppercase">
-                Structure
+                ISSN
               </TableHead>
               <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
                 Ranking
               </TableHead>
-              <TableHead className="text-muted-foreground w-[12%] text-xs font-medium tracking-wider uppercase">
+              <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
                 Created Date
-              </TableHead>
-              <TableHead className="text-muted-foreground w-[12%] text-xs font-medium tracking-wider uppercase">
-                Last Modified Date
               </TableHead>
               <TableHead className="text-muted-foreground w-[24%] text-center text-xs font-medium tracking-wider uppercase">
                 Actions
@@ -117,10 +123,18 @@ export const JournalsList = () => {
                     </div>
                   )}
                 </TableCell>
-                <TableCell>{journal.templateCode || 'N/A'}</TableCell>
+                <TableCell>
+                  {journal.type === 1
+                    ? 'Journal'
+                    : journal.type === 2
+                      ? 'Conference'
+                      : 'N/A'}
+                </TableCell>
+                <TableCell className="max-w-36 truncate">
+                  {journal.issn || 'N/A'}
+                </TableCell>
                 <TableCell>{journal.ranking || 'N/A'}</TableCell>
                 <TableCell>{fmt(journal.createdOnUtc)}</TableCell>
-                <TableCell>{fmt(journal.lastModifiedOnUtc)}</TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-2">
                     <Link

@@ -147,11 +147,11 @@ export const PapersFilter = () => {
   return (
     <form
       onSubmit={handleApply}
-      className="flex flex-col gap-2 rounded-md border bg-[#E9E1D8] p-2"
+      className="flex flex-col rounded-md border bg-[#E9E1D8] p-2"
     >
       <div className="flex w-full flex-wrap items-center gap-2">
         {/* Title */}
-        <div className="bg-background flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md px-4 shadow-xs">
+        <div className="bg-background border-input focus-within:border-ring focus-within:ring-ring/50 flex h-10 min-w-50 flex-1 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
           <Search className="text-muted-foreground size-4" />
           <input
             value={filters.title}
@@ -173,7 +173,7 @@ export const PapersFilter = () => {
         </div>
 
         {/* DOI */}
-        <div className="bg-background flex h-10 w-48 shrink-0 items-center gap-3 rounded-md px-4 shadow-xs">
+        <div className="bg-background border-input focus-within:border-ring focus-within:ring-ring/50 flex h-10 w-60 shrink-0 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
           <input
             value={filters.doi}
             onChange={(e) =>
@@ -194,13 +194,13 @@ export const PapersFilter = () => {
         </div>
 
         {/* Tags */}
-        <div className="w-56 shrink-0">
+        <div className="w-72 shrink-0">
           <TagAutocompleteInput
             tagList={tagList}
             onAddTag={handleAddTag}
             onRemoveTag={handleRemoveTag}
             placeholder="Search by tags..."
-            className="border-input bg-background focus-within:ring-ring/50 h-10 rounded-md border px-4 py-0 shadow-none focus-within:ring-1"
+            className="border-input bg-background focus-within:border-ring focus-within:ring-ring/50 h-10 rounded-md border px-4 py-0 shadow-none focus-within:ring-[3px]"
             inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans"
           />
         </div>
@@ -228,7 +228,7 @@ export const PapersFilter = () => {
 
       {/* Secondary filters - collapsible */}
       <div
-        className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+        className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${showMore ? 'mt-2 grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
       >
         <div className="overflow-hidden">
           <div className="bg-background rounded-md p-4">
@@ -243,7 +243,7 @@ export const PapersFilter = () => {
                   inputClassName="text-foreground placeholder:text-muted-foreground/50 font-sans text-sm"
                 />
               </div>
-              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                 <input
                   value={filters.paperType}
                   onChange={(e) =>
@@ -269,7 +269,7 @@ export const PapersFilter = () => {
               </div>
               <div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                  <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                     <input
                       type={fromDateInputType}
                       value={filters.fromDate}
@@ -296,7 +296,7 @@ export const PapersFilter = () => {
                       </button>
                     )}
                   </div>
-                  <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                  <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                     <input
                       type={toDateInputType}
                       value={filters.toDate}
@@ -325,7 +325,7 @@ export const PapersFilter = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                 <input
                   value={filters.publisher}
                   onChange={(e) =>
@@ -349,7 +349,7 @@ export const PapersFilter = () => {
                   </button>
                 )}
               </div>
-              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                 <input
                   value={filters.journalName}
                   onChange={(e) =>
@@ -373,7 +373,7 @@ export const PapersFilter = () => {
                   </button>
                 )}
               </div>
-              <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+              <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                 <input
                   value={filters.conferenceName}
                   onChange={(e) =>
@@ -398,7 +398,7 @@ export const PapersFilter = () => {
                 )}
               </div>
               <div className="sm:col-span-2 lg:col-span-2">
-                <div className="bg-background border-input flex h-10 items-center gap-3 rounded-md border px-4">
+                <div className="bg-background border-input focus-within:ring-ring/50 focus-within:border-ring flex h-10 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
                   <input
                     value={filters.abstract}
                     onChange={(e) =>

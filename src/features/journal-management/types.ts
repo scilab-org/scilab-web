@@ -1,15 +1,21 @@
+export type TemplateRef = {
+  id: string;
+  code: string;
+};
+
 export type JournalDto = {
   id: string;
   name: string;
   ranking: string | null;
   url: string | null;
+  issn: string | null;
   texFile: string | null;
   pdfFile: string | null;
   style: string | null;
+  type: number | null;
+  templates: TemplateRef[];
   conferenceJournalStartAt?: string | null;
   conferenceJournalEndAt?: string | null;
-  templateId: string | null;
-  templateCode: string | null;
   projectIds: string[];
   createdOnUtc: string | null;
   createdBy: string | null;
@@ -59,9 +65,12 @@ export type GetJournalByIdResultApiResponse = {
 
 export type GetJournalsParams = {
   Name?: string;
-  TemplateCode?: string;
-  ProjectName?: string;
-  ProjectCode?: string;
+  ISSN?: string;
+  Ranking?: string;
+  Type?: string;
+  TemplateId?: string;
+  ProjectId?: string;
+  PaperId?: string;
   IsDeleted?: boolean;
   PageNumber?: number;
   PageSize?: number;
@@ -69,19 +78,24 @@ export type GetJournalsParams = {
 
 export type CreateJournalDto = {
   name: string;
-  templateId: string;
+  templateIds: string[];
+  issn: string;
   ranking: string;
   url: string;
   style: string;
+  type: number;
   texFile?: File | null;
   pdfFile?: File | null;
 };
 
 export type UpdateJournalDto = {
   name?: string;
+  issn?: string;
   ranking: string;
   url: string;
   style?: string;
+  type?: number;
+  templateIds?: string[];
   texFile?: File | null;
   pdfFile?: File | null;
 };

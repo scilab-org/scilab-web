@@ -90,13 +90,13 @@ export const CreatePaperInProject = ({
 
   // Fetch template detail from journal's templateId
   const templateDetailQuery = usePaperTemplate({
-    id: selectedJournal?.templateId ?? '',
-    queryConfig: { enabled: !!selectedJournal?.templateId },
+    id: selectedJournal?.templates?.[0]?.id ?? '',
+    queryConfig: { enabled: !!selectedJournal?.templates?.[0]?.id },
   });
 
   // Populate sections when template loads or journal changes
   React.useEffect(() => {
-    if (!selectedJournal?.templateId) {
+    if (!selectedJournal?.templates?.[0]?.id) {
       setSections([]);
       return;
     }
@@ -116,7 +116,7 @@ export const CreatePaperInProject = ({
           mainIdea: '',
         })),
     );
-  }, [templateDetailQuery.data, selectedJournal?.templateId]);
+  }, [selectedJournal?.templates, templateDetailQuery.data]);
 
   // Mutation using create paper endpoint
   const createMutation = useCreatePaperInProject({
@@ -175,7 +175,7 @@ export const CreatePaperInProject = ({
       conferenceJournalEndAt: formData.conferenceJournalEndAt
         ? new Date(formData.conferenceJournalEndAt).toISOString()
         : null,
-      template: selectedJournal?.templateCode || undefined,
+      template: selectedJournal?.templates?.[0]?.code || undefined,
       sections: sections.map((sec) => ({
         title: sec.title,
         displayOrder: sec.displayOrder,
@@ -405,7 +405,7 @@ export const CreatePaperInProject = ({
           </div>
 
           {/* ── Sections from journal template ── */}
-          {selectedJournal?.templateId && (
+          {selectedJournal?.templates?.[0]?.id && (
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 Sections

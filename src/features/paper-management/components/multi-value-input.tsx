@@ -53,7 +53,7 @@ export const MultiValueInput = ({
   return (
     <div
       className={cn(
-        'focus-within:border-outline border-input bg-background flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-none transition-[color,box-shadow]',
+        'focus-within:border-ring focus-within:ring-ring/50 border-input bg-background flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-3 py-1.5 shadow-none transition-[color,box-shadow] focus-within:ring-[3px]',
         className,
       )}
     >
