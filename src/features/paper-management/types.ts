@@ -1,3 +1,8 @@
+export type PaperGapTypeDto = {
+  id: string;
+  name: string;
+};
+
 export type PaperDto = {
   id: string;
   title: string | null;
@@ -18,7 +23,7 @@ export type PaperDto = {
   isAutoTagged: boolean;
   parsedText: string | null;
   publicationDate: string | null;
-  paperType: string | null;
+  gapTypes: PaperGapTypeDto[];
   conferenceJournalName: string | null;
   keywords: string[];
   createdOnUtc: string | null;
@@ -84,7 +89,7 @@ export type WritingPaperDto = {
   researchAim?: string | null;
   mainContribution?: string | null;
   rule?: string | null;
-  gapType?: string | null;
+  gapTypes: PaperGapTypeDto[];
   journal?: string | null;
   styleName?: string | null;
   styleDescription?: string | null;
@@ -154,7 +159,7 @@ export type CreatePaperDto = {
   publisher: string;
   number: string;
   publicationDate: string;
-  paperType: string;
+  gapTypeIds: string[];
   conferenceJournalId?: string;
   pages: string;
   volume: string;
@@ -190,7 +195,7 @@ export type UpdatePaperDto = {
   publisher?: string;
   number?: string;
   publicationDate?: string;
-  paperType?: string;
+  gapTypeIds?: string[];
   conferenceJournalId?: string;
   pages?: string;
   volume?: string;
@@ -208,7 +213,7 @@ export type UpdateWritingPaperDto = {
   abstract?: string;
   researchGap?: string;
   researchAim?: string;
-  gapType?: string;
+  gapTypeIds?: string[];
   mainContribution?: string;
   status?: number;
   conferenceJournalName?: string | null;
@@ -258,7 +263,7 @@ export type CreatePaperInProjectDto = {
   context: string;
   abstract?: string;
   researchGap?: string;
-  gapType?: string;
+  gapTypeIds?: string[];
   mainContribution?: string;
   researchAim?: string;
   status?: number;
@@ -414,6 +419,9 @@ export type PaperContributorItem = {
   contributorEmail: string;
   firstName: string | null;
   lastName: string | null;
+  authorRoleId?: string | null;
+  authorRoleName?: string | null;
+  authorRoleDescription?: string | null;
 };
 
 export type GetPaperContributorsApiResponse = {
@@ -551,4 +559,14 @@ export type CreatePaperVersionFilePayload = {
 
 export type TransitionPaperStatusApiResponse = {
   value: string;
+};
+
+export type CreatePaperAuthorDto = {
+  name?: string | null;
+  ocrid?: string | null;
+  email?: string | null;
+  paperId: string | null;
+  authorRoleId: string;
+  memberId: string | null;
+  projectId: string | null;
 };

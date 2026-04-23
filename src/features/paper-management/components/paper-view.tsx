@@ -90,7 +90,12 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
 
   const authorAndIdentifiers: DetailField[] = [
     { label: 'Authors', value: paper.authors || 'N/A' },
-    { label: 'Paper Type', value: paper.paperType || 'N/A' },
+    {
+      label: 'Paper Type',
+      value: paper.gapTypes?.length
+        ? paper.gapTypes.map((gapType) => gapType.name).join(', ')
+        : 'N/A',
+    },
     {
       label: 'Created',
       value: paper.createdOnUtc

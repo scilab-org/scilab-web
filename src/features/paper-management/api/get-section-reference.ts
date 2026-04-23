@@ -7,7 +7,7 @@ import {
   PAPER_MANAGEMENT_API,
   PAPER_MANAGEMENT_QUERY_KEYS,
 } from '../constants';
-import { PaperDto } from '../types';
+import { PaperDto, PaperGapTypeDto } from '../types';
 
 export type SectionReferenceOtherItem = {
   paperBank: PaperDto;
@@ -50,7 +50,9 @@ const normalizePaperDto = (paper: unknown): PaperDto => {
     isAutoTagged: Boolean(record.isAutoTagged),
     parsedText: (record.parsedText as string | null) ?? null,
     publicationDate: (record.publicationDate as string | null) ?? null,
-    paperType: (record.paperType as string | null) ?? null,
+    gapTypes: Array.isArray(record.gapTypes)
+      ? (record.gapTypes as PaperGapTypeDto[])
+      : [],
     conferenceJournalName:
       (record.conferenceJournalName as string | null) ?? null,
     keywords: Array.isArray(record.keywords)

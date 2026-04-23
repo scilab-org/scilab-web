@@ -14,6 +14,7 @@ import {
   Users,
   UserPlus,
   X,
+  Check,
   Trash2,
   FileText,
   BookOpen,
@@ -80,7 +81,11 @@ import {
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
 import { useGetPaperVersions } from '@/features/paper-management/api/get-paper-versions';
 import { useGetCombineVersion } from '@/features/paper-management/api/get-combine-version';
-import type { PaperVersionFileItem } from '@/features/paper-management/types';
+import { useGapTypes } from '@/features/gap-type-management/api/get-gap-types';
+import type {
+  PaperContributorItem,
+  PaperVersionFileItem,
+} from '@/features/paper-management/types';
 import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
 import { useRemovePaperMembers } from '@/features/project-management/api/papers/remove-paper-members';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
@@ -88,6 +93,9 @@ import { useSubProjects } from '@/features/project-management/api/papers/get-sub
 import { ProjectMember } from '@/features/project-management/types';
 import { PaperWorkspacePage } from '@/features/project-management/components/papers/paper-workspace-page';
 import { PaperMembersDialog } from '@/features/project-management/components/papers/paper-members-sheet';
+import { useGetPaperAuthors } from '@/features/paper-management/api/get-paper-authors';
+import { AddAuthorPaperDialog } from '@/features/paper-management/components/add-author-paper-dialog';
+import { useDeletePaperAuthor } from '@/features/paper-management/api/delete-paper-author';
 import {
   useCreateTask,
   usePaperTasks,
@@ -192,6 +200,7 @@ export type Tab =
   | 'compile-paper'
   | 'sections'
   | 'contributor'
+  | 'author'
   | 'task'
   | 'submission';
 
@@ -228,7 +237,10 @@ const TAB_GROUPS: {
     label: 'Member',
     icon: Users,
     defaultTab: 'contributor' as Tab,
-    tabs: [{ id: 'contributor', label: 'Contributor', icon: Users }],
+    tabs: [
+      { id: 'contributor', label: 'Contributor', icon: Users },
+      { id: 'author', label: 'Author', icon: Users },
+    ],
   },
 ];
 
@@ -335,6 +347,7 @@ export const ProjectPaperDetailPage = ({
   ]);
 
   const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [isAddAuthorOpen, setIsAddAuthorOpen] = useState(false);
   const [viewingVersionId, setViewingVersionId] = useState<string | null>(null);
   const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<
     string | null
@@ -345,11 +358,15 @@ export const ProjectPaperDetailPage = ({
     abstract: '',
     researchGap: '',
     researchAim: '',
-    gapType: '',
+    gapTypeIds: [] as string[],
     mainContribution: '',
     conferenceJournalStartAt: '',
     conferenceJournalEndAt: '',
   });
+  const [gapTypeSearch, setGapTypeSearch] = useState('');
+  const [isGapTypeOpen, setIsGapTypeOpen] = useState(false);
+  const gapTypeInputRef = useRef<HTMLInputElement | null>(null);
+  const gapTypeComboboxRef = useRef<HTMLDivElement | null>(null);
   // Drag-and-drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<number | null>(null);
@@ -393,7 +410,62 @@ export const ProjectPaperDetailPage = ({
   });
 
   const paper = paperQuery.data?.result?.paper;
-  const paperType = paper?.paperType?.trim();
+  const paperType =
+    paper?.gapTypes
+      ?.map((gapType) => gapType.name)
+      .filter(Boolean)
+      .join(', ') || '';
+  const gapTypesQuery = useGapTypes({
+    params: { PageNumber: 1, PageSize: 1000 },
+    queryConfig: { enabled: isEditPaperOpen },
+  });
+  const gapTypes = useMemo(
+    () => gapTypesQuery.data?.result?.items ?? [],
+    [gapTypesQuery.data?.result?.items],
+  );
+  const selectedGapTypes = gapTypes.filter((gapType) =>
+    editPaperForm.gapTypeIds.includes(gapType.id),
+  );
+  const filteredGapTypes = gapTypes.filter(
+    (gapType) => !editPaperForm.gapTypeIds.includes(gapType.id),
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isGapTypeOpen &&
+        gapTypeComboboxRef.current &&
+        !gapTypeComboboxRef.current.contains(event.target as Node)
+      ) {
+        setIsGapTypeOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isGapTypeOpen]);
+
+  useEffect(() => {
+    if (!isGapTypeOpen) setGapTypeSearch('');
+  }, [isGapTypeOpen]);
+
+  useEffect(() => {
+    if (!isEditPaperOpen) return;
+    const matchedGapType = gapTypes.find(
+      (gapType) =>
+        gapType.name.toLowerCase() === gapTypeSearch.trim().toLowerCase(),
+    );
+    if (
+      matchedGapType &&
+      !editPaperForm.gapTypeIds.includes(matchedGapType.id)
+    ) {
+      setEditPaperForm((prev) => ({
+        ...prev,
+        gapTypeIds: [...prev.gapTypeIds, matchedGapType.id],
+      }));
+      setGapTypeSearch('');
+    }
+  }, [gapTypeSearch, gapTypes, editPaperForm.gapTypeIds, isEditPaperOpen]);
 
   const updateWritingPaperMutation = useUpdateWritingPaper({
     mutationConfig: {
@@ -415,7 +487,7 @@ export const ProjectPaperDetailPage = ({
       abstract: paper.abstract ?? '',
       researchGap: paper.researchGap ?? '',
       researchAim: paper.researchAim ?? '',
-      gapType: paper.gapType ?? '',
+      gapTypeIds: paper.gapTypes?.map((gapType) => gapType.id) ?? [],
       mainContribution: paper.mainContribution ?? '',
       conferenceJournalStartAt: toDateTimeLocalValue(
         paper.conferenceJournalStartAt,
@@ -424,6 +496,8 @@ export const ProjectPaperDetailPage = ({
         paper.conferenceJournalEndAt,
       ),
     });
+    setGapTypeSearch('');
+    setIsGapTypeOpen(false);
     setIsEditPaperOpen(true);
   };
 
@@ -436,7 +510,7 @@ export const ProjectPaperDetailPage = ({
         abstract: editPaperForm.abstract,
         researchGap: editPaperForm.researchGap,
         researchAim: editPaperForm.researchAim,
-        gapType: editPaperForm.gapType,
+        gapTypeIds: editPaperForm.gapTypeIds,
         mainContribution: editPaperForm.mainContribution,
         conferenceJournalStartAt: editPaperForm.conferenceJournalStartAt
           ? new Date(editPaperForm.conferenceJournalStartAt).toISOString()
@@ -522,6 +596,23 @@ export const ProjectPaperDetailPage = ({
     queryConfig: { enabled: !!paperSubProjectId } as any,
   });
 
+  const paperContributorsQuery = useGetPaperAuthors({
+    params: { PageNumber: 1, PageSize: 1000 },
+    queryConfig: { enabled: !!paperId } as any,
+  });
+  const [editingAuthor, setEditingAuthor] =
+    useState<PaperContributorItem | null>(null);
+
+  const deletePaperAuthorMutation = useDeletePaperAuthor({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('Author removed successfully');
+        paperContributorsQuery.refetch();
+      },
+      onError: () => toast.error('Failed to remove author'),
+    },
+  });
+
   const removePaperMemberMutation = useRemovePaperMembers({
     subProjectId: paperSubProjectId,
     mutationConfig: {
@@ -537,6 +628,8 @@ export const ProjectPaperDetailPage = ({
 
   const totalSections = sectionsQuery.data?.result?.items?.length || 0;
   const paperMembersList = (paperMembersQuery.data as any)?.result?.items ?? [];
+  const authorsList = (paperContributorsQuery.data as any)?.result?.items ?? [];
+  const totalAuthors = authorsList.length;
   const totalPaperMembers = paperMembersList.filter((m: any) =>
     (m.role || '').toLowerCase().includes('member'),
   ).length;
@@ -1195,11 +1288,14 @@ export const ProjectPaperDetailPage = ({
                       {paper.researchGap ||
                         'No research gap explicitly stated.'}
                     </p>
-                    {paper.gapType && (
+                    {paper.gapTypes?.length ? (
                       <span className="bg-surface text-secondary mt-3 inline-block rounded-md px-2.5 py-0.5 font-sans text-[10px]">
-                        Type: {paper.gapType}
+                        Type:{' '}
+                        {paper.gapTypes
+                          .map((gapType) => gapType.name)
+                          .join(', ')}
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Main Contribution */}
@@ -1643,6 +1739,131 @@ export const ProjectPaperDetailPage = ({
                               </TableRow>
                             );
                           })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Authors Panel ──────────────────────────────── */}
+            {activeTab === 'author' && (
+              <div>
+                <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h2 className="text-foreground text-base font-semibold">
+                      Authors
+                    </h2>
+                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
+                      {totalAuthors} author
+                      {totalAuthors !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {(isPaperAuthor || isManager) && (
+                      <Button
+                        size="action"
+                        variant="darkRed"
+                        onClick={() => setIsAddAuthorOpen(true)}
+                        className="gap-1.5"
+                      >
+                        <UserPlus className="size-4" />
+                        Add Author
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="action"
+                      onClick={() => paperContributorsQuery.refetch()}
+                      disabled={paperContributorsQuery.isFetching}
+                      title="Refresh"
+                      className="border-transparent"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          'size-4',
+                          paperContributorsQuery.isFetching && 'animate-spin',
+                        )}
+                      />
+                    </Button>
+                  </div>
+                </div>
+
+                {paperContributorsQuery.isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : authorsList.length === 0 ? (
+                  <div className="text-muted-foreground py-12 text-center">
+                    No authors found.
+                  </div>
+                ) : (
+                  <div className="bg-card overflow-hidden rounded-md border shadow-sm">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead>Author</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                          {(isPaperAuthor || isManager) && (
+                            <TableHead className="w-24 text-center">
+                              Actions
+                            </TableHead>
+                          )}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[...authorsList].map((author: any) => (
+                          <TableRow
+                            key={author.id}
+                            className="hover:bg-muted/30"
+                          >
+                            <TableCell className="text-foreground font-medium">
+                              {author.firstName || author.lastName
+                                ? `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim()
+                                : author.name || author.contributorName || '—'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {author.email || author.contributorEmail || '—'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {author.authorRoleName ||
+                                author.sectionRole ||
+                                '—'}
+                            </TableCell>
+                            {(isPaperAuthor || isManager) && (
+                              <TableCell>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    size="action"
+                                    variant="outlineAction"
+                                    onClick={() => {
+                                      setEditingAuthor(author);
+                                      setIsAddAuthorOpen(true);
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    size="action"
+                                    variant="destructive"
+                                    onClick={() =>
+                                      deletePaperAuthorMutation.mutate(
+                                        author.id,
+                                      )
+                                    }
+                                    disabled={
+                                      deletePaperAuthorMutation.isPending
+                                    }
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
@@ -3278,20 +3499,127 @@ export const ProjectPaperDetailPage = ({
 
             <div className="space-y-1.5">
               <label htmlFor="ep-gap-type" className="text-sm font-medium">
-                Gap Type <span className="text-destructive">*</span>
+                Gap Types <span className="text-destructive">*</span>
               </label>
-              <Input
-                id="ep-gap-type"
-                value={editPaperForm.gapType}
-                onChange={(e) =>
-                  setEditPaperForm((prev) => ({
-                    ...prev,
-                    gapType: e.target.value,
-                  }))
-                }
-                placeholder="e.g. Methodological, Empirical"
-                required
-              />
+              <div ref={gapTypeComboboxRef} className="relative">
+                <div
+                  role="combobox"
+                  tabIndex={0}
+                  aria-expanded={isGapTypeOpen}
+                  aria-controls="edit-paper-gap-types-listbox"
+                  className={cn(
+                    'border-input text-foreground focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-10 w-full flex-wrap items-center gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-within:ring-[3px]',
+                  )}
+                  onClick={() => gapTypeInputRef.current?.focus()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      gapTypeInputRef.current?.focus();
+                    }
+                  }}
+                >
+                  {selectedGapTypes.map((gapType) => (
+                    <Badge
+                      key={gapType.id}
+                      variant="secondary"
+                      className="flex items-center gap-1.5 rounded-md bg-slate-800 px-2 py-0.5 text-xs text-white hover:bg-slate-700"
+                    >
+                      {gapType.name}
+                      <button
+                        type="button"
+                        className="text-white/80 hover:text-white"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setEditPaperForm((prev) => ({
+                            ...prev,
+                            gapTypeIds: prev.gapTypeIds.filter(
+                              (id) => id !== gapType.id,
+                            ),
+                          }));
+                        }}
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                  <input
+                    ref={gapTypeInputRef}
+                    id="edit-paper-gap-type"
+                    value={gapTypeSearch}
+                    onFocus={() => setIsGapTypeOpen(true)}
+                    onChange={(e) => {
+                      setGapTypeSearch(e.target.value);
+                      setIsGapTypeOpen(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                        setIsGapTypeOpen(true);
+                      }
+                      if (e.key === 'Escape') {
+                        setIsGapTypeOpen(false);
+                      }
+                      if (
+                        e.key === 'Backspace' &&
+                        !gapTypeSearch &&
+                        selectedGapTypes.length > 0
+                      ) {
+                        setEditPaperForm((prev) => ({
+                          ...prev,
+                          gapTypeIds: prev.gapTypeIds.slice(0, -1),
+                        }));
+                      }
+                    }}
+                    placeholder={
+                      gapTypeSearch.trim()
+                        ? ''
+                        : selectedGapTypes.length > 0
+                          ? 'Add more gap types...'
+                          : 'Search gap types...'
+                    }
+                    autoComplete="off"
+                    className={cn(
+                      'flex h-5 min-w-24 flex-1 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus-visible:ring-0',
+                      gapTypeSearch.trim() || selectedGapTypes.length > 0
+                        ? 'placeholder:text-transparent'
+                        : 'placeholder:text-muted-foreground/50',
+                    )}
+                  />
+                </div>
+                {isGapTypeOpen && (
+                  <div
+                    id="edit-paper-gap-types-listbox"
+                    role="listbox"
+                    className="bg-background absolute top-full right-0 left-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border shadow-sm"
+                  >
+                    {filteredGapTypes.length > 0 ? (
+                      filteredGapTypes.map((gapType) => (
+                        <button
+                          key={gapType.id}
+                          type="button"
+                          className="hover:bg-accent flex w-full items-center justify-between px-3 py-2 text-left text-sm"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setEditPaperForm((prev) => ({
+                              ...prev,
+                              gapTypeIds: [...prev.gapTypeIds, gapType.id],
+                            }));
+                            setGapTypeSearch('');
+                            setIsGapTypeOpen(false);
+                          }}
+                        >
+                          <span>{gapType.name}</span>
+                          <Check className="size-4 opacity-0" />
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-muted-foreground px-3 py-2 text-xs">
+                        No gap types found.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -3389,7 +3717,7 @@ export const ProjectPaperDetailPage = ({
             <Button
               type="submit"
               form="edit-paper-form"
-              className={BTN.CREATE}
+              variant="darkRed"
               disabled={updateWritingPaperMutation.isPending}
             >
               {updateWritingPaperMutation.isPending ? 'SAVING...' : 'SAVE'}
@@ -3397,6 +3725,18 @@ export const ProjectPaperDetailPage = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AddAuthorPaperDialog
+        open={isAddAuthorOpen}
+        onOpenChange={(open) => {
+          setIsAddAuthorOpen(open);
+          if (!open) setEditingAuthor(null);
+        }}
+        subProjectId={paperSubProjectId}
+        paperId={paperId}
+        isManager={isManager}
+        isAuthor={isPaperAuthor}
+        author={editingAuthor}
+      />
     </ContentLayout>
   );
 };

@@ -9,6 +9,7 @@ import {
   LogOut,
   Tag,
   Users,
+  Globe,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigation } from 'react-router';
@@ -250,6 +251,21 @@ const navigation: SideNavigationItem[] = [
     name: 'Tags',
     to: paths.app.tagManagement.tags.getHref(),
     icon: Tag,
+  },
+  {
+    name: 'Gap Types',
+    to: paths.app.gapTypeManagement.gapTypes.getHref(),
+    icon: Tag,
+  },
+  {
+    name: 'Author Roles',
+    to: paths.app.authorRoleManagement.authorRoles.getHref(),
+    icon: Users,
+  },
+  {
+    name: 'Domains',
+    to: paths.app.domainManagement.domains.getHref(),
+    icon: Globe,
   },
   {
     name: 'Journals',

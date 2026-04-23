@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Check, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
+import { Badge } from '@/components/ui/badge';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/utils/cn';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '../constants';
 import { PROJECT_MANAGEMENT_QUERY_KEYS } from '@/features/project-management/constants';
 import { TASK_MANAGEMENT_QUERY_KEYS } from '@/features/task-management/constants';
@@ -22,6 +24,7 @@ import { usePaperTemplate } from '@/features/paper-template-management/api/get-p
 import { PaperTemplateDto } from '@/features/paper-template-management/types';
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { JournalDto } from '@/features/journal-management/types';
+import { useGapTypes } from '@/features/gap-type-management/api/get-gap-types';
 import { useCreatePaperInProject } from '../api/initialize-paper';
 import { CreatePaperInProjectDto } from '../types';
 
@@ -51,7 +54,7 @@ const initialFormData = {
   context: '',
   abstract: '',
   researchGap: '',
-  gapType: '',
+  gapTypeIds: [] as string[],
   mainContribution: '',
   researchAim: '',
   selectedJournalId: '',
@@ -71,6 +74,34 @@ export const CreatePaperInProject = ({
 
   // Sections editor state
   const [sections, setSections] = React.useState<SectionRow[]>([]);
+  const [gapTypeSearch, setGapTypeSearch] = React.useState('');
+  const [isGapTypeOpen, setIsGapTypeOpen] = React.useState(false);
+  const gapTypeInputRef = React.useRef<HTMLInputElement | null>(null);
+  const gapTypeComboboxRef = React.useRef<HTMLDivElement | null>(null);
+
+  const gapTypesQuery = useGapTypes({
+    params: { PageNumber: 1, PageSize: 1000 },
+    queryConfig: { enabled: open },
+  });
+  const gapTypes = React.useMemo(
+    () => gapTypesQuery.data?.result?.items ?? [],
+    [gapTypesQuery.data?.result?.items],
+  );
+  const selectedGapTypes = React.useMemo(
+    () =>
+      gapTypes.filter((gapType) => formData.gapTypeIds.includes(gapType.id)),
+    [gapTypes, formData.gapTypeIds],
+  );
+  const filteredGapTypes = React.useMemo(() => {
+    const query = gapTypeSearch.trim().toLowerCase();
+    const available = gapTypes.filter(
+      (gapType) => !formData.gapTypeIds.includes(gapType.id),
+    );
+    if (!query) return available;
+    return available.filter((gapType) =>
+      gapType.name.toLowerCase().includes(query),
+    );
+  }, [gapTypes, gapTypeSearch, formData.gapTypeIds]);
 
   // Fetch journals
   const journalsQuery = useJournals({
@@ -119,6 +150,40 @@ export const CreatePaperInProject = ({
   }, [selectedJournal?.templates, templateDetailQuery.data]);
 
   // Mutation using create paper endpoint
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isGapTypeOpen &&
+        gapTypeComboboxRef.current &&
+        !gapTypeComboboxRef.current.contains(event.target as Node)
+      ) {
+        setIsGapTypeOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isGapTypeOpen]);
+
+  React.useEffect(() => {
+    if (!isGapTypeOpen) setGapTypeSearch('');
+  }, [isGapTypeOpen]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const matchedGapType = gapTypes.find(
+      (gapType) =>
+        gapType.name.toLowerCase() === gapTypeSearch.trim().toLowerCase(),
+    );
+    if (matchedGapType && !formData.gapTypeIds.includes(matchedGapType.id)) {
+      setFormData((prev) => ({
+        ...prev,
+        gapTypeIds: [...prev.gapTypeIds, matchedGapType.id],
+      }));
+      setGapTypeSearch('');
+    }
+  }, [gapTypeSearch, gapTypes, formData.gapTypeIds, open]);
+
   const createMutation = useCreatePaperInProject({
     mutationConfig: {
       onSuccess: () => {
@@ -144,6 +209,8 @@ export const CreatePaperInProject = ({
   const resetForm = () => {
     setFormData(initialFormData);
     setSections([]);
+    setGapTypeSearch('');
+    setIsGapTypeOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -151,7 +218,7 @@ export const CreatePaperInProject = ({
     if (!formData.title.trim()) return;
     if (!formData.context.trim()) return;
     if (!formData.researchGap.trim()) return;
-    if (!formData.gapType.trim()) return;
+    if (!formData.gapTypeIds.length) return;
     if (!formData.mainContribution.trim()) return;
     if (!formData.researchAim.trim()) return;
     if (!formData.selectedJournalId) return;
@@ -163,7 +230,7 @@ export const CreatePaperInProject = ({
       context: formData.context,
       abstract: formData.abstract || undefined,
       researchGap: formData.researchGap || undefined,
-      gapType: formData.gapType || undefined,
+      gapTypeIds: formData.gapTypeIds,
       mainContribution: formData.mainContribution || undefined,
       researchAim: formData.researchAim || undefined,
       status: formData.status,
@@ -278,17 +345,127 @@ export const CreatePaperInProject = ({
 
           <div className="space-y-1.5">
             <label htmlFor="cpp-gap-type" className="text-sm font-medium">
-              Gap Type <span className="text-destructive">*</span>
+              Gap Types <span className="text-destructive">*</span>
             </label>
-            <Input
-              id="cpp-gap-type"
-              value={formData.gapType}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, gapType: e.target.value }))
-              }
-              placeholder="e.g. Methodological, Empirical"
-              required
-            />
+            <div ref={gapTypeComboboxRef} className="relative">
+              <div
+                role="combobox"
+                tabIndex={0}
+                aria-expanded={isGapTypeOpen}
+                aria-controls="create-paper-in-project-gap-types-listbox"
+                className={cn(
+                  'border-input text-foreground focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-10 w-full flex-wrap items-center gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-within:ring-[3px]',
+                )}
+                onClick={() => gapTypeInputRef.current?.focus()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    gapTypeInputRef.current?.focus();
+                  }
+                }}
+              >
+                {selectedGapTypes.map((gapType) => (
+                  <Badge
+                    key={gapType.id}
+                    variant="secondary"
+                    className="flex items-center gap-1.5 rounded-md bg-slate-800 px-2 py-0.5 text-xs text-white hover:bg-slate-700"
+                  >
+                    {gapType.name}
+                    <button
+                      type="button"
+                      className="text-white/80 hover:text-white"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFormData((prev) => ({
+                          ...prev,
+                          gapTypeIds: prev.gapTypeIds.filter(
+                            (id) => id !== gapType.id,
+                          ),
+                        }));
+                      }}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </Badge>
+                ))}
+                <input
+                  ref={gapTypeInputRef}
+                  id="create-paper-in-project-gap-type"
+                  value={gapTypeSearch}
+                  onFocus={() => setIsGapTypeOpen(true)}
+                  onChange={(e) => {
+                    setGapTypeSearch(e.target.value);
+                    setIsGapTypeOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                      setIsGapTypeOpen(true);
+                    }
+                    if (e.key === 'Escape') {
+                      setIsGapTypeOpen(false);
+                    }
+                    if (
+                      e.key === 'Backspace' &&
+                      !gapTypeSearch &&
+                      selectedGapTypes.length > 0
+                    ) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        gapTypeIds: prev.gapTypeIds.slice(0, -1),
+                      }));
+                    }
+                  }}
+                  placeholder={
+                    gapTypeSearch.trim()
+                      ? ''
+                      : selectedGapTypes.length > 0
+                        ? 'Add more gap types...'
+                        : 'Search gap types...'
+                  }
+                  autoComplete="off"
+                  className={cn(
+                    'flex h-5 min-w-24 flex-1 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus-visible:ring-0',
+                    gapTypeSearch.trim() || selectedGapTypes.length > 0
+                      ? 'placeholder:text-transparent'
+                      : 'placeholder:text-muted-foreground/50',
+                  )}
+                />
+              </div>
+              {isGapTypeOpen && (
+                <div
+                  id="create-paper-in-project-gap-types-listbox"
+                  role="listbox"
+                  className="bg-background absolute top-full right-0 left-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border shadow-sm"
+                >
+                  {filteredGapTypes.length > 0 ? (
+                    filteredGapTypes.map((gapType) => (
+                      <button
+                        key={gapType.id}
+                        type="button"
+                        className="hover:bg-accent flex w-full items-center justify-between px-3 py-2 text-left text-sm"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            gapTypeIds: [...prev.gapTypeIds, gapType.id],
+                          }));
+                          setGapTypeSearch('');
+                          setIsGapTypeOpen(false);
+                        }}
+                      >
+                        <span>{gapType.name}</span>
+                        <Check className="size-4 opacity-0" />
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground px-3 py-2 text-xs">
+                      No gap types found.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -494,7 +671,7 @@ export const CreatePaperInProject = ({
               !formData.title.trim() ||
               !formData.context.trim() ||
               !formData.researchGap.trim() ||
-              !formData.gapType.trim() ||
+              !formData.gapTypeIds.length ||
               !formData.mainContribution.trim() ||
               !formData.researchAim.trim() ||
               !formData.selectedJournalId ||

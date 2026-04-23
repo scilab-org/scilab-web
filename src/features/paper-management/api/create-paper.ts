@@ -22,7 +22,9 @@ export const createPaper = (
   if (data.publicationDate) {
     formData.append('publicationDate', data.publicationDate);
   }
-  formData.append('paperType', data.paperType);
+  data.gapTypeIds.forEach((gapTypeId) => {
+    formData.append('gapTypeIds', gapTypeId);
+  });
   if (data.conferenceJournalId) {
     formData.append('conferenceJournalId', data.conferenceJournalId);
   }

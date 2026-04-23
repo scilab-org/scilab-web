@@ -224,7 +224,6 @@ export const ProjectWritingPapersList = ({
         abstract: editPaperForm.abstract,
         researchGap: editPaperForm.researchGap,
         researchAim: editPaperForm.researchAim,
-        gapType: editPaperForm.gapType,
         mainContribution: editPaperForm.mainContribution,
         status: editPaperForm.status,
       },

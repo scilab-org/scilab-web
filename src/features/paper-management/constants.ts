@@ -9,6 +9,7 @@ export const PAPER_MANAGEMENT_API = {
   ADMIN_PAPERS: `${LAB_SERVICE_PREFIX}/admin/paper-bank`,
   ADMIN_PAPER_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/admin/paper-bank/${paperId}`,
+  GAP_TYPES: `${LAB_SERVICE_PREFIX}/gap-types`,
   ADMIN_PAPERS_INITIALIZE: `${LAB_SERVICE_PREFIX}/papers`,
   WRITING_PAPER_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}`,
@@ -19,6 +20,7 @@ export const PAPER_MANAGEMENT_API = {
   ASSIGNED_SECTIONS_HISTORY: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/assigned-sections/history`,
   PAPER_CONTRIBUTORS: `${LAB_SERVICE_PREFIX}/author/paper-contributors`,
+  PAPER_AUTHORS: `${LAB_SERVICE_PREFIX}/paper-authors`,
   AVAILABLE_SECTION_MEMBERS: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members/available`,
   SECTION_MEMBERS: (sectionId: string) =>
@@ -64,9 +66,13 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/papers/version-files/${id}`,
 } as const;
 
+export const FIELD_LABEL_CLASS =
+  'text-muted-foreground text-[10px] font-bold tracking-[0.12em] uppercase';
+
 export const PAPER_MANAGEMENT_QUERY_KEYS = {
   PAPERS: 'papers',
   PAPER: 'paper',
+  GAP_TYPES: 'gap-types',
   COMBINE_VERSION: 'combine-version',
   PAPER_VERSIONS: 'paper-versions',
   WRITING_PAPER: 'writing-paper',
@@ -75,6 +81,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   AVAILABLE_SECTION_MEMBERS: 'available-section-members',
   SECTION_MEMBERS: 'section-members',
   PAPER_CONTRIBUTORS: 'paper-contributors',
+  PAPER_AUTHORS: 'paper-authors',
   PAPER_SECTIONS: 'paper-sections',
   SECTION_FILES: 'section-files',
   SECTION_REFERENCE: 'section-reference',

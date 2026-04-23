@@ -28,8 +28,11 @@ export const updatePaper = ({
   if (data.number !== undefined) formData.append('number', data.number);
   if (data.publicationDate)
     formData.append('publicationDate', data.publicationDate);
-  if (data.paperType !== undefined)
-    formData.append('paperType', data.paperType);
+  if (data.gapTypeIds) {
+    data.gapTypeIds.forEach((gapTypeId) => {
+      formData.append('gapTypeIds', gapTypeId);
+    });
+  }
   if (data.conferenceJournalId !== undefined)
     formData.append('conferenceJournalId', data.conferenceJournalId);
   if (data.pages !== undefined) formData.append('pages', data.pages);
