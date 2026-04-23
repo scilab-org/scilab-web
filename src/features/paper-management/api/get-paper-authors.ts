@@ -10,6 +10,7 @@ import {
 import { GetPaperContributorsApiResponse } from '../types';
 
 type GetPaperAuthorsParams = {
+  PaperId?: string;
   PageNumber?: number;
   PageSize?: number;
 };

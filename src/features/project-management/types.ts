@@ -185,6 +185,7 @@ export type ProjectPaper = {
   conferenceName: string | null;
   conferenceJournalStartAt?: string | null;
   conferenceJournalEndAt?: string | null;
+  keywords?: string[];
   tagNames: string[];
 };
 
@@ -195,6 +196,7 @@ export type GetProjectPapersResult = {
 
 export type GetProjectPapersParams = {
   Title?: string;
+  Keyword?: string[];
   Tag?: string[];
   PageNumber?: number;
   PageSize?: number;

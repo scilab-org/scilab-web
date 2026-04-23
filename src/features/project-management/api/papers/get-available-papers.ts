@@ -19,6 +19,7 @@ type GetAvailablePapersParams = {
   PaperType?: string;
   JournalName?: string;
   ConferenceName?: string;
+  Keyword?: string[];
   Tag?: string[];
   ExistingPaperIds?: string[];
   PageNumber?: number;
@@ -47,6 +48,10 @@ export const getAvailablePapers = async (
     searchParams.append('JournalName', params.JournalName);
   if (params?.ConferenceName)
     searchParams.append('ConferenceName', params.ConferenceName);
+  if (params?.Keyword?.length)
+    params.Keyword.forEach((keyword) =>
+      searchParams.append('Keyword', keyword),
+    );
   if (params?.Tag?.length)
     params.Tag.forEach((t) => searchParams.append('Tag', t));
   if (params?.ExistingPaperIds?.length)

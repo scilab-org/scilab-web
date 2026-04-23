@@ -21,6 +21,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/assigned-sections/history`,
   PAPER_CONTRIBUTORS: `${LAB_SERVICE_PREFIX}/author/paper-contributors`,
   PAPER_AUTHORS: `${LAB_SERVICE_PREFIX}/paper-authors`,
+  AVAILABLE_PAPER_AUTHORS: (subProjectId: string) =>
+    `/management-service/sub-projects/${subProjectId}/paper-authors/available`,
   AVAILABLE_SECTION_MEMBERS: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/paper-contributors/${sectionId}/members/available`,
   SECTION_MEMBERS: (sectionId: string) =>

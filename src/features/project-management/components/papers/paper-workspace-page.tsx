@@ -287,6 +287,8 @@ const SectionMembersSheet = ({
                           const raw = m.sectionRole.includes(':')
                             ? m.sectionRole.split(':').pop()
                             : m.sectionRole;
+                          if (m.sectionRole === 'paper:author')
+                            return 'Head Writer';
                           if (raw === 'edit') return 'Writer';
                           if (raw === 'read' || raw === 'view') return 'Viewer';
                           if (raw === 'author') return 'Author';
@@ -312,6 +314,7 @@ const SectionMembersSheet = ({
                               <Badge
                                 variant="outline"
                                 className={
+                                  displayRole === 'Head Writer' ||
                                   displayRole === 'Author'
                                     ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
                                     : displayRole === 'Writer'

@@ -42,89 +42,96 @@ const getTagColor = (tag: string) => {
   return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
 };
 
+const getPaperKeywords = (paper: ProjectPaper) =>
+  paper.keywords && paper.keywords.length > 0 ? paper.keywords : paper.tagNames;
+
 type PaperCardProps = {
   paper: ProjectPaper;
   isSelected: boolean;
   onToggleSelect: (paperId: string) => void;
 };
 
-const PaperCard = ({ paper, isSelected, onToggleSelect }: PaperCardProps) => (
-  <div
-    className={`border-border cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:shadow-md ${
-      isSelected
-        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-        : 'hover:border-blue-300'
-    }`}
-    onClick={() => onToggleSelect(paper.id)}
-    onKeyDown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onToggleSelect(paper.id);
-      }
-    }}
-    role="button"
-    tabIndex={0}
-  >
-    <div className="flex items-start gap-3">
-      <div
-        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-          isSelected
-            ? 'bg-blue-500 text-white'
-            : 'bg-muted text-muted-foreground'
-        }`}
-      >
-        {isSelected ? (
-          <Check className="h-4 w-4" />
-        ) : (
-          <FileText className="h-4 w-4" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-foreground truncate text-sm font-medium">
-          {paper.title || '(Untitled)'}
-        </p>
-        <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
-          {paper.doi && <span>DOI: {paper.doi}</span>}
-          {paper.journalName && <span>Journal: {paper.journalName}</span>}
-          {!paper.journalName && paper.conferenceName && (
-            <span>Conference: {paper.conferenceName}</span>
+const PaperCard = ({ paper, isSelected, onToggleSelect }: PaperCardProps) => {
+  const keywords = getPaperKeywords(paper);
+
+  return (
+    <div
+      className={`border-border cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:shadow-md ${
+        isSelected
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+          : 'hover:border-blue-300'
+      }`}
+      onClick={() => onToggleSelect(paper.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggleSelect(paper.id);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+            isSelected
+              ? 'bg-blue-500 text-white'
+              : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          {isSelected ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <FileText className="h-4 w-4" />
           )}
         </div>
-        {paper.tagNames && paper.tagNames.length > 0 && (
-          <div className="mt-1.5">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/15 gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Tags className="size-3" />
-                  {paper.tagNames.length} tags
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-56">
-                <p className="mb-2 text-sm font-medium">Tags</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {paper.tagNames.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="outline"
-                      className={`text-xs ${getTagColor(tag)}`}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
+        <div className="min-w-0 flex-1">
+          <p className="text-foreground truncate text-sm font-medium">
+            {paper.title || '(Untitled)'}
+          </p>
+          <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
+            {paper.doi && <span>DOI: {paper.doi}</span>}
+            {paper.journalName && <span>Journal: {paper.journalName}</span>}
+            {!paper.journalName && paper.conferenceName && (
+              <span>Conference: {paper.conferenceName}</span>
+            )}
           </div>
-        )}
+          {keywords.length > 0 && (
+            <div className="mt-1.5">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/15 gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Tags className="size-3" />
+                    {keywords.length} keywords
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-56">
+                  <p className="mb-2 text-sm font-medium">Keywords</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {keywords.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="outline"
+                        className={`text-xs ${getTagColor(tag)}`}
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 type AddPapersModalProps = {
   projectId: string;
@@ -139,7 +146,7 @@ export const AddPapersModal = ({
 }: AddPapersModalProps) => {
   const [titleFilter, setTitleFilter] = useState('');
   const [titleDebounce, setTitleDebounce] = useState('');
-  const [tagList, setTagList] = useState<string[]>([]);
+  const [keywordList, setKeywordList] = useState<string[]>([]);
   const [selectedPapers, setSelectedPapers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -161,7 +168,8 @@ export const AddPapersModal = ({
       PaperType: undefined,
       JournalName: undefined,
       ConferenceName: undefined,
-      Tag: tagList.length > 0 ? tagList : undefined,
+      Keyword: keywordList.length > 0 ? keywordList : undefined,
+      Tag: keywordList.length > 0 ? keywordList : undefined,
       ExistingPaperIds: undefined,
       PageNumber: 1,
       PageSize: 1000,
@@ -200,7 +208,7 @@ export const AddPapersModal = ({
   const handleReset = () => {
     setSelectedPapers(new Set());
     setTitleFilter('');
-    setTagList([]);
+    setKeywordList([]);
   };
 
   const papers: ProjectPaper[] = (papersQuery.data as any)?.result?.items ?? [];
@@ -242,19 +250,19 @@ export const AddPapersModal = ({
             />
           </div>
 
-          {/* Tag filter */}
+          {/* Keyword filter */}
           <div className="shrink-0">
             <TagAutocompleteInput
-              tagList={tagList}
+              tagList={keywordList}
               onAddTag={(tag) =>
-                setTagList((prev) =>
+                setKeywordList((prev) =>
                   prev.includes(tag) ? prev : [...prev, tag],
                 )
               }
               onRemoveTag={(tag) =>
-                setTagList((prev) => prev.filter((t) => t !== tag))
+                setKeywordList((prev) => prev.filter((t) => t !== tag))
               }
-              placeholder="Type a tag and press Enter..."
+              placeholder="Type a keyword and press Enter..."
             />
           </div>
 

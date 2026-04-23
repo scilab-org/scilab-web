@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, Loader2, Search, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,13 +21,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/lib/auth';
 
 import { useAuthorRoles } from '@/features/author-role-management/api/get-author-roles';
-import { usePaperMembers } from '@/features/project-management/api/papers/get-paper-members';
-import { ProjectMember } from '@/features/project-management/types';
+import { useAvailablePaperAuthors } from '@/features/paper-management/api/get-available-paper-authors';
 
 import { useCreatePaperAuthor } from '../api/create-paper-author';
 import { useUpdatePaperAuthor } from '../api/update-paper-author';
 import { FIELD_LABEL_CLASS } from '../constants';
-import type { PaperContributorItem } from '../types';
+import type { AvailablePaperAuthorItem, PaperContributorItem } from '../types';
 
 type AddAuthorPaperDialogProps = {
   subProjectId: string;
@@ -72,10 +71,11 @@ export const AddAuthorPaperDialog = ({
   );
   const [authorRoleOpen, setAuthorRoleOpen] = useState(false);
   const [authorRoleSearch, setAuthorRoleSearch] = useState('');
+  const [authorPickerOpen, setAuthorPickerOpen] = useState(false);
   const [name, setName] = useState(initialFormState.name);
   const [email, setEmail] = useState(initialFormState.email);
   const [ocrid, setOcrid] = useState(initialFormState.ocrid);
-  const [selectedAuthor, setSelectedAuthor] = useState<ProjectMember | null>(
+  const [selectedAuthor, setSelectedAuthor] = useState<AvailablePaperAuthorItem | null>(
     null,
   );
 
@@ -96,6 +96,7 @@ export const AddAuthorPaperDialog = ({
     setSearchText('');
     setAuthorRoleOpen(false);
     setAuthorRoleSearch('');
+    setAuthorPickerOpen(false);
     if (author) {
       setSelectedUserId((author as { userId?: string | null }).userId ?? null);
       setSelectedMemberId(author.memberId ?? null);
@@ -124,26 +125,24 @@ export const AddAuthorPaperDialog = ({
     setOcrid(initialFormState.ocrid);
   }, [author, open]);
 
-  // Fetch available members
-  const parentAuthorsQuery = usePaperMembers({
+  const availableAuthorsQuery = useAvailablePaperAuthors({
     subProjectId,
-    params: { pageSize: 1000 },
-    queryConfig: { enabled: open },
+    params: { paperId, PageNumber: 1, PageSize: 1000 },
+    queryConfig: { enabled: open && !isEditMode },
   });
-  const parentAuthors =
-    ((parentAuthorsQuery.data as any)?.result?.items as
-      | ProjectMember[]
-      | undefined) ?? [];
-
-  const availableAuthors = parentAuthors.filter((a) => {
-    if (!searchText.trim()) return true;
-    const q = searchText.toLowerCase();
-    return (
-      a.email?.toLowerCase().includes(q) ||
-      a.username?.toLowerCase().includes(q) ||
-      `${a.firstName} ${a.lastName}`.toLowerCase().includes(q)
-    );
-  });
+  const availableAuthors =
+    availableAuthorsQuery.data?.result?.items ?? [];
+  const filteredAuthors = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    if (!q) return availableAuthors;
+    return availableAuthors.filter((a) => {
+      return (
+        a.email?.toLowerCase().includes(q) ||
+        a.username?.toLowerCase().includes(q) ||
+        `${a.firstName} ${a.lastName}`.trim().toLowerCase().includes(q)
+      );
+    });
+  }, [availableAuthors, searchText]);
 
   // Add author mutation
   const createPaperAuthorMutation = useCreatePaperAuthor({
@@ -170,7 +169,7 @@ export const AddAuthorPaperDialog = ({
     },
   });
 
-  const handleToggleUser = (member: ProjectMember) => {
+  const handleToggleUser = (member: AvailablePaperAuthorItem) => {
     if (selectedUserId === member.userId) {
       setSelectedUserId(initialFormState.selectedUserId);
       setSelectedMemberId(initialFormState.selectedMemberId);
@@ -190,11 +189,7 @@ export const AddAuthorPaperDialog = ({
         '',
     );
     setEmail(member.email || '');
-    setOcrid(
-      (member as { ocrId?: string; ocrid?: string }).ocrId ??
-        (member as { ocrid?: string }).ocrid ??
-        '',
-    );
+    setOcrid(member.orcid ?? '');
   };
 
   const handleAdd = () => {
@@ -276,6 +271,115 @@ export const AddAuthorPaperDialog = ({
         <div className="space-y-5 py-2">
           {canAddMembers ? (
             <>
+              {isEditMode ? null : (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="paper-author-select"
+                    className={FIELD_LABEL_CLASS}
+                  >
+                    Select Author
+                  </label>
+                  <Popover
+                    open={authorPickerOpen}
+                    onOpenChange={setAuthorPickerOpen}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="paper-author-select"
+                        type="button"
+                        variant="outline"
+                        className="border-surface-container-highest bg-surface-container h-11 w-full justify-between rounded-xl px-3 text-left"
+                      >
+                        <span className="min-w-0 flex-1 truncate">
+                          {selectedAuthor
+                            ? `${selectedAuthor.firstName} ${selectedAuthor.lastName}`.trim() || selectedAuthor.username
+                            : 'Select author'}
+                        </span>
+                        <ChevronDown className="size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      className="w-[var(--radix-popper-anchor-width)] p-2"
+                    >
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                          <Input
+                            placeholder="Search by name, email, or username..."
+                            value={searchText}
+                            onChange={(event) => setSearchText(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') event.preventDefault();
+                            }}
+                            className="pl-10"
+                          />
+                        </div>
+                        <div className="max-h-72 space-y-1 overflow-y-auto">
+                          {availableAuthorsQuery.isLoading ? (
+                            <>
+                              <Skeleton className="h-14 w-full rounded-xl" />
+                              <Skeleton className="h-14 w-full rounded-xl" />
+                            </>
+                          ) : filteredAuthors.length > 0 ? (
+                            filteredAuthors.map((member) => {
+                              const isSelected = selectedUserId === member.userId;
+
+                              return (
+                                <button
+                                  key={member.userId}
+                                  type="button"
+                                  onClick={() => {
+                                    handleToggleUser(member);
+                                    setAuthorPickerOpen(false);
+                                  }}
+                                  className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                                    isSelected
+                                      ? 'border-primary/30 bg-surface-container-highest'
+                                      : 'bg-surface-container hover:bg-surface-container-highest border-transparent'
+                                  }`}
+                                >
+                                  <div
+                                    className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+                                      isSelected
+                                        ? 'bg-primary text-surface'
+                                        : 'bg-surface-dim text-secondary'
+                                    }`}
+                                  >
+                                    {isSelected ? (
+                                      <Check className="size-4" />
+                                    ) : (
+                                      <Users className="size-4" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-primary truncate text-sm font-semibold">
+                                      {member.firstName} {member.lastName}
+                                    </p>
+                                    <p className="text-secondary truncate font-mono text-[10px] tracking-widest uppercase">
+                                      {member.email || 'No email'}
+                                      {member.username && ` · @${member.username}`}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <div className="bg-surface-container rounded-xl py-10 text-center">
+                              <p className="text-secondary text-sm">
+                                {searchText
+                                  ? `No authors found for "${searchText}"`
+                                  : 'No available authors in this project'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label
                   htmlFor="paper-author-role"
@@ -437,80 +541,6 @@ export const AddAuthorPaperDialog = ({
                   />
                 </div>
               </div>
-
-              {isEditMode ? null : (
-                <div className="relative">
-                  <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search by name, email, or username..."
-                    value={searchText}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') event.preventDefault();
-                    }}
-                    className="pl-10"
-                  />
-                </div>
-              )}
-
-              {isEditMode ? null : (
-                <div className="space-y-2">
-                  {parentAuthorsQuery.isLoading ? (
-                    <>
-                      <Skeleton className="h-16 w-full rounded-xl" />
-                      <Skeleton className="h-16 w-full rounded-xl" />
-                    </>
-                  ) : availableAuthors.length > 0 ? (
-                    availableAuthors.map((member) => {
-                      const isSelected = selectedUserId === member.userId;
-
-                      return (
-                        <button
-                          key={member.userId}
-                          type="button"
-                          onClick={() => handleToggleUser(member)}
-                          className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                            isSelected
-                              ? 'border-primary/30 bg-surface-container-highest'
-                              : 'bg-surface-container hover:bg-surface-container-highest border-transparent'
-                          }`}
-                        >
-                          <div
-                            className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
-                              isSelected
-                                ? 'bg-primary text-surface'
-                                : 'bg-surface-dim text-secondary'
-                            }`}
-                          >
-                            {isSelected ? (
-                              <Check className="size-4" />
-                            ) : (
-                              <Users className="size-4" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-primary truncate text-sm font-semibold">
-                              {member.firstName} {member.lastName}
-                            </p>
-                            <p className="text-secondary truncate font-mono text-[10px] tracking-widest uppercase">
-                              {member.email || 'No email'}
-                              {member.username && ` · @${member.username}`}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="bg-surface-container rounded-xl py-10 text-center">
-                      <p className="text-secondary text-sm">
-                        {searchText
-                          ? `No authors found for "${searchText}"`
-                          : 'No available authors in this project'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
             </>
           ) : (
             <div className="bg-surface-container rounded-xl py-10 text-center">

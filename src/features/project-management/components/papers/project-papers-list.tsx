@@ -52,6 +52,9 @@ const getTagColor = (tag: string) => {
   return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
 };
 
+const getPaperKeywords = (paper: ProjectPaper) =>
+  paper.keywords && paper.keywords.length > 0 ? paper.keywords : paper.tagNames;
+
 const truncateAuthors = (authors: string | null): React.ReactNode => {
   if (!authors) return <span className="text-muted-foreground text-sm">—</span>;
   const parts = authors
@@ -94,7 +97,7 @@ export const ProjectPapersList = ({
 }: ProjectPapersListProps) => {
   const [titleText, setTitleText] = useState('');
   const [titleDebounce, setTitleDebounce] = useState('');
-  const [tagList, setTagList] = useState<string[]>([]);
+  const [keywordList, setKeywordList] = useState<string[]>([]);
   const [pendingRemovePaperId, setPendingRemovePaperId] = useState<
     string | null
   >(null);
@@ -108,7 +111,8 @@ export const ProjectPapersList = ({
     projectId,
     params: {
       Title: titleDebounce || undefined,
-      Tag: tagList.length > 0 ? tagList : undefined,
+      Keyword: keywordList.length > 0 ? keywordList : undefined,
+      Tag: keywordList.length > 0 ? keywordList : undefined,
     },
   });
 
@@ -183,16 +187,16 @@ export const ProjectPapersList = ({
           </div>
           <div className="flex-1">
             <TagAutocompleteInput
-              tagList={tagList}
+              tagList={keywordList}
               onAddTag={(tag) =>
-                setTagList((prev) =>
+                setKeywordList((prev) =>
                   prev.includes(tag) ? prev : [...prev, tag],
                 )
               }
               onRemoveTag={(tag) =>
-                setTagList((prev) => prev.filter((t) => t !== tag))
+                setKeywordList((prev) => prev.filter((t) => t !== tag))
               }
-              placeholder="Type a tag and press Enter..."
+              placeholder="Type a keyword and press Enter..."
             />
           </div>
         </div>
@@ -227,7 +231,7 @@ export const ProjectPapersList = ({
                     Journal / Conference
                   </TableHead>
                   <TableHead className="w-[8%] px-2 text-center font-semibold">
-                    Tags
+                    Keywords
                   </TableHead>
                   <TableHead className="w-[18%] px-2 text-center font-semibold">
                     Actions
@@ -235,171 +239,177 @@ export const ProjectPapersList = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {papers.map((paper, index) => (
-                  <TableRow
-                    key={paper.id}
-                    className={`hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
-                  >
-                    {/* # */}
-                    <TableCell className="text-muted-foreground px-2 text-center text-xs">
-                      {index + 1}
-                    </TableCell>
+                {papers.map((paper, index) => {
+                  const keywords = getPaperKeywords(paper);
 
-                    {/* DOI */}
-                    <TableCell className="px-2 break-all whitespace-normal">
-                      {paper.doi ? (
-                        <a
-                          href={`https://doi.org/${paper.doi}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-foreground text-sm hover:underline"
-                          title={paper.doi}
-                        >
-                          {paper.doi}
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">
-                          N/A
-                        </span>
-                      )}
-                    </TableCell>
+                  return (
+                    <TableRow
+                      key={paper.id}
+                      className={`hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
+                    >
+                      {/* # */}
+                      <TableCell className="text-muted-foreground px-2 text-center text-xs">
+                        {index + 1}
+                      </TableCell>
 
-                    {/* Title */}
-                    <TableCell className="px-2 wrap-break-word whitespace-normal">
-                      <Link
-                        to={
-                          getPaperHref
-                            ? getPaperHref(projectId, paper.id)
-                            : paths.app.paperManagement.paper.getHref(paper.id)
-                        }
-                        className="text-foreground hover:underline"
-                        title={paper.title || '(Untitled)'}
-                      >
-                        {paper.title || '(Untitled)'}
-                      </Link>
-                    </TableCell>
-
-                    {/* Authors */}
-                    <TableCell className="px-2 wrap-break-word whitespace-normal">
-                      {truncateAuthors(paper.authors)}
-                    </TableCell>
-
-                    {/* Venue */}
-                    <TableCell className="px-2 wrap-break-word whitespace-normal">
-                      {paper.journalName ? (
-                        <span className="line-clamp-2 text-sm">
-                          {paper.journalName}
-                        </span>
-                      ) : paper.conferenceName ? (
-                        <span className="flex items-start gap-1.5 text-sm">
-                          <Building2 className="mt-0.5 size-3.5 shrink-0 text-violet-500" />
-                          <span className="line-clamp-2">
-                            {paper.conferenceName}
+                      {/* DOI */}
+                      <TableCell className="px-2 break-all whitespace-normal">
+                        {paper.doi ? (
+                          <a
+                            href={`https://doi.org/${paper.doi}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-foreground text-sm hover:underline"
+                            title={paper.doi}
+                          >
+                            {paper.doi}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">
+                            N/A
                           </span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs italic">
-                          —
-                        </span>
-                      )}
-                    </TableCell>
+                        )}
+                      </TableCell>
 
-                    {/* Status removed */}
-                    {/* Tags */}
-                    <TableCell className="px-2 text-center whitespace-normal">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="action" size="xs">
-                            Tag
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          align="start"
-                          className="w-64 space-y-2"
+                      {/* Title */}
+                      <TableCell className="px-2 wrap-break-word whitespace-normal">
+                        <Link
+                          to={
+                            getPaperHref
+                              ? getPaperHref(projectId, paper.id)
+                              : paths.app.paperManagement.paper.getHref(
+                                  paper.id,
+                                )
+                          }
+                          className="text-foreground hover:underline"
+                          title={paper.title || '(Untitled)'}
                         >
-                          <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                            Tags ({paper.tagNames?.length || 0})
-                          </p>
-                          {paper.tagNames && paper.tagNames.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {paper.tagNames.map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant="outline"
-                                  className={`px-2.5 py-1 text-xs font-medium ${getTagColor(tag)}`}
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-muted-foreground text-sm">
-                              No tags.
+                          {paper.title || '(Untitled)'}
+                        </Link>
+                      </TableCell>
+
+                      {/* Authors */}
+                      <TableCell className="px-2 wrap-break-word whitespace-normal">
+                        {truncateAuthors(paper.authors)}
+                      </TableCell>
+
+                      {/* Venue */}
+                      <TableCell className="px-2 wrap-break-word whitespace-normal">
+                        {paper.journalName ? (
+                          <span className="line-clamp-2 text-sm">
+                            {paper.journalName}
+                          </span>
+                        ) : paper.conferenceName ? (
+                          <span className="flex items-start gap-1.5 text-sm">
+                            <Building2 className="mt-0.5 size-3.5 shrink-0 text-violet-500" />
+                            <span className="line-clamp-2">
+                              {paper.conferenceName}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">
+                            —
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Status removed */}
+                      {/* Keywords */}
+                      <TableCell className="px-2 text-center whitespace-normal">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="action" size="xs">
+                              Keyword
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="start"
+                            className="w-64 space-y-2"
+                          >
+                            <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                              Keywords ({keywords.length})
                             </p>
-                          )}
-                        </PopoverContent>
-                      </Popover>
-                    </TableCell>
-                    <TableCell className="px-2 text-center align-middle">
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        {paper.filePath && (
-                          <Button
-                            variant="action"
-                            size="icon"
-                            asChild
-                            className="size-8"
-                            title="Download"
-                          >
-                            <a
-                              href={paper.filePath}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download
+                            {keywords.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {keywords.map((tag) => (
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className={`px-2.5 py-1 text-xs font-medium ${getTagColor(tag)}`}
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-muted-foreground text-sm">
+                                No keywords.
+                              </p>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </TableCell>
+                      <TableCell className="px-2 text-center align-middle">
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          {paper.filePath && (
+                            <Button
+                              variant="action"
+                              size="icon"
+                              asChild
+                              className="size-8"
+                              title="Download"
                             >
-                              <FileText className="size-4" />
-                            </a>
-                          </Button>
-                        )}
-                        <Button
-                          variant="outlineAction"
-                          size="action"
-                          asChild
-                          title="View Paper"
-                        >
-                          <Link
-                            to={
-                              getPaperHref
-                                ? getPaperHref(projectId, paper.id)
-                                : paths.app.paperManagement.paper.getHref(
-                                    paper.id,
-                                  )
-                            }
-                          >
-                            VIEW
-                          </Link>
-                        </Button>
-                        {!readOnly && (
+                              <a
+                                href={paper.filePath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                              >
+                                <FileText className="size-4" />
+                              </a>
+                            </Button>
+                          )}
                           <Button
-                            variant="destructive"
+                            variant="outlineAction"
                             size="action"
-                            onClick={() => setPendingRemovePaperId(paper.id)}
-                            disabled={removingPaperId === paper.id}
-                            title="Remove Paper"
+                            asChild
+                            title="View Paper"
                           >
-                            {removingPaperId === paper.id ? (
-                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                            ) : null}
-                            REMOVE
+                            <Link
+                              to={
+                                getPaperHref
+                                  ? getPaperHref(projectId, paper.id)
+                                  : paths.app.paperManagement.paper.getHref(
+                                      paper.id,
+                                    )
+                              }
+                            >
+                              VIEW
+                            </Link>
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          {!readOnly && (
+                            <Button
+                              variant="destructive"
+                              size="action"
+                              onClick={() => setPendingRemovePaperId(paper.id)}
+                              disabled={removingPaperId === paper.id}
+                              title="Remove Paper"
+                            >
+                              {removingPaperId === paper.id ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : null}
+                              REMOVE
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
-        ) : titleDebounce || tagList.length > 0 ? (
+        ) : titleDebounce || keywordList.length > 0 ? (
           <div className="bg-empty-state rounded-b-lg py-12 text-center">
             <p className="text-muted-foreground text-sm">
               No papers found matching the current filters

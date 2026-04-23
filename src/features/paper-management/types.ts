@@ -570,3 +570,27 @@ export type CreatePaperAuthorDto = {
   memberId: string | null;
   projectId: string | null;
 };
+
+export type AvailablePaperAuthorItem = {
+  memberId: string;
+  userId: string;
+  subProjectId: string;
+  projectId: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  orcid: string | null;
+  enabled: boolean;
+  role: string;
+  joinedAt: string;
+};
+
+export type GetAvailablePaperAuthorsResult = {
+  items: AvailablePaperAuthorItem[];
+  paging: PagingResult;
+};
+
+export type GetAvailablePaperAuthorsApiResponse = {
+  result: GetAvailablePaperAuthorsResult;
+};

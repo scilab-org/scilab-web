@@ -16,6 +16,7 @@ export const updateUser = ({
   data,
 }: UpdateUserPayload): Promise<BooleanApiUpdatedResponse> => {
   const formData = new FormData();
+  if (data.ocrId) formData.append('ocrId', data.ocrId);
   if (data.firstName) formData.append('firstName', data.firstName);
   if (data.lastName) formData.append('lastName', data.lastName);
   formData.append('enabled', String(data.enabled));

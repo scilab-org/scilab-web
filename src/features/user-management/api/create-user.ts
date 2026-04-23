@@ -12,6 +12,7 @@ export const createUser = (
   const formData = new FormData();
   if (data.username) formData.append('username', data.username);
   if (data.email) formData.append('email', data.email);
+  if (data.ocrId) formData.append('ocrId', data.ocrId);
   if (data.firstName) formData.append('firstName', data.firstName);
   if (data.lastName) formData.append('lastName', data.lastName);
   if (data.initialPassword)

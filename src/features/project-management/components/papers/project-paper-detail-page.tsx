@@ -248,6 +248,22 @@ const isPaperDetailTab = (value: string | null): value is Tab => {
   return TAB_GROUPS.some((group) => group.tabs.some((tab) => tab.id === value));
 };
 
+const getRoleDisplayLabel = (role: string | null | undefined) => {
+  const normalized = (role ?? '').trim().toLowerCase();
+  const raw = normalized.includes(':')
+    ? (normalized.split(':').pop() ?? normalized)
+    : normalized;
+
+  if (normalized === 'paper:author') return 'Head Writer';
+  if (raw === 'author') return 'Author';
+  if (raw === 'member') return 'Contributor';
+  if (raw === 'edit') return 'Editor';
+  if (raw === 'read' || raw === 'view') return 'Viewer';
+  if (raw === 'manager') return 'Manager';
+
+  return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : (role ?? '');
+};
+
 export const ProjectPaperDetailPage = ({
   projectId,
   paperId,
@@ -597,7 +613,7 @@ export const ProjectPaperDetailPage = ({
   });
 
   const paperContributorsQuery = useGetPaperAuthors({
-    params: { PageNumber: 1, PageSize: 1000 },
+    params: { PaperId: paperId, PageNumber: 1, PageSize: 1000 },
     queryConfig: { enabled: !!paperId } as any,
   });
   const [editingAuthor, setEditingAuthor] =
@@ -637,6 +653,9 @@ export const ProjectPaperDetailPage = ({
     const role = (m.role || '').toLowerCase();
     return role.includes('author');
   }).length;
+  const completedTaskCount =
+    paperTasksQuery.data?.result?.items?.filter((task) => task.status === 4)
+      .length ?? 0;
 
   const currentUsername = (user?.preferredUsername || '').trim().toLowerCase();
 
@@ -1083,20 +1102,6 @@ export const ProjectPaperDetailPage = ({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                {paperType && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="border-border inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium">
-                          {paperType}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        Paper Type: {paperType}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
                 {paper.template && (
                   <TooltipProvider>
                     <Tooltip>
@@ -1186,7 +1191,7 @@ export const ProjectPaperDetailPage = ({
           <div className="p-6">
             {activeTab === 'overview' && (
               <>
-                <div className="mb-8 grid gap-4 sm:grid-cols-3">
+                <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
@@ -1246,6 +1251,26 @@ export const ProjectPaperDetailPage = ({
                       </p>
                     </div>
                   </div>
+
+                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-muted text-primary rounded-md p-1.5">
+                          <ClipboardList className="size-4" />
+                        </div>
+                        <p className="text-muted-foreground font-sans text-xs font-bold">
+                          Completed Tasks
+                        </p>
+                      </div>
+                      <p className="text-foreground font-serif text-3xl font-bold">
+                        {paperTasksQuery.isLoading ? (
+                          <Loader2 className="text-tertiary size-6 animate-spin" />
+                        ) : (
+                          completedTaskCount
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -1289,7 +1314,7 @@ export const ProjectPaperDetailPage = ({
                         'No research gap explicitly stated.'}
                     </p>
                     {paper.gapTypes?.length ? (
-                      <span className="bg-surface text-secondary mt-3 inline-block rounded-md px-2.5 py-0.5 font-sans text-[10px]">
+                      <span className="bg-surface text-secondary mt-3 inline-block rounded-md px-3 py-1 font-sans text-sm font-medium">
                         Type:{' '}
                         {paper.gapTypes
                           .map((gapType) => gapType.name)
@@ -1665,18 +1690,9 @@ export const ProjectPaperDetailPage = ({
                               parts.length > 1
                                 ? parts[parts.length - 1]
                                 : parts[0];
-                            let label: string;
-                            if (raw === 'author') label = 'Author';
-                            else if (raw === 'member') label = 'Contributor';
-                            else if (raw === 'edit') label = 'Editor';
-                            else if (raw === 'read' || raw === 'view')
-                              label = 'Viewer';
-                            else
-                              label = raw
-                                ? raw.charAt(0).toUpperCase() + raw.slice(1)
-                                : (member.role ?? '');
+                            const label = getRoleDisplayLabel(member.role);
                             const cls =
-                              raw === 'author'
+                              member.role === 'paper:author' || raw === 'author'
                                 ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
                                 : raw === 'member' || raw === 'edit'
                                   ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
@@ -1805,6 +1821,7 @@ export const ProjectPaperDetailPage = ({
                         <TableRow className="bg-muted/50 hover:bg-muted/50">
                           <TableHead>Author</TableHead>
                           <TableHead>Email</TableHead>
+                          <TableHead>ORCID</TableHead>
                           <TableHead>Role</TableHead>
                           {(isPaperAuthor || isManager) && (
                             <TableHead className="w-24 text-center">
@@ -1828,9 +1845,15 @@ export const ProjectPaperDetailPage = ({
                               {author.email || author.contributorEmail || '—'}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {author.authorRoleName ||
-                                author.sectionRole ||
+                              {author.ocrid ||
+                                author.orcid ||
+                                author.ocrId ||
                                 '—'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {getRoleDisplayLabel(
+                                author.authorRoleName || author.sectionRole,
+                              ) || '—'}
                             </TableCell>
                             {(isPaperAuthor || isManager) && (
                               <TableCell>
@@ -1917,8 +1940,24 @@ export const ProjectPaperDetailPage = ({
 
                 <form
                   onSubmit={applyTaskFilters}
-                  className="bg-muted/30 mb-4 rounded-md p-4"
+                  className="bg-card border-surface-container-highest mb-4 rounded-xl border p-4 shadow-sm"
                 >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-primary text-sm font-semibold">
+                        Task Filters
+                      </p>
+                      <p className="text-secondary text-xs">
+                        Refine tasks by assignee, status, and date range.
+                      </p>
+                    </div>
+                    {activeFilterCount > 0 && (
+                      <span className="bg-muted text-secondary rounded-full px-2.5 py-1 text-xs font-medium">
+                        {activeFilterCount} active
+                      </span>
+                    )}
+                  </div>
+
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                     <div className="space-y-1.5">
                       <label
@@ -1929,7 +1968,7 @@ export const ProjectPaperDetailPage = ({
                       </label>
                       <select
                         id="filterAssignee"
-                        className="bg-surface border-surface-container-highest text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                        className="bg-background border-surface-container-highest text-primary focus-visible:ring-ring flex h-10 w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
                         value={localFilters.AssignedToUserName}
                         onChange={(e) =>
                           handleFilterChange(
@@ -1956,7 +1995,7 @@ export const ProjectPaperDetailPage = ({
                       </label>
                       <select
                         id="filterStatus"
-                        className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                        className="bg-background border-surface-container-highest text-primary focus-visible:ring-ring flex h-10 w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
                         value={localFilters.Status}
                         onChange={(e) =>
                           handleFilterChange('Status', e.target.value)
@@ -1983,7 +2022,7 @@ export const ProjectPaperDetailPage = ({
                       </label>
                       <select
                         id="filterDateField"
-                        className="border-surface-container-highest bg-surface text-primary focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                        className="bg-background border-surface-container-highest text-primary focus-visible:ring-ring flex h-10 w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
                         value={localFilters.DateField}
                         onChange={(e) =>
                           handleFilterChange('DateField', e.target.value)
@@ -2008,7 +2047,7 @@ export const ProjectPaperDetailPage = ({
                       <Input
                         id="filterFromDate"
                         type="date"
-                        className="bg-surface"
+                        className="bg-background h-10 rounded-lg"
                         value={localFilters.FromDate}
                         disabled={!isDateFieldSelected}
                         onChange={(e) =>
@@ -2027,7 +2066,7 @@ export const ProjectPaperDetailPage = ({
                       <Input
                         id="filterToDate"
                         type="date"
-                        className="bg-surface"
+                        className="bg-background h-10 rounded-lg"
                         value={localFilters.ToDate}
                         disabled={!isDateFieldSelected}
                         onChange={(e) =>
@@ -2037,7 +2076,7 @@ export const ProjectPaperDetailPage = ({
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-end gap-2">
+                  <div className="mt-4 flex items-center justify-end gap-2 border-t pt-4">
                     {activeFilterCount > 0 && (
                       <Button
                         type="button"
@@ -3446,7 +3485,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-context"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-card text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.context}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -3465,7 +3504,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-abstract"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-card text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.abstract}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -3484,7 +3523,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-research-gap"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-card text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.researchGap}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -3508,7 +3547,7 @@ export const ProjectPaperDetailPage = ({
                   aria-expanded={isGapTypeOpen}
                   aria-controls="edit-paper-gap-types-listbox"
                   className={cn(
-                    'border-input text-foreground focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-10 w-full flex-wrap items-center gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-within:ring-[3px]',
+                    'border-input text-foreground bg-card focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-10 w-full flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-within:ring-[3px]',
                   )}
                   onClick={() => gapTypeInputRef.current?.focus()}
                   onKeyDown={(e) => {
@@ -3590,7 +3629,7 @@ export const ProjectPaperDetailPage = ({
                   <div
                     id="edit-paper-gap-types-listbox"
                     role="listbox"
-                    className="bg-background absolute top-full right-0 left-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border shadow-sm"
+                    className="bg-card absolute top-full right-0 left-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border shadow-sm"
                   >
                     {filteredGapTypes.length > 0 ? (
                       filteredGapTypes.map((gapType) => (
@@ -3628,7 +3667,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-research-aim"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-card text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.researchAim}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
@@ -3650,7 +3689,7 @@ export const ProjectPaperDetailPage = ({
               </label>
               <textarea
                 id="ep-main-contribution"
-                className="border-surface-container-highest bg-surface text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-20 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-surface-container-highest bg-card text-primary ring-offset-background placeholder:text-secondary focus-visible:ring-ring flex min-h-24 w-full max-w-full resize-y rounded-md border px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 value={editPaperForm.mainContribution}
                 onChange={(e) =>
                   setEditPaperForm((prev) => ({
