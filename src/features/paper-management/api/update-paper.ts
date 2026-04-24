@@ -28,23 +28,27 @@ export const updatePaper = ({
   if (data.number !== undefined) formData.append('number', data.number);
   if (data.publicationDate)
     formData.append('publicationDate', data.publicationDate);
-  if (data.paperType !== undefined)
-    formData.append('paperType', data.paperType);
-  if (data.journalName !== undefined)
-    formData.append('journalName', data.journalName);
-  if (data.conferenceName !== undefined)
-    formData.append('conferenceName', data.conferenceName);
+  if (data.gapTypeIds) {
+    data.gapTypeIds.forEach((gapTypeId) => {
+      formData.append('gapTypeIds', gapTypeId);
+    });
+  }
+  if (data.conferenceJournalId !== undefined)
+    formData.append('conferenceJournalId', data.conferenceJournalId);
   if (data.pages !== undefined) formData.append('pages', data.pages);
   if (data.volume !== undefined) formData.append('volume', data.volume);
   if (data.referenceContent !== undefined)
     formData.append('referenceContent', data.referenceContent);
-  if (data.status !== undefined)
-    formData.append('status', data.status.toString());
-  if (data.tagNames) {
-    data.tagNames.forEach((tag) => formData.append('tagNames', tag));
+  if (data.ranking !== undefined) formData.append('ranking', data.ranking);
+  if (data.url !== undefined) formData.append('url', data.url);
+  if (data.bibFile) formData.append('bibFile', data.bibFile);
+  if (data.keywords) {
+    data.keywords.forEach((kw) => formData.append('keywords', kw));
   }
   if (data.isAutoTagged !== undefined)
     formData.append('isAutoTagged', data.isAutoTagged.toString());
+  if (data.isIngested !== undefined)
+    formData.append('isIngested', data.isIngested.toString());
 
   return api.put(PAPER_MANAGEMENT_API.ADMIN_PAPER_BY_ID(paperId), formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

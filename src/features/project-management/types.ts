@@ -10,6 +10,15 @@ export type PagingResult = {
   hasPreviousPage: boolean;
 };
 
+export type ProjectDomain = {
+  id: string;
+  name: string;
+  createdOnUtc?: string;
+  createdBy?: string | null;
+  lastModifiedOnUtc?: string;
+  lastModifiedBy?: string | null;
+};
+
 export type Project = {
   id: string;
   name: string;
@@ -17,13 +26,14 @@ export type Project = {
   description: string;
   status: number;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
   context: string;
-  domain: string;
+  domain: string | null;
+  domains?: ProjectDomain[];
   keypoint: string;
-  createdBy: string;
-  createdAt: string;
-  modifiedAt: string;
+  createdBy: string | null;
+  createdAt: string | null;
+  modifiedAt: string | null;
   createdOnUtc: string;
 };
 
@@ -35,7 +45,7 @@ export type CreateProjectDto = {
   startDate: string;
   endDate: string | null;
   context: string;
-  domain: string;
+  domainIds: string[];
   keypoint: string;
 };
 
@@ -47,7 +57,7 @@ export type UpdateProjectDto = {
   startDate: string;
   endDate: string | null;
   context: string;
-  domain: string;
+  domainIds: string[];
   keypoint: string;
 };
 
@@ -175,6 +185,7 @@ export type ProjectPaper = {
   conferenceName: string | null;
   conferenceJournalStartAt?: string | null;
   conferenceJournalEndAt?: string | null;
+  keywords?: string[];
   tagNames: string[];
 };
 
@@ -185,6 +196,7 @@ export type GetProjectPapersResult = {
 
 export type GetProjectPapersParams = {
   Title?: string;
+  Keyword?: string[];
   Tag?: string[];
   PageNumber?: number;
   PageSize?: number;

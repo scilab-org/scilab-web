@@ -93,6 +93,24 @@ export const paths = {
         getHref: () => '/app/tags',
       },
     },
+    gapTypeManagement: {
+      gapTypes: {
+        path: 'gap-types',
+        getHref: () => '/app/gap-types',
+      },
+    },
+    authorRoleManagement: {
+      authorRoles: {
+        path: 'author-roles',
+        getHref: () => '/app/author-roles',
+      },
+    },
+    domainManagement: {
+      domains: {
+        path: 'domains',
+        getHref: () => '/app/domains',
+      },
+    },
     journalManagement: {
       journals: {
         path: 'journals',

@@ -28,6 +28,7 @@ const fieldLabel = FIELD_LABEL_CLASS;
 export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
+    ocrId: user.ocrId || '',
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     enabled: user.enabled,
@@ -47,6 +48,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
   React.useEffect(() => {
     if (open) {
       setFormData({
+        ocrId: user.ocrId || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         enabled: user.enabled,
@@ -62,6 +64,7 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
     updateUserMutation.mutate({
       userId,
       data: {
+        ocrId: formData.ocrId,
         firstName: formData.firstName,
         lastName: formData.lastName,
         enabled: formData.enabled,
@@ -91,6 +94,20 @@ export const UpdateUser = ({ userId, user }: UpdateUserProps) => {
           onSubmit={handleSubmit}
           className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-4 py-2"
         >
+          <div className="space-y-2">
+            <label htmlFor="uu-ocrId" className={fieldLabel}>
+              OCR ID
+            </label>
+            <Input
+              id="uu-ocrId"
+              value={formData.ocrId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, ocrId: e.target.value }))
+              }
+              placeholder="Enter OCR ID"
+            />
+          </div>
+
           <div className="space-y-2">
             <label htmlFor="uu-firstName" className={fieldLabel}>
               First Name

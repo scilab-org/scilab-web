@@ -24,6 +24,10 @@ export const updateJournal = ({
     formData.append('name', data.name);
   }
 
+  if (typeof data.issn === 'string') {
+    formData.append('issn', data.issn);
+  }
+
   if (typeof data.ranking === 'string') {
     formData.append('ranking', data.ranking);
   }
@@ -34,6 +38,14 @@ export const updateJournal = ({
 
   if (typeof data.style === 'string') {
     formData.append('style', data.style);
+  }
+
+  if (typeof data.type === 'number') {
+    formData.append('type', String(data.type));
+  }
+
+  if (data.templateIds) {
+    data.templateIds.forEach((id) => formData.append('templateIds', id));
   }
 
   if (data.texFile) {

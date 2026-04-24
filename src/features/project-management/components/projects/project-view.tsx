@@ -3,14 +3,24 @@ import { Loader2, Users, FileText, Database, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { Project, SubProjectPaper } from '../../types';
+import { useDatasets } from '@/features/dataset-management/api/get-datasets';
+import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
 
 import { useProjectMembers } from '../../api/members/get-project-members';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { useSubProjects } from '../../api/papers/get-sub-projects';
+import { Project, SubProjectPaper } from '../../types';
 
-import { useDatasets } from '@/features/dataset-management/api/get-datasets';
-import { SUBMISSION_STATUS_LABELS } from '@/features/paper-management/constants';
+const getProjectDomainNames = (project: Project) => {
+  const domainNames =
+    project.domains?.map((domain) => domain.name).filter(Boolean) ?? [];
+
+  if (domainNames.length > 0) {
+    return domainNames.join(', ');
+  }
+
+  return project.domain?.trim() || 'Not specified';
+};
 
 type ProjectViewProps = {
   project: Project;
@@ -84,7 +94,7 @@ export const ProjectView = ({
     },
     {
       title: 'Research Domain',
-      value: project.domain || 'Not specified',
+      value: getProjectDomainNames(project),
     },
   ];
 

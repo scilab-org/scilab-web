@@ -130,6 +130,10 @@ export const ProfileView = () => {
                 {user?.username ?? authUser.preferredUsername ?? '—'}
               </p>
             </div>
+            <div>
+              <p className={fieldLabel}>OCR ID</p>
+              <p className="mt-1 text-base font-medium">{user?.ocrId ?? '—'}</p>
+            </div>
           </div>
         </div>
 

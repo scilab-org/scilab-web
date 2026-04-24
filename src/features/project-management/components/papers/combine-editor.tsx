@@ -354,7 +354,7 @@ const ReferenceDetailDialog = ({
               {paper.tagNames.length > 0 && (
                 <div>
                   <div className="mb-1 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                    Tags
+                    Keywords
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {paper.tagNames.map((tag) => (

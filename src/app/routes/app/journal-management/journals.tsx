@@ -14,18 +14,14 @@ export const clientLoader =
 
     const page = Number(url.searchParams.get('page') || 1);
     const name = url.searchParams.get('name') || undefined;
-    const templateCode = url.searchParams.get('templateCode') || undefined;
-    const projectName = url.searchParams.get('projectName') || undefined;
-    const projectCode = url.searchParams.get('projectCode') || undefined;
+    const templateId = url.searchParams.get('templateId') || undefined;
     const isDeleted = url.searchParams.get('isDeleted') === 'true';
 
     const query = getJournalsQueryOptions({
       PageNumber: page,
       PageSize: 10,
       Name: name,
-      TemplateCode: templateCode,
-      ProjectName: projectName,
-      ProjectCode: projectCode,
+      TemplateId: templateId,
       IsDeleted: isDeleted,
     });
 

@@ -29,16 +29,16 @@ export const CreateTag = () => {
       onSuccess: () => {
         setOpen(false);
         setFormData(initialFormData);
-        toast.success('Tag created successfully');
+        toast.success('Keyword created successfully');
       },
       onError: (error: any) => {
         const errorData = error?.response?.data;
         if (
           errorData?.errors?.[0]?.errorMessage === 'TAG_NAME_ALREADY_EXISTS'
         ) {
-          toast.error('Tag name already exists');
+          toast.error('Keyword name already exists');
         } else {
-          toast.error('Failed to create tag');
+          toast.error('Failed to create keyword');
         }
       },
     },
@@ -55,11 +55,11 @@ export const CreateTag = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <CreateButton className="uppercase">CREATE TAG</CreateButton>
+        <CreateButton className="uppercase">CREATE KEYWORD</CreateButton>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Create New Tag</DialogTitle>
+          <DialogTitle>Create New Keyword</DialogTitle>
           <DialogDescription>
             Fill in the details below. Name is required.
           </DialogDescription>
@@ -79,7 +79,7 @@ export const CreateTag = () => {
               onChange={(e) => {
                 setFormData((prev) => ({ ...prev, name: e.target.value }));
               }}
-              placeholder="Enter tag name"
+              placeholder="Enter keyword name"
               required
             />
           </div>

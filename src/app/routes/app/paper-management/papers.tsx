@@ -17,19 +17,16 @@ export const clientLoader =
     const publisher = url.searchParams.get('publisher') || undefined;
     const abstract = url.searchParams.get('abstract') || undefined;
     const doi = url.searchParams.get('doi') || undefined;
-    const status = url.searchParams.get('status')
-      ? Number(url.searchParams.get('status'))
-      : undefined;
     const fromDate = url.searchParams.get('fromDate') || undefined;
     const toDate = url.searchParams.get('toDate') || undefined;
     const paperType = url.searchParams.get('paperType') || undefined;
-    const journalName = url.searchParams.get('journalName') || undefined;
-    const conferenceName = url.searchParams.get('conferenceName') || undefined;
+    const journalId = url.searchParams.get('journalId') || undefined;
+    const ranking = url.searchParams.get('ranking') || undefined;
     const authors = url.searchParams.getAll('author').length
       ? url.searchParams.getAll('author')
       : undefined;
-    const tags = url.searchParams.getAll('tag').length
-      ? url.searchParams.getAll('tag')
+    const keywords = url.searchParams.getAll('keyword').length
+      ? url.searchParams.getAll('keyword')
       : undefined;
     const isDeleted = url.searchParams.get('isDeleted') === 'true';
 
@@ -40,14 +37,13 @@ export const clientLoader =
       Publisher: publisher,
       Abstract: abstract,
       Doi: doi,
-      Status: status,
       FromPublicationDate: fromDate,
       ToPublicationDate: toDate,
       PaperType: paperType,
-      JournalName: journalName,
-      ConferenceName: conferenceName,
+      JournalId: journalId,
+      Ranking: ranking,
       Author: authors,
-      Tag: tags,
+      Keyword: keywords,
       IsDeleted: isDeleted,
     });
 

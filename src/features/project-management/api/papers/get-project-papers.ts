@@ -14,6 +14,10 @@ export const getProjectPapers = async (
 ) => {
   const searchParams = new URLSearchParams();
   if (params?.Title) searchParams.append('Title', params.Title);
+  if (params?.Keyword?.length)
+    params.Keyword.forEach((keyword) =>
+      searchParams.append('Keyword', keyword),
+    );
   if (params?.Tag?.length)
     params.Tag.forEach((t) => searchParams.append('Tag', t));
   if (params?.PageNumber)

@@ -248,6 +248,27 @@ export const createAppRouter = (queryClient: QueryClient) =>
                 ),
             },
             {
+              path: paths.app.gapTypeManagement.gapTypes.path,
+              lazy: () =>
+                import('./routes/app/gap-type-management/gap-types').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.authorRoleManagement.authorRoles.path,
+              lazy: () =>
+                import('./routes/app/author-role-management/author-roles').then(
+                  convert(queryClient),
+                ),
+            },
+            {
+              path: paths.app.domainManagement.domains.path,
+              lazy: () =>
+                import('./routes/app/domain-management/domains').then(
+                  convert(queryClient),
+                ),
+            },
+            {
               path: paths.app.journalManagement.journals.path,
               lazy: () =>
                 import('./routes/app/journal-management/journals').then(

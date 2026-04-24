@@ -19,7 +19,7 @@ export const createPaperInProject = (
     context: data.context,
     abstract: data.abstract,
     researchGap: data.researchGap,
-    gapType: data.gapType,
+    gapTypeIds: data.gapTypeIds,
     mainContribution: data.mainContribution,
     researchAim: data.researchAim,
     status: data.status,

@@ -3,6 +3,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils/cn';
 import {
@@ -15,9 +16,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
+import { useJournals } from '@/features/journal-management/api/get-journals';
+import { useGapTypes } from '@/features/gap-type-management/api/get-gap-types';
+import { findMatchingJournalId, parseBibTeXMetadata } from '../lib/bibtex';
 import { useUpdatePaper } from '../api/update-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
-import { parsePaperFile } from '../api/parse-paper';
 import { PaperDto } from '../types';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 
@@ -40,6 +43,21 @@ const BIBTEX_MONTHS = [
   'nov',
   'dec',
 ];
+
+const BIBTEX_MONTH_TO_NUMBER: Record<string, string> = {
+  jan: '01',
+  feb: '02',
+  mar: '03',
+  apr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  aug: '08',
+  sep: '09',
+  oct: '10',
+  nov: '11',
+  dec: '12',
+};
 
 const getCitationKey = (authors: string, year: string) => {
   // Normalize separators only for key extraction, not for author field storage.
@@ -98,7 +116,7 @@ const buildReferenceContent = (params: {
 export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   const [open, setOpen] = React.useState(false);
   const initialPublicationDate = paper?.publicationDate
-    ? paper.publicationDate.split('T')[0]
+    ? paper.publicationDate.split(/T| /)[0]
     : '';
   const initialDateParts = initialPublicationDate
     ? initialPublicationDate.split('-')
@@ -112,10 +130,11 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     number: paper?.number || '',
     pages: paper?.pages || '',
     volume: paper?.volume || '',
-    paperType: paper?.paperType || '',
-    journalName: paper?.journalName || '',
-    conferenceName: paper?.conferenceName || '',
-    status: paper?.status || 1,
+    gapTypeIds: paper?.gapTypes?.map((gapType) => gapType.id) || [],
+    gapTypeSearch: '',
+    conferenceJournalId: '',
+    ranking: paper?.ranking || '',
+    url: paper?.url || '',
   });
   const [pubYear, setPubYear] = React.useState(initialDateParts[0] || '');
   const [pubMonth, setPubMonth] = React.useState(
@@ -129,27 +148,60 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       : '',
   );
   const [pubYearError, setPubYearError] = React.useState('');
-  const [journalConferenceError, setJournalConferenceError] =
-    React.useState('');
   const [pagesError, setPagesError] = React.useState('');
-  const [tagList, setTagList] = React.useState<string[]>(paper?.tagNames || []);
+  const [keywordList, setKeywordList] = React.useState<
+    { name: string; isFromPaper: boolean }[]
+  >(paper?.keywords?.map((k) => ({ name: k, isFromPaper: false })) || []);
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [isAutoTagged, setIsAutoTagged] = React.useState(
     paper?.isAutoTagged || false,
   );
   const [cooldownSeconds, setCooldownSeconds] = React.useState(0);
-  const [file, setFile] = React.useState<File | undefined>(undefined);
-  const [isParsing, setIsParsing] = React.useState(false);
-  const [localParsedText, setLocalParsedText] = React.useState<string | null>(
-    null,
-  );
-  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const [bibFile, setBibFile] = React.useState<File | undefined>(undefined);
+  const [bibReferenceContent, setBibReferenceContent] = React.useState('');
+  const [pendingBibVenueName, setPendingBibVenueName] = React.useState('');
   const [lastAutoTagTime, setLastAutoTagTime] = React.useState<number | null>(
     () => {
       const stored = localStorage.getItem(`autoTagCooldown_${paperId}`);
       return stored ? parseInt(stored) : null;
     },
   );
+
+  const journalsQuery = useJournals({ params: { PageSize: 1000 } });
+  const journals = React.useMemo(
+    () => journalsQuery.data?.result?.items ?? [],
+    [journalsQuery.data?.result?.items],
+  );
+  const matchedExistingJournalId = React.useMemo(
+    () => findMatchingJournalId(journals, paper.conferenceJournalName),
+    [journals, paper.conferenceJournalName],
+  );
+  const gapTypeInputRef = React.useRef<HTMLInputElement | null>(null);
+  const gapTypeComboboxRef = React.useRef<HTMLDivElement | null>(null);
+  const [gapTypeSearch, setGapTypeSearch] = React.useState('');
+  const [isGapTypeOpen, setIsGapTypeOpen] = React.useState(false);
+  const gapTypesQuery = useGapTypes({
+    params: { PageSize: 1000, PageNumber: 1 },
+  });
+  const gapTypes = React.useMemo(
+    () => gapTypesQuery.data?.result?.items ?? [],
+    [gapTypesQuery.data?.result?.items],
+  );
+  const selectedGapTypes = React.useMemo(
+    () =>
+      gapTypes.filter((gapType) => formData.gapTypeIds.includes(gapType.id)),
+    [gapTypes, formData.gapTypeIds],
+  );
+  const filteredGapTypes = React.useMemo(() => {
+    const query = gapTypeSearch.trim().toLowerCase();
+    const available = gapTypes.filter(
+      (gapType) => !formData.gapTypeIds.includes(gapType.id),
+    );
+    if (!query) return available;
+    return available.filter((gapType) =>
+      gapType.name.toLowerCase().includes(query),
+    );
+  }, [gapTypes, gapTypeSearch, formData.gapTypeIds]);
 
   const updatePaperMutation = useUpdatePaper({
     mutationConfig: {
@@ -185,7 +237,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   React.useEffect(() => {
     if (open && paper) {
       const publicationDate = paper.publicationDate
-        ? paper.publicationDate.split('T')[0]
+        ? paper.publicationDate.split(/T| /)[0]
         : '';
       const dateParts = publicationDate ? publicationDate.split('-') : [];
       setFormData({
@@ -197,23 +249,25 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         number: paper.number || '',
         pages: paper.pages || '',
         volume: paper.volume || '',
-        paperType: paper.paperType || '',
-        journalName: paper.journalName || '',
-        conferenceName: paper.conferenceName || '',
-        status: paper.status || 1,
+        gapTypeIds: paper.gapTypes?.map((gapType) => gapType.id) || [],
+        gapTypeSearch: '',
+        conferenceJournalId: matchedExistingJournalId || '',
+        ranking: paper.ranking || '',
+        url: paper.url || '',
       });
       setPubYear(dateParts[0] || '');
       setPubMonth(dateParts[1] && dateParts[1] !== '01' ? dateParts[1] : '');
       setPubDay(dateParts[2] && dateParts[2] !== '01' ? dateParts[2] : '');
       setPubYearError('');
-      setJournalConferenceError('');
       setPagesError('');
-      setTagList(paper.tagNames || []);
+      setKeywordList(
+        paper.keywords?.map((k) => ({ name: k, isFromPaper: false })) || [],
+      );
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
-      setFile(undefined);
-      setLocalParsedText(null);
-      setIsParsing(false);
+      setBibFile(undefined);
+      setBibReferenceContent('');
+      setPendingBibVenueName('');
 
       // Calculate cooldown based on stored timestamp
       if (lastAutoTagTime) {
@@ -223,7 +277,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [matchedExistingJournalId, open]);
 
   // Countdown timer
   React.useEffect(() => {
@@ -237,58 +291,95 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     }
   }, [cooldownSeconds, lastAutoTagTime, paperId]);
 
-  const handleFileChange = async (selectedFile: File | undefined) => {
+  const handleRemoveBibFile = () => {
+    setBibFile(undefined);
+    setBibReferenceContent('');
+    setPendingBibVenueName('');
+  };
+
+  const handleBibFileChange = async (selectedFile: File | undefined) => {
     if (!selectedFile) return;
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-    setFile(selectedFile);
-    setLocalParsedText(null);
-    setIsParsing(true);
+
     try {
-      const response = await parsePaperFile(
-        selectedFile,
-        undefined,
-        abortControllerRef.current.signal,
-      );
-      setLocalParsedText(response.parsedText || null);
-    } catch (error) {
-      if (
-        (error as any)?.name === 'CanceledError' ||
-        (error as any)?.code === 'ERR_CANCELED'
-      ) {
-        toast.info('Upload cancelled');
-      } else {
-        setLocalParsedText('');
+      const rawContent = await selectedFile.text();
+      const parsedBib = parseBibTeXMetadata(rawContent);
+
+      setBibFile(selectedFile);
+      setBibReferenceContent(rawContent.trim());
+
+      if (!parsedBib) {
         toast.warning(
-          'PDF parsing is unavailable. Continuing without parsed text.',
+          'BibTeX file was attached, but its fields could not be parsed.',
+        );
+        return;
+      }
+
+      const matchedJournalId = findMatchingJournalId(
+        journals,
+        parsedBib.journalName,
+      );
+      setPendingBibVenueName(parsedBib.journalName || '');
+
+      setFormData((prev) => ({
+        ...prev,
+        title: parsedBib.title || prev.title,
+        abstract: parsedBib.abstract || prev.abstract,
+        doi: parsedBib.doi || prev.doi,
+        authors: parsedBib.authors || prev.authors,
+        publisher: parsedBib.publisher || prev.publisher,
+        number: parsedBib.number || prev.number,
+        pages: parsedBib.pages || prev.pages,
+        volume: parsedBib.volume || prev.volume,
+        conferenceJournalId: matchedJournalId || prev.conferenceJournalId,
+        ranking: parsedBib.ranking || prev.ranking,
+        url: parsedBib.url || prev.url,
+      }));
+
+      if (parsedBib.year) {
+        setPubYear(parsedBib.year);
+        setPubYearError('');
+      }
+
+      if (parsedBib.month) {
+        const normalizedMonth = parsedBib.month.trim().toLowerCase();
+        setPubMonth(
+          BIBTEX_MONTH_TO_NUMBER[normalizedMonth] ||
+            normalizedMonth.padStart(2, '0'),
         );
       }
-    } finally {
-      setIsParsing(false);
-      abortControllerRef.current = null;
+
+      toast.success('Filled fields from BibTeX file');
+    } catch {
+      toast.error('Failed to read BibTeX file');
     }
   };
 
-  const handleCancelUpload = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+  React.useEffect(() => {
+    if (
+      !pendingBibVenueName ||
+      !journals.length ||
+      formData.conferenceJournalId
+    ) {
+      return;
     }
-    setFile(undefined);
-    setLocalParsedText(null);
-    setIsParsing(false);
-  };
 
-  const handleRemoveFile = () => {
-    setFile(undefined);
-    setLocalParsedText(null);
-  };
+    const matchedJournalId = findMatchingJournalId(
+      journals,
+      pendingBibVenueName,
+    );
+    if (!matchedJournalId) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      conferenceJournalId: prev.conferenceJournalId || matchedJournalId,
+    }));
+  }, [formData.conferenceJournalId, journals, pendingBibVenueName]);
 
   const handleAutoTag = async () => {
     if (!paper) return;
-    const currentParsedText = localParsedText || paper.parsedText;
+    const currentParsedText = paper.parsedText;
     if (!currentParsedText) {
       toast.warning('No parsed text available for auto-tagging');
       return;
@@ -306,21 +397,23 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     try {
       const response = await autoTagPaper({
         parsedText: currentParsedText!,
-        existingTags: tagList,
+        existingTags: keywordList.map((t) => t.name),
       });
 
       const suggestedTagsList = response.tags || [];
 
-      // Merge suggested tags with existing tags (avoiding duplicates)
-      setTagList((prev) => {
+      // Merge suggested keywords with existing ones (avoiding duplicates)
+      setKeywordList((prev) => {
         const merged = [...prev];
         suggestedTagsList.forEach((tag) => {
-          const normalizedTag = tag.trim();
+          const normalizedName = tag.name.trim();
           if (
-            normalizedTag &&
-            !merged.some((t) => t.toLowerCase() === normalizedTag.toLowerCase())
+            normalizedName &&
+            !merged.some(
+              (t) => t.name.toLowerCase() === normalizedName.toLowerCase(),
+            )
           ) {
-            merged.push(normalizedTag);
+            merged.push({ name: normalizedName, isFromPaper: tag.isFromPaper });
           }
         });
         return merged;
@@ -331,7 +424,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setLastAutoTagTime(now);
       localStorage.setItem(`autoTagCooldown_${paperId}`, now.toString());
       setCooldownSeconds(180);
-      toast.success(`Added ${suggestedTagsList.length} suggested tags`);
+      toast.success(`Added ${suggestedTagsList.length} suggested keywords`);
     } catch (error) {
       console.error('Auto-tag error:', error);
       const errorMessage =
@@ -344,18 +437,21 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     }
   };
 
-  const handleAddTag = (value: string) => {
+  const handleAddKeyword = (value: string) => {
     const trimmed = value.trim();
     if (
       trimmed &&
-      !tagList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+      !keywordList.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())
     ) {
-      setTagList((prev) => [...prev, trimmed]);
+      setKeywordList((prev) => [
+        ...prev,
+        { name: trimmed, isFromPaper: false },
+      ]);
     }
   };
 
-  const handleRemoveTag = (tag: string) => {
-    setTagList((prev) => prev.filter((t) => t !== tag));
+  const handleRemoveKeyword = (kw: string) => {
+    setKeywordList((prev) => prev.filter((t) => t.name !== kw));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -363,30 +459,6 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     if (!formData.authors.trim()) {
       toast.error('Authors is required.');
       return;
-    }
-    const hasJournalName = formData.journalName.trim().length > 0;
-    const hasConferenceName = formData.conferenceName.trim().length > 0;
-    if (!hasJournalName && !hasConferenceName) {
-      setJournalConferenceError(
-        'Please fill at least one of Journal Name or Conference Name.',
-      );
-      return;
-    }
-    if (hasJournalName && hasConferenceName) {
-      setJournalConferenceError(
-        'Please fill either Journal Name or Conference Name, not both.',
-      );
-      return;
-    }
-
-    if (formData.pages.trim()) {
-      const pagesPattern = /^\d+--\d+$/;
-      if (!pagesPattern.test(formData.pages.trim())) {
-        setPagesError(
-          'Pages must be in the format Number--Number (e.g. 436--444).',
-        );
-        return;
-      }
     }
 
     if (!pubYear.trim()) {
@@ -407,6 +479,12 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setPubYearError('Publication date cannot be in the future.');
       return;
     }
+
+    const selectedJournal = journals.find(
+      (j) => j.id === formData.conferenceJournalId,
+    );
+    const journalNameForRef = selectedJournal?.name ?? '';
+
     updatePaperMutation.mutate({
       paperId,
       data: {
@@ -419,24 +497,28 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         pages: formData.pages,
         volume: formData.volume,
         publicationDate: composedDate,
-        paperType: formData.paperType,
-        journalName: formData.journalName,
-        conferenceName: formData.conferenceName,
-        referenceContent: buildReferenceContent({
-          authors: formData.authors,
-          title: formData.title,
-          doi: formData.doi,
-          publisher: formData.publisher,
-          number: formData.number,
-          journalName: formData.journalName,
-          pages: formData.pages,
-          volume: formData.volume,
-          publicationYear: pubYear,
-          publicationMonth: pubMonth,
-        }),
-        status: formData.status,
-        tagNames: tagList,
+        gapTypeIds: formData.gapTypeIds,
+        conferenceJournalId: formData.conferenceJournalId || undefined,
+        ranking: formData.ranking || undefined,
+        url: formData.url || undefined,
+        bibFile,
+        referenceContent:
+          bibReferenceContent ||
+          buildReferenceContent({
+            authors: formData.authors,
+            title: formData.title,
+            doi: formData.doi,
+            publisher: formData.publisher,
+            number: formData.number,
+            journalName: journalNameForRef,
+            pages: formData.pages,
+            volume: formData.volume,
+            publicationYear: pubYear,
+            publicationMonth: pubMonth,
+          }),
+        keywords: keywordList.map((k) => k.name),
         isAutoTagged,
+        isIngested: paper.isIngested,
       },
     });
   };
@@ -448,18 +530,20 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           EDIT
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Edit Paper</DialogTitle>
-          <DialogDescription>
-            Update information for &quot;{paper.title}&quot;
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Edit Paper</DialogTitle>
+            <DialogDescription>
+              Update information for &quot;{paper.title}&quot;
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
         <form
           id="update-paper-form"
           onSubmit={handleSubmit}
-          className="scrollbar-dialog flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+          className="scrollbar-dialog flex-1 space-y-4 overflow-y-auto px-6 py-4"
         >
           <div className="space-y-2">
             <label htmlFor="update-paper-title" className="text-sm font-medium">
@@ -475,75 +559,51 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             />
           </div>
 
-          {/* File upload for re-parsing */}
           <div className="space-y-1.5">
-            <label htmlFor="update-paper-file" className="text-sm font-medium">
-              Re-upload PDF for Auto Tag
+            <label htmlFor="update-paper-bib" className="text-sm font-medium">
+              BibTeX File
             </label>
-            {file ? (
-              <div className="space-y-2">
-                <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
-                  <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
-                    <Upload className="size-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{file.name}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                    onClick={isParsing ? handleCancelUpload : handleRemoveFile}
-                    title={isParsing ? 'Cancel upload' : 'Remove file'}
-                  >
-                    <X className="size-4" />
-                  </Button>
+            {bibFile ? (
+              <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-3">
+                <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md">
+                  <Upload className="size-4" />
                 </div>
-                {isParsing && (
-                  <div className="bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground flex items-center gap-1.5">
-                        <Loader2 className="size-3 animate-spin" />
-                        Parsing PDF...
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1" aria-hidden="true">
-                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.3s]" />
-                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full [animation-delay:-0.15s]" />
-                      <span className="bg-primary/50 size-1.5 animate-bounce rounded-full" />
-                    </div>
-                  </div>
-                )}
-                {!isParsing && localParsedText && (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{bibFile.name}</p>
                   <p className="text-muted-foreground text-xs">
-                    ✓ PDF parsed successfully
+                    {(bibFile.size / 1024).toFixed(1)} KB
                   </p>
-                )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                  onClick={handleRemoveBibFile}
+                >
+                  <X className="size-4" />
+                </Button>
               </div>
             ) : (
               <label
-                htmlFor="update-paper-file"
+                htmlFor="update-paper-bib"
                 className="border-input hover:bg-muted/50 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 transition-colors"
               >
                 <div className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-full">
                   <Upload className="size-4" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium">Click to upload PDF</p>
+                  <p className="text-sm font-medium">Click to upload BibTeX</p>
                   <p className="text-muted-foreground text-xs">
-                    PDF files only
+                    .bib files only
                   </p>
                 </div>
                 <input
-                  id="update-paper-file"
+                  id="update-paper-bib"
                   type="file"
-                  accept=".pdf"
+                  accept=".bib"
                   className="hidden"
-                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                  onChange={(e) => handleBibFileChange(e.target.files?.[0])}
                 />
               </label>
             )}
@@ -552,21 +612,21 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">
-                Tags {tagList.length > 0 && `(${tagList.length})`}
+                Keywords {keywordList.length > 0 && `(${keywordList.length})`}
               </label>
-              {(paper?.parsedText || localParsedText) && (
+              {paper?.parsedText && (
                 <Button
                   type="button"
                   variant="darkRed"
                   size="action"
                   onClick={handleAutoTag}
-                  disabled={isAutoTagging || cooldownSeconds > 0 || isParsing}
+                  disabled={isAutoTagging || cooldownSeconds > 0}
                   className="gap-1 uppercase"
                 >
                   {isAutoTagging ? (
                     <>
                       <Loader2 className="size-3 animate-spin" />
-                      Tagging...
+                      Suggesting...
                     </>
                   ) : cooldownSeconds > 0 ? (
                     <>
@@ -576,7 +636,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   ) : (
                     <>
                       <Tags className="size-3" />
-                      Auto Tag
+                      Suggest Keywords
                     </>
                   )}
                 </Button>
@@ -584,10 +644,13 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             </div>
             <TagAutocompleteInput
               key={`${paperId}-${open}`}
-              tagList={tagList}
-              onAddTag={handleAddTag}
-              onRemoveTag={handleRemoveTag}
-              placeholder="Type a tag and press Enter..."
+              tagList={keywordList.map((t) => t.name)}
+              onAddTag={handleAddKeyword}
+              onRemoveTag={handleRemoveKeyword}
+              suggestedTags={keywordList
+                .filter((t) => t.isFromPaper)
+                .map((t) => t.name)}
+              placeholder="Type a keyword and press Enter..."
               className="dark:bg-input/30 bg-transparent"
             />
           </div>
@@ -729,17 +792,130 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="update-paper-type" className="text-sm font-medium">
-              Paper Type
+            <label
+              htmlFor="update-paper-gap-type"
+              className="text-sm font-medium"
+            >
+              Gap Types
             </label>
-            <Input
-              id="update-paper-type"
-              value={formData.paperType}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, paperType: e.target.value }))
-              }
-              placeholder="e.g. Research, Review"
-            />
+            <div ref={gapTypeComboboxRef} className="relative">
+              <div
+                role="combobox"
+                tabIndex={0}
+                aria-expanded={isGapTypeOpen}
+                aria-controls="update-paper-gap-types-listbox"
+                className={cn(
+                  'border-input text-foreground focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-10 w-full flex-wrap items-center gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-within:ring-[3px]',
+                )}
+                onClick={() => gapTypeInputRef.current?.focus()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    gapTypeInputRef.current?.focus();
+                  }
+                }}
+              >
+                {selectedGapTypes.map((gapType) => (
+                  <Badge
+                    key={gapType.id}
+                    variant="secondary"
+                    className="flex items-center gap-1.5 rounded-md bg-slate-800 px-2 py-0.5 text-xs text-white hover:bg-slate-700"
+                  >
+                    {gapType.name}
+                    <button
+                      type="button"
+                      className="text-white/80 hover:text-white"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFormData((prev) => ({
+                          ...prev,
+                          gapTypeIds: prev.gapTypeIds.filter(
+                            (id) => id !== gapType.id,
+                          ),
+                        }));
+                      }}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </Badge>
+                ))}
+                <input
+                  ref={gapTypeInputRef}
+                  value={gapTypeSearch}
+                  onFocus={() => setIsGapTypeOpen(true)}
+                  onChange={(e) => {
+                    setGapTypeSearch(e.target.value);
+                    setIsGapTypeOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                      setIsGapTypeOpen(true);
+                    }
+                    if (e.key === 'Escape') {
+                      setIsGapTypeOpen(false);
+                    }
+                    if (
+                      e.key === 'Backspace' &&
+                      !gapTypeSearch &&
+                      selectedGapTypes.length > 0
+                    ) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        gapTypeIds: prev.gapTypeIds.slice(0, -1),
+                      }));
+                    }
+                  }}
+                  placeholder={
+                    gapTypeSearch.trim()
+                      ? ''
+                      : selectedGapTypes.length > 0
+                        ? 'Add more gap types...'
+                        : 'Search gap types...'
+                  }
+                  autoComplete="off"
+                  className={cn(
+                    'flex h-5 min-w-24 flex-1 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus-visible:ring-0',
+                    gapTypeSearch.trim() || selectedGapTypes.length > 0
+                      ? 'placeholder:text-transparent'
+                      : 'placeholder:text-muted-foreground/50',
+                  )}
+                />
+              </div>
+              {isGapTypeOpen && (
+                <div
+                  id="update-paper-gap-types-listbox"
+                  role="listbox"
+                  className="bg-background absolute top-full right-0 left-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border shadow-sm"
+                >
+                  {filteredGapTypes.length > 0 ? (
+                    filteredGapTypes.map((gapType) => (
+                      <button
+                        key={gapType.id}
+                        type="button"
+                        className="hover:bg-accent flex w-full items-center justify-between px-3 py-2 text-left text-sm"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            gapTypeIds: [...prev.gapTypeIds, gapType.id],
+                          }));
+                          setGapTypeSearch('');
+                          setIsGapTypeOpen(false);
+                        }}
+                      >
+                        <span>{gapType.name}</span>
+                        <X className="size-4 opacity-0" />
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground px-3 py-2 text-xs">
+                      No gap types found.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -747,52 +923,60 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               htmlFor="update-paper-journal"
               className="text-sm font-medium"
             >
-              Journal Name <span className="text-destructive">*</span>
+              Journal / Conference
             </label>
-            <Input
+            <select
               id="update-paper-journal"
-              value={formData.journalName}
+              value={formData.conferenceJournalId}
               onChange={(e) =>
-                setFormData((prev) => {
-                  if (journalConferenceError) setJournalConferenceError('');
-                  return {
-                    ...prev,
-                    journalName: e.target.value,
-                  };
-                })
+                setFormData((prev) => ({
+                  ...prev,
+                  conferenceJournalId: e.target.value,
+                }))
               }
-              placeholder="e.g. Nature"
-              disabled={Boolean(formData.conferenceName.trim())}
-            />
+              className={cn(
+                'border-input dark:bg-input/30 ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                !formData.conferenceJournalId && 'text-muted-foreground',
+              )}
+            >
+              <option value="">Select journal / conference</option>
+              {journals.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">
             <label
-              htmlFor="update-paper-conference"
+              htmlFor="update-paper-ranking"
               className="text-sm font-medium"
             >
-              Conference Name <span className="text-destructive">*</span>
+              Ranking
             </label>
             <Input
-              id="update-paper-conference"
-              value={formData.conferenceName}
+              id="update-paper-ranking"
+              value={formData.ranking}
               onChange={(e) =>
-                setFormData((prev) => {
-                  if (journalConferenceError) setJournalConferenceError('');
-                  return {
-                    ...prev,
-                    conferenceName: e.target.value,
-                  };
-                })
+                setFormData((prev) => ({ ...prev, ranking: e.target.value }))
               }
-              placeholder="e.g. NeurIPS"
-              disabled={Boolean(formData.journalName.trim())}
+              placeholder="e.g. Q1, A*"
             />
-            {journalConferenceError && (
-              <p className="text-destructive text-xs">
-                {journalConferenceError}
-              </p>
-            )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="update-paper-url" className="text-sm font-medium">
+              URL
+            </label>
+            <Input
+              id="update-paper-url"
+              value={formData.url}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, url: e.target.value }))
+              }
+              placeholder="e.g. https://arxiv.org/abs/..."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -852,16 +1036,20 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
           </div>
         </form>
 
-        <DialogFooter className="pt-2">
-          <Button
-            type="submit"
-            form="update-paper-form"
-            disabled={updatePaperMutation.isPending || !formData.authors.trim()}
-            variant="darkRed"
-          >
-            {updatePaperMutation.isPending ? 'SAVING...' : 'SAVE'}
-          </Button>
-        </DialogFooter>
+        <div className="shrink-0 px-6 pt-2 pb-6">
+          <DialogFooter>
+            <Button
+              type="submit"
+              form="update-paper-form"
+              disabled={
+                updatePaperMutation.isPending || !formData.authors.trim()
+              }
+              variant="darkRed"
+            >
+              {updatePaperMutation.isPending ? 'SAVING...' : 'SAVE'}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

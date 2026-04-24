@@ -27,10 +27,10 @@ export const DeleteTag = ({ tagId }: DeleteTagProps) => {
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
-        toast.success('Tag deleted successfully');
+        toast.success('Keyword deleted successfully');
       },
       onError: () => {
-        toast.error('Failed to delete tag');
+        toast.error('Failed to delete keyword');
       },
     },
   });
@@ -45,10 +45,10 @@ export const DeleteTag = ({ tagId }: DeleteTagProps) => {
       <AlertDialogContent className="rounded-2xl sm:max-w-xl">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-primary font-serif text-4xl font-extrabold tracking-tight">
-            Delete Tag
+            Delete Keyword
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this tag? This action cannot be
+            Are you sure you want to delete this keyword? This action cannot be
             undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

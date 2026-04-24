@@ -14,10 +14,12 @@ export const createJournal = (
 ): Promise<StringApiCreatedResponse> => {
   const formData = new FormData();
   formData.append('name', data.name);
-  formData.append('templateId', data.templateId);
+  formData.append('issn', data.issn);
+  data.templateIds.forEach((id) => formData.append('templateIds', id));
   formData.append('ranking', data.ranking);
   formData.append('url', data.url);
   formData.append('style', data.style);
+  formData.append('type', String(data.type));
 
   if (data.texFile) {
     formData.append('texFile', data.texFile);

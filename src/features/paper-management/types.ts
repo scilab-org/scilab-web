@@ -1,3 +1,13 @@
+export type PaperGapTypeDto = {
+  id: string;
+  name: string;
+};
+
+export type KeywordDto = {
+  name: string;
+  isFromPaper: boolean;
+};
+
 export type PaperDto = {
   id: string;
   title: string | null;
@@ -10,18 +20,17 @@ export type PaperDto = {
   volume: string | null;
   referenceContent: string | null;
   filePath: string | null;
-  status: number;
+  bibFilePath: string | null;
+  ranking: string | null;
+  url: string | null;
   ingestStatus?: number;
   isIngested: boolean;
   isAutoTagged: boolean;
   parsedText: string | null;
   publicationDate: string | null;
-  paperType: string | null;
-  journalName: string | null;
-  conferenceName: string | null;
-  conferenceJournalStartAt?: string | null;
-  conferenceJournalEndAt?: string | null;
-  tagNames: string[];
+  gapTypes: PaperGapTypeDto[];
+  conferenceJournalName: string | null;
+  keywords: string[];
   createdOnUtc: string | null;
   createdBy: string | null;
   lastModifiedOnUtc: string | null;
@@ -85,7 +94,7 @@ export type WritingPaperDto = {
   researchAim?: string | null;
   mainContribution?: string | null;
   rule?: string | null;
-  gapType?: string | null;
+  gapTypes: PaperGapTypeDto[];
   journal?: string | null;
   styleName?: string | null;
   styleDescription?: string | null;
@@ -135,14 +144,13 @@ export type GetPapersParams = {
   Publisher?: string;
   Abstract?: string;
   Doi?: string;
-  Status?: number;
   FromPublicationDate?: string;
   ToPublicationDate?: string;
   PaperType?: string;
-  JournalName?: string;
-  ConferenceName?: string;
+  JournalId?: string;
+  Ranking?: string;
   Author?: string[];
-  Tag?: string[];
+  Keyword?: string[];
   IsDeleted?: boolean;
   PageNumber?: number;
   PageSize?: number;
@@ -156,18 +164,19 @@ export type CreatePaperDto = {
   publisher: string;
   number: string;
   publicationDate: string;
-  paperType: string;
-  journalName: string;
-  conferenceName: string;
+  gapTypeIds: string[];
+  conferenceJournalId?: string;
   pages: string;
   volume: string;
   referenceContent: string;
-  file: File;
+  pdfFile: File;
+  bibFile?: File;
   parsedText: string;
-  tagNames: string[];
+  keywords: string[];
+  ranking?: string;
+  url?: string;
   isAutoTagged: boolean;
   isIngested: boolean;
-  status: number;
 };
 
 export type ParsePaperResponse = {
@@ -180,7 +189,7 @@ export type AutoTagRequest = {
 };
 
 export type AutoTagResponse = {
-  tags: string[];
+  tags: KeywordDto[];
 };
 
 export type UpdatePaperDto = {
@@ -191,15 +200,17 @@ export type UpdatePaperDto = {
   publisher?: string;
   number?: string;
   publicationDate?: string;
-  paperType?: string;
-  journalName?: string;
-  conferenceName?: string;
+  gapTypeIds?: string[];
+  conferenceJournalId?: string;
   pages?: string;
   volume?: string;
   referenceContent?: string;
-  status?: number;
-  tagNames?: string[];
+  keywords?: string[];
+  ranking?: string;
+  url?: string;
+  bibFile?: File;
   isAutoTagged?: boolean;
+  isIngested?: boolean;
 };
 
 export type UpdateWritingPaperDto = {
@@ -207,7 +218,7 @@ export type UpdateWritingPaperDto = {
   abstract?: string;
   researchGap?: string;
   researchAim?: string;
-  gapType?: string;
+  gapTypeIds?: string[];
   mainContribution?: string;
   status?: number;
   conferenceJournalName?: string | null;
@@ -257,7 +268,7 @@ export type CreatePaperInProjectDto = {
   context: string;
   abstract?: string;
   researchGap?: string;
-  gapType?: string;
+  gapTypeIds?: string[];
   mainContribution?: string;
   researchAim?: string;
   status?: number;
@@ -413,6 +424,9 @@ export type PaperContributorItem = {
   contributorEmail: string;
   firstName: string | null;
   lastName: string | null;
+  authorRoleId?: string | null;
+  authorRoleName?: string | null;
+  authorRoleDescription?: string | null;
 };
 
 export type GetPaperContributorsApiResponse = {
@@ -550,4 +564,38 @@ export type CreatePaperVersionFilePayload = {
 
 export type TransitionPaperStatusApiResponse = {
   value: string;
+};
+
+export type CreatePaperAuthorDto = {
+  name?: string | null;
+  ocrid?: string | null;
+  email?: string | null;
+  paperId: string | null;
+  authorRoleId: string;
+  memberId: string | null;
+  projectId: string | null;
+};
+
+export type AvailablePaperAuthorItem = {
+  memberId: string;
+  userId: string;
+  subProjectId: string;
+  projectId: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  orcid: string | null;
+  enabled: boolean;
+  role: string;
+  joinedAt: string;
+};
+
+export type GetAvailablePaperAuthorsResult = {
+  items: AvailablePaperAuthorItem[];
+  paging: PagingResult;
+};
+
+export type GetAvailablePaperAuthorsApiResponse = {
+  result: GetAvailablePaperAuthorsResult;
 };

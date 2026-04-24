@@ -21,6 +21,7 @@ import { FIELD_LABEL_CLASS } from '../constants';
 const initialFormData = {
   username: '',
   email: '',
+  ocrId: '',
   firstName: '',
   lastName: '',
   initialPassword: '',
@@ -52,6 +53,7 @@ export const CreateUser = () => {
     createUserMutation.mutate({
       username: formData.username,
       email: formData.email,
+      ocrId: formData.ocrId,
       firstName: formData.firstName,
       lastName: formData.lastName,
       initialPassword: formData.initialPassword,
@@ -114,6 +116,20 @@ export const CreateUser = () => {
               }
               placeholder="Enter email"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="cu-ocrId" className={fieldLabel}>
+              OCR ID
+            </label>
+            <Input
+              id="cu-ocrId"
+              value={formData.ocrId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, ocrId: e.target.value }))
+              }
+              placeholder="Enter OCR ID"
             />
           </div>
 

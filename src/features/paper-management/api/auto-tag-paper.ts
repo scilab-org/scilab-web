@@ -1,7 +1,7 @@
 import { api } from '@/lib/api-client';
 
 import { PAPER_MANAGEMENT_API } from '../constants';
-import { AutoTagRequest, AutoTagResponse } from '../types';
+import { AutoTagRequest, AutoTagResponse, KeywordDto } from '../types';
 
 const normalizeAutoTagResponse = (response: unknown): AutoTagResponse => {
   if (!response || typeof response !== 'object') {
@@ -18,7 +18,21 @@ const normalizeAutoTagResponse = (response: unknown): AutoTagResponse => {
 
   return {
     tags: Array.isArray(tagsValue)
-      ? tagsValue.filter((tag): tag is string => typeof tag === 'string')
+      ? tagsValue.map((tag): KeywordDto => {
+          // Handle KeywordDto objects from the backend
+          if (typeof tag === 'object' && tag !== null) {
+            const tagObj = tag as Record<string, unknown>;
+            return {
+              name: String(tagObj.name ?? ''),
+              isFromPaper: Boolean(tagObj.isFromPaper ?? false),
+            };
+          }
+          // Handle legacy string format - mark as not from paper
+          if (typeof tag === 'string') {
+            return { name: tag, isFromPaper: false };
+          }
+          return { name: '', isFromPaper: false };
+        })
       : [],
   };
 };

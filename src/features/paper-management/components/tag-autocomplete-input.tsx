@@ -14,6 +14,8 @@ type TagAutocompleteInputProps = {
   tagList: string[];
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
+  /** Names that should render with an amber/gold badge (AI-suggested from paper) */
+  suggestedTags?: string[];
   placeholder?: string;
   className?: string;
   inputClassName?: string;
@@ -23,7 +25,8 @@ export const TagAutocompleteInput = ({
   tagList,
   onAddTag,
   onRemoveTag,
-  placeholder = 'Type a tag and press Enter...',
+  suggestedTags,
+  placeholder = 'Type a keyword and press Enter...',
   className,
   inputClassName,
 }: TagAutocompleteInputProps) => {
@@ -131,18 +134,32 @@ export const TagAutocompleteInput = ({
           className,
         )}
       >
-        {tagList.map((tag) => (
-          <Badge key={tag} variant="outline" className="gap-1 pr-1 text-xs">
-            {tag}
-            <button
-              type="button"
-              onClick={() => onRemoveTag(tag)}
-              className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-white/20"
+        {tagList.map((tag) => {
+          const isSuggested = suggestedTags?.some(
+            (s) => s.toLowerCase() === tag.toLowerCase(),
+          );
+          return (
+            <Badge
+              key={tag}
+              variant="outline"
+              className={cn(
+                'gap-1 pr-1 text-xs',
+                isSuggested &&
+                  'border-amber-500 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-100',
+              )}
+              title={isSuggested ? 'Extracted From Paper Content' : undefined}
             >
-              <X className="size-3" />
-            </button>
-          </Badge>
-        ))}
+              {tag}
+              <button
+                type="button"
+                onClick={() => onRemoveTag(tag)}
+                className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-white/20"
+              >
+                <X className="size-3" />
+              </button>
+            </Badge>
+          );
+        })}
         <PopoverAnchor asChild>
           <input
             ref={inputRef}

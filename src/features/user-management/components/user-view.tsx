@@ -74,6 +74,10 @@ export const UserView = ({ userId }: { userId: string }) => {
               <p className="font-medium">{user.username}</p>
             </div>
             <div>
+              <p className="text-muted-foreground text-sm">OCR ID</p>
+              <p className="font-medium">{user.ocrId || 'N/A'}</p>
+            </div>
+            <div>
               <p className="text-muted-foreground text-sm">Email</p>
               <p className="font-medium">{user.email}</p>
             </div>

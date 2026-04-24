@@ -14,6 +14,7 @@ export type UserDto = {
   id: string | null;
   username: string | null;
   email: string | null;
+  ocrId: string | null;
   firstName: string | null;
   lastName: string | null;
   enabled: boolean;
@@ -33,6 +34,7 @@ export type GroupDto = {
 export type CreateUserDto = {
   username: string | null;
   email: string | null;
+  ocrId: string | null;
   firstName: string | null;
   lastName: string | null;
   initialPassword: string | null;
@@ -42,6 +44,7 @@ export type CreateUserDto = {
 };
 
 export type UpdateUserDto = {
+  ocrId: string | null;
   firstName: string | null;
   lastName: string | null;
   enabled: boolean;

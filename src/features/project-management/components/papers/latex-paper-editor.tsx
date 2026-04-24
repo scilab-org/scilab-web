@@ -840,8 +840,8 @@ const ReferencesTab = ({
       : activeReference?.type === 'other'
         ? (activeReference.item?.paperBank ?? null)
         : null;
-  const activeTags = Array.isArray(activePaper?.tagNames)
-    ? activePaper.tagNames
+  const activeTags = Array.isArray(activePaper?.keywords)
+    ? activePaper.keywords
     : [];
   const activeSections =
     activeReference?.type === 'other' &&
@@ -856,10 +856,9 @@ const ReferencesTab = ({
       abstract: string | null;
       doi: string | null;
       filePath: string | null;
-      journalName: string | null;
-      conferenceName: string | null;
+      conferenceJournalName: string | null;
       publicationDate: string | null;
-      tagNames: string[];
+      keywords: string[];
     },
     index: number,
   ) => (
@@ -882,9 +881,9 @@ const ReferencesTab = ({
         >
           {paper.title || '(Untitled)'}
         </p>
-        {(paper.journalName || paper.conferenceName) && (
+        {paper.conferenceJournalName && (
           <p className="mt-0.5 text-xs text-slate-500 italic">
-            {paper.journalName || paper.conferenceName}
+            {paper.conferenceJournalName}
           </p>
         )}
         {!compact && paper.doi && (
@@ -982,11 +981,9 @@ const ReferencesTab = ({
                     <p className="text-sm leading-snug font-semibold text-slate-800 dark:text-slate-100">
                       {item.paperBank.title || `Reference ${index + 1}`}
                     </p>
-                    {(item.paperBank.journalName ||
-                      item.paperBank.conferenceName) && (
+                    {item.paperBank.conferenceJournalName && (
                       <p className="mt-0.5 text-xs text-slate-500 italic">
-                        {item.paperBank.journalName ||
-                          item.paperBank.conferenceName}
+                        {item.paperBank.conferenceJournalName}
                       </p>
                     )}
                     {!compact && item.paperBank.doi && (
@@ -1051,7 +1048,7 @@ const ReferencesTab = ({
                         variant="outline"
                         className="rounded-full px-2.5 py-0.5 text-[10px]"
                       >
-                        {activeTags.length} tags
+                        {activeTags.length} keywords
                       </Badge>
                     ) : (
                       <>
@@ -1059,7 +1056,7 @@ const ReferencesTab = ({
                           variant="outline"
                           className="rounded-full px-2.5 py-0.5 text-[10px]"
                         >
-                          {activeTags.length} tags
+                          {activeTags.length} keywords
                         </Badge>
                         <Badge
                           variant="outline"
@@ -1181,9 +1178,7 @@ const ReferencesTab = ({
                           Journal / Conference
                         </p>
                         <p className="mt-0.5 font-medium">
-                          {activePaper.journalName ||
-                            activePaper.conferenceName ||
-                            'Not provided'}
+                          {activePaper.conferenceJournalName || 'Not provided'}
                         </p>
                       </div>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1252,22 +1247,22 @@ const ReferencesTab = ({
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
-                          Tags
+                          Keywords
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {activeTags.length ? (
-                            activeTags.slice(0, 8).map((tag) => (
+                            activeTags.slice(0, 8).map((kw) => (
                               <Badge
-                                key={tag}
+                                key={kw}
                                 variant="outline"
                                 className="rounded-full px-2 py-0.5 text-[10px]"
                               >
-                                {tag}
+                                {kw}
                               </Badge>
                             ))
                           ) : (
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                              No tags
+                              No keywords
                             </p>
                           )}
                         </div>
@@ -2127,7 +2122,7 @@ const InlineReferenceSectionEditor = ({
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
-                          Tags
+                          Keywords
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {activeBankDetail.tagNames.length ? (
@@ -2142,7 +2137,7 @@ const InlineReferenceSectionEditor = ({
                             ))
                           ) : (
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                              No tags
+                              No keywords
                             </p>
                           )}
                         </div>
