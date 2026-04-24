@@ -1,8 +1,9 @@
 import {
   Bookmark,
   BookOpen,
-  ClipboardList,
+  ChevronDown,
   ChevronRight,
+  ClipboardList,
   FileText,
   FolderKanban,
   LayoutTemplate,
@@ -11,6 +12,7 @@ import {
   Users,
   Globe,
 } from 'lucide-react';
+import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigation } from 'react-router';
 
@@ -20,6 +22,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -216,17 +219,7 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
   );
 };
 
-const navigation: SideNavigationItem[] = [
-  {
-    name: 'Users',
-    to: paths.app.userManagement.users.getHref(),
-    icon: Users,
-  },
-  {
-    name: 'Projects',
-    to: paths.app.projects.getHref(),
-    icon: FolderKanban,
-  },
+const memberNavigation: SideNavigationItem[] = [
   {
     name: 'Assigned Projects',
     to: paths.app.assignedProjects.list.getHref(),
@@ -237,69 +230,107 @@ const navigation: SideNavigationItem[] = [
     to: paths.app.myAssignedPapers.getHref(),
     icon: FileText,
   },
-  {
-    name: 'My Task',
-    to: paths.app.myTasks.getHref(),
-    icon: ClipboardList,
-  },
-  {
-    name: 'Paper Banks',
-    to: paths.app.paperManagement.papers.getHref(),
-    icon: FileText,
-  },
-  {
-    name: 'Keywords',
-    to: paths.app.tagManagement.tags.getHref(),
-    icon: Tag,
-  },
-  {
-    name: 'Gap Types',
-    to: paths.app.gapTypeManagement.gapTypes.getHref(),
-    icon: Tag,
-  },
-  {
-    name: 'Author Roles',
-    to: paths.app.authorRoleManagement.authorRoles.getHref(),
-    icon: Users,
-  },
-  {
-    name: 'Domains',
-    to: paths.app.domainManagement.domains.getHref(),
-    icon: Globe,
-  },
-  {
-    name: 'Journals',
-    to: paths.app.journalManagement.journals.getHref(),
-    icon: BookOpen,
-  },
-  {
-    name: 'Paper Templates',
-    to: paths.app.paperTemplateManagement.paperTemplates.getHref(),
-    icon: LayoutTemplate,
-  },
-  // { name: 'Settings', to: paths.app.settings.getHref(), icon: Settings },
+  { name: 'My Task', to: paths.app.myTasks.getHref(), icon: ClipboardList },
 ];
 
-const adminNavigation = navigation.filter(
-  (item) =>
-    item.name !== 'Assigned Projects' &&
-    item.name !== 'My Task' &&
-    item.name !== 'Assigned Papers',
-);
+type SideNavigationGroup = {
+  label: string;
+  color: string;
+  items: SideNavigationItem[];
+};
 
-const memberNavigation = navigation.filter((item) =>
-  ['Assigned Projects', 'Assigned Papers', 'My Task', 'Settings'].includes(
-    item.name,
-  ),
-);
+const adminNavigationGroups: SideNavigationGroup[] = [
+  {
+    label: 'Administration',
+    color: '#2d2926',
+    items: [
+      {
+        name: 'Users',
+        to: paths.app.userManagement.users.getHref(),
+        icon: Users,
+      },
+      {
+        name: 'Projects',
+        to: paths.app.projects.getHref(),
+        icon: FolderKanban,
+      },
+    ],
+  },
+  {
+    label: 'Research Library',
+    color: '#590709',
+    items: [
+      {
+        name: 'Paper Banks',
+        to: paths.app.paperManagement.papers.getHref(),
+        icon: FileText,
+      },
+      {
+        name: 'Journals',
+        to: paths.app.journalManagement.journals.getHref(),
+        icon: BookOpen,
+      },
+      {
+        name: 'Paper Templates',
+        to: paths.app.paperTemplateManagement.paperTemplates.getHref(),
+        icon: LayoutTemplate,
+      },
+    ],
+  },
+  {
+    label: 'Metadata',
+    color: '#635e56',
+    items: [
+      {
+        name: 'Keywords',
+        to: paths.app.tagManagement.tags.getHref(),
+        icon: Tag,
+      },
+      {
+        name: 'Gap Types',
+        to: paths.app.gapTypeManagement.gapTypes.getHref(),
+        icon: Tag,
+      },
+      {
+        name: 'Author Roles',
+        to: paths.app.authorRoleManagement.authorRoles.getHref(),
+        icon: Users,
+      },
+      {
+        name: 'Domains',
+        to: paths.app.domainManagement.domains.getHref(),
+        icon: Globe,
+      },
+    ],
+  },
+];
+
+function NavItems({ items }: { items: SideNavigationItem[] }) {
+  const location = useLocation();
+  return (
+    <SidebarMenu>
+      {items.map((item) => {
+        const isActive = location.pathname.startsWith(item.to);
+        return (
+          <SidebarMenuItem key={item.name}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+              <NavLink to={item.to}>
+                <item.icon />
+                <span>{item.name}</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+}
 
 function AppSidebar() {
   const logout = useLogout();
-  const location = useLocation();
   const { data: user } = useUser();
 
   const isAdmin = user?.groups?.includes('system:admin') ?? false;
-  const navItems = isAdmin ? adminNavigation : memberNavigation;
 
   const handleLogout = () => {
     logout.mutate();
@@ -312,30 +343,40 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive = location.pathname.startsWith(item.to);
-
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.name}
+        {isAdmin ? (
+          adminNavigationGroups.map((group) => (
+            <Collapsible.Root
+              key={group.label}
+              defaultOpen
+              className="group/collapsible"
+            >
+              <SidebarGroup className="py-0">
+                <SidebarGroupLabel asChild className="p-0">
+                  <Collapsible.Trigger className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
+                    <span
+                      className="rounded px-2 py-0.5 text-xs font-semibold tracking-widest text-white uppercase"
+                      style={{ backgroundColor: group.color }}
                     >
-                      <NavLink to={item.to}>
-                        <item.icon />
-                        <span>{item.name}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      {group.label}
+                    </span>
+                    <ChevronDown className="text-muted-foreground size-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                  </Collapsible.Trigger>
+                </SidebarGroupLabel>
+                <Collapsible.Content className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
+                  <SidebarGroupContent>
+                    <NavItems items={group.items} />
+                  </SidebarGroupContent>
+                </Collapsible.Content>
+              </SidebarGroup>
+            </Collapsible.Root>
+          ))
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <NavItems items={memberNavigation} />
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

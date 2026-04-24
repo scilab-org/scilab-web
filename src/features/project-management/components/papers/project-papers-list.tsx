@@ -55,7 +55,7 @@ const getTagColor = (tag: string) => {
 const getPaperKeywords = (paper: ProjectPaper): string[] =>
   paper.keywords && paper.keywords.length > 0
     ? paper.keywords
-    : paper.tagNames ?? [];
+    : (paper.tagNames ?? []);
 
 const truncateAuthors = (authors: string | null): React.ReactNode => {
   if (!authors) return <span className="text-muted-foreground text-sm">—</span>;

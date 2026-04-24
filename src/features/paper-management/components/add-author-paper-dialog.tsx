@@ -75,9 +75,8 @@ export const AddAuthorPaperDialog = ({
   const [name, setName] = useState(initialFormState.name);
   const [email, setEmail] = useState(initialFormState.email);
   const [ocrid, setOcrid] = useState(initialFormState.ocrid);
-  const [selectedAuthor, setSelectedAuthor] = useState<AvailablePaperAuthorItem | null>(
-    null,
-  );
+  const [selectedAuthor, setSelectedAuthor] =
+    useState<AvailablePaperAuthorItem | null>(null);
 
   // Fetch author roles (must be before useMemo that depends on authorRoles)
   const { data: authorRolesResponse, isLoading: isLoadingRoles } =
@@ -130,8 +129,10 @@ export const AddAuthorPaperDialog = ({
     params: { paperId, PageNumber: 1, PageSize: 1000 },
     queryConfig: { enabled: open && !isEditMode },
   });
-  const availableAuthors =
-    availableAuthorsQuery.data?.result?.items ?? [];
+  const availableAuthors = useMemo(
+    () => availableAuthorsQuery.data?.result?.items ?? [],
+    [availableAuthorsQuery.data?.result?.items],
+  );
   const filteredAuthors = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return availableAuthors;
@@ -292,7 +293,8 @@ export const AddAuthorPaperDialog = ({
                       >
                         <span className="min-w-0 flex-1 truncate">
                           {selectedAuthor
-                            ? `${selectedAuthor.firstName} ${selectedAuthor.lastName}`.trim() || selectedAuthor.username
+                            ? `${selectedAuthor.firstName} ${selectedAuthor.lastName}`.trim() ||
+                              selectedAuthor.username
                             : 'Select author'}
                         </span>
                         <ChevronDown className="size-4 shrink-0 opacity-60" />
@@ -308,7 +310,9 @@ export const AddAuthorPaperDialog = ({
                           <Input
                             placeholder="Search by name, email, or username..."
                             value={searchText}
-                            onChange={(event) => setSearchText(event.target.value)}
+                            onChange={(event) =>
+                              setSearchText(event.target.value)
+                            }
                             onKeyDown={(event) => {
                               if (event.key === 'Enter') event.preventDefault();
                             }}
@@ -323,7 +327,8 @@ export const AddAuthorPaperDialog = ({
                             </>
                           ) : filteredAuthors.length > 0 ? (
                             filteredAuthors.map((member) => {
-                              const isSelected = selectedUserId === member.userId;
+                              const isSelected =
+                                selectedUserId === member.userId;
 
                               return (
                                 <button
@@ -358,7 +363,8 @@ export const AddAuthorPaperDialog = ({
                                     </p>
                                     <p className="text-secondary truncate font-mono text-[10px] tracking-widest uppercase">
                                       {member.email || 'No email'}
-                                      {member.username && ` · @${member.username}`}
+                                      {member.username &&
+                                        ` · @${member.username}`}
                                     </p>
                                   </div>
                                 </button>

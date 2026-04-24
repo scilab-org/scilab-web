@@ -426,11 +426,6 @@ export const ProjectPaperDetailPage = ({
   });
 
   const paper = paperQuery.data?.result?.paper;
-  const paperType =
-    paper?.gapTypes
-      ?.map((gapType) => gapType.name)
-      .filter(Boolean)
-      .join(', ') || '';
   const gapTypesQuery = useGapTypes({
     params: { PageNumber: 1, PageSize: 1000 },
     queryConfig: { enabled: isEditPaperOpen },

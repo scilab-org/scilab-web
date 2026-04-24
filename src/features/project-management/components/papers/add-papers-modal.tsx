@@ -45,7 +45,7 @@ const getTagColor = (tag: string) => {
 const getPaperKeywords = (paper: ProjectPaper): string[] =>
   paper.keywords && paper.keywords.length > 0
     ? paper.keywords
-    : paper.tagNames ?? [];
+    : (paper.tagNames ?? []);
 
 type PaperCardProps = {
   paper: ProjectPaper;

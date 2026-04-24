@@ -443,7 +443,10 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       trimmed &&
       !keywordList.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())
     ) {
-      setKeywordList((prev) => [...prev, { name: trimmed, isFromPaper: false }]);
+      setKeywordList((prev) => [
+        ...prev,
+        { name: trimmed, isFromPaper: false },
+      ]);
     }
   };
 

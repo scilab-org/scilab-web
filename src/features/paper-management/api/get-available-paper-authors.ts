@@ -39,7 +39,11 @@ export const getAvailablePaperAuthorsQueryOptions = (
   params: GetAvailablePaperAuthorsParams,
 ) => {
   return queryOptions({
-    queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.AVAILABLE_PAPER_AUTHORS, subProjectId, params],
+    queryKey: [
+      PAPER_MANAGEMENT_QUERY_KEYS.AVAILABLE_PAPER_AUTHORS,
+      subProjectId,
+      params,
+    ],
     queryFn: () => getAvailablePaperAuthors({ subProjectId, params }),
   });
 };
