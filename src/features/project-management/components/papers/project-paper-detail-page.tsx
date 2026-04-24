@@ -184,6 +184,18 @@ const toDateTimeLocalValue = (value?: string | null) => {
   return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
 };
 
+const getPaperPublicationLabel = (paper: {
+  conferenceJournalName?: string | null;
+  journalName?: string | null;
+  journal?: string | null;
+  conferenceName?: string | null;
+}) =>
+  paper.conferenceJournalName?.trim() ||
+  paper.journalName?.trim() ||
+  paper.journal?.trim() ||
+  paper.conferenceName?.trim() ||
+  '—';
+
 const VERSION_FILE_STATUS_CLS: Record<number, string> = {
   1: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
   2: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
@@ -199,7 +211,7 @@ export type Tab =
   | 'overview'
   | 'compile-paper'
   | 'sections'
-  | 'contributor'
+  | 'member'
   | 'author'
   | 'task'
   | 'submission';
@@ -236,9 +248,9 @@ const TAB_GROUPS: {
     id: 'member',
     label: 'Member',
     icon: Users,
-    defaultTab: 'contributor' as Tab,
+    defaultTab: 'member' as Tab,
     tabs: [
-      { id: 'contributor', label: 'Contributor', icon: Users },
+      { id: 'member', label: 'Member', icon: Users },
       { id: 'author', label: 'Author', icon: Users },
     ],
   },
@@ -256,7 +268,7 @@ const getRoleDisplayLabel = (role: string | null | undefined) => {
 
   if (normalized === 'paper:author') return 'Head Writer';
   if (raw === 'author') return 'Author';
-  if (raw === 'member') return 'Contributor';
+  if (raw === 'member') return 'Member';
   if (raw === 'edit') return 'Editor';
   if (raw === 'read' || raw === 'view') return 'Viewer';
   if (raw === 'manager') return 'Manager';
@@ -627,8 +639,8 @@ export const ProjectPaperDetailPage = ({
   const removePaperMemberMutation = useRemovePaperMembers({
     subProjectId: paperSubProjectId,
     mutationConfig: {
-      onSuccess: () => toast.success('Contributor removed'),
-      onError: () => toast.error('Failed to remove contributor'),
+      onSuccess: () => toast.success('Member removed'),
+      onError: () => toast.error('Failed to remove member'),
     },
   });
 
@@ -972,10 +984,177 @@ export const ProjectPaperDetailPage = ({
     <ContentLayout title="" description="">
       <div className="space-y-6">
         {/* ── Page header (outside card) ───────────────────────────── */}
-        <div>
-          <h1 className="text-primary font-serif text-4xl font-extrabold tracking-tight">
-            {paper.title}
-          </h1>
+        <div className="overflow-hidden rounded-md border bg-[#fffaf1] shadow-sm">
+          <div className="flex flex-col gap-6 p-6 lg:p-7">
+            <div className="min-w-0 space-y-3">
+              <div className="space-y-2">
+                <span className="inline-flex w-fit items-center rounded-md border border-[#630F0F]/20 bg-[#630F0F]/10 px-2.5 py-0.5 text-xs font-semibold tracking-[0.18em] text-[#630F0F] uppercase">
+                  Paper
+                </span>
+                <h1 className="text-foreground text-2xl font-bold">
+                  {paper.title}
+                </h1>
+              </div>
+              <TooltipProvider>
+                <div className="flex flex-wrap items-center gap-2">
+                  {paper.gapTypes?.length ? (
+                    paper.gapTypes.map((gapType) => (
+                      <Tooltip key={gapType.id}>
+                        <TooltipTrigger asChild>
+                          <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                            {gapType.name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          Gap Type: {gapType.name}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))
+                  ) : (
+                    <span className="border-border bg-background text-muted-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                      No gap type
+                    </span>
+                  )}
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                        {getPaperPublicationLabel({
+                          conferenceJournalName: (
+                            paper as {
+                              conferenceJournalName?: string | null;
+                            }
+                          ).conferenceJournalName,
+                          journalName: (
+                            paper as { journalName?: string | null }
+                          ).journalName,
+                          journal: (paper as { journal?: string | null })
+                            .journal,
+                          conferenceName: (
+                            paper as {
+                              conferenceName?: string | null;
+                            }
+                          ).conferenceName,
+                        })}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Journal / Conference:{' '}
+                      {getPaperPublicationLabel({
+                        conferenceJournalName: (
+                          paper as { conferenceJournalName?: string | null }
+                        ).conferenceJournalName,
+                        journalName: (paper as { journalName?: string | null })
+                          .journalName,
+                        journal: (paper as { journal?: string | null }).journal,
+                        conferenceName: (
+                          paper as {
+                            conferenceName?: string | null;
+                          }
+                        ).conferenceName,
+                      })}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-foreground text-sm leading-relaxed">
+                    {paper.researchAim || 'No research aim defined.'}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Research Aim
+                  {/* {paper.researchAim || 'No research aim defined.'} */}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-muted text-primary rounded-md p-1.5">
+                      <Layers className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Sections
+                    </p>
+                  </div>
+                  <p className="text-foreground font-serif text-3xl font-bold">
+                    {sectionsQuery.isLoading ? (
+                      <Loader2 className="text-tertiary size-6 animate-spin" />
+                    ) : (
+                      totalSections
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-muted text-primary rounded-md p-1.5">
+                      <Users className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Members
+                    </p>
+                  </div>
+                  <p className="text-foreground font-serif text-3xl font-bold">
+                    {paperMembersQuery.isLoading ? (
+                      <Loader2 className="text-tertiary size-6 animate-spin" />
+                    ) : (
+                      totalPaperMembers
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-muted text-primary rounded-md p-1.5">
+                      <Pencil className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Authors
+                    </p>
+                  </div>
+                  <p className="text-foreground font-serif text-3xl font-bold">
+                    {paperMembersQuery.isLoading ? (
+                      <Loader2 className="text-tertiary size-6 animate-spin" />
+                    ) : (
+                      editRoleMembers
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-muted text-primary rounded-md p-1.5">
+                      <ClipboardList className="size-4" />
+                    </div>
+                    <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+                      Completed Tasks
+                    </p>
+                  </div>
+                  <p className="text-foreground font-serif text-3xl font-bold">
+                    {paperTasksQuery.isLoading ? (
+                      <Loader2 className="text-tertiary size-6 animate-spin" />
+                    ) : (
+                      completedTaskCount
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Single unified card ──────────────────────────────────── */}
@@ -1186,164 +1365,82 @@ export const ProjectPaperDetailPage = ({
           <div className="p-6">
             {activeTab === 'overview' && (
               <>
-                <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted text-primary rounded-md p-1.5">
-                          <Layers className="size-4" />
-                        </div>
-                        <p className="text-muted-foreground font-sans text-xs font-bold">
-                          Sections
-                        </p>
-                      </div>
-                      <p className="text-foreground font-serif text-3xl font-bold">
-                        {sectionsQuery.isLoading ? (
-                          <Loader2 className="text-tertiary size-6 animate-spin" />
-                        ) : (
-                          totalSections
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted text-primary rounded-md p-1.5">
-                          <Users className="size-4" />
-                        </div>
-                        <p className="text-muted-foreground font-sans text-xs font-bold">
-                          Contributors
-                        </p>
-                      </div>
-                      <p className="text-foreground font-serif text-3xl font-bold">
-                        {paperMembersQuery.isLoading ? (
-                          <Loader2 className="text-tertiary size-6 animate-spin" />
-                        ) : (
-                          totalPaperMembers
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted text-primary rounded-md p-1.5">
-                          <Pencil className="size-4" />
-                        </div>
-                        <p className="text-muted-foreground font-sans text-xs font-bold">
-                          Authors
-                        </p>
-                      </div>
-                      <p className="text-foreground font-serif text-3xl font-bold">
-                        {paperMembersQuery.isLoading ? (
-                          <Loader2 className="text-tertiary size-6 animate-spin" />
-                        ) : (
-                          editRoleMembers
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted text-primary rounded-md p-1.5">
-                          <ClipboardList className="size-4" />
-                        </div>
-                        <p className="text-muted-foreground font-sans text-xs font-bold">
-                          Completed Tasks
-                        </p>
-                      </div>
-                      <p className="text-foreground font-serif text-3xl font-bold">
-                        {paperTasksQuery.isLoading ? (
-                          <Loader2 className="text-tertiary size-6 animate-spin" />
-                        ) : (
-                          completedTaskCount
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="space-y-4">
                   {/* Abstract */}
                   <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
-                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                    <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                       Abstract
                     </h3>
-                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                       {paper.abstract || 'No abstract provided.'}
                     </p>
                   </div>
 
                   {/* Research Aim */}
-                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
-                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                  {/* <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
+                    <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                       Research Aim
                     </h3>
-                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                       {paper.researchAim || 'No research aim defined.'}
                     </p>
-                  </div>
+                  </div> */}
 
                   {/* Context */}
                   <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
-                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                    <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                       Context
                     </h3>
-                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                       {paper.context || 'No context defined.'}
                     </p>
                   </div>
 
                   {/* Research Gap */}
                   <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
-                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                    <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                       Research Gap
                     </h3>
-                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                       {paper.researchGap ||
                         'No research gap explicitly stated.'}
                     </p>
-                    {paper.gapTypes?.length ? (
-                      <span className="bg-surface text-secondary mt-3 inline-block rounded-md px-3 py-1 font-sans text-sm font-medium">
+                    {/* {paper.gapTypes?.length ? (
+                      <span className="bg-surface text-secondary mt-3 inline-block rounded-md px-3 py-1 text-xs font-medium">
                         Type:{' '}
                         {paper.gapTypes
                           .map((gapType) => gapType.name)
                           .join(', ')}
                       </span>
-                    ) : null}
+                    ) : null} */}
                   </div>
 
                   {/* Main Contribution */}
                   <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
-                    <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                    <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                       Main Contribution
                     </h3>
-                    <p className="text-primary text-[14px] leading-relaxed whitespace-pre-wrap">
+                    <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                       {paper.mainContribution || 'No main contribution listed.'}
                     </p>
                   </div>
 
                   {/* Journal / Conference */}
-                  {((paper as any).conferenceJournalName ||
+                  {/* {((paper as any).conferenceJournalName ||
                     (paper as any).journalName ||
                     (paper as any).journal ||
                     (paper as any).conferenceName ||
                     (paper as any).conferenceJournalStartAt ||
                     (paper as any).conferenceJournalEndAt) && (
                     <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
-                      <h3 className="text-foreground mb-3 font-sans text-sm font-semibold">
+                      <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                         Journal / Conference
                       </h3>
                       <div className="space-y-2">
                         {((paper as any).conferenceJournalName ||
                           (paper as any).journalName ||
                           (paper as any).journal) && (
-                          <p className="text-primary text-[14px] leading-relaxed">
+                          <p className="text-foreground text-sm leading-relaxed">
                             <span className="mr-2 font-semibold">Journal:</span>
                             {(paper as any).conferenceJournalName ||
                               (paper as any).journalName ||
@@ -1351,7 +1448,7 @@ export const ProjectPaperDetailPage = ({
                           </p>
                         )}
                         {(paper as any).conferenceName && (
-                          <p className="text-primary text-[14px] leading-relaxed">
+                          <p className="text-foreground text-sm leading-relaxed">
                             <span className="mr-2 font-semibold">
                               Conference:
                             </span>
@@ -1359,7 +1456,7 @@ export const ProjectPaperDetailPage = ({
                           </p>
                         )}
                         {(paper as any).conferenceJournalStartAt && (
-                          <p className="text-primary text-[14px] leading-relaxed">
+                          <p className="text-foreground text-sm leading-relaxed">
                             <span className="mr-2 font-semibold">Start:</span>
                             {new Date(
                               (paper as any).conferenceJournalStartAt,
@@ -1367,7 +1464,7 @@ export const ProjectPaperDetailPage = ({
                           </p>
                         )}
                         {(paper as any).conferenceJournalEndAt && (
-                          <p className="text-primary text-[14px] leading-relaxed">
+                          <p className="text-foreground text-sm leading-relaxed">
                             <span className="mr-2 font-semibold">End:</span>
                             {new Date(
                               (paper as any).conferenceJournalEndAt,
@@ -1376,7 +1473,7 @@ export const ProjectPaperDetailPage = ({
                         )}
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               </>
             )}
@@ -1601,16 +1698,16 @@ export const ProjectPaperDetailPage = ({
               </div>
             )}
 
-            {/* ── Contributors Panel ──────────────────────────────── */}
-            {activeTab === 'contributor' && (
+            {/* ── Members Panel ─────────────────────────────────── */}
+            {activeTab === 'member' && (
               <div>
                 <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
                   <div>
                     <h2 className="text-foreground text-base font-semibold">
-                      Contributors
+                      Members
                     </h2>
                     <p className="text-muted-foreground mt-1 font-sans text-[10px]">
-                      {totalPaperMembers} contributor
+                      {totalPaperMembers} member
                       {totalPaperMembers !== 1 ? 's' : ''}
                     </p>
                   </div>
@@ -1623,7 +1720,7 @@ export const ProjectPaperDetailPage = ({
                         className="gap-1.5"
                       >
                         <UserPlus className="size-4" />
-                        Add Contributor
+                        Add Member
                       </Button>
                     )}
                     <Button
@@ -1651,7 +1748,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
                 ) : paperMembersList.length === 0 ? (
                   <div className="text-muted-foreground py-12 text-center">
-                    No contributors found.
+                    No members found.
                   </div>
                 ) : (
                   <div className="bg-card overflow-hidden rounded-md border shadow-sm">
@@ -1721,7 +1818,7 @@ export const ProjectPaperDetailPage = ({
                                       <Button
                                         size="action"
                                         variant="destructive"
-                                        title="Remove contributor"
+                                        title="Remove member"
                                         disabled={
                                           removePaperMemberMutation.isPending &&
                                           confirmDeleteMemberId ===
@@ -3212,7 +3309,7 @@ export const ProjectPaperDetailPage = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Remove Contributor Confirm ─────────────────────────────── */}
+      {/* ── Remove Member Confirm ───────────────────────────────── */}
       <AlertDialog
         open={!!confirmDeleteMemberId}
         onOpenChange={(o) => {
@@ -3221,10 +3318,10 @@ export const ProjectPaperDetailPage = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove contributor</AlertDialogTitle>
+            <AlertDialogTitle>Remove member</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this contributor from the paper?
-              This action cannot be undone.
+              Are you sure you want to remove this member from the paper? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
