@@ -149,9 +149,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   );
   const [pubYearError, setPubYearError] = React.useState('');
   const [pagesError, setPagesError] = React.useState('');
-  const [keywordList, setKeywordList] = React.useState<string[]>(
-    paper?.keywords || [],
-  );
+  const [keywordList, setKeywordList] = React.useState<
+    { name: string; isFromPaper: boolean }[]
+  >(paper?.keywords?.map((k) => ({ name: k, isFromPaper: false })) || []);
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [isAutoTagged, setIsAutoTagged] = React.useState(
     paper?.isAutoTagged || false,
@@ -260,7 +260,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setPubDay(dateParts[2] && dateParts[2] !== '01' ? dateParts[2] : '');
       setPubYearError('');
       setPagesError('');
-      setKeywordList(paper.keywords || []);
+      setKeywordList(
+        paper.keywords?.map((k) => ({ name: k, isFromPaper: false })) || [],
+      );
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
       setBibFile(undefined);
@@ -395,7 +397,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     try {
       const response = await autoTagPaper({
         parsedText: currentParsedText!,
-        existingTags: keywordList,
+        existingTags: keywordList.map((t) => t.name),
       });
 
       const suggestedTagsList = response.tags || [];
@@ -404,12 +406,14 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setKeywordList((prev) => {
         const merged = [...prev];
         suggestedTagsList.forEach((tag) => {
-          const normalizedTag = tag.trim();
+          const normalizedName = tag.name.trim();
           if (
-            normalizedTag &&
-            !merged.some((t) => t.toLowerCase() === normalizedTag.toLowerCase())
+            normalizedName &&
+            !merged.some(
+              (t) => t.name.toLowerCase() === normalizedName.toLowerCase(),
+            )
           ) {
-            merged.push(normalizedTag);
+            merged.push({ name: normalizedName, isFromPaper: tag.isFromPaper });
           }
         });
         return merged;
@@ -437,14 +441,14 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     const trimmed = value.trim();
     if (
       trimmed &&
-      !keywordList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+      !keywordList.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())
     ) {
-      setKeywordList((prev) => [...prev, trimmed]);
+      setKeywordList((prev) => [...prev, { name: trimmed, isFromPaper: false }]);
     }
   };
 
   const handleRemoveKeyword = (kw: string) => {
-    setKeywordList((prev) => prev.filter((t) => t !== kw));
+    setKeywordList((prev) => prev.filter((t) => t.name !== kw));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -509,7 +513,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             publicationYear: pubYear,
             publicationMonth: pubMonth,
           }),
-        keywords: keywordList,
+        keywords: keywordList.map((k) => k.name),
         isAutoTagged,
         isIngested: paper.isIngested,
       },
@@ -619,7 +623,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   {isAutoTagging ? (
                     <>
                       <Loader2 className="size-3 animate-spin" />
-                      Tagging...
+                      Suggesting...
                     </>
                   ) : cooldownSeconds > 0 ? (
                     <>
@@ -629,7 +633,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
                   ) : (
                     <>
                       <Tags className="size-3" />
-                      Auto Tag
+                      Suggest Keywords
                     </>
                   )}
                 </Button>
@@ -637,9 +641,12 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
             </div>
             <TagAutocompleteInput
               key={`${paperId}-${open}`}
-              tagList={keywordList}
+              tagList={keywordList.map((t) => t.name)}
               onAddTag={handleAddKeyword}
               onRemoveTag={handleRemoveKeyword}
+              suggestedTags={keywordList
+                .filter((t) => t.isFromPaper)
+                .map((t) => t.name)}
               placeholder="Type a keyword and press Enter..."
               className="dark:bg-input/30 bg-transparent"
             />

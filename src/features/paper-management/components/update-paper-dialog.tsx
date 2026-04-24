@@ -15,7 +15,7 @@ import {
 
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { useUpdatePaper } from '../api/update-paper';
-import { PaperDto } from '../types';
+import { KeywordDto, PaperDto } from '../types';
 import { TagAutocompleteInput } from './tag-autocomplete-input';
 import {
   GapTypeMultiSelect,
@@ -136,8 +136,8 @@ export const UpdatePaperDialog = ({
       : '',
   );
   const [pubYearError] = React.useState('');
-  const [keywordList, setKeywordList] = React.useState<string[]>(
-    paper?.keywords || [],
+  const [keywordList, setKeywordList] = React.useState<KeywordDto[]>(
+    paper?.keywords?.map((k) => ({ name: k, isFromPaper: false })) || [],
   );
   const [isAutoTagged] = React.useState(paper?.isAutoTagged || false);
   const [bibFile] = React.useState<File | undefined>();
@@ -192,7 +192,7 @@ export const UpdatePaperDialog = ({
             publicationYear: pubYear,
             publicationMonth: pubMonth,
           }),
-        keywords: keywordList,
+        keywords: keywordList.map((k) => k.name),
         isAutoTagged,
         isIngested: paper.isIngested,
       },
@@ -259,11 +259,19 @@ export const UpdatePaperDialog = ({
           <div className="space-y-1.5">
             <p className="text-sm font-medium">Keywords</p>
             <TagAutocompleteInput
-              tagList={keywordList}
-              onAddTag={(v) => setKeywordList((prev) => [...prev, v])}
-              onRemoveTag={(v) =>
-                setKeywordList((prev) => prev.filter((t) => t !== v))
+              tagList={keywordList.map((k) => k.name)}
+              onAddTag={(v) =>
+                setKeywordList((prev) => [
+                  ...prev,
+                  { name: v, isFromPaper: false },
+                ])
               }
+              onRemoveTag={(v) =>
+                setKeywordList((prev) => prev.filter((k) => k.name !== v))
+              }
+              suggestedTags={keywordList
+                .filter((k) => k.isFromPaper)
+                .map((k) => k.name)}
             />
           </div>
           <div className="space-y-1.5">

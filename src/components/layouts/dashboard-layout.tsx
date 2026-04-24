@@ -248,7 +248,7 @@ const navigation: SideNavigationItem[] = [
     icon: FileText,
   },
   {
-    name: 'Tags',
+    name: 'Keywords',
     to: paths.app.tagManagement.tags.getHref(),
     icon: Tag,
   },

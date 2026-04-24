@@ -31,16 +31,16 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
-        toast.success('Tag updated successfully');
+        toast.success('Keyword updated successfully');
       },
       onError: (error: any) => {
         const errorData = error?.response?.data;
         if (
           errorData?.errors?.[0]?.errorMessage === 'TAG_NAME_ALREADY_EXISTS'
         ) {
-          toast.error('Tag name already exists');
+          toast.error('Keyword name already exists');
         } else {
-          toast.error('Failed to update tag');
+          toast.error('Failed to update keyword');
         }
       },
     },
@@ -74,7 +74,7 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Edit Tag</DialogTitle>
+          <DialogTitle>Edit Keyword</DialogTitle>
           <DialogDescription>
             Update information for &quot;{tag.name}&quot;
           </DialogDescription>
@@ -95,7 +95,7 @@ export const UpdateTag = ({ tagId, tag }: UpdateTagProps) => {
               onChange={(e) => {
                 setFormData((prev) => ({ ...prev, name: e.target.value }));
               }}
-              placeholder="Enter tag name"
+              placeholder="Enter keyword name"
               required
             />
           </div>

@@ -36,8 +36,8 @@ export const clientLoader =
 const TagsRoute = () => {
   return (
     <>
-      <Head title="Tag Management" />
-      <ContentLayout title="Tag Management" description="Manage tags">
+      <Head title="Keyword Management" />
+      <ContentLayout title="Keyword Management" description="Manage keywords">
         <div className="space-y-4">
           <div className="flex items-center justify-end">
             <CreateTag />

@@ -92,6 +92,7 @@ export const PAPER_MANAGEMENT_QUERY_KEYS = {
   MARK_SECTION_VERSIONS: 'mark-section-versions',
   PAPER_STATUS_HISTORY: 'paper-status-history',
   PAPER_VERSION_FILES: 'paper-version-files',
+  AVAILABLE_PAPER_AUTHORS: 'available-paper-authors',
 } as const;
 
 export const SUBMISSION_STATUS_LABELS: Record<number, string> = {

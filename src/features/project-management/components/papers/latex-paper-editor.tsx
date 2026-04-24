@@ -1048,7 +1048,7 @@ const ReferencesTab = ({
                         variant="outline"
                         className="rounded-full px-2.5 py-0.5 text-[10px]"
                       >
-                        {activeTags.length} tags
+                        {activeTags.length} keywords
                       </Badge>
                     ) : (
                       <>
@@ -1056,7 +1056,7 @@ const ReferencesTab = ({
                           variant="outline"
                           className="rounded-full px-2.5 py-0.5 text-[10px]"
                         >
-                          {activeTags.length} tags
+                          {activeTags.length} keywords
                         </Badge>
                         <Badge
                           variant="outline"
@@ -1247,7 +1247,7 @@ const ReferencesTab = ({
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
-                          Tags
+                          Keywords
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {activeTags.length ? (
@@ -1262,7 +1262,7 @@ const ReferencesTab = ({
                             ))
                           ) : (
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                              No tags
+                              No keywords
                             </p>
                           )}
                         </div>
@@ -2122,7 +2122,7 @@ const InlineReferenceSectionEditor = ({
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-500 uppercase dark:text-slate-400">
-                          Tags
+                          Keywords
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {activeBankDetail.tagNames.length ? (
@@ -2137,7 +2137,7 @@ const InlineReferenceSectionEditor = ({
                             ))
                           ) : (
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                              No tags
+                              No keywords
                             </p>
                           )}
                         </div>

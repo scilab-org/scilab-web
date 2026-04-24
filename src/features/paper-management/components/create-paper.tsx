@@ -144,7 +144,9 @@ export const CreatePaper = () => {
 
   const [isParsing, setIsParsing] = React.useState(false);
   const [parsedText, setParsedText] = React.useState<string | null>(null);
-  const [keywordList, setKeywordList] = React.useState<string[]>([]);
+  const [keywordList, setKeywordList] = React.useState<
+    { name: string; isFromPaper: boolean }[]
+  >([]);
   const [isAutoTagged, setIsAutoTagged] = React.useState(false);
   const [isAutoTagging, setIsAutoTagging] = React.useState(false);
   const [autoTagCooldown, setAutoTagCooldown] = React.useState(0);
@@ -382,25 +384,27 @@ export const CreatePaper = () => {
     try {
       const response = await autoTagPaper({
         parsedText,
-        existingTags: keywordList,
+        existingTags: keywordList.map((t) => t.name),
       });
       const suggestedTagsList = response.tags || [];
       setKeywordList((prev) => {
         const merged = [...prev];
         suggestedTagsList.forEach((tag) => {
-          const normalizedTag = tag.trim();
+          const normalizedName = tag.name.trim();
           if (
-            normalizedTag &&
-            !merged.some((t) => t.toLowerCase() === normalizedTag.toLowerCase())
+            normalizedName &&
+            !merged.some(
+              (t) => t.name.toLowerCase() === normalizedName.toLowerCase(),
+            )
           ) {
-            merged.push(normalizedTag);
+            merged.push({ name: normalizedName, isFromPaper: tag.isFromPaper });
           }
         });
         return merged;
       });
       setIsAutoTagged(true);
       setAutoTagCooldown(60);
-      toast.success(`Added ${suggestedTagsList.length} suggested tags`);
+      toast.success(`Added ${suggestedTagsList.length} suggested keywords`);
     } catch (error) {
       const errorMessage =
         (
@@ -421,14 +425,14 @@ export const CreatePaper = () => {
     const trimmed = value.trim();
     if (
       trimmed &&
-      !keywordList.some((t) => t.toLowerCase() === trimmed.toLowerCase())
+      !keywordList.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())
     ) {
-      setKeywordList((prev) => [...prev, trimmed]);
+      setKeywordList((prev) => [...prev, { name: trimmed, isFromPaper: false }]);
     }
   };
 
   const handleRemoveKeyword = (kw: string) => {
-    setKeywordList((prev) => prev.filter((t) => t !== kw));
+    setKeywordList((prev) => prev.filter((t) => t.name !== kw));
   };
 
   const journalsQuery = useJournals({ params: { PageSize: 1000 } });
@@ -530,7 +534,7 @@ export const CreatePaper = () => {
       pdfFile,
       bibFile,
       parsedText: parsedText || '',
-      keywords: keywordList,
+      keywords: keywordList.map((k) => k.name),
       isAutoTagged,
       isIngested: false,
     });
@@ -705,9 +709,12 @@ export const CreatePaper = () => {
               Keywords {keywordList.length > 0 && `(${keywordList.length})`}
             </label>
             <TagAutocompleteInput
-              tagList={keywordList}
+              tagList={keywordList.map((t) => t.name)}
               onAddTag={handleAddKeyword}
               onRemoveTag={handleRemoveKeyword}
+              suggestedTags={keywordList
+                .filter((t) => t.isFromPaper)
+                .map((t) => t.name)}
               placeholder="Type a keyword and press Enter..."
               className="dark:bg-input/30 bg-transparent"
             />
@@ -732,10 +739,10 @@ export const CreatePaper = () => {
                     <Tags className="size-4" />
                   )}
                   {isAutoTagging
-                    ? 'Auto Tagging...'
+                    ? 'Suggesting...'
                     : autoTagCooldown > 0
                       ? `Wait ${autoTagCooldown}s`
-                      : 'Auto Tag'}
+                      : 'Suggest Keywords'}
                 </Button>
               </div>
             )}

@@ -49,7 +49,7 @@ export const TagsList = () => {
   if (!tags || tags.length === 0) {
     return (
       <div className="flex h-48 w-full items-center justify-center">
-        <p className="text-muted-foreground">No tags found.</p>
+        <p className="text-muted-foreground">No keywords found.</p>
       </div>
     );
   }

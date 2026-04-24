@@ -3,6 +3,11 @@ export type PaperGapTypeDto = {
   name: string;
 };
 
+export type KeywordDto = {
+  name: string;
+  isFromPaper: boolean;
+};
+
 export type PaperDto = {
   id: string;
   title: string | null;
@@ -184,7 +189,7 @@ export type AutoTagRequest = {
 };
 
 export type AutoTagResponse = {
-  tags: string[];
+  tags: KeywordDto[];
 };
 
 export type UpdatePaperDto = {

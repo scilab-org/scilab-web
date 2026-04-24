@@ -287,7 +287,7 @@ export const WritingPaperView = ({
               Tags
             </CardTitle>
             <CardDescription className="text-emerald-100">
-              Associated tags ({paper.tagNames?.length || 0})
+              Associated keywords ({paper.tagNames?.length || 0})
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -304,7 +304,7 @@ export const WritingPaperView = ({
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No tags.</p>
+              <p className="text-muted-foreground text-sm">No keywords.</p>
             )}
           </CardContent>
         </Card>

@@ -43,7 +43,7 @@ export const TagsFilter = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, name: e.target.value }))
           }
-          placeholder="Search by tag name..."
+          placeholder="Search by keyword name..."
           className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
         />
         {filters.name && (
