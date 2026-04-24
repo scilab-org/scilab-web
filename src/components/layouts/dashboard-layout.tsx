@@ -1,4 +1,5 @@
 import {
+  LayoutDashboard,
   Bookmark,
   BookOpen,
   ChevronDown,
@@ -221,16 +222,25 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
 
 const memberNavigation: SideNavigationItem[] = [
   {
-    name: 'Assigned Projects',
-    to: paths.app.assignedProjects.list.getHref(),
-    icon: Bookmark,
+    name: 'Dashboard',
+    to: paths.app.dashboard.getHref(),
+    icon: LayoutDashboard,
   },
   {
-    name: 'Assigned Papers',
+    name: 'My Task',
+    to: paths.app.myTasks.getHref(),
+    icon: ClipboardList,
+  },
+  {
+    name: 'Papers',
     to: paths.app.myAssignedPapers.getHref(),
     icon: FileText,
   },
-  { name: 'My Task', to: paths.app.myTasks.getHref(), icon: ClipboardList },
+  {
+    name: 'Projects',
+    to: paths.app.assignedProjects.list.getHref(),
+    icon: Bookmark,
+  },
 ];
 
 type SideNavigationGroup = {
@@ -241,7 +251,7 @@ type SideNavigationGroup = {
 
 const adminNavigationGroups: SideNavigationGroup[] = [
   {
-    label: 'Administration',
+    label: 'Working Space',
     color: '#2d2926',
     items: [
       {
@@ -257,7 +267,7 @@ const adminNavigationGroups: SideNavigationGroup[] = [
     ],
   },
   {
-    label: 'Research Library',
+    label: 'Research Storage',
     color: '#590709',
     items: [
       {
@@ -278,7 +288,7 @@ const adminNavigationGroups: SideNavigationGroup[] = [
     ],
   },
   {
-    label: 'Metadata',
+    label: 'Configuration',
     color: '#635e56',
     items: [
       {
