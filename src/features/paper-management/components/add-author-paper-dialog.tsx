@@ -22,6 +22,7 @@ import { useUser } from '@/lib/auth';
 
 import { useAuthorRoles } from '@/features/author-role-management/api/get-author-roles';
 import { useAvailablePaperAuthors } from '@/features/paper-management/api/get-available-paper-authors';
+import { useMemberAffiliations } from '@/features/project-management/api/members/get-member-affiliations';
 
 import { useCreatePaperAuthor } from '../api/create-paper-author';
 import { useUpdatePaperAuthor } from '../api/update-paper-author';
@@ -42,6 +43,8 @@ const initialFormState = {
   selectedUserId: null as string | null,
   selectedMemberId: null as string | null,
   selectedAuthorRoleId: '' as string,
+  selectedAffiliationId: null as string | null,
+  selectedAffiliationName: '' as string,
   name: '',
   email: '',
   ocrid: '',
@@ -69,8 +72,15 @@ export const AddAuthorPaperDialog = ({
   const [selectedAuthorRoleId, setSelectedAuthorRoleId] = useState<string>(
     initialFormState.selectedAuthorRoleId,
   );
+  const [selectedAffiliationId, setSelectedAffiliationId] = useState<
+    string | null
+  >(initialFormState.selectedAffiliationId);
+  const [selectedAffiliationName, setSelectedAffiliationName] =
+    useState<string>(initialFormState.selectedAffiliationName);
   const [authorRoleOpen, setAuthorRoleOpen] = useState(false);
   const [authorRoleSearch, setAuthorRoleSearch] = useState('');
+  const [affiliationOpen, setAffiliationOpen] = useState(false);
+  const [affiliationSearch, setAffiliationSearch] = useState('');
   const [authorPickerOpen, setAuthorPickerOpen] = useState(false);
   const [name, setName] = useState(initialFormState.name);
   const [email, setEmail] = useState(initialFormState.email);
@@ -95,12 +105,20 @@ export const AddAuthorPaperDialog = ({
     setSearchText('');
     setAuthorRoleOpen(false);
     setAuthorRoleSearch('');
+    setAffiliationOpen(false);
+    setAffiliationSearch('');
     setAuthorPickerOpen(false);
     if (author) {
       setSelectedUserId((author as { userId?: string | null }).userId ?? null);
       setSelectedMemberId(author.memberId ?? null);
       setSelectedAuthorRoleId(
         (author as { authorRoleId?: string }).authorRoleId ?? '',
+      );
+      setSelectedAffiliationId(
+        (author as { affiliationId?: string | null }).affiliationId ?? null,
+      );
+      setSelectedAffiliationName(
+        (author as { affiliationName?: string }).affiliationName ?? '',
       );
       setName(
         (author as { name?: string }).name ?? author.contributorName ?? '',
@@ -119,6 +137,8 @@ export const AddAuthorPaperDialog = ({
     setSelectedUserId(initialFormState.selectedUserId);
     setSelectedMemberId(initialFormState.selectedMemberId);
     setSelectedAuthorRoleId(initialFormState.selectedAuthorRoleId);
+    setSelectedAffiliationId(initialFormState.selectedAffiliationId);
+    setSelectedAffiliationName(initialFormState.selectedAffiliationName);
     setName(initialFormState.name);
     setEmail(initialFormState.email);
     setOcrid(initialFormState.ocrid);
@@ -129,6 +149,26 @@ export const AddAuthorPaperDialog = ({
     params: { paperId, PageNumber: 1, PageSize: 1000 },
     queryConfig: { enabled: open && !isEditMode },
   });
+
+  const memberAffiliationsQuery = useMemberAffiliations({
+    memberId: selectedMemberId,
+    queryConfig: { enabled: open && !!selectedMemberId },
+  });
+  const memberAffiliations = useMemo(
+    () => memberAffiliationsQuery.data?.result?.items ?? [],
+    [memberAffiliationsQuery.data?.result?.items],
+  );
+
+  // Auto-select affiliation if exactly 1
+  useEffect(() => {
+    if (memberAffiliations.length === 1 && !selectedAffiliationId) {
+      const affil = memberAffiliations[0].affiliation;
+      if (affil) {
+        setSelectedAffiliationId(affil.id);
+        setSelectedAffiliationName(affil.name || '');
+      }
+    }
+  }, [memberAffiliations, selectedAffiliationId]);
   const availableAuthors = useMemo(
     () => availableAuthorsQuery.data?.result?.items ?? [],
     [availableAuthorsQuery.data?.result?.items],
@@ -175,6 +215,8 @@ export const AddAuthorPaperDialog = ({
       setSelectedUserId(initialFormState.selectedUserId);
       setSelectedMemberId(initialFormState.selectedMemberId);
       setSelectedAuthor(null);
+      setSelectedAffiliationId(initialFormState.selectedAffiliationId);
+      setSelectedAffiliationName(initialFormState.selectedAffiliationName);
       setName(initialFormState.name);
       setEmail(initialFormState.email);
       setOcrid(initialFormState.ocrid);
@@ -184,6 +226,8 @@ export const AddAuthorPaperDialog = ({
     setSelectedAuthor(member);
     setSelectedUserId(member.userId);
     setSelectedMemberId(member.memberId);
+    setSelectedAffiliationId(initialFormState.selectedAffiliationId);
+    setSelectedAffiliationName(initialFormState.selectedAffiliationName);
     setName(
       `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
         member.username ||
@@ -215,6 +259,8 @@ export const AddAuthorPaperDialog = ({
         (author as { projectId?: string | null } | null)?.projectId ?? null,
       memberId: author?.memberId ?? null,
       authorRoleId: selectedAuthorRoleId,
+      affiliationId: selectedAffiliationId,
+      affiliationName: selectedAffiliationName.trim() || null,
     };
 
     if (author?.id) {
@@ -234,9 +280,13 @@ export const AddAuthorPaperDialog = ({
     setSelectedUserId(initialFormState.selectedUserId);
     setSelectedMemberId(initialFormState.selectedMemberId);
     setSelectedAuthorRoleId(initialFormState.selectedAuthorRoleId);
+    setSelectedAffiliationId(initialFormState.selectedAffiliationId);
+    setSelectedAffiliationName(initialFormState.selectedAffiliationName);
     setSearchText('');
     setAuthorRoleOpen(false);
     setAuthorRoleSearch('');
+    setAffiliationOpen(false);
+    setAffiliationSearch('');
     setSelectedAuthor(null);
     setName(initialFormState.name);
     setEmail(initialFormState.email);
@@ -499,6 +549,134 @@ export const AddAuthorPaperDialog = ({
                         </div>
                       </div>
                     </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="paper-author-affiliation"
+                  className={FIELD_LABEL_CLASS}
+                >
+                  Affiliation
+                </label>
+                {memberAffiliationsQuery.isLoading ? (
+                  <Skeleton className="h-11 w-full rounded-xl" />
+                ) : (
+                  <Popover
+                    open={affiliationOpen}
+                    onOpenChange={(open) => {
+                      if (selectedMemberId) setAffiliationOpen(open);
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!selectedMemberId}
+                        className="border-surface-container-highest bg-surface-container h-11 w-full justify-between rounded-xl px-3 text-left disabled:opacity-50"
+                      >
+                        <span className="min-w-0 flex-1 truncate">
+                          {!selectedMemberId
+                            ? 'Select an author first'
+                            : selectedAffiliationName ||
+                              'Select an affiliation'}
+                        </span>
+                        <ChevronDown className="size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    {selectedMemberId && (
+                      <PopoverContent
+                        align="start"
+                        className="w-[var(--radix-popper-anchor-width)] p-2"
+                      >
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                            <Input
+                              value={affiliationSearch}
+                              onChange={(event) =>
+                                setAffiliationSearch(event.target.value)
+                              }
+                              placeholder="Search affiliations..."
+                              className="pl-10"
+                            />
+                          </div>
+                          <div className="max-h-64 space-y-1 overflow-y-auto">
+                            {memberAffiliations.length > 0 ? (
+                              memberAffiliations
+                                .filter((affil: any) => {
+                                  const query = affiliationSearch
+                                    .trim()
+                                    .toLowerCase();
+                                  if (!query) return true;
+                                  return (affil.affiliation?.name || '')
+                                    .toLowerCase()
+                                    .includes(query);
+                                })
+                                .map((affil: any) => {
+                                  const roleId = affil.affiliation?.id;
+                                  const roleName =
+                                    affil.affiliation?.name || '';
+                                  const isSelected =
+                                    selectedAffiliationId === roleId;
+
+                                  return (
+                                    <button
+                                      key={roleId}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedAffiliationId(roleId);
+                                        setSelectedAffiliationName(roleName);
+                                        setAffiliationOpen(false);
+                                      }}
+                                      className={`flex w-full items-start justify-between rounded-xl px-3 py-2 text-left transition-colors ${
+                                        isSelected
+                                          ? 'bg-surface-container-highest'
+                                          : 'hover:bg-surface-container'
+                                      }`}
+                                    >
+                                      <span className="min-w-0 flex-1">
+                                        <span className="text-primary block truncate text-sm font-semibold">
+                                          {roleName}
+                                        </span>
+                                      </span>
+                                      <Check
+                                        className={`ml-3 size-4 shrink-0 ${
+                                          isSelected
+                                            ? 'text-primary'
+                                            : 'text-transparent'
+                                        }`}
+                                      />
+                                    </button>
+                                  );
+                                })
+                            ) : (
+                              <div className="text-secondary px-3 py-6 text-center text-sm">
+                                No affiliations found for this member.
+                              </div>
+                            )}
+                            {memberAffiliations.length > 0 &&
+                            !memberAffiliations.some((affil: any) => {
+                              const query = affiliationSearch
+                                .trim()
+                                .toLowerCase();
+                              return (
+                                !query ||
+                                (affil.affiliation?.name || '')
+                                  .toLowerCase()
+                                  .includes(query)
+                              );
+                            }) ? (
+                              <div className="text-secondary px-3 py-6 text-center text-sm">
+                                No affiliations matching &quot;
+                                {affiliationSearch}&quot;.
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    )}
                   </Popover>
                 )}
               </div>

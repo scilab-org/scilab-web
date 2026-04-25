@@ -59,6 +59,7 @@ const detectRole = (currentUserProjectRole?: string) => {
 };
 
 const formatGroupLabel = (name: string) => {
+  if (name.toLowerCase().includes('author')) return 'Head Writer';
   const stripped = name.replace(/^project:/i, '');
   return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 };

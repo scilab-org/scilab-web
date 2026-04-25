@@ -111,6 +111,12 @@ export const paths = {
         getHref: () => '/app/domains',
       },
     },
+    affiliationManagement: {
+      affiliations: {
+        path: 'affiliations',
+        getHref: () => '/app/affiliations',
+      },
+    },
     journalManagement: {
       journals: {
         path: 'journals',

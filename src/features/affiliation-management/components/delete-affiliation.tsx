@@ -13,37 +13,37 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-import { useDeleteAuthorRole } from '../api/delete-author-role';
+import { useDeleteAffiliation } from '../api/delete-affiliation';
 
-export const DeleteAuthorRole = ({
-  authorRoleId,
+export const DeleteAffiliation = ({
+  affiliationId,
 }: {
-  authorRoleId: string;
+  affiliationId: string;
 }) => {
-  const deleteAuthorRoleMutation = useDeleteAuthorRole({});
+  const deleteAffiliationMutation = useDeleteAffiliation({});
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button size="action" variant="destructive">
+        <Button variant="destructive" size="action">
           DELETE
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Author Role</AlertDialogTitle>
+          <AlertDialogTitle>Delete Affiliation</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this author role?
+            Are you sure you want to delete this affiliation?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline">CANCEL</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            disabled={deleteAuthorRoleMutation.isPending}
-            onClick={() => deleteAuthorRoleMutation.mutate(authorRoleId)}
+            disabled={deleteAffiliationMutation.isPending}
+            onClick={() => deleteAffiliationMutation.mutate(affiliationId)}
           >
-            {deleteAuthorRoleMutation.isPending ? (
+            {deleteAffiliationMutation.isPending ? (
               <Loader className="size-4" />
             ) : (
               'DELETE'

@@ -78,7 +78,7 @@ const getRolePriority = (role: string) => {
 const formatRole = (role: string): string => {
   const r = role.toLowerCase();
   if (r.includes('manager')) return 'Manager';
-  if (r.includes('author')) return 'Author';
+  if (r.includes('author')) return 'Head Writer';
   if (r.includes('member')) return 'Member';
   if (r.includes('admin')) return 'Admin';
   // Fallback: strip "project:" prefix and capitalise
