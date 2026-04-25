@@ -56,7 +56,7 @@ const UserRoute = () => {
       </ContentLayout>
     );
   }
-  console.log(user);
+
   return (
     <>
       <Head title="User Details" />

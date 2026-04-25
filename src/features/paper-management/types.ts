@@ -574,6 +574,8 @@ export type CreatePaperAuthorDto = {
   authorRoleId: string;
   memberId: string | null;
   projectId: string | null;
+  affiliationId?: string | null;
+  affiliationName?: string | null;
 };
 
 export type AvailablePaperAuthorItem = {

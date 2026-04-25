@@ -12,6 +12,7 @@ import {
   Tag,
   Users,
   Globe,
+  Building2,
 } from 'lucide-react';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
@@ -310,6 +311,11 @@ const adminNavigationGroups: SideNavigationGroup[] = [
         name: 'Domains',
         to: paths.app.domainManagement.domains.getHref(),
         icon: Globe,
+      },
+      {
+        name: 'Affiliations',
+        to: paths.app.affiliationManagement.affiliations.getHref(),
+        icon: Building2,
       },
     ],
   },

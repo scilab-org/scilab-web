@@ -269,6 +269,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
                 ),
             },
             {
+              path: paths.app.affiliationManagement.affiliations.path,
+              lazy: () =>
+                import('./routes/app/affiliation-management/affiliations').then(
+                  convert(queryClient),
+                ),
+            },
+            {
               path: paths.app.journalManagement.journals.path,
               lazy: () =>
                 import('./routes/app/journal-management/journals').then(

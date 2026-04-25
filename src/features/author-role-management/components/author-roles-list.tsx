@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useSearchParams } from 'react-router';
 
 import { Pagination } from '@/components/ui/pagination';
@@ -65,7 +64,7 @@ export const AuthorRolesList = () => {
         <TableBody>
           {authorRoles.map((authorRole) => (
             <TableRow key={authorRole.id}>
-              <TableCell className="font-medium break-words">
+              <TableCell className="align-top font-medium break-words whitespace-normal">
                 {authorRole.name}
               </TableCell>
               <TableCell className="align-top break-words whitespace-normal">

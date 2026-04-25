@@ -6,12 +6,38 @@ import { useUserDetail } from '@/features/user-management/api/get-user';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useUser } from '@/lib/auth';
 import { capitalize } from '@/utils/string-utils';
+import { useUserAffiliations } from '@/features/user-affiliation-management/api/get-user-affiliations';
 
 const fieldLabel = 'text-muted-foreground text-xs font-medium uppercase';
+
+const formatYears = (
+  affiliationStartYear: number | null,
+  affiliationEndYear: number | null,
+) => {
+  const currentYear = new Date().getFullYear();
+
+  if (affiliationStartYear === null && affiliationEndYear === null) {
+    return '-';
+  }
+
+  if (affiliationStartYear === null) {
+    return `${currentYear} - ${affiliationEndYear ?? currentYear}`;
+  }
+
+  if (affiliationEndYear === null) {
+    return `${affiliationStartYear} - ${currentYear}`;
+  }
+
+  return `${affiliationStartYear} - ${affiliationEndYear}`;
+};
 
 export const ProfileView = () => {
   const { data: authUser } = useUser();
   const userQuery = useUserDetail({
+    userId: authUser?.id ?? '',
+    queryConfig: { enabled: !!authUser?.id },
+  });
+  const affiliationsQuery = useUserAffiliations({
     userId: authUser?.id ?? '',
     queryConfig: { enabled: !!authUser?.id },
   });
@@ -59,9 +85,10 @@ export const ProfileView = () => {
       })
     : null;
 
+  const userAffiliations = affiliationsQuery.data?.result ?? [];
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mt-1 font-serif text-5xl font-extrabold tracking-tight">
@@ -70,10 +97,8 @@ export const ProfileView = () => {
         </div>
       </div>
 
-      {/* Identity card */}
       <div className="bg-surface-container-low rounded-2xl border p-6">
         <div className="flex flex-wrap items-start gap-6">
-          {/* Avatar */}
           <UserAvatar
             avatarUrl={user?.avatarUrl}
             firstName={authUser.firstName}
@@ -81,7 +106,6 @@ export const ProfileView = () => {
             size="lg"
           />
 
-          {/* Identity info */}
           <div className="flex-1 space-y-1.5">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-xl font-semibold">{displayName}</span>
@@ -110,9 +134,7 @@ export const ProfileView = () => {
         </div>
       </div>
 
-      {/* Info panels */}
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* Account Information */}
         <div className="bg-surface-container-low space-y-5 rounded-2xl border p-6">
           <div className="flex items-start justify-between">
             <h2 className={fieldLabel}>Account Information</h2>
@@ -137,7 +159,6 @@ export const ProfileView = () => {
           </div>
         </div>
 
-        {/* Personal Information */}
         <div className="bg-surface-container-low space-y-5 rounded-2xl border p-6">
           <div className="flex items-start justify-between">
             <h2 className={fieldLabel}>Personal Information</h2>
@@ -159,6 +180,68 @@ export const ProfileView = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-surface-container-low rounded-2xl border p-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className={fieldLabel}>Affiliations</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Institutions associated with this profile.
+            </p>
+          </div>
+          <Badge variant="outline">{userAffiliations.length} total</Badge>
+        </div>
+
+        {affiliationsQuery.isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+        ) : userAffiliations.length === 0 ? (
+          <div className="flex h-28 items-center justify-center rounded-xl border border-dashed">
+            <p className="text-muted-foreground text-sm">
+              No affiliations available.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {userAffiliations.map((item) => (
+              <div
+                key={item.id}
+                className="bg-background/70 flex flex-wrap items-start justify-between gap-4 rounded-xl border px-4 py-3"
+              >
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">
+                    {item.affiliation.name}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {item.department || 'N/A'} · {item.position || 'N/A'}
+                  </p>
+                  {item.affiliation.rorUrl && (
+                    <a
+                      href={item.affiliation.rorUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary text-xs underline-offset-2 hover:underline"
+                    >
+                      {item.affiliation.rorId || item.affiliation.rorUrl}
+                    </a>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className={fieldLabel}>Years</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {formatYears(
+                      item.affiliationStartYear,
+                      item.affiliationEndYear,
+                    )}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -95,6 +95,7 @@ import { PaperWorkspacePage } from '@/features/project-management/components/pap
 import { PaperMembersDialog } from '@/features/project-management/components/papers/paper-members-sheet';
 import { useGetPaperAuthors } from '@/features/paper-management/api/get-paper-authors';
 import { AddAuthorPaperDialog } from '@/features/paper-management/components/add-author-paper-dialog';
+import { PaperAuthorDetailDialog } from '@/features/paper-management/components/paper-author-detail-dialog';
 import { useDeletePaperAuthor } from '@/features/paper-management/api/delete-paper-author';
 import {
   useCreateTask,
@@ -376,6 +377,8 @@ export const ProjectPaperDetailPage = ({
 
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [isAddAuthorOpen, setIsAddAuthorOpen] = useState(false);
+  const [viewingAuthor, setViewingAuthor] =
+    useState<PaperContributorItem | null>(null);
   const [viewingVersionId, setViewingVersionId] = useState<string | null>(null);
   const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<
     string | null
@@ -1785,9 +1788,9 @@ export const ProjectPaperDetailPage = ({
                             const label = getRoleDisplayLabel(member.role);
                             const cls =
                               member.role === 'paper:author' || raw === 'author'
-                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
                                 : raw === 'member' || raw === 'edit'
-                                  ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400'
+                                  ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400'
                                   : '';
                             const canDelete = isPaperAuthor
                               ? raw === 'member'
@@ -1941,41 +1944,50 @@ export const ProjectPaperDetailPage = ({
                                 author.ocrId ||
                                 '—'}
                             </TableCell>
-                            <TableCell className="text-muted-foreground">
+                            <TableCell className="text-foreground font-medium">
                               {getRoleDisplayLabel(
                                 author.authorRoleName || author.sectionRole,
                               ) || '—'}
                             </TableCell>
-                            {(isPaperAuthor || isManager) && (
-                              <TableCell>
-                                <div className="flex items-center justify-center gap-2">
-                                  <Button
-                                    size="action"
-                                    variant="outlineAction"
-                                    onClick={() => {
-                                      setEditingAuthor(author);
-                                      setIsAddAuthorOpen(true);
-                                    }}
-                                  >
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    size="action"
-                                    variant="destructive"
-                                    onClick={() =>
-                                      deletePaperAuthorMutation.mutate(
-                                        author.id,
-                                      )
-                                    }
-                                    disabled={
-                                      deletePaperAuthorMutation.isPending
-                                    }
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            )}
+                            <TableCell>
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  size="action"
+                                  variant="action"
+                                  onClick={() => setViewingAuthor(author)}
+                                >
+                                  View
+                                </Button>
+                                {(isPaperAuthor || isManager) && (
+                                  <>
+                                    <Button
+                                      size="action"
+                                      variant="outlineAction"
+                                      onClick={() => {
+                                        setEditingAuthor(author);
+                                        setIsAddAuthorOpen(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      size="action"
+                                      variant="destructive"
+                                      onClick={() =>
+                                        deletePaperAuthorMutation.mutate(
+                                          author.id,
+                                        )
+                                      }
+                                      disabled={
+                                        deletePaperAuthorMutation.isPending
+                                      }
+                                    >
+                                      Delete
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -3867,6 +3879,13 @@ export const ProjectPaperDetailPage = ({
         isManager={isManager}
         isAuthor={isPaperAuthor}
         author={editingAuthor}
+      />
+      <PaperAuthorDetailDialog
+        author={viewingAuthor}
+        open={!!viewingAuthor}
+        onOpenChange={(open) => {
+          if (!open) setViewingAuthor(null);
+        }}
       />
     </ContentLayout>
   );

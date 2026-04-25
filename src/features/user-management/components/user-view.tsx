@@ -7,13 +7,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { capitalize } from '@/utils/string-utils';
+
+import { CreateUserAffiliation } from '@/features/user-affiliation-management/components/create-user-affiliation';
+import { UserAffiliationsList } from '@/features/user-affiliation-management/components/user-affiliations-list';
 
 import { useUserDetail } from '../api/get-user';
 import { UpdateUser } from './update-user';
 import { DeactivateUser } from './deactivate-user';
 import { ActivateUser } from './activate-user';
-import { UserAvatar } from '@/components/ui/user-avatar';
-import { capitalize } from '@/utils/string-utils';
 
 export const UserView = ({ userId }: { userId: string }) => {
   const userQuery = useUserDetail({ userId });
@@ -113,6 +116,23 @@ export const UserView = ({ userId }: { userId: string }) => {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle>User Affiliations</CardTitle>
+              <CardDescription>
+                Affiliation history for this user
+              </CardDescription>
+            </div>
+            <CreateUserAffiliation userId={userId} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <UserAffiliationsList userId={userId} />
+        </CardContent>
+      </Card>
     </div>
   );
 };
