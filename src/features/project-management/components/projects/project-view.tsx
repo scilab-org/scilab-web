@@ -200,7 +200,7 @@ export const ProjectView = ({ project }: ProjectViewProps) => {
             <p
               className={cn(
                 'text-foreground w-full text-sm leading-relaxed whitespace-pre-wrap',
-                isKeyPoint && 'break-words whitespace-normal',
+                isKeyPoint && 'wrap-break-word whitespace-normal',
               )}
             >
               {card.value}

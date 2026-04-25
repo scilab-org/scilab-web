@@ -24,6 +24,28 @@ const makeSectionRow = (s: CreateTemplateSectionInput): SectionRow => ({
   _id: crypto.randomUUID(),
 });
 
+const normalizeTitleForCompare = (title: string) =>
+  title.trim().replace(/\s+/g, ' ');
+
+const isReferenceTitle = (title: string) => {
+  const normalized = normalizeTitleForCompare(title).toLowerCase();
+  return normalized === 'reference' || normalized === 'references';
+};
+
+const reorderSectionsWithReferenceLast = (items: SectionRow[]) => {
+  const normalSections = items.filter(
+    (section) => !isReferenceTitle(section.title),
+  );
+  const referenceSections = items.filter((section) =>
+    isReferenceTitle(section.title),
+  );
+
+  return [...normalSections, ...referenceSections].map((section, index) => ({
+    ...section,
+    displayOrder: index + 1,
+  }));
+};
+
 type UpdatePaperTemplateProps = {
   template: PaperTemplateDto;
 };
@@ -32,6 +54,13 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
   const [open, setOpen] = React.useState(false);
   const [description, setDescription] = React.useState('');
   const [sections, setSections] = React.useState<SectionRow[]>([]);
+  const [pendingScrollSectionId, setPendingScrollSectionId] = React.useState<
+    string | null
+  >(null);
+  const formRef = React.useRef<HTMLFormElement | null>(null);
+  const sectionCardRefs = React.useRef<Record<string, HTMLDivElement | null>>(
+    {},
+  );
 
   const mutation = useUpdatePaperTemplate({
     mutationConfig: {
@@ -49,16 +78,19 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
     if (open) {
       setDescription(template.description || '');
       setSections(
-        (template.sections ?? [])
-          .sort((a, b) => a.displayOrder - b.displayOrder)
-          .map((s) =>
-            makeSectionRow({
-              title: s.title,
-              sectionRule: s.sectionRule,
-              displayOrder: s.displayOrder,
-            }),
-          ),
+        reorderSectionsWithReferenceLast(
+          (template.sections ?? [])
+            .sort((a, b) => a.displayOrder - b.displayOrder)
+            .map((s) =>
+              makeSectionRow({
+                title: s.title,
+                sectionRule: s.sectionRule,
+                displayOrder: s.displayOrder,
+              }),
+            ),
+        ),
       );
+      setPendingScrollSectionId(null);
     }
   }, [open, template]);
 
@@ -67,28 +99,95 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
     field: keyof CreateTemplateSectionInput,
     value: string,
   ) => {
-    setSections((prev) =>
-      prev.map((s) => (s._id !== id ? s : { ...s, [field]: value })),
-    );
+    setSections((prev) => {
+      if (field !== 'title') {
+        return prev.map((s) => (s._id !== id ? s : { ...s, [field]: value }));
+      }
+
+      const targetSection = prev.find((s) => s._id === id);
+      if (!targetSection) return prev;
+
+      const nextIsReference = isReferenceTitle(value);
+      const currentIsReference = isReferenceTitle(targetSection.title);
+      const referenceCount = prev.filter((s) =>
+        isReferenceTitle(s.title),
+      ).length;
+
+      if (!currentIsReference && nextIsReference && referenceCount >= 1) {
+        toast.error('Only one section can be named Reference or References.');
+        return prev;
+      }
+
+      if (currentIsReference && !nextIsReference && referenceCount <= 1) {
+        toast.error(
+          'Template must contain one Reference or References section.',
+        );
+        return prev;
+      }
+
+      const updated = prev.map((s) =>
+        s._id !== id ? s : { ...s, [field]: value },
+      );
+      return reorderSectionsWithReferenceLast(updated);
+    });
   };
 
   const addSection = () => {
-    setSections((prev) => [
-      ...prev,
-      makeSectionRow({
+    const newSectionId = crypto.randomUUID();
+    const referenceIndex = sections.findIndex((s) => isReferenceTitle(s.title));
+    const insertAt = referenceIndex === -1 ? sections.length : referenceIndex;
+
+    setPendingScrollSectionId(newSectionId);
+    setSections((prev) => {
+      const updated = [...prev];
+      updated.splice(insertAt, 0, {
+        _id: newSectionId,
         title: '',
         sectionRule: '',
-        displayOrder: prev.length + 1,
-      }),
-    ]);
+        displayOrder: insertAt + 1,
+      });
+      return reorderSectionsWithReferenceLast(updated);
+    });
   };
 
   const removeSection = (id: string) => {
     setSections((prev) => {
+      const targetSection = prev.find((s) => s._id === id);
+      if (!targetSection) return prev;
+
+      if (isReferenceTitle(targetSection.title)) {
+        const referenceCount = prev.filter((s) =>
+          isReferenceTitle(s.title),
+        ).length;
+        if (referenceCount <= 1) {
+          toast.error(
+            'Template must contain one Reference or References section.',
+          );
+          return prev;
+        }
+      }
+
       const updated = prev.filter((s) => s._id !== id);
-      return updated.map((s, i) => ({ ...s, displayOrder: i + 1 }));
+      return reorderSectionsWithReferenceLast(updated);
     });
   };
+
+  React.useEffect(() => {
+    if (!pendingScrollSectionId) return;
+    const targetCard = sectionCardRefs.current[pendingScrollSectionId];
+    const formNode = formRef.current;
+    if (!targetCard || !formNode) return;
+
+    requestAnimationFrame(() => {
+      const offset = targetCard.offsetTop - formNode.offsetTop - 12;
+      formNode.scrollTo({ top: Math.max(offset, 0), behavior: 'smooth' });
+      const firstInput = targetCard.querySelector('input, textarea');
+      if (firstInput instanceof HTMLElement) {
+        firstInput.focus();
+      }
+      setPendingScrollSectionId(null);
+    });
+  }, [sections, pendingScrollSectionId]);
 
   const dragItemRef = React.useRef<number | null>(null);
   const dragOverItemRef = React.useRef<number | null>(null);
@@ -113,7 +212,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
       const updated = [...prev];
       const [dragged] = updated.splice(from, 1);
       updated.splice(to, 0, dragged);
-      return updated.map((s, i) => ({ ...s, displayOrder: i + 1 }));
+      return reorderSectionsWithReferenceLast(updated);
     });
     dragItemRef.current = null;
     dragOverItemRef.current = null;
@@ -121,6 +220,27 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (sections.some((s) => !s.title.trim() || !s.sectionRule.trim())) {
+      toast.error('Section title and rule are required.');
+      return;
+    }
+
+    const referenceCount = sections.filter((s) =>
+      isReferenceTitle(s.title),
+    ).length;
+    if (referenceCount !== 1) {
+      toast.error(
+        'Template must contain exactly one Reference or References section.',
+      );
+      return;
+    }
+
+    const lastSection = sections[sections.length - 1];
+    if (!lastSection || !isReferenceTitle(lastSection.title)) {
+      toast.error('Reference or References section must be the last section.');
+      return;
+    }
+
     mutation.mutate({
       id: template.id,
       data: {
@@ -130,6 +250,17 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
     });
   };
 
+  const referenceCount = sections.filter((s) =>
+    isReferenceTitle(s.title),
+  ).length;
+  const hasExactlyOneReference = referenceCount === 1;
+  const hasReferenceAtLast =
+    sections.length > 0 &&
+    isReferenceTitle(sections[sections.length - 1]?.title ?? '');
+  const hasInvalidSectionContent = sections.some(
+    (s) => !s.title.trim() || !s.sectionRule.trim(),
+  );
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -138,7 +269,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-3xl">
         <div className="shrink-0 px-6 pt-6">
           <DialogHeader>
             <DialogTitle>Edit Template</DialogTitle>
@@ -151,6 +282,7 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
         <form
           id="update-pt-form"
           onSubmit={handleSubmit}
+          ref={formRef}
           className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-6 py-4"
         >
           {/* Read-only info */}
@@ -198,6 +330,9 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
               {sections.map((section, idx) => (
                 <div
                   key={section._id}
+                  ref={(node) => {
+                    sectionCardRefs.current[section._id] = node;
+                  }}
                   onDragEnter={() => handleDragEnter(idx)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDrop}
@@ -274,7 +409,12 @@ export const UpdatePaperTemplate = ({ template }: UpdatePaperTemplateProps) => {
           <Button
             type="submit"
             form="update-pt-form"
-            disabled={mutation.isPending}
+            disabled={
+              mutation.isPending ||
+              hasInvalidSectionContent ||
+              !hasExactlyOneReference ||
+              !hasReferenceAtLast
+            }
             variant="darkRed"
           >
             {mutation.isPending ? 'SAVING...' : 'SAVE'}

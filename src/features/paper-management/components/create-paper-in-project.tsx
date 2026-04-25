@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, Loader2, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -29,10 +29,34 @@ import { useCreatePaperInProject } from '../api/initialize-paper';
 import { CreatePaperInProjectDto } from '../types';
 
 type SectionRow = {
+  _id: string;
   title: string;
+  originalTitle: string;
   displayOrder: number;
   sectionRule: string;
   mainIdea: string;
+};
+
+const normalizeTitleForCompare = (title: string) =>
+  title.trim().replace(/\s+/g, ' ');
+
+const isReferenceTitle = (title: string) => {
+  const normalized = normalizeTitleForCompare(title).toLowerCase();
+  return normalized === 'reference' || normalized === 'references';
+};
+
+const reorderSectionsWithReferencesLast = (items: SectionRow[]) => {
+  const normalSections = items.filter(
+    (section) => !isReferenceTitle(section.originalTitle),
+  );
+  const referenceSections = items.filter((section) =>
+    isReferenceTitle(section.originalTitle),
+  );
+
+  return [...normalSections, ...referenceSections].map((section, index) => ({
+    ...section,
+    displayOrder: index + 1,
+  }));
 };
 
 type CreatePaperInProjectProps = {
@@ -58,6 +82,7 @@ const initialFormData = {
   mainContribution: '',
   researchAim: '',
   selectedJournalId: '',
+  selectedTemplateId: '',
   conferenceJournalStartAt: '',
   conferenceJournalEndAt: '',
   status: 1,
@@ -74,6 +99,14 @@ export const CreatePaperInProject = ({
 
   // Sections editor state
   const [sections, setSections] = React.useState<SectionRow[]>([]);
+  const [pendingScrollSectionId, setPendingScrollSectionId] = React.useState<
+    string | null
+  >(null);
+  const sectionCardRefs = React.useRef<Record<string, HTMLDivElement | null>>(
+    {},
+  );
+  const dragItemRef = React.useRef<number | null>(null);
+  const dragOverItemRef = React.useRef<number | null>(null);
   const [gapTypeSearch, setGapTypeSearch] = React.useState('');
   const [isGapTypeOpen, setIsGapTypeOpen] = React.useState(false);
   const gapTypeInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -119,15 +152,23 @@ export const CreatePaperInProject = ({
     [journalResults, formData.selectedJournalId],
   );
 
-  // Fetch template detail from journal's templateId
+  const selectedTemplate = React.useMemo(
+    () =>
+      selectedJournal?.templates?.find(
+        (template) => template.id === formData.selectedTemplateId,
+      ) ?? null,
+    [selectedJournal?.templates, formData.selectedTemplateId],
+  );
+
+  // Fetch template detail from selected template
   const templateDetailQuery = usePaperTemplate({
-    id: selectedJournal?.templates?.[0]?.id ?? '',
-    queryConfig: { enabled: !!selectedJournal?.templates?.[0]?.id },
+    id: formData.selectedTemplateId,
+    queryConfig: { enabled: !!formData.selectedTemplateId },
   });
 
-  // Populate sections when template loads or journal changes
+  // Populate sections when template loads or selection changes
   React.useEffect(() => {
-    if (!selectedJournal?.templates?.[0]?.id) {
+    if (!formData.selectedTemplateId) {
       setSections([]);
       return;
     }
@@ -137,17 +178,23 @@ export const CreatePaperInProject = ({
     if (!detail) return;
     const rawSections = detail.sections ?? [];
     setSections(
-      rawSections
-        .slice()
-        .sort((a, b) => a.displayOrder - b.displayOrder)
-        .map((s) => ({
-          title: s.title,
-          displayOrder: s.displayOrder,
-          sectionRule: s.sectionRule ?? '',
-          mainIdea: '',
-        })),
+      reorderSectionsWithReferencesLast(
+        rawSections
+          .slice()
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((s) => ({
+            _id: crypto.randomUUID(),
+            title: s.title,
+            originalTitle: s.title,
+            displayOrder: s.displayOrder,
+            sectionRule: s.sectionRule ?? '',
+            mainIdea: isReferenceTitle(s.title)
+              ? 'Manage references and citations for this paper.'
+              : '',
+          })),
+      ),
     );
-  }, [selectedJournal?.templates, templateDetailQuery.data]);
+  }, [formData.selectedTemplateId, templateDetailQuery.data]);
 
   // Mutation using create paper endpoint
   React.useEffect(() => {
@@ -209,8 +256,129 @@ export const CreatePaperInProject = ({
   const resetForm = () => {
     setFormData(initialFormData);
     setSections([]);
+    setPendingScrollSectionId(null);
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
     setGapTypeSearch('');
     setIsGapTypeOpen(false);
+  };
+
+  React.useEffect(() => {
+    if (!pendingScrollSectionId) return;
+    const targetCard = sectionCardRefs.current[pendingScrollSectionId];
+    if (!targetCard) return;
+
+    targetCard.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+    setPendingScrollSectionId(null);
+  }, [sections, pendingScrollSectionId]);
+
+  const updateSection = (
+    id: string,
+    field: keyof Omit<SectionRow, '_id'>,
+    value: string,
+  ) => {
+    setSections((prev) => {
+      const targetSection = prev.find((section) => section._id === id);
+      if (!targetSection) return prev;
+
+      // Reference section from template is immutable in create flow.
+      if (isReferenceTitle(targetSection.originalTitle)) {
+        return prev;
+      }
+
+      if (
+        field === 'title' &&
+        isReferenceTitle(value) &&
+        !isReferenceTitle(targetSection.originalTitle)
+      ) {
+        toast.error(
+          'Only the original Reference/References section can use that title.',
+        );
+        return prev;
+      }
+
+      return prev.map((section) =>
+        section._id === id ? { ...section, [field]: value } : section,
+      );
+    });
+  };
+
+  const addSection = () => {
+    const newSectionId = crypto.randomUUID();
+    const referenceIndex = sections.findIndex((section) =>
+      isReferenceTitle(section.originalTitle),
+    );
+    const insertAt = referenceIndex === -1 ? sections.length : referenceIndex;
+
+    setPendingScrollSectionId(newSectionId);
+    setSections((prev) => {
+      const updated = [...prev];
+      updated.splice(insertAt, 0, {
+        _id: newSectionId,
+        title: '',
+        originalTitle: '',
+        displayOrder: insertAt + 1,
+        sectionRule: '',
+        mainIdea: '',
+      });
+
+      return reorderSectionsWithReferencesLast(updated);
+    });
+  };
+
+  const removeSection = (id: string) => {
+    setSections((prev) => {
+      const target = prev.find((section) => section._id === id);
+      if (!target || isReferenceTitle(target.originalTitle)) {
+        return prev;
+      }
+
+      return reorderSectionsWithReferencesLast(
+        prev.filter((section) => section._id !== id),
+      );
+    });
+  };
+
+  const handleDragStart = (index: number) => {
+    dragItemRef.current = index;
+  };
+
+  const handleDragEnter = (index: number) => {
+    dragOverItemRef.current = index;
+  };
+
+  const handleDrop = () => {
+    const from = dragItemRef.current;
+    const to = dragOverItemRef.current;
+    if (from === null || to === null || from === to) {
+      dragItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+
+    const fromSection = sections[from];
+    const toSection = sections[to];
+    if (
+      (fromSection && isReferenceTitle(fromSection.originalTitle)) ||
+      (toSection && isReferenceTitle(toSection.originalTitle))
+    ) {
+      dragItemRef.current = null;
+      dragOverItemRef.current = null;
+      return;
+    }
+
+    setSections((prev) => {
+      const updated = [...prev];
+      const [dragged] = updated.splice(from, 1);
+      updated.splice(to, 0, dragged);
+      return reorderSectionsWithReferencesLast(updated);
+    });
+
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -222,7 +390,40 @@ export const CreatePaperInProject = ({
     if (!formData.mainContribution.trim()) return;
     if (!formData.researchAim.trim()) return;
     if (!formData.selectedJournalId) return;
-    if (sections.some((s) => !s.mainIdea.trim())) return;
+    if (!formData.selectedTemplateId) return;
+    if (sections.some((s) => !s.title.trim())) return;
+    if (
+      sections.some(
+        (s) => !isReferenceTitle(s.originalTitle) && !s.mainIdea.trim(),
+      )
+    ) {
+      return;
+    }
+    if (
+      sections.some(
+        (s) => !isReferenceTitle(s.originalTitle) && isReferenceTitle(s.title),
+      )
+    ) {
+      return;
+    }
+    if (sections.some((s) => !s.sectionRule?.trim())) return;
+    if (sections.some((s) => !s.mainIdea?.trim())) return;
+
+    const referenceCount = sections.filter((s) =>
+      isReferenceTitle(s.originalTitle),
+    ).length;
+    if (referenceCount !== 1) {
+      toast.error(
+        'Template must contain exactly one Reference or References section.',
+      );
+      return;
+    }
+
+    const lastSection = sections[sections.length - 1];
+    if (!lastSection || !isReferenceTitle(lastSection.originalTitle)) {
+      toast.error('Reference or References section must be the last section.');
+      return;
+    }
 
     const payload: CreatePaperInProjectDto = {
       projectId: _projectId,
@@ -242,7 +443,7 @@ export const CreatePaperInProject = ({
       conferenceJournalEndAt: formData.conferenceJournalEndAt
         ? new Date(formData.conferenceJournalEndAt).toISOString()
         : null,
-      template: selectedJournal?.templates?.[0]?.code || undefined,
+      template: selectedTemplate?.code || undefined,
       sections: sections.map((sec) => ({
         title: sec.title,
         displayOrder: sec.displayOrder,
@@ -262,7 +463,7 @@ export const CreatePaperInProject = ({
         if (!v) resetForm();
       }}
     >
-      <DialogContent className="scrollbar-dialog max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="scrollbar-dialog max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Create New Paper</DialogTitle>
           <DialogDescription>
@@ -520,6 +721,7 @@ export const CreatePaperInProject = ({
                 setFormData((prev) => ({
                   ...prev,
                   selectedJournalId: v,
+                  selectedTemplateId: '',
                   conferenceJournalStartAt: toDateTimeLocalValue(
                     journalResults.find((journal) => journal.id === v)
                       ?.conferenceJournalStartAt,
@@ -539,6 +741,30 @@ export const CreatePaperInProject = ({
               variant="outline"
             />
           </div>
+
+          {selectedJournal && (
+            <div className="space-y-1.5">
+              <label htmlFor="cpp-template-id" className="text-sm font-medium">
+                Template <span className="text-destructive">*</span>
+              </label>
+              <FilterDropdown
+                value={formData.selectedTemplateId}
+                onChange={(v) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    selectedTemplateId: v,
+                  }))
+                }
+                options={(selectedJournal.templates ?? []).map((template) => ({
+                  label: template.code,
+                  value: template.id,
+                }))}
+                placeholder="Select template"
+                clearLabel="No template"
+                variant="outline"
+              />
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -582,17 +808,29 @@ export const CreatePaperInProject = ({
           </div>
 
           {/* ── Sections from journal template ── */}
-          {selectedJournal?.templates?.[0]?.id && (
+          {formData.selectedTemplateId && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Sections
-                {sections.length > 0 && (
-                  <span className="text-muted-foreground ml-1 font-normal">
-                    ({sections.length})
-                  </span>
-                )}{' '}
-                <span className="text-destructive">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  Sections
+                  {sections.length > 0 && (
+                    <span className="text-muted-foreground ml-1 font-normal">
+                      ({sections.length})
+                    </span>
+                  )}{' '}
+                  <span className="text-destructive">*</span>
+                </label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={addSection}
+                  className="gap-1"
+                >
+                  <Plus className="size-3.5" />
+                  Add Section
+                </Button>
+              </div>
 
               {templateDetailQuery.isLoading ? (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -601,42 +839,126 @@ export const CreatePaperInProject = ({
                 </div>
               ) : sections.length > 0 ? (
                 <div className="space-y-2">
-                  {sections.map((section, index) => (
-                    <div
-                      key={index}
-                      className="space-y-3 rounded-md border px-4 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex w-5 shrink-0 items-center justify-center">
-                          <span className="text-muted-foreground text-xs font-medium">
-                            {section.displayOrder}
-                          </span>
+                  {sections.map((section, index) =>
+                    (() => {
+                      const isLockedReference = isReferenceTitle(
+                        section.originalTitle,
+                      );
+                      const canEditRule =
+                        !isLockedReference &&
+                        normalizeTitleForCompare(section.title) !==
+                          normalizeTitleForCompare(section.originalTitle);
+
+                      return (
+                        <div
+                          key={section._id}
+                          ref={(node) => {
+                            sectionCardRefs.current[section._id] = node;
+                          }}
+                          onDragEnter={() => handleDragEnter(index)}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            handleDragEnter(index);
+                          }}
+                          onDrop={handleDrop}
+                          className="space-y-3 rounded-md border px-4 py-3"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="flex w-5 shrink-0 items-center justify-center">
+                              <span className="text-muted-foreground text-xs font-medium">
+                                {section.displayOrder}
+                              </span>
+                            </div>
+                            {isLockedReference ? (
+                              <p className="min-w-0 flex-1 text-sm font-medium">
+                                {section.title}
+                              </p>
+                            ) : (
+                              <Input
+                                value={section.title}
+                                onChange={(e) =>
+                                  updateSection(
+                                    section._id,
+                                    'title',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Section title"
+                                required
+                                className="h-10 min-w-0 flex-1 rounded-md text-sm"
+                              />
+                            )}
+                            {!isLockedReference ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-7 shrink-0 text-red-500 hover:text-red-600"
+                                onClick={() => removeSection(section._id)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            ) : null}
+                          </div>
+                          {!isLockedReference ? (
+                            <div className="flex items-start gap-3">
+                              <div
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.effectAllowed = 'move';
+                                  handleDragStart(index);
+                                }}
+                                onDragEnd={handleDrop}
+                                className="flex w-5 shrink-0 cursor-grab justify-center pt-3"
+                                aria-label="Drag section"
+                              >
+                                <div className="grid grid-cols-2 gap-x-0.5 gap-y-0.5">
+                                  <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                                  <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                                  <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                                  <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                                  <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                                  <span className="bg-muted-foreground/70 block h-1 w-1 rounded-full" />
+                                </div>
+                              </div>
+                              <div className="w-full space-y-1.5">
+                                {canEditRule ? (
+                                  <textarea
+                                    value={section.sectionRule}
+                                    onChange={(e) =>
+                                      updateSection(
+                                        section._id,
+                                        'sectionRule',
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Section rule"
+                                    rows={4}
+                                    className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-20 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                                  />
+                                ) : null}
+
+                                <textarea
+                                  value={section.mainIdea}
+                                  onChange={(e) =>
+                                    updateSection(
+                                      section._id,
+                                      'mainIdea',
+                                      e.target.value,
+                                    )
+                                  }
+                                  rows={6}
+                                  required
+                                  placeholder="e.g. This section covers..."
+                                  className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                                />
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
-                        <p className="flex-1 text-sm font-medium">
-                          {section.title}{' '}
-                          <span className="text-destructive">*</span>
-                        </p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <textarea
-                          value={section.mainIdea}
-                          onChange={(e) =>
-                            setSections((prev) =>
-                              prev.map((s, i) =>
-                                i === index
-                                  ? { ...s, mainIdea: e.target.value }
-                                  : s,
-                              ),
-                            )
-                          }
-                          rows={6}
-                          required
-                          placeholder="e.g. This section covers..."
-                          className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })(),
+                  )}
                 </div>
               ) : null}
             </div>
@@ -675,7 +997,19 @@ export const CreatePaperInProject = ({
               !formData.mainContribution.trim() ||
               !formData.researchAim.trim() ||
               !formData.selectedJournalId ||
-              sections.some((s) => !s.mainIdea.trim())
+              !formData.selectedTemplateId ||
+              sections.some((s) => !s.title.trim()) ||
+              sections.filter((s) => isReferenceTitle(s.originalTitle))
+                .length !== 1 ||
+              !sections[sections.length - 1] ||
+              !isReferenceTitle(sections[sections.length - 1].originalTitle) ||
+              sections.some(
+                (s) =>
+                  !isReferenceTitle(s.originalTitle) &&
+                  isReferenceTitle(s.title),
+              ) ||
+              sections.some((s) => !s.sectionRule?.trim()) ||
+              sections.some((s) => !s.mainIdea?.trim())
             }
             variant="darkRed"
             className="uppercase"
