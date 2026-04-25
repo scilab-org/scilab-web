@@ -241,17 +241,17 @@ const TAB_GROUPS: {
     tabs: [
       { id: 'sections', label: 'Sections', icon: BookOpen },
       { id: 'compile-paper', label: 'Versions', icon: Layers },
-      { id: 'task', label: 'Task', icon: ClipboardList },
+      { id: 'task', label: 'Tasks', icon: ClipboardList },
     ],
   },
   {
     id: 'member',
-    label: 'Member',
+    label: 'Members',
     icon: Users,
     defaultTab: 'member' as Tab,
     tabs: [
-      { id: 'member', label: 'Member', icon: Users },
-      { id: 'author', label: 'Author', icon: Users },
+      { id: 'member', label: 'Members', icon: Users },
+      { id: 'author', label: 'Authors', icon: Users },
     ],
   },
 ];
@@ -1482,14 +1482,15 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'compile-paper' && (
               <div>
                 <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
                       Combined Versions
                     </h2>
-                    <p className="text-secondary mt-1 font-sans text-[10px]">
-                      {paperVersions.length} version
-                      {paperVersions.length !== 1 ? 's' : ''}
-                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                      {paperVersionsQuery.isLoading
+                        ? '—'
+                        : paperVersions.length}
+                    </span>
                   </div>
                   {isPaperAuthor && (
                     <Button
@@ -1702,14 +1703,13 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'member' && (
               <div>
                 <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
                       Members
                     </h2>
-                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
-                      {totalPaperMembers} member
-                      {totalPaperMembers !== 1 ? 's' : ''}
-                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                      {paperMembersQuery.isLoading ? '—' : totalPaperMembers}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     {(isPaperAuthor || isManager) && (
@@ -1858,14 +1858,13 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'author' && (
               <div>
                 <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
                       Authors
                     </h2>
-                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
-                      {totalAuthors} author
-                      {totalAuthors !== 1 ? 's' : ''}
-                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                      {paperContributorsQuery.isLoading ? '—' : totalAuthors}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     {(isPaperAuthor || isManager) && (
@@ -1990,15 +1989,16 @@ export const ProjectPaperDetailPage = ({
             {activeTab === 'task' && (
               <div>
                 <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
                       Tasks
                     </h2>
-                    <p className="text-muted-foreground mt-1 font-sans text-[10px]">
-                      {paperTasksQuery.data?.result?.paging?.totalCount != null
-                        ? `${paperTasksQuery.data.result.paging.totalCount} task${paperTasksQuery.data.result.paging.totalCount !== 1 ? 's' : ''}`
-                        : 'Paper tasks'}
-                    </p>
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                      {paperTasksQuery.isLoading
+                        ? '—'
+                        : (paperTasksQuery.data?.result?.paging?.totalCount ??
+                          0)}
+                    </span>
                   </div>
                   {isPaperAuthor && (
                     <Button

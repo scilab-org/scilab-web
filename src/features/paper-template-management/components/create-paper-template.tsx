@@ -125,11 +125,40 @@ const makeSectionRow = (s: CreateTemplateSectionInput): SectionRow => ({
   _id: crypto.randomUUID(),
 });
 
+const normalizeTitleForCompare = (title: string) =>
+  title.trim().replace(/\s+/g, ' ');
+
+const isReferenceTitle = (title: string) => {
+  const normalized = normalizeTitleForCompare(title).toLowerCase();
+  return normalized === 'reference' || normalized === 'references';
+};
+
+const reorderSectionsWithReferenceLast = (items: SectionRow[]) => {
+  const normalSections = items.filter(
+    (section) => !isReferenceTitle(section.title),
+  );
+  const referenceSections = items.filter((section) =>
+    isReferenceTitle(section.title),
+  );
+
+  return [...normalSections, ...referenceSections].map((section, index) => ({
+    ...section,
+    displayOrder: index + 1,
+  }));
+};
+
 export const CreatePaperTemplate = () => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState(initialFormData);
   const [sections, setSections] = React.useState<SectionRow[]>(() =>
-    DEFAULT_SECTIONS.map(makeSectionRow),
+    reorderSectionsWithReferenceLast(DEFAULT_SECTIONS.map(makeSectionRow)),
+  );
+  const [pendingScrollSectionId, setPendingScrollSectionId] = React.useState<
+    string | null
+  >(null);
+  const formRef = React.useRef<HTMLFormElement | null>(null);
+  const sectionCardRefs = React.useRef<Record<string, HTMLDivElement | null>>(
+    {},
   );
 
   const mutation = useCreatePaperTemplate({
@@ -147,7 +176,10 @@ export const CreatePaperTemplate = () => {
 
   const resetForm = () => {
     setFormData(initialFormData);
-    setSections(DEFAULT_SECTIONS.map(makeSectionRow));
+    setSections(
+      reorderSectionsWithReferenceLast(DEFAULT_SECTIONS.map(makeSectionRow)),
+    );
+    setPendingScrollSectionId(null);
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -164,28 +196,95 @@ export const CreatePaperTemplate = () => {
     field: keyof CreateTemplateSectionInput,
     value: string,
   ) => {
-    setSections((prev) =>
-      prev.map((s) => (s._id !== id ? s : { ...s, [field]: value })),
-    );
+    setSections((prev) => {
+      if (field !== 'title') {
+        return prev.map((s) => (s._id !== id ? s : { ...s, [field]: value }));
+      }
+
+      const targetSection = prev.find((s) => s._id === id);
+      if (!targetSection) return prev;
+
+      const nextIsReference = isReferenceTitle(value);
+      const currentIsReference = isReferenceTitle(targetSection.title);
+      const referenceCount = prev.filter((s) =>
+        isReferenceTitle(s.title),
+      ).length;
+
+      if (!currentIsReference && nextIsReference && referenceCount >= 1) {
+        toast.error('Only one section can be named Reference or References.');
+        return prev;
+      }
+
+      if (currentIsReference && !nextIsReference && referenceCount <= 1) {
+        toast.error(
+          'Template must contain one Reference or References section.',
+        );
+        return prev;
+      }
+
+      const updated = prev.map((s) =>
+        s._id !== id ? s : { ...s, [field]: value },
+      );
+      return reorderSectionsWithReferenceLast(updated);
+    });
   };
 
   const addSection = () => {
-    setSections((prev) => [
-      ...prev,
-      makeSectionRow({
+    const newSectionId = crypto.randomUUID();
+    const referenceIndex = sections.findIndex((s) => isReferenceTitle(s.title));
+    const insertAt = referenceIndex === -1 ? sections.length : referenceIndex;
+
+    setPendingScrollSectionId(newSectionId);
+    setSections((prev) => {
+      const updated = [...prev];
+      updated.splice(insertAt, 0, {
+        _id: newSectionId,
         title: '',
         sectionRule: '',
-        displayOrder: prev.length + 1,
-      }),
-    ]);
+        displayOrder: insertAt + 1,
+      });
+      return reorderSectionsWithReferenceLast(updated);
+    });
   };
 
   const removeSection = (id: string) => {
     setSections((prev) => {
+      const targetSection = prev.find((s) => s._id === id);
+      if (!targetSection) return prev;
+
+      if (isReferenceTitle(targetSection.title)) {
+        const referenceCount = prev.filter((s) =>
+          isReferenceTitle(s.title),
+        ).length;
+        if (referenceCount <= 1) {
+          toast.error(
+            'Template must contain one Reference or References section.',
+          );
+          return prev;
+        }
+      }
+
       const updated = prev.filter((s) => s._id !== id);
-      return updated.map((s, i) => ({ ...s, displayOrder: i + 1 }));
+      return reorderSectionsWithReferenceLast(updated);
     });
   };
+
+  React.useEffect(() => {
+    if (!pendingScrollSectionId) return;
+    const targetCard = sectionCardRefs.current[pendingScrollSectionId];
+    const formNode = formRef.current;
+    if (!targetCard || !formNode) return;
+
+    requestAnimationFrame(() => {
+      const offset = targetCard.offsetTop - formNode.offsetTop - 12;
+      formNode.scrollTo({ top: Math.max(offset, 0), behavior: 'smooth' });
+      const firstInput = targetCard.querySelector('input, textarea');
+      if (firstInput instanceof HTMLElement) {
+        firstInput.focus();
+      }
+      setPendingScrollSectionId(null);
+    });
+  }, [sections, pendingScrollSectionId]);
 
   const dragItemRef = React.useRef<number | null>(null);
   const dragOverItemRef = React.useRef<number | null>(null);
@@ -210,7 +309,7 @@ export const CreatePaperTemplate = () => {
       const updated = [...prev];
       const [dragged] = updated.splice(from, 1);
       updated.splice(to, 0, dragged);
-      return updated.map((s, i) => ({ ...s, displayOrder: i + 1 }));
+      return reorderSectionsWithReferenceLast(updated);
     });
     dragItemRef.current = null;
     dragOverItemRef.current = null;
@@ -219,6 +318,26 @@ export const CreatePaperTemplate = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code.trim()) return;
+    if (sections.some((s) => !s.title.trim() || !s.sectionRule.trim())) {
+      toast.error('Section title and rule are required.');
+      return;
+    }
+
+    const referenceCount = sections.filter((s) =>
+      isReferenceTitle(s.title),
+    ).length;
+    if (referenceCount !== 1) {
+      toast.error(
+        'Template must contain exactly one Reference or References section.',
+      );
+      return;
+    }
+
+    const lastSection = sections[sections.length - 1];
+    if (!lastSection || !isReferenceTitle(lastSection.title)) {
+      toast.error('Reference or References section must be the last section.');
+      return;
+    }
 
     mutation.mutate({
       code: formData.code.trim(),
@@ -226,6 +345,17 @@ export const CreatePaperTemplate = () => {
       sections: sections.map(({ _id, ...s }) => s),
     });
   };
+
+  const referenceCount = sections.filter((s) =>
+    isReferenceTitle(s.title),
+  ).length;
+  const hasExactlyOneReference = referenceCount === 1;
+  const hasReferenceAtLast =
+    sections.length > 0 &&
+    isReferenceTitle(sections[sections.length - 1]?.title ?? '');
+  const hasInvalidSectionContent = sections.some(
+    (s) => !s.title.trim() || !s.sectionRule.trim(),
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -235,7 +365,7 @@ export const CreatePaperTemplate = () => {
         </CreateButton>
       </DialogTrigger>
 
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-3xl">
         <div className="shrink-0 px-6 pt-6">
           <DialogHeader>
             <DialogTitle>Create Paper Template</DialogTitle>
@@ -248,6 +378,7 @@ export const CreatePaperTemplate = () => {
         <form
           id="create-pt-form"
           onSubmit={handleSubmit}
+          ref={formRef}
           className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-6 py-4"
         >
           {/* Basic info */}
@@ -305,6 +436,9 @@ export const CreatePaperTemplate = () => {
               {sections.map((section, idx) => (
                 <div
                   key={section._id}
+                  ref={(node) => {
+                    sectionCardRefs.current[section._id] = node;
+                  }}
                   onDragEnter={() => handleDragEnter(idx)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDrop}
@@ -386,7 +520,13 @@ export const CreatePaperTemplate = () => {
           <Button
             type="submit"
             form="create-pt-form"
-            disabled={mutation.isPending || !formData.code.trim()}
+            disabled={
+              mutation.isPending ||
+              !formData.code.trim() ||
+              hasInvalidSectionContent ||
+              !hasExactlyOneReference ||
+              !hasReferenceAtLast
+            }
             variant="darkRed"
             className="uppercase"
           >
