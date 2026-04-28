@@ -12,6 +12,7 @@ import { getUserGroups } from '@/lib/auth';
 import { usePaperDetail } from '../api/get-paper';
 import { UpdatePaper } from './update-paper';
 import { DeletePaper } from './delete-paper';
+import { RetryIngestion } from './retry-ingestion';
 import { formatPublicationDate } from '@/utils/string-utils';
 
 const TAG_COLORS = [
@@ -198,6 +199,9 @@ export const PaperView = ({ paperId }: { paperId: string }) => {
               </div>
               {isAdmin && (
                 <div className="flex items-center gap-2">
+                  {paper.ingestStatus === 2 && (
+                    <RetryIngestion paperId={paperId} />
+                  )}
                   <UpdatePaper paperId={paperId} paper={paper} />
                   <DeletePaper paperId={paperId} />
                 </div>

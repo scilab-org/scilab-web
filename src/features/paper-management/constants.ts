@@ -9,6 +9,8 @@ export const PAPER_MANAGEMENT_API = {
   ADMIN_PAPERS: `${LAB_SERVICE_PREFIX}/admin/paper-bank`,
   ADMIN_PAPER_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/admin/paper-bank/${paperId}`,
+  ADMIN_PAPER_RETRY_INGESTION: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/admin/paper-bank/${paperId}/retry-ingestion`,
   GAP_TYPES: `${LAB_SERVICE_PREFIX}/gap-types`,
   ADMIN_PAPERS_INITIALIZE: `${LAB_SERVICE_PREFIX}/papers`,
   WRITING_PAPER_BY_ID: (paperId: string) =>
