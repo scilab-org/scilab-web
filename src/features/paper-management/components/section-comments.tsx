@@ -334,19 +334,24 @@ export const SectionComments = ({
         </div>
       ) : (
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto py-1 pr-1">
-          {comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              sectionId={sectionId}
-              currentUser={user?.preferredUsername}
-              isReadOnly={isReadOnly}
-              onReply={!isReadOnly ? (target) => setReplyTo(target) : undefined}
-              onGoToSection={
-                onGoToSection ? () => onGoToSection(comment) : undefined
-              }
-            />
-          ))}
+          {comments
+            .slice()
+            .reverse()
+            .map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                sectionId={sectionId}
+                currentUser={user?.preferredUsername}
+                isReadOnly={isReadOnly}
+                onReply={
+                  !isReadOnly ? (target) => setReplyTo(target) : undefined
+                }
+                onGoToSection={
+                  onGoToSection ? () => onGoToSection(comment) : undefined
+                }
+              />
+            ))}
           {comments.length === 0 && (
             <div className="bg-editor-bg flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 py-8 text-center dark:border-slate-800 dark:bg-slate-900/20">
               <MessageSquare className="h-6 w-6 text-slate-300 dark:text-slate-600" />

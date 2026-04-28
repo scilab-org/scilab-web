@@ -47,7 +47,8 @@ export const RetryIngestion = ({ paperId }: RetryIngestionProps) => {
         <AlertDialogHeader>
           <AlertDialogTitle>Retry Ingestion?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will retry ingestion for this paper. Are you sure you want to proceed?
+            This will retry ingestion for this paper. Are you sure you want to
+            proceed?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

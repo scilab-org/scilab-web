@@ -427,6 +427,15 @@ export type PaperContributorItem = {
   authorRoleId?: string | null;
   authorRoleName?: string | null;
   authorRoleDescription?: string | null;
+  name?: string | null;
+  ocrId?: string | null;
+  email?: string | null;
+  affiliationId?: string | null;
+  affiliationName?: string | null;
+  department?: string | null;
+  position?: string | null;
+  affiliationStartYear?: number | null;
+  affiliationEndYear?: number | null;
 };
 
 export type GetPaperContributorsApiResponse = {
