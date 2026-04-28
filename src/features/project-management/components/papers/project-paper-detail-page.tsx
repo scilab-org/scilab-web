@@ -59,6 +59,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
   Dialog,
@@ -1870,7 +1871,7 @@ export const ProjectPaperDetailPage = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {(isPaperAuthor || isManager) && (
+                    {isManager && (
                       <Button
                         size="action"
                         variant="darkRed"
@@ -1917,11 +1918,9 @@ export const ProjectPaperDetailPage = ({
                           <TableHead>Email</TableHead>
                           <TableHead>ORCID</TableHead>
                           <TableHead>Role</TableHead>
-                          {(isPaperAuthor || isManager) && (
-                            <TableHead className="w-24 text-center">
-                              Actions
-                            </TableHead>
-                          )}
+                          <TableHead className="w-24 text-center">
+                            Actions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1958,7 +1957,7 @@ export const ProjectPaperDetailPage = ({
                                 >
                                   View
                                 </Button>
-                                {(isPaperAuthor || isManager) && (
+                                {isManager && (
                                   <>
                                     <Button
                                       size="action"
@@ -1970,20 +1969,46 @@ export const ProjectPaperDetailPage = ({
                                     >
                                       Edit
                                     </Button>
-                                    <Button
-                                      size="action"
-                                      variant="destructive"
-                                      onClick={() =>
-                                        deletePaperAuthorMutation.mutate(
-                                          author.id,
-                                        )
-                                      }
-                                      disabled={
-                                        deletePaperAuthorMutation.isPending
-                                      }
-                                    >
-                                      Delete
-                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="action"
+                                          variant="destructive"
+                                          disabled={
+                                            deletePaperAuthorMutation.isPending
+                                          }
+                                        >
+                                          Delete
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Remove Author
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to remove this
+                                            author? This action cannot be
+                                            undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            variant="destructive"
+                                            onClick={() =>
+                                              deletePaperAuthorMutation.mutate(
+                                                author.id,
+                                              )
+                                            }
+                                          >
+                                            Remove
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   </>
                                 )}
                               </div>

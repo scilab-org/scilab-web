@@ -74,6 +74,10 @@ export const PaperAuthorDetailDialog = ({
     getRecordText(author, 'affiliationName') ??
     getRecordText(author, 'affiliation') ??
     '—';
+  const department = author.department?.trim() || null;
+  const position = author.position?.trim() || null;
+  const affiliationStartYear = author.affiliationStartYear ?? null;
+  const affiliationEndYear = author.affiliationEndYear ?? null;
 
   const isHeadWriter = roleLabel === 'Head Writer';
 
@@ -87,7 +91,7 @@ export const PaperAuthorDetailDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 space-y-6 overflow-y-auto py-4 pr-1">
+        <div className="scrollbar-dialog -mr-6 flex-1 space-y-6 overflow-y-auto py-4 pr-6">
           <div className="flex items-center gap-4">
             <UserAvatar
               firstName={author.firstName || ''}
@@ -141,6 +145,35 @@ export const PaperAuthorDetailDialog = ({
                   </p>
                   <p className="text-foreground font-medium">{affiliation}</p>
                 </div>
+                {department && (
+                  <div>
+                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
+                      Department
+                    </p>
+                    <p className="text-foreground font-medium">{department}</p>
+                  </div>
+                )}
+                {position && (
+                  <div>
+                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
+                      Position
+                    </p>
+                    <p className="text-foreground font-medium">{position}</p>
+                  </div>
+                )}
+                {affiliationStartYear !== null && (
+                  <div>
+                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
+                      Affiliation Period
+                    </p>
+                    <p className="text-foreground font-medium">
+                      {affiliationStartYear}
+                      {affiliationEndYear
+                        ? ` – ${affiliationEndYear}`
+                        : ' – Present'}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

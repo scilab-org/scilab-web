@@ -14,6 +14,8 @@ import {
 import { useAuthorRoles } from '../api/get-author-roles';
 import { DeleteAuthorRole } from './delete-author-role';
 import { UpdateAuthorRole } from './update-author-role';
+import { Authorization } from '@/lib/authorization';
+import { GROUPS } from '@/lib/authorization';
 
 export const AuthorRolesList = () => {
   const [searchParams] = useSearchParams();
@@ -76,13 +78,15 @@ export const AuthorRolesList = () => {
                   : 'N/A'}
               </TableCell>
               <TableCell className="pl-16 text-center align-top">
-                <div className="flex items-center justify-center gap-2">
-                  <UpdateAuthorRole
-                    authorRoleId={authorRole.id}
-                    authorRole={authorRole}
-                  />
-                  <DeleteAuthorRole authorRoleId={authorRole.id} />
-                </div>
+                <Authorization allowedGroups={[GROUPS.PROJECT_PUBLISHER]}>
+                  <div className="flex items-center justify-center gap-2">
+                    <UpdateAuthorRole
+                      authorRoleId={authorRole.id}
+                      authorRole={authorRole}
+                    />
+                    <DeleteAuthorRole authorRoleId={authorRole.id} />
+                  </div>
+                </Authorization>
               </TableCell>
             </TableRow>
           ))}
