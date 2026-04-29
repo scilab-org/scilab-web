@@ -198,6 +198,25 @@ const getPaperPublicationLabel = (paper: {
   paper.conferenceName?.trim() ||
   '—';
 
+const getPaperPublicationTypeLabel = (paper: {
+  conferenceJournalType?: number | null;
+}) => {
+  if (paper.conferenceJournalType === 1) return 'Journal';
+  if (paper.conferenceJournalType === 2) return 'Conference';
+  return 'Journal / Conference';
+};
+
+const formatPaperDate = (value?: string | null) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
 const VERSION_FILE_STATUS_CLS: Record<number, string> = {
   1: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400',
   2: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
@@ -614,18 +633,21 @@ export const ProjectPaperDetailPage = ({
         ? new Date(appliedFilters.ToDate).toISOString()
         : undefined,
     },
-    queryConfig: { enabled: !!paperId },
+    queryConfig: { enabled: !!paperId, refetchOnMount: 'always' },
   });
 
   const paperMembersQuery = usePaperMembers({
     subProjectId: paperSubProjectId,
     params: { pageNumber: 1, pageSize: 1000 },
-    queryConfig: { enabled: !!paperSubProjectId } as any,
+    queryConfig: {
+      enabled: !!paperSubProjectId,
+      refetchOnMount: 'always',
+    } as any,
   });
 
   const paperContributorsQuery = useGetPaperAuthors({
     params: { PaperId: paperId, PageNumber: 1, PageSize: 1000 },
-    queryConfig: { enabled: !!paperId } as any,
+    queryConfig: { enabled: !!paperId, refetchOnMount: 'always' } as any,
   });
   const [editingAuthor, setEditingAuthor] =
     useState<PaperContributorItem | null>(null);
@@ -650,8 +672,22 @@ export const ProjectPaperDetailPage = ({
 
   const sectionsQuery = useGetPaperSections({
     paperId,
-    queryConfig: { enabled: !!paperId } as any,
+    queryConfig: { enabled: !!paperId, refetchOnMount: 'always' } as any,
   });
+
+  // Refetch relevant queries when switching tabs (except sections which always loads)
+  useEffect(() => {
+    if (activeTab === 'member') {
+      paperMembersQuery.refetch();
+    } else if (activeTab === 'author') {
+      paperContributorsQuery.refetch();
+    } else if (activeTab === 'task') {
+      paperTasksQuery.refetch();
+    } else if (activeTab === 'compile-paper') {
+      paperVersionsQuery.refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const totalSections = sectionsQuery.data?.result?.items?.length || 0;
   const paperMembersList = (paperMembersQuery.data as any)?.result?.items ?? [];
@@ -990,77 +1026,88 @@ export const ProjectPaperDetailPage = ({
         {/* ── Page header (outside card) ───────────────────────────── */}
         <div className="overflow-hidden rounded-md border bg-[#fffaf1] shadow-sm">
           <div className="flex flex-col gap-6 p-6 lg:p-7">
-            <div className="min-w-0 space-y-3">
-              <div className="space-y-2">
-                <span className="inline-flex w-fit items-center rounded-md border border-[#630F0F]/20 bg-[#630F0F]/10 px-2.5 py-0.5 text-xs font-semibold tracking-[0.18em] text-[#630F0F] uppercase">
-                  Paper
-                </span>
-                <h1 className="text-foreground text-2xl font-bold">
-                  {paper.title}
-                </h1>
-              </div>
-              <TooltipProvider>
-                <div className="flex flex-wrap items-center gap-2">
-                  {paper.gapTypes?.length ? (
-                    paper.gapTypes.map((gapType) => (
-                      <Tooltip key={gapType.id}>
-                        <TooltipTrigger asChild>
-                          <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
-                            {gapType.name}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          Gap Type: {gapType.name}
-                        </TooltipContent>
-                      </Tooltip>
-                    ))
-                  ) : (
-                    <span className="border-border bg-background text-muted-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
-                      No gap type
-                    </span>
-                  )}
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
-                        {getPaperPublicationLabel({
-                          conferenceJournalName: (
-                            paper as {
-                              conferenceJournalName?: string | null;
-                            }
-                          ).conferenceJournalName,
-                          journalName: (
-                            paper as { journalName?: string | null }
-                          ).journalName,
-                          journal: (paper as { journal?: string | null })
-                            .journal,
-                          conferenceName: (
-                            paper as {
-                              conferenceName?: string | null;
-                            }
-                          ).conferenceName,
-                        })}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Journal / Conference:{' '}
-                      {getPaperPublicationLabel({
-                        conferenceJournalName: (
-                          paper as { conferenceJournalName?: string | null }
-                        ).conferenceJournalName,
-                        journalName: (paper as { journalName?: string | null })
-                          .journalName,
-                        journal: (paper as { journal?: string | null }).journal,
-                        conferenceName: (
-                          paper as {
-                            conferenceName?: string | null;
-                          }
-                        ).conferenceName,
-                      })}
-                    </TooltipContent>
-                  </Tooltip>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className="space-y-2">
+                  <span className="inline-flex w-fit items-center rounded-md border border-[#630F0F]/20 bg-[#630F0F]/10 px-2.5 py-0.5 text-xs font-semibold tracking-[0.18em] text-[#630F0F] uppercase">
+                    Paper
+                  </span>
+                  <h1 className="text-foreground text-2xl font-bold">
+                    {paper.title}
+                  </h1>
                 </div>
-              </TooltipProvider>
+                <TooltipProvider>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {paper.gapTypes?.length ? (
+                      paper.gapTypes.map((gapType) => (
+                        <Tooltip key={gapType.id}>
+                          <TooltipTrigger asChild>
+                            <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                              {gapType.name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            Gap Type: {gapType.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))
+                    ) : (
+                      <span className="border-border bg-background text-muted-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                        No gap type
+                      </span>
+                    )}
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                          {getPaperPublicationLabel({
+                            conferenceJournalName: (
+                              paper as {
+                                conferenceJournalName?: string | null;
+                              }
+                            ).conferenceJournalName,
+                            journalName: (
+                              paper as { journalName?: string | null }
+                            ).journalName,
+                            journal: (paper as { journal?: string | null })
+                              .journal,
+                            conferenceName: (
+                              paper as {
+                                conferenceName?: string | null;
+                              }
+                            ).conferenceName,
+                          })}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        {getPaperPublicationTypeLabel({
+                          conferenceJournalType: (
+                            paper as { conferenceJournalType?: number | null }
+                          ).conferenceJournalType,
+                        })}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              </div>
+              <div className="flex flex-col gap-1 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="text-muted-foreground h-4 w-4" />
+                  <span className="text-muted-foreground">Start:</span>
+                  <span className="text-foreground font-medium">
+                    {formatPaperDate((paper as any).conferenceJournalStartAt) ||
+                      '—'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="text-muted-foreground h-4 w-4" />
+                  <span className="text-muted-foreground">End:</span>
+                  <span className="text-foreground font-medium">
+                    {formatPaperDate((paper as any).conferenceJournalEndAt) ||
+                      '—'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <TooltipProvider>
@@ -1289,7 +1336,7 @@ export const ProjectPaperDetailPage = ({
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
-                        Paper Structure: {paper.template}
+                        Paper Template: {paper.template}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1303,7 +1350,7 @@ export const ProjectPaperDetailPage = ({
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
-                        Created by {paper.createdBy}
+                        Created By: {paper.createdBy}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1943,7 +1990,7 @@ export const ProjectPaperDetailPage = ({
                                 author.ocrId ||
                                 '—'}
                             </TableCell>
-                            <TableCell className="text-foreground font-medium">
+                            <TableCell className="text-foreground font-bold">
                               {getRoleDisplayLabel(
                                 author.authorRoleName || author.sectionRole,
                               ) || '—'}

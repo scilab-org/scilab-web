@@ -366,7 +366,7 @@ const ProjectDetailRoute = () => {
               {activeTab === 'papers' && (
                 <ProjectWritingPapersList
                   projectId={projectId!}
-                  isManager={false}
+                  isManager
                   isAuthor={false}
                   readOnly
                   getPaperHref={paths.app.projectPaperDetail.getHref}

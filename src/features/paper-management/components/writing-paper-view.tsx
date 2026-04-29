@@ -4,7 +4,6 @@ import {
   Calendar,
   Hash,
   Globe,
-  Building2,
   Presentation,
   Tags,
   LayoutTemplate,
@@ -228,7 +227,7 @@ export const WritingPaperView = ({
           <CardContent className="space-y-4 p-6">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/40">
-                <Building2 className="size-4 text-indigo-600 dark:text-indigo-400" />
+                <Globe className="size-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">

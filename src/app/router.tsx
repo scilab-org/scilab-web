@@ -17,11 +17,7 @@ const SmartRedirect = () => {
     getUserGroups().includes('system:admin');
   return (
     <Navigate
-      to={
-        isAdmin
-          ? paths.app.projects.getHref()
-          : paths.app.assignedProjects.list.getHref()
-      }
+      to={isAdmin ? paths.app.projects.getHref() : paths.app.myTasks.getHref()}
       replace
     />
   );

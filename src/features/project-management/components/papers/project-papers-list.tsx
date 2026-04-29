@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Loader2, Search, Building2, FileText, RefreshCw } from 'lucide-react';
+import { Loader2, Search, FileText, RefreshCw } from 'lucide-react';
 
 import { CreateButton } from '@/components/ui/create-button';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,12 @@ const getPaperKeywords = (paper: ProjectPaper): string[] =>
   paper.keywords && paper.keywords.length > 0
     ? paper.keywords
     : (paper.tagNames ?? []);
+
+const getPaperVenue = (paper: ProjectPaper) =>
+  (paper as any).conferenceJournalName?.trim() ||
+  (paper as any).journalName?.trim() ||
+  (paper as any).conferenceName?.trim() ||
+  '—';
 
 const truncateAuthors = (authors: string | null): React.ReactNode => {
   if (!authors) return <span className="text-muted-foreground text-sm">—</span>;
@@ -297,16 +303,11 @@ export const ProjectPapersList = ({
 
                       {/* Venue */}
                       <TableCell className="px-2 wrap-break-word whitespace-normal">
-                        {paper.journalName ? (
+                        {(paper as any).conferenceJournalName ||
+                        (paper as any).journalName ||
+                        (paper as any).conferenceName ? (
                           <span className="line-clamp-2 text-sm">
-                            {paper.journalName}
-                          </span>
-                        ) : paper.conferenceName ? (
-                          <span className="flex items-start gap-1.5 text-sm">
-                            <Building2 className="mt-0.5 size-3.5 shrink-0 text-violet-500" />
-                            <span className="line-clamp-2">
-                              {paper.conferenceName}
-                            </span>
+                            {getPaperVenue(paper)}
                           </span>
                         ) : (
                           <span className="text-muted-foreground text-xs italic">

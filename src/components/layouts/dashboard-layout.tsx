@@ -9,6 +9,7 @@ import {
   FolderKanban,
   LayoutTemplate,
   LogOut,
+  Layers3,
   Tag,
   Users,
   Globe,
@@ -300,7 +301,7 @@ const adminNavigationGroups: SideNavigationGroup[] = [
       {
         name: 'Gap Types',
         to: paths.app.gapTypeManagement.gapTypes.getHref(),
-        icon: Tag,
+        icon: Layers3,
       },
       {
         name: 'Author Roles',

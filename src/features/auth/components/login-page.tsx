@@ -9,6 +9,7 @@ import { paths } from '@/config/paths';
 import { useAuthContext } from '../auth-context';
 import leftBg from '../assets/login-left-bg.svg';
 import rightBg from '../assets/login-right-bg.svg';
+import { getUserGroups } from '@/lib/auth';
 
 const fieldLabel =
   'text-muted-foreground text-[10px] font-bold tracking-[0.12em] uppercase';
@@ -24,7 +25,13 @@ export const LoginPage = () => {
 
   React.useEffect(() => {
     if (user) {
-      navigate(paths.app.root.getHref(), { replace: true });
+      const isAdmin =
+        user.groups?.includes('system:admin') ||
+        getUserGroups().includes('system:admin');
+      navigate(
+        isAdmin ? paths.app.root.getHref() : paths.app.myTasks.getHref(),
+        { replace: true },
+      );
     }
   }, [user, navigate]);
 
@@ -34,7 +41,11 @@ export const LoginPage = () => {
     setIsPending(true);
     try {
       await login(form.username, form.password);
-      navigate(paths.app.root.getHref(), { replace: true });
+      const isAdmin = getUserGroups().includes('system:admin');
+      navigate(
+        isAdmin ? paths.app.root.getHref() : paths.app.myTasks.getHref(),
+        { replace: true },
+      );
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Login failed. Please try again.',

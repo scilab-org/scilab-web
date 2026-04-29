@@ -329,17 +329,26 @@ const MyProjectDetailRoute = () => {
             <div>
               {activeTab === 'overview' && <ProjectView project={project} />}
 
-              {activeTab === 'papers' && (
-                <ProjectWritingPapersList
-                  projectId={projectId!}
-                  isManager={isManager}
-                  isAuthor={isAuthor}
-                  getPaperHref={paths.app.assignedProjects.paperDetail.getHref}
-                  onCreatePaperClick={
-                    isAuthor ? () => setCreatePaperOpen(true) : undefined
-                  }
-                />
-              )}
+              {activeTab === 'papers' &&
+                (roleQuery.isLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : (
+                  <ProjectWritingPapersList
+                    projectId={projectId!}
+                    isManager={isManager}
+                    isAuthor={isAuthor}
+                    getPaperHref={
+                      paths.app.assignedProjects.paperDetail.getHref
+                    }
+                    onCreatePaperClick={
+                      isAuthor ? () => setCreatePaperOpen(true) : undefined
+                    }
+                  />
+                ))}
 
               {activeTab === 'members' && (
                 <ProjectMembersList
