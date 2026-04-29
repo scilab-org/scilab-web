@@ -943,13 +943,13 @@ export const CombineEditor = ({
               {isToolsOpen ? (
                 /* ── Tools panel (AI only) ── */
                 <>
-                  <div className="bg-editor-content-bg flex h-10 shrink-0 items-center gap-2 px-3 dark:bg-[#1e1e1e]">
+                  <div className="bg-editor-bg flex h-10 shrink-0 items-center gap-2 px-3 dark:bg-[#111111]">
                     <MessageSquareText className="size-3.5 text-[#2f6b5b]" />
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       AI
                     </span>
                   </div>
-                  <div className="bg-editor-content-bg flex flex-1 flex-col overflow-hidden dark:bg-[#1e1e1e]">
+                  <div className="bg-editor-bg flex flex-1 flex-col overflow-hidden dark:bg-[#111111]">
                     <EditorChatPanel
                       projectId={projectId}
                       sectionTitle={combine.name}
@@ -963,15 +963,8 @@ export const CombineEditor = ({
                   {/* PDF toolbar */}
                   <div
                     ref={pdfContainerRef}
-                    className="bg-editor-content-bg flex h-10 shrink-0 items-center gap-1 px-3 dark:bg-[#1e1e1e]"
+                    className="bg-editor-bg flex h-10 shrink-0 items-center gap-1 px-3 dark:bg-[#111111]"
                   >
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="max-w-48 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {combine.name}
-                      </span>
-                    </div>
-                    <div className="mx-1 h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
-
                     {/* Compile button */}
                     <button
                       type="button"
