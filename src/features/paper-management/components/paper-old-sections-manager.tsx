@@ -111,7 +111,7 @@ export const PaperOldSectionsManager = ({
   }
 
   return (
-    <div className="border-border bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm">
+    <div className="border-border bg-background flex flex-col overflow-hidden rounded-b-xl border-x border-b shadow-sm">
       {/* Header */}
       <div className="border-border bg-editor-bg border-b px-5 py-4">
         <div className="flex items-center justify-between gap-3">

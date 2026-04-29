@@ -30,7 +30,10 @@ export const clientLoader =
 const WritingPaperRoute = () => {
   const params = useParams();
   const paperId = params.paperId as string;
-  const paperQuery = useWritingPaperDetail({ paperId });
+  const paperQuery = useWritingPaperDetail({
+    paperId,
+    queryConfig: { refetchOnMount: 'always' },
+  });
 
   if (paperQuery.isLoading) {
     return (

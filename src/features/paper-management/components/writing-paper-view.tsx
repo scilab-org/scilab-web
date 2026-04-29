@@ -97,7 +97,10 @@ export const WritingPaperView = ({
   paperId,
   projectId,
 }: WritingPaperViewProps) => {
-  const paperQuery = useWritingPaperDetail({ paperId });
+  const paperQuery = useWritingPaperDetail({
+    paperId,
+    queryConfig: { refetchOnMount: 'always' },
+  });
 
   if (paperQuery.isLoading) {
     return (

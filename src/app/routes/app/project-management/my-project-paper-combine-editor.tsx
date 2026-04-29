@@ -142,7 +142,9 @@ const MyProjectPaperCombineEditorRoute = () => {
         paperTitle={paper.title || 'Paper'}
         isAuthor={isAuthor}
         initialEditMode={isEditMode}
-        onClose={() => navigate(backHref)}
+        onClose={() =>
+          navigate({ pathname: backHref, search: '?tab=compile-paper' })
+        }
       />
     </>
   );

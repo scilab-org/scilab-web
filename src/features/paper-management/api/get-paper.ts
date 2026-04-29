@@ -21,6 +21,9 @@ export const getPaperQueryOptions = (paperId: string) => {
   return queryOptions({
     queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER, paperId],
     queryFn: () => getPaper({ paperId }),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
