@@ -64,6 +64,21 @@ const getSubmissionStatusVariant = (status: number | null): BadgeVariant => {
   }
 };
 
+const getVenueLabel = (paper: any) => {
+  return (
+    paper.conferenceJournalName?.trim() ||
+    paper.journalName?.trim() ||
+    paper.conferenceName?.trim() ||
+    '—'
+  );
+};
+
+const getVenueTypeLabel = (paper: any) => {
+  if (paper.conferenceJournalType === 1) return 'Journal';
+  if (paper.conferenceJournalType === 2) return 'Conference';
+  return '';
+};
+
 const MyAssignedPapersRoute = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -267,19 +282,22 @@ const MyAssignedPapersRoute = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-surface-container-low hover:bg-surface-container-low">
-                      <TableHead className="text-muted-foreground w-[40%]">
+                      <TableHead className="text-muted-foreground w-[32%] text-left">
                         Title
                       </TableHead>
-                      <TableHead className="text-muted-foreground w-[12%]">
+                      <TableHead className="text-muted-foreground w-[20%] text-left">
+                        Journal / Conference
+                      </TableHead>
+                      <TableHead className="text-muted-foreground w-[12%] text-center">
                         Project
                       </TableHead>
-                      <TableHead className="text-muted-foreground w-[12%]">
+                      <TableHead className="text-muted-foreground w-[12%] text-center">
                         Template
                       </TableHead>
-                      <TableHead className="text-muted-foreground w-[16%]">
+                      <TableHead className="text-muted-foreground w-[12%] text-center">
                         Status
                       </TableHead>
-                      <TableHead className="text-muted-foreground w-[20%] text-right">
+                      <TableHead className="text-muted-foreground w-[12%] text-center">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -294,38 +312,52 @@ const MyAssignedPapersRoute = () => {
 
                       return (
                         <TableRow key={paper.id} className="hover:bg-muted/30">
-                          <TableCell className="max-w-0 font-medium">
+                          <TableCell className="px-2 text-left font-medium wrap-break-word whitespace-normal">
                             <span
-                              className="block truncate"
+                              className="block wrap-break-word whitespace-normal"
                               title={paper.title || '(Untitled)'}
                             >
                               {paper.title || '(Untitled)'}
                             </span>
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
+                          <TableCell className="px-2 text-left text-sm wrap-break-word whitespace-normal">
+                            <span
+                              className="block wrap-break-word whitespace-normal"
+                              title={getVenueTypeLabel(paper)}
+                            >
+                              {getVenueLabel(paper)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground px-2 text-center text-sm wrap-break-word whitespace-normal">
                             {projectCode}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
+                          <TableCell className="text-muted-foreground px-2 text-center text-sm wrap-break-word whitespace-normal">
                             {template}
                           </TableCell>
-                          <TableCell>
-                            <Badge variant={getSubmissionStatusVariant(status)}>
-                              {SUBMISSION_STATUS_LABELS[status] ?? 'Draft'}
-                            </Badge>
+                          <TableCell className="px-2 text-center">
+                            <div className="flex justify-center">
+                              <Badge
+                                variant={getSubmissionStatusVariant(status)}
+                              >
+                                {SUBMISSION_STATUS_LABELS[status] ?? 'Draft'}
+                              </Badge>
+                            </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="action"
-                              variant="outline"
-                              disabled={loadingPaperId === paper.id}
-                              onClick={() =>
-                                handleViewPaper(paper.id, projectId)
-                              }
-                            >
-                              {loadingPaperId === paper.id
-                                ? 'Loading...'
-                                : 'View'}
-                            </Button>
+                          <TableCell className="px-2 text-center align-middle">
+                            <div className="flex justify-center">
+                              <Button
+                                size="action"
+                                variant="outline"
+                                disabled={loadingPaperId === paper.id}
+                                onClick={() =>
+                                  handleViewPaper(paper.id, projectId)
+                                }
+                              >
+                                {loadingPaperId === paper.id
+                                  ? 'Loading...'
+                                  : 'View'}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

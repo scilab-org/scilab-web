@@ -22,6 +22,25 @@ import { DeletePaper } from './delete-paper';
 import { UpdatePaper } from './update-paper';
 import { Pagination } from '@/components/ui/pagination';
 
+const getPaperVenueLabel = (paper: {
+  conferenceJournalType?: number | null;
+  conferenceJournalName?: string | null;
+  journalName?: string | null;
+  conferenceName?: string | null;
+}) =>
+  paper.conferenceJournalName?.trim() ||
+  paper.journalName?.trim() ||
+  paper.conferenceName?.trim() ||
+  '—';
+
+const getPaperVenueTypeLabel = (paper: {
+  conferenceJournalType?: number | null;
+}) => {
+  if (paper.conferenceJournalType === 1) return 'Journal';
+  if (paper.conferenceJournalType === 2) return 'Conference';
+  return '';
+};
+
 const truncateAuthors = (authors: string | null): React.ReactNode => {
   if (!authors) return null;
   const parts = authors
@@ -155,9 +174,9 @@ export const PapersList = () => {
               </TableCell>
 
               {/* Title */}
-              <TableCell className="overflow-hidden px-3 font-medium">
+              <TableCell className="px-3 font-medium wrap-break-word whitespace-normal">
                 <span
-                  className="text-foreground block truncate font-medium transition-colors"
+                  className="text-foreground block font-medium wrap-break-word whitespace-normal transition-colors"
                   title={paper.title || 'N/A'}
                 >
                   {paper.title || 'N/A'}
@@ -172,8 +191,11 @@ export const PapersList = () => {
               {/* Venue */}
               <TableCell className="px-3 wrap-break-word whitespace-normal">
                 {paper.conferenceJournalName ? (
-                  <span className="line-clamp-2 text-sm">
-                    {paper.conferenceJournalName}
+                  <span
+                    className="block text-sm wrap-break-word whitespace-normal"
+                    title={getPaperVenueTypeLabel(paper as any)}
+                  >
+                    {getPaperVenueLabel(paper as any)}
                   </span>
                 ) : (
                   <span className="text-muted-foreground text-xs italic">

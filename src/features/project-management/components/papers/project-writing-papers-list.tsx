@@ -75,6 +75,12 @@ const getSubmissionStatusVariant = (status: number | null): BadgeVariant => {
   }
 };
 
+const getVenueName = (paper: SubProjectPaper) =>
+  (paper as any).conferenceJournalName?.trim() ||
+  (paper as any).journalName?.trim() ||
+  (paper as any).conferenceName?.trim() ||
+  '—';
+
 const PaperMembersCount = ({ subProjectId }: { subProjectId: string }) => {
   const query = usePaperMembers({
     subProjectId,
@@ -289,22 +295,25 @@ export const ProjectWritingPapersList = ({
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead
-                    className={`text-muted-foreground ${isManager ? 'w-[38%]' : 'w-[47%]'} text-xs font-medium tracking-wider uppercase`}
+                    className={`text-muted-foreground ${isManager ? 'w-[32%]' : 'w-[40%]'} text-left text-xs font-medium tracking-wider uppercase`}
                   >
                     Title
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[13%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[26%] text-left text-xs font-medium tracking-wider uppercase">
+                    Journal / Conference
+                  </TableHead>
+                  <TableHead className="text-muted-foreground w-[12%] text-center text-xs font-medium tracking-wider uppercase">
                     Status
                   </TableHead>
-                  <TableHead className="text-muted-foreground w-[10%] text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[10%] text-center text-xs font-medium tracking-wider uppercase">
                     Template
                   </TableHead>
                   {isManager && (
-                    <TableHead className="text-muted-foreground w-[9%] text-xs font-medium tracking-wider uppercase">
+                    <TableHead className="text-muted-foreground w-[8%] text-center text-xs font-medium tracking-wider uppercase">
                       Members
                     </TableHead>
                   )}
-                  <TableHead className="text-muted-foreground w-[30%] pr-6 text-center text-xs font-medium tracking-wider uppercase">
+                  <TableHead className="text-muted-foreground w-[14%] pr-6 text-center text-xs font-medium tracking-wider uppercase">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -315,42 +324,56 @@ export const ProjectWritingPapersList = ({
                     (paper as any).subProjectId ?? null;
                   return (
                     <TableRow key={paper.id} className="hover:bg-muted/30">
-                      <TableCell className="max-w-0 overflow-hidden font-medium">
+                      <TableCell className="px-2 text-left font-medium wrap-break-word whitespace-normal">
+                        <div className="min-w-0">
+                          <span
+                            className="block wrap-break-word whitespace-normal"
+                            title={paper.title || '(Untitled)'}
+                          >
+                            {paper.title || '(Untitled)'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 text-left text-sm wrap-break-word whitespace-normal">
                         <span
-                          className="block truncate"
-                          title={paper.title || '(Untitled)'}
+                          className="block wrap-break-word whitespace-normal"
+                          title={getVenueName(paper)}
                         >
-                          {paper.title || '(Untitled)'}
+                          {getVenueName(paper)}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={getSubmissionStatusVariant(
-                            paper.submissionStatus ?? 1,
-                          )}
-                        >
-                          {SUBMISSION_STATUS_LABELS[
-                            paper.submissionStatus ?? 1
-                          ] ?? 'Draft'}
-                        </Badge>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Badge
+                            variant={getSubmissionStatusVariant(
+                              paper.submissionStatus ?? 1,
+                            )}
+                          >
+                            {SUBMISSION_STATUS_LABELS[
+                              paper.submissionStatus ?? 1
+                            ] ?? 'Draft'}
+                          </Badge>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      <TableCell className="text-muted-foreground px-2 text-center text-sm wrap-break-word whitespace-normal">
                         {paper.template || '—'}
                       </TableCell>
                       {isManager && (
-                        <TableCell>
-                          {resolvedSubProjectId ? (
-                            <PaperMembersCount
-                              subProjectId={resolvedSubProjectId}
-                            />
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              —
-                            </span>
-                          )}
+                        <TableCell className="px-2 text-center">
+                          <div className="flex justify-center">
+                            {resolvedSubProjectId ? (
+                              <PaperMembersCount
+                                subProjectId={resolvedSubProjectId}
+                              />
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                —
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                       )}
-                      <TableCell className="pr-6 text-center">
+                      <TableCell className="pr-6 text-center align-middle">
                         <div className="flex items-center justify-center gap-2">
                           <Button
                             variant="outlineAction"
