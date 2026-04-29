@@ -2189,7 +2189,7 @@ const DatasetsTab = ({ projectId }: { projectId: string }) => {
 
   if (datasets.length === 0) {
     return (
-      <div className="bg-editor-bg flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 p-6 text-center dark:border-slate-700 dark:bg-slate-900/40">
+      <div className="bg-editor-bg flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 p-6 text-center dark:border-slate-700 dark:bg-[#1e1e1e]">
         <Database className="h-6 w-6 text-slate-300 dark:text-slate-600" />
         <p className="text-xs text-slate-500 dark:text-slate-400">
           No datasets available for this project.
@@ -2203,7 +2203,7 @@ const DatasetsTab = ({ projectId }: { projectId: string }) => {
       {datasets.map((ds) => (
         <div
           key={ds.id}
-          className="bg-editor-bg rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900"
+          className="rounded-lg border border-[#e8dfd1] bg-[#fffaf1] px-3 py-2.5 shadow-none dark:border-[#2a2a2a] dark:bg-[#1e1e1e]"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -5404,7 +5404,7 @@ export const LatexPaperEditor = ({
               {isToolsOpen ? (
                 /* ── Tools panel ── */
                 <>
-                  <div className="bg-editor-bg flex h-10 shrink-0 items-center border-b border-[#e5e5e5] dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
+                  <div className="bg-editor-bg flex h-10 shrink-0 items-center dark:bg-[#1a1a1a]">
                     <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-2 [&::-webkit-scrollbar]:hidden">
                       {(
                         [
@@ -5525,7 +5525,7 @@ export const LatexPaperEditor = ({
                 /* ── PDF preview panel (react-pdf) ── */
                 <div className="bg-editor-bg flex flex-1 flex-col overflow-hidden dark:bg-[#111111]">
                   {/* Top toolbar */}
-                  <div className="bg-editor-bg flex shrink-0 items-center gap-2 border-b border-[#e5e5e5] px-3 py-1.5 dark:border-[#2a2a2a] dark:bg-[#1a1a1a]">
+                  <div className="bg-editor-bg flex shrink-0 items-center gap-2 px-3 py-1.5 dark:bg-[#1a1a1a]">
                     {/* Compile button — transparent, hover white */}
                     <button
                       type="button"

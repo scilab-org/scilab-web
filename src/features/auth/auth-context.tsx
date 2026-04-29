@@ -89,6 +89,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, []);
 
+  // Keep the React auth state in sync with token refreshes that happen later
+  React.useEffect(() => {
+    const syncUser = () => {
+      const token = tokenStore.getAccessToken();
+      setUser(token ? jwtToUser(token) : null);
+    };
+
+    return tokenStore.subscribe(syncUser);
+  }, []);
+
   const login = React.useCallback(
     async (username: string, password: string) => {
       await authService.login(username, password);

@@ -43,6 +43,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/history`,
   SECTION_UPLOAD_FILE: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/upload-file`,
+  SECTION_NUMBER_OF_COMPLETE_SECTION: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/number-of-complete-section`,
   SECTION_FILES: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/files`,
   PAPER_SECTIONS_BY_ID: (paperId: string) =>

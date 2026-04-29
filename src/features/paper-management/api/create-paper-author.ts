@@ -34,6 +34,9 @@ export const useCreatePaperAuthor = ({
       queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.AVAILABLE_PAPER_AUTHORS],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['project-members'],
+      });
       onSuccess?.(...args);
     },
     ...restConfig,

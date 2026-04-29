@@ -206,6 +206,36 @@ const getPaperPublicationTypeLabel = (paper: {
   return 'Journal / Conference';
 };
 
+const GAP_TYPE_BADGE_CLASS =
+  'border-[#8b5e34]/20 bg-[#8b5e34]/10 text-[#7c4a1f]';
+
+const getPublicationBadgeClass = (type?: number | null) => {
+  if (type === 1) {
+    return 'border-emerald-200 bg-emerald-100/70 text-emerald-700';
+  }
+
+  if (type === 2) {
+    return 'border-[#4f6f52]/20 bg-[#4f6f52]/10 text-[#3f5d42]';
+  }
+
+  return 'border-border bg-background text-foreground';
+};
+
+const getPaperStatIconClass = (
+  kind: 'sections' | 'members' | 'authors' | 'tasks',
+) => {
+  switch (kind) {
+    case 'sections':
+      return 'bg-[#630F0F]/10 text-[#630F0F]';
+    case 'members':
+      return 'bg-emerald-100/50 text-emerald-600';
+    case 'authors':
+      return 'bg-violet-100/50 text-violet-600';
+    case 'tasks':
+      return 'bg-amber-100/50 text-amber-600';
+  }
+};
+
 const formatPaperDate = (value?: string | null) => {
   if (!value) return '—';
   const date = new Date(value);
@@ -1042,7 +1072,12 @@ export const ProjectPaperDetailPage = ({
                       paper.gapTypes.map((gapType) => (
                         <Tooltip key={gapType.id}>
                           <TooltipTrigger asChild>
-                            <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                            <span
+                              className={cn(
+                                'inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm',
+                                GAP_TYPE_BADGE_CLASS,
+                              )}
+                            >
                               {gapType.name}
                             </span>
                           </TooltipTrigger>
@@ -1059,7 +1094,18 @@ export const ProjectPaperDetailPage = ({
 
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="border-border bg-background text-foreground inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm">
+                        <span
+                          className={cn(
+                            'inline-flex h-9 cursor-default items-center rounded-md border px-3 text-sm font-medium shadow-sm',
+                            getPublicationBadgeClass(
+                              (
+                                paper as {
+                                  conferenceJournalType?: number | null;
+                                }
+                              ).conferenceJournalType,
+                            ),
+                          )}
+                        >
                           {getPaperPublicationLabel({
                             conferenceJournalName: (
                               paper as {
@@ -1110,7 +1156,7 @@ export const ProjectPaperDetailPage = ({
               </div>
             </div>
 
-            <TooltipProvider>
+            {/* <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <p className="text-foreground text-sm leading-relaxed">
@@ -1119,16 +1165,21 @@ export const ProjectPaperDetailPage = ({
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
                   Research Aim
-                  {/* {paper.researchAim || 'No research aim defined.'} */}
+                  {paper.researchAim || 'No research aim defined.'}
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
+            </TooltipProvider> */}
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="bg-muted text-primary rounded-md p-1.5">
+                    <div
+                      className={cn(
+                        'rounded-md p-1.5',
+                        getPaperStatIconClass('sections'),
+                      )}
+                    >
                       <Layers className="size-4" />
                     </div>
                     <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
@@ -1148,7 +1199,12 @@ export const ProjectPaperDetailPage = ({
               <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="bg-muted text-primary rounded-md p-1.5">
+                    <div
+                      className={cn(
+                        'rounded-md p-1.5',
+                        getPaperStatIconClass('members'),
+                      )}
+                    >
                       <Users className="size-4" />
                     </div>
                     <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
@@ -1168,7 +1224,12 @@ export const ProjectPaperDetailPage = ({
               <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="bg-muted text-primary rounded-md p-1.5">
+                    <div
+                      className={cn(
+                        'rounded-md p-1.5',
+                        getPaperStatIconClass('authors'),
+                      )}
+                    >
                       <Pencil className="size-4" />
                     </div>
                     <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
@@ -1188,7 +1249,12 @@ export const ProjectPaperDetailPage = ({
               <div className="bg-card rounded-md border p-5 shadow-sm transition-colors">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="bg-muted text-primary rounded-md p-1.5">
+                    <div
+                      className={cn(
+                        'rounded-md p-1.5',
+                        getPaperStatIconClass('tasks'),
+                      )}
+                    >
                       <ClipboardList className="size-4" />
                     </div>
                     <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
@@ -1428,14 +1494,14 @@ export const ProjectPaperDetailPage = ({
                   </div>
 
                   {/* Research Aim */}
-                  {/* <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
+                  <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
                     <h3 className="text-foreground mb-3 text-sm font-bold tracking-wider uppercase">
                       Research Aim
                     </h3>
                     <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                       {paper.researchAim || 'No research aim defined.'}
                     </p>
-                  </div> */}
+                  </div>
 
                   {/* Context */}
                   <div className="bg-card rounded-md border p-5 transition-shadow hover:shadow-sm">
@@ -3737,12 +3803,15 @@ export const ProjectPaperDetailPage = ({
                     <Badge
                       key={gapType.id}
                       variant="secondary"
-                      className="flex items-center gap-1.5 rounded-md bg-slate-800 px-2 py-0.5 text-xs text-white hover:bg-slate-700"
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs hover:opacity-95',
+                        GAP_TYPE_BADGE_CLASS,
+                      )}
                     >
                       {gapType.name}
                       <button
                         type="button"
-                        className="text-white/80 hover:text-white"
+                        className="text-current/80 hover:text-current"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();

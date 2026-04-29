@@ -37,6 +37,9 @@ export const useUpdatePaperAuthor = ({
       queryClient.invalidateQueries({
         queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.PAPER_AUTHORS],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['project-members'],
+      });
       onSuccess?.(...args);
     },
     ...restConfig,

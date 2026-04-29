@@ -46,10 +46,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { BTN } from '@/lib/button-styles';
 import { cn } from '@/utils/cn';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useAssignedSections } from '@/features/paper-management/api/get-assigned-sections';
+import { useSectionCompletionStats } from '@/features/paper-management/api/get-section-completion-stats';
 import { useGetPaperSections } from '@/features/paper-management/api/get-paper-sections';
 import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionMembers } from '@/features/paper-management/api/get-section-members';
@@ -57,7 +64,6 @@ import { useAvailableSectionMembers } from '@/features/paper-management/api/get-
 import { useCreatePaperContributor } from '@/features/paper-management/api/create-paper-contributor';
 import { useDeletePaperContributor } from '@/features/paper-management/api/delete-paper-contributor';
 import { useUpdateSectionGuideline } from '@/features/paper-management/api/update-section-guideline';
-import { useGetPaperContributors } from '@/features/paper-management/api/get-paper-contributors';
 import { useMarkSection } from '@/features/paper-management/api/get-mark-section';
 import { useMarkMainSection } from '@/features/paper-management/api/mark-main-section';
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
@@ -72,6 +78,59 @@ import { MarkMainSectionDialog } from '@/features/paper-management/components/ma
 import { LatexPaperEditor } from '@/features/project-management/components/papers/latex-paper-editor';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
+
+const SectionCompletionRing = ({ sectionId }: { sectionId: string }) => {
+  const statsQuery = useSectionCompletionStats({ sectionId });
+  const complete = statsQuery.data?.result?.numberOfCompleteSection ?? 0;
+  const total = statsQuery.data?.result?.totalSection ?? 0;
+  const isEmpty = complete === 0 && total === 0;
+  const percent = total > 0 ? Math.min(100, (complete / total) * 100) : 0;
+  const tooltipLabel = isEmpty
+    ? 'No completed sections yet'
+    : `${complete} of ${total} writers have completed this section`;
+
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={cn(
+              'relative inline-flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border text-[9px]',
+              isEmpty
+                ? 'border-border bg-muted/40 text-muted-foreground dark:border-border/70 dark:bg-muted/20'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400',
+            )}
+            aria-label={tooltipLabel}
+          >
+            <span
+              className={cn(
+                'absolute inset-0 rounded-full',
+                isEmpty ? 'bg-transparent' : 'bg-transparent',
+              )}
+              style={
+                isEmpty
+                  ? undefined
+                  : {
+                      background: `conic-gradient(rgb(16 185 129) ${percent}%, rgb(229 231 235) ${percent}% 100%)`,
+                      WebkitMask:
+                        'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))',
+                      mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))',
+                    }
+              }
+            />
+            {!isEmpty && (
+              <span className="absolute inset-[2px] rounded-full bg-transparent" />
+            )}
+            <span className="relative z-10 leading-none font-semibold">
+              {isEmpty ? '0/0' : `${complete}/${total}`}
+            </span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top">{tooltipLabel}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
 const stripLatex = (input: string): string => {
   if (!input) return '(Untitled)';
@@ -870,7 +929,7 @@ const PickBestDialog = ({
               <div className="py-10 text-center">
                 <FileText className="text-muted-foreground/40 mx-auto mb-3 size-9" />
                 <p className="text-muted-foreground text-sm">
-                  No completed contributor versions found for this section.
+                  No completed writer versions found for this section.
                 </p>
               </div>
             ) : (
@@ -1218,38 +1277,6 @@ export const PaperWorkspacePage = ({
       onError: () => toast.error('Failed to update guideline'),
     },
   });
-
-  const paperContributorsQuery = useGetPaperContributors({
-    paperId,
-    queryConfig: { enabled: !!paperId, refetchOnMount: 'always' } as any,
-  });
-
-  // Map sectionId -> writer/author count from paper contributors.
-  // Index by both sectionId and markSectionId to maximize lookup coverage.
-  const sectionContributorCounts = useMemo(() => {
-    const items = (paperContributorsQuery.data as any)?.result?.items ?? [];
-    const isWritingContributor = (role?: string) =>
-      role === 'section:edit' || role === 'paper:author';
-
-    // Use sets to deduplicate the same contributor across multiple assignments.
-    const perSection = new Map<string, Set<string>>();
-    items.forEach((c: any) => {
-      if (!isWritingContributor(c.sectionRole)) return;
-
-      const contributorKey = c.userId || c.memberId || c.id;
-      if (!contributorKey) return;
-
-      [c.sectionId, c.markSectionId]
-        .filter(Boolean)
-        .forEach((secId: string) => {
-          if (!perSection.has(secId)) perSection.set(secId, new Set());
-          perSection.get(secId)!.add(contributorKey);
-        });
-    });
-    const map = new Map<string, number>();
-    perSection.forEach((set, key) => map.set(key, set.size));
-    return map;
-  }, [paperContributorsQuery.data]);
 
   const Wrapper = embedded ? React.Fragment : ContentLayout;
   const wrapperProps = embedded ? {} : { title: 'Workspace' };
@@ -1635,10 +1662,6 @@ export const PaperWorkspacePage = ({
                   {flatSections.map((s) => {
                     const isChild = !!s.parentSectionId;
                     const isSelected = selectedSectionId === s.id;
-                    const contributorCount =
-                      sectionContributorCounts.get(s.id) ??
-                      sectionContributorCounts.get(s.markSectionId || '') ??
-                      0;
                     const statusInfo =
                       s.status != null ? SECTION_STATUS_MAP[s.status] : null;
                     return (
@@ -1667,25 +1690,21 @@ export const PaperWorkspacePage = ({
                         >
                           {stripLatex(s.title || '')}
                         </p>
-                        {(statusInfo || contributorCount > 0) && (
-                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            {statusInfo && (
-                              <span
-                                className={cn(
-                                  'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
-                                  statusInfo.cls,
-                                )}
-                              >
-                                {statusInfo.label}
-                              </span>
-                            )}
-                            {contributorCount > 0 && (
-                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-100 px-1 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
-                                {contributorCount}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <div className="mt-1.5 flex items-center gap-1.5 pr-1">
+                          {statusInfo && (
+                            <span
+                              className={cn(
+                                'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+                                statusInfo.cls,
+                              )}
+                            >
+                              {statusInfo.label}
+                            </span>
+                          )}
+                          <span className="ml-auto">
+                            <SectionCompletionRing sectionId={s.id} />
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
@@ -1698,8 +1717,6 @@ export const PaperWorkspacePage = ({
                     )
                     .map((s) => {
                       const isSelected = selectedSectionId === s.id;
-                      const statusInfo =
-                        s.status != null ? SECTION_STATUS_MAP[s.status] : null;
                       return (
                         <button
                           key={s.id}
@@ -1718,16 +1735,9 @@ export const PaperWorkspacePage = ({
                           <p className="text-foreground text-sm leading-snug font-semibold">
                             {stripLatex(s.title || '')}
                           </p>
-                          {statusInfo && (
-                            <span
-                              className={cn(
-                                'mt-1.5 inline-block rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
-                                statusInfo.cls,
-                              )}
-                            >
-                              {statusInfo.label}
-                            </span>
-                          )}
+                          <div className="mt-1.5 flex justify-end pr-1">
+                            <SectionCompletionRing sectionId={s.id} />
+                          </div>
                         </button>
                       );
                     })}

@@ -39,6 +39,9 @@ export const useRemoveProjectManagers = ({
       queryClient.invalidateQueries({
         queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.AVAILABLE_USERS, projectId],
       });
+      queryClient.invalidateQueries({
+        queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.MY_ROLE, projectId],
+      });
       onSuccess?.(...(args as Parameters<typeof onSuccess>));
     },
     onError: (...args) => {

@@ -56,7 +56,10 @@ type DetailField = {
 };
 
 export const PaperView = ({ paperId }: { paperId: string }) => {
-  const paperQuery = usePaperDetail({ paperId });
+  const paperQuery = usePaperDetail({
+    paperId,
+    queryConfig: { refetchOnMount: 'always' },
+  });
   const isAdmin = getUserGroups().includes('system:admin');
 
   if (paperQuery.isLoading) {

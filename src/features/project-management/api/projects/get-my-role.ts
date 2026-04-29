@@ -24,6 +24,9 @@ export const getMyRoleQueryOptions = (projectId: string) => {
   return queryOptions({
     queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.MY_ROLE, projectId],
     queryFn: () => getMyRole({ projectId }),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 

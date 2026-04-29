@@ -45,6 +45,9 @@ export const useUpdateMemberRole = ({
       queryClient.invalidateQueries({
         queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.PROJECT_MEMBERS, projectId],
       });
+      queryClient.invalidateQueries({
+        queryKey: [PROJECT_MANAGEMENT_QUERY_KEYS.MY_ROLE, projectId],
+      });
       onSuccess?.(...(args as Parameters<typeof onSuccess>));
     },
     onError: (...args) => {

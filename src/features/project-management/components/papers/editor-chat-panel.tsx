@@ -773,7 +773,7 @@ export const EditorChatPanel = ({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Sub-tab switcher: AI Chat | Sessions */}
-      <div className="border-border flex shrink-0 border-b">
+      <div className="border-border flex shrink-0">
         <button
           type="button"
           onClick={() => setChatTab('chat')}
