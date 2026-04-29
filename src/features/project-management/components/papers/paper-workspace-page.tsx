@@ -601,10 +601,6 @@ const SectionVersionDialog = ({
       cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
     },
     3: {
-      label: 'In review',
-      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
-    },
-    4: {
       label: 'Completed',
       cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
     },
@@ -803,7 +799,7 @@ const PickBestDialog = ({
 
   // Exclude the base/main section itself; keep contributor drafts
   const versions = allVersions
-    .filter((v) => v.sectionId !== v.markSectionId)
+    .filter((v) => v.sectionId !== v.markSectionId && (v.status ?? null) === 3)
     .sort(
       (a, b) =>
         new Date(b.createdOnUtc || '').getTime() -
@@ -842,10 +838,6 @@ const PickBestDialog = ({
       cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
     },
     3: {
-      label: 'In review',
-      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
-    },
-    4: {
       label: 'Completed',
       cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
     },
@@ -878,7 +870,7 @@ const PickBestDialog = ({
               <div className="py-10 text-center">
                 <FileText className="text-muted-foreground/40 mx-auto mb-3 size-9" />
                 <p className="text-muted-foreground text-sm">
-                  No contributor versions found for this section.
+                  No completed contributor versions found for this section.
                 </p>
               </div>
             ) : (
@@ -1469,6 +1461,7 @@ export const PaperWorkspacePage = ({
         readOnly={editorState.readOnly}
         paperTitle={paper?.title || 'Untitled'}
         projectId={projectId}
+        subProjectId={subProjectId}
         sections={[...editorSections, ...injectedSections]}
         initialSectionId={resolvedInitialSectionId}
         onSave={handleEditorSave}
@@ -1526,10 +1519,6 @@ export const PaperWorkspacePage = ({
       cls: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
     },
     3: {
-      label: 'In review',
-      cls: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
-    },
-    4: {
       label: 'Completed',
       cls: 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400',
     },
@@ -1789,23 +1778,21 @@ export const PaperWorkspacePage = ({
                       >
                         View
                       </Button>
-                      {(isAuthor || isManager) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs font-medium"
-                          onClick={() =>
-                            setMemberSheet({
-                              id:
-                                selectedSection.markSectionId ||
-                                selectedSection.id,
-                              title: stripLatex(selectedSection.title),
-                            })
-                          }
-                        >
-                          Writer
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3 text-xs font-medium"
+                        onClick={() =>
+                          setMemberSheet({
+                            id:
+                              selectedSection.markSectionId ||
+                              selectedSection.id,
+                            title: stripLatex(selectedSection.title),
+                          })
+                        }
+                      >
+                        Writer
+                      </Button>
                       {(isAuthor || isManager) && (
                         <Button
                           size="sm"

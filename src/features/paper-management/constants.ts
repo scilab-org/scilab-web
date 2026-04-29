@@ -54,6 +54,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/sections/mark-section/${id}/versions`,
   MARK_MAIN_SECTION: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/mark-main-section`,
+  MARK_SECTION_TO_COMPLETED: (sectionId: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/mark-section-to-completed`,
   PAPER_VERSIONS: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions`,
   COMBINE_PAPER: (paperId: string) =>
