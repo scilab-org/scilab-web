@@ -41,6 +41,7 @@ import {
   Plus,
   Eye,
   Info,
+  Flag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,6 +85,7 @@ import {
 import { PAPER_MANAGEMENT_QUERY_KEYS } from '@/features/paper-management/constants';
 import { useUpdateSection } from '@/features/paper-management/api/update-section';
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
+import { useMarkSectionToCompleted } from '@/features/paper-management/api/mark-section-to-completed';
 import {
   KNOWN_LATEX_PACKAGES,
   extractPackageName,
@@ -2482,6 +2484,7 @@ type SectionProp = {
   title: string;
   markSectionId?: string;
   paperId?: string;
+  status?: number;
   content: string;
   packages?: string[];
   memberId: string;
@@ -2496,6 +2499,7 @@ type SectionProp = {
 type LatexPaperEditorProps = {
   paperTitle: string;
   projectId?: string;
+  subProjectId?: string;
   draftStorageScope?: string;
   initialContent?: string;
   sections: SectionProp[];
@@ -2559,6 +2563,7 @@ const toPlainSectionTitle = (title: string): string => {
 export const LatexPaperEditor = ({
   paperTitle,
   projectId,
+  subProjectId,
   initialContent,
   sections,
   initialSectionId,
@@ -3122,6 +3127,49 @@ export const LatexPaperEditor = ({
     },
   });
 
+  const markSectionToCompletedMutation = useMarkSectionToCompleted({
+    mutationConfig: {
+      onSuccess: () => {
+        const activeMarkSectionId = (
+          activeSection?.markSectionId ??
+          activeSection?.id ??
+          ''
+        ).trim();
+
+        setEditorSections((prev) => {
+          if (!prev?.length || !activeMarkSectionId) return prev;
+          return prev.map((section) => {
+            const sectionMarkId = (
+              section.markSectionId ??
+              section.id ??
+              ''
+            ).trim();
+            if (sectionMarkId !== activeMarkSectionId) return section;
+            return { ...section, status: 3 };
+          });
+        });
+
+        void queryClient.invalidateQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.ASSIGNED_SECTIONS,
+            derivedPaperId,
+          ],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: [
+            PAPER_MANAGEMENT_QUERY_KEYS.PAPER_SECTIONS,
+            derivedPaperId,
+          ],
+        });
+
+        toast.success('Section marked as completed');
+      },
+      onError: () => {
+        toast.error('Failed to mark section as completed. Please try again.');
+      },
+    },
+  });
+
   const compileAndRender = useCallback(
     async (latexContent: string, packages?: string[], refContent?: string) => {
       setIsCompiling(true);
@@ -3183,6 +3231,43 @@ export const LatexPaperEditor = ({
     isActiveSectionReadOnly,
     referenceSection,
     isReferenceSectionActive,
+  ]);
+
+  const handleMarkCompleted = useCallback(() => {
+    const targetSectionId =
+      resolvedActiveSectionId || activeSection?.id || activeSectionId;
+    const targetMemberId = activeSection?.memberId?.trim();
+    const targetProjectId = (subProjectId || '').trim();
+
+    if (!targetSectionId) {
+      toast.error('No active section to mark as completed.');
+      return;
+    }
+
+    if (!targetMemberId) {
+      toast.error('Missing memberId for this section.');
+      return;
+    }
+
+    if (!targetProjectId) {
+      toast.error('Missing subProjectId for this section.');
+      return;
+    }
+
+    markSectionToCompletedMutation.mutate({
+      sectionId: targetSectionId,
+      data: {
+        memberId: targetMemberId,
+        projectId: targetProjectId,
+      },
+    });
+  }, [
+    activeSection?.id,
+    activeSection?.memberId,
+    activeSectionId,
+    markSectionToCompletedMutation,
+    resolvedActiveSectionId,
+    subProjectId,
   ]);
 
   // Clean up PDF blob URL on unmount
@@ -5530,6 +5615,29 @@ export const LatexPaperEditor = ({
                     )}
 
                     <div className="flex-1" />
+
+                    <button
+                      type="button"
+                      onClick={handleMarkCompleted}
+                      disabled={
+                        markSectionToCompletedMutation.isPending ||
+                        isActiveSectionReadOnly ||
+                        content !== savedContent ||
+                        versionPreview !== null ||
+                        activeSection?.status === 3 ||
+                        !activeSection?.memberId ||
+                        !subProjectId
+                      }
+                      className="flex h-7 items-center gap-1.5 rounded bg-[#2f6b5b] px-3 text-xs font-semibold text-white transition-all hover:bg-[#285a4c] disabled:opacity-50 dark:bg-[#2f6b5b] dark:hover:bg-[#285a4c]"
+                      title="Mark current section as completed"
+                    >
+                      {markSectionToCompletedMutation.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Flag className="h-3.5 w-3.5" />
+                      )}
+                      Mark Completed
+                    </button>
 
                     {/* Download */}
                     {pdfUrl && (
