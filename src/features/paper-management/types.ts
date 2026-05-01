@@ -169,8 +169,9 @@ export type CreatePaperDto = {
   pages: string;
   volume: string;
   referenceContent: string;
+  referenceKey: string;
   pdfFile: File;
-  bibFile?: File;
+  bibFile: File;
   parsedText: string;
   keywords: string[];
   ranking?: string;
@@ -205,6 +206,7 @@ export type UpdatePaperDto = {
   pages?: string;
   volume?: string;
   referenceContent?: string;
+  referenceKey?: string;
   keywords?: string[];
   ranking?: string;
   url?: string;

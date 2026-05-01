@@ -31,10 +31,9 @@ export const createPaper = (
   formData.append('pages', data.pages);
   formData.append('volume', data.volume);
   formData.append('referenceContent', data.referenceContent);
+  formData.append('referenceKey', data.referenceKey);
   formData.append('pdfFile', data.pdfFile);
-  if (data.bibFile) {
-    formData.append('bibFile', data.bibFile);
-  }
+  formData.append('bibFile', data.bibFile);
   formData.append('parsedText', String(data.parsedText ?? ''));
   formData.append('isAutoTagged', String(data.isAutoTagged));
   formData.append('isIngested', String(data.isIngested));

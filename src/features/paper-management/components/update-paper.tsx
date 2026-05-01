@@ -18,7 +18,11 @@ import {
 
 import { useJournals } from '@/features/journal-management/api/get-journals';
 import { useGapTypes } from '@/features/gap-type-management/api/get-gap-types';
-import { findMatchingJournalId, parseBibTeXMetadata } from '../lib/bibtex';
+import {
+  extractCitationKey,
+  findMatchingJournalId,
+  parseBibTeXMetadata,
+} from '../lib/bibtex';
 import { useUpdatePaper } from '../api/update-paper';
 import { autoTagPaper } from '../api/auto-tag-paper';
 import { PaperDto } from '../types';
@@ -74,6 +78,7 @@ const getCitationKey = (authors: string, year: string) => {
 };
 
 const buildReferenceContent = (params: {
+  citationKey: string;
   authors: string;
   title: string;
   doi: string;
@@ -91,7 +96,7 @@ const buildReferenceContent = (params: {
     monthIndex >= 0 && monthIndex < BIBTEX_MONTHS.length
       ? BIBTEX_MONTHS[monthIndex]
       : '';
-  const key = getCitationKey(params.authors, params.publicationYear);
+  const key = params.citationKey;
   const fields: string[] = [];
   if (params.authors.trim())
     fields.push(`  author    = ${wrap(params.authors)},`);
@@ -158,7 +163,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
   );
   const [cooldownSeconds, setCooldownSeconds] = React.useState(0);
   const [bibFile, setBibFile] = React.useState<File | undefined>(undefined);
-  const [bibReferenceContent, setBibReferenceContent] = React.useState('');
+  const [bibCitationKey, setBibCitationKey] = React.useState<string | null>(
+    () => extractCitationKey(paper.referenceContent ?? '') ?? null,
+  );
   const [pendingBibVenueName, setPendingBibVenueName] = React.useState('');
   const [lastAutoTagTime, setLastAutoTagTime] = React.useState<number | null>(
     () => {
@@ -266,7 +273,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       setIsAutoTagging(false);
       setIsAutoTagged(paper.isAutoTagged || false);
       setBibFile(undefined);
-      setBibReferenceContent('');
+      setBibCitationKey(
+        extractCitationKey(paper.referenceContent ?? '') ?? null,
+      );
       setPendingBibVenueName('');
 
       // Calculate cooldown based on stored timestamp
@@ -293,7 +302,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
 
   const handleRemoveBibFile = () => {
     setBibFile(undefined);
-    setBibReferenceContent('');
+    setBibCitationKey(null);
     setPendingBibVenueName('');
   };
 
@@ -305,7 +314,7 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
       const parsedBib = parseBibTeXMetadata(rawContent);
 
       setBibFile(selectedFile);
-      setBibReferenceContent(rawContent.trim());
+      setBibCitationKey(parsedBib?.citationKey ?? null);
 
       if (!parsedBib) {
         toast.warning(
@@ -485,6 +494,27 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
     );
     const journalNameForRef = selectedJournal?.name ?? '';
 
+    const citationKey =
+      bibCitationKey || getCitationKey(formData.authors, pubYear);
+    const referenceContent = buildReferenceContent({
+      citationKey,
+      authors: formData.authors,
+      title: formData.title,
+      doi: formData.doi,
+      publisher: formData.publisher,
+      number: formData.number,
+      journalName: journalNameForRef,
+      pages: formData.pages,
+      volume: formData.volume,
+      publicationYear: pubYear,
+      publicationMonth: pubMonth,
+    });
+    const generatedBibFile = new File(
+      [referenceContent],
+      `${formData.title || 'paper'}.bib`,
+      { type: 'text/plain' },
+    );
+
     updatePaperMutation.mutate({
       paperId,
       data: {
@@ -501,21 +531,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
         conferenceJournalId: formData.conferenceJournalId || undefined,
         ranking: formData.ranking || undefined,
         url: formData.url || undefined,
-        bibFile,
-        referenceContent:
-          bibReferenceContent ||
-          buildReferenceContent({
-            authors: formData.authors,
-            title: formData.title,
-            doi: formData.doi,
-            publisher: formData.publisher,
-            number: formData.number,
-            journalName: journalNameForRef,
-            pages: formData.pages,
-            volume: formData.volume,
-            publicationYear: pubYear,
-            publicationMonth: pubMonth,
-          }),
+        bibFile: generatedBibFile,
+        referenceContent,
+        referenceKey: citationKey,
         keywords: keywordList.map((k) => k.name),
         isAutoTagged,
         isIngested: paper.isIngested,

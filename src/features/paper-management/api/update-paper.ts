@@ -39,9 +39,11 @@ export const updatePaper = ({
   if (data.volume !== undefined) formData.append('volume', data.volume);
   if (data.referenceContent !== undefined)
     formData.append('referenceContent', data.referenceContent);
+  if (data.referenceKey !== undefined)
+    formData.append('referenceKey', data.referenceKey);
   if (data.ranking !== undefined) formData.append('ranking', data.ranking);
   if (data.url !== undefined) formData.append('url', data.url);
-  if (data.bibFile) formData.append('bibFile', data.bibFile);
+  if (data.bibFile !== undefined) formData.append('bibFile', data.bibFile);
   if (data.keywords) {
     data.keywords.forEach((kw) => formData.append('keywords', kw));
   }
