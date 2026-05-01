@@ -6,6 +6,7 @@ type BibTeXEntry = {
 };
 
 export type ParsedBibTeXMetadata = {
+  citationKey?: string;
   title?: string;
   abstract?: string;
   authors?: string;
@@ -186,6 +187,7 @@ export const parseBibTeXMetadata = (
   if (!entry) return null;
 
   return {
+    citationKey: entry.citationKey,
     title: entry.fields.title,
     abstract: entry.fields.abstract,
     authors: entry.fields.author,
@@ -201,4 +203,9 @@ export const parseBibTeXMetadata = (
     month: entry.fields.month,
     raw: entry.raw,
   };
+};
+
+export const extractCitationKey = (bibtex: string): string | null => {
+  const match = bibtex.trim().match(/^@\w+\s*\{\s*([^,]+),/);
+  return match ? match[1].trim() : null;
 };

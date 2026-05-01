@@ -85,6 +85,7 @@ const getCitationKey = (authors: string, year: string) => {
 };
 
 const buildReferenceContent = (params: {
+  citationKey: string;
   authors: string;
   title: string;
   doi: string;
@@ -102,7 +103,7 @@ const buildReferenceContent = (params: {
     monthIndex >= 0 && monthIndex < BIBTEX_MONTHS.length
       ? BIBTEX_MONTHS[monthIndex]
       : '';
-  const key = getCitationKey(params.authors, params.publicationYear);
+  const key = params.citationKey;
   const fields: string[] = [];
   if (params.authors.trim())
     fields.push(`  author    = ${wrap(params.authors)},`);
@@ -129,7 +130,7 @@ export const CreatePaper = () => {
   const [formData, setFormData] = React.useState(initialFormData);
   const [pdfFile, setPdfFile] = React.useState<File | undefined>(undefined);
   const [bibFile, setBibFile] = React.useState<File | undefined>(undefined);
-  const [bibReferenceContent, setBibReferenceContent] = React.useState('');
+  const [bibCitationKey, setBibCitationKey] = React.useState<string | null>(null);
   const [pendingBibVenueName, setPendingBibVenueName] = React.useState('');
   const [gapTypeSearch, setGapTypeSearch] = React.useState('');
   const [isGapTypeOpen, setIsGapTypeOpen] = React.useState(false);
@@ -167,7 +168,7 @@ export const CreatePaper = () => {
     setFormData(initialFormData);
     setPdfFile(undefined);
     setBibFile(undefined);
-    setBibReferenceContent('');
+    setBibCitationKey(null);
     setPendingBibVenueName('');
     setGapTypeSearch('');
     setIsGapTypeOpen(false);
@@ -314,7 +315,7 @@ export const CreatePaper = () => {
 
   const handleRemoveBibFile = () => {
     setBibFile(undefined);
-    setBibReferenceContent('');
+    setBibCitationKey(null);
     setPendingBibVenueName('');
   };
 
@@ -325,7 +326,7 @@ export const CreatePaper = () => {
       const rawContent = await selectedFile.text();
       const parsedBib = parseBibTeXMetadata(rawContent);
       setBibFile(selectedFile);
-      setBibReferenceContent(rawContent.trim());
+      setBibCitationKey(parsedBib?.citationKey ?? null);
 
       if (!parsedBib) {
         toast.warning(
@@ -506,6 +507,27 @@ export const CreatePaper = () => {
     );
     const journalNameForRef = selectedJournal?.name ?? '';
 
+    const citationKey =
+      bibCitationKey || getCitationKey(formData.authors, pubYear);
+    const referenceContent = buildReferenceContent({
+      citationKey,
+      authors: formData.authors,
+      title: formData.title,
+      doi: formData.doi,
+      publisher: formData.publisher,
+      number: formData.number,
+      journalName: journalNameForRef,
+      pages: formData.pages,
+      volume: formData.volume,
+      publicationYear: pubYear,
+      publicationMonth: pubMonth,
+    });
+    const generatedBibFile = new File(
+      [referenceContent],
+      `${formData.title || 'paper'}.bib`,
+      { type: 'text/plain' },
+    );
+
     createPaperMutation.mutate({
       title: formData.title,
       abstract: formData.abstract,
@@ -520,22 +542,10 @@ export const CreatePaper = () => {
       volume: formData.volume,
       ranking: formData.ranking || undefined,
       url: formData.url || undefined,
-      referenceContent:
-        bibReferenceContent ||
-        buildReferenceContent({
-          authors: formData.authors,
-          title: formData.title,
-          doi: formData.doi,
-          publisher: formData.publisher,
-          number: formData.number,
-          journalName: journalNameForRef,
-          pages: formData.pages,
-          volume: formData.volume,
-          publicationYear: pubYear,
-          publicationMonth: pubMonth,
-        }),
+      referenceContent,
+      referenceKey: citationKey,
       pdfFile,
-      bibFile,
+      bibFile: generatedBibFile,
       parsedText: parsedText || '',
       keywords: keywordList.map((k) => k.name),
       isAutoTagged,
