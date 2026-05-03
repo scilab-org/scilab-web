@@ -1,8 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ChevronDown, Loader2, Search, Users } from 'lucide-react';
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  Loader2,
+  Search,
+  Users,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +43,7 @@ import { FIELD_LABEL_CLASS } from '../constants';
 import type { AvailablePaperAuthorItem, PaperContributorItem } from '../types';
 
 type AddAuthorPaperDialogProps = {
+  projectId: string;
   subProjectId: string;
   paperId: string;
   isManager: boolean;
@@ -51,6 +65,7 @@ const initialFormState = {
 };
 
 export const AddAuthorPaperDialog = ({
+  projectId,
   subProjectId,
   paperId,
   isManager,
@@ -254,20 +269,20 @@ export const AddAuthorPaperDialog = ({
   };
 
   const handleAdd = () => {
-    if (!selectedUserId || !selectedMemberId || !selectedAuthorRoleId) return;
+    if (!selectedAuthorRoleId || !name.trim() || !email.trim()) return;
+    if (!isEditMode && (!selectedUserId || !selectedMemberId)) return;
 
     const selectedUser =
       selectedAuthor ??
       availableAuthors.find((a) => a.userId === selectedUserId);
-    if (!selectedUser) return;
+    if (!isEditMode && !selectedUser) return;
 
     const payload = {
       name: name.trim() || null,
       email: email.trim() || null,
       ocrid: ocrid.trim() || null,
-      paperId: author?.paperId ?? null,
-      projectId:
-        (author as { projectId?: string | null } | null)?.projectId ?? null,
+      paperId: author?.paperId ?? paperId,
+      projectId: projectId,
       memberId: author?.memberId ?? null,
       authorRoleId: selectedAuthorRoleId,
       affiliationId: selectedAffiliationId || null,
@@ -282,7 +297,7 @@ export const AddAuthorPaperDialog = ({
     createPaperAuthorMutation.mutate({
       ...payload,
       paperId,
-      projectId: subProjectId,
+      projectId: projectId,
       memberId: selectedMemberId,
     });
   };
@@ -318,15 +333,37 @@ export const AddAuthorPaperDialog = ({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <Users className="size-5" />
             <DialogTitle>
-              {isEditMode ? 'Update Paper Author' : 'Add Author to Paper'}
+              {isEditMode ? 'Update CRediT Author' : 'Add CRediT Author'}
             </DialogTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertCircle className="text-muted-foreground size-4 shrink-0 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-72">
+                  <p className="mb-1 font-medium">Note</p>
+                  <p>
+                    This system only supports selecting an author for internal
+                    management purposes, not assigning authors to a paper for
+                    future publication.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <DialogDescription className="truncate">
-            {isEditMode
-              ? 'Update the author information and assigned role.'
-              : 'Select an author and assign a role.'}
+          <DialogDescription asChild>
+            <div>
+              <blockquote className="text-foreground mt-2 font-mono text-lg font-medium italic">
+                <p className="leading-relaxed">
+                  &ldquo;In science, CRediT goes to the man who convinces the
+                  world, not to whom the idea first occurs.&rdquo;
+                </p>
+                <footer className="text-muted-foreground mt-2 text-right">
+                  &mdash; Francis Darwin, 1914
+                </footer>
+              </blockquote>
+            </div>
           </DialogDescription>
         </DialogHeader>
 
@@ -339,7 +376,7 @@ export const AddAuthorPaperDialog = ({
                     htmlFor="paper-author-select"
                     className={FIELD_LABEL_CLASS}
                   >
-                    Select Author
+                    Select Author <span className="text-destructive">*</span>
                   </label>
                   <Popover
                     open={authorPickerOpen}
@@ -364,7 +401,7 @@ export const AddAuthorPaperDialog = ({
                     </PopoverTrigger>
                     <PopoverContent
                       align="start"
-                      className="w-[var(--radix-popper-anchor-width)] p-2"
+                      className="w-(--radix-popper-anchor-width) p-2"
                     >
                       <div className="space-y-2">
                         <div className="relative">
@@ -487,7 +524,7 @@ export const AddAuthorPaperDialog = ({
                     {selectedMemberId && (
                       <PopoverContent
                         align="start"
-                        className="w-[var(--radix-popper-anchor-width)] p-2"
+                        className="w-(--radix-popper-anchor-width) p-2"
                       >
                         <div className="space-y-2">
                           <div className="relative">
@@ -614,7 +651,7 @@ export const AddAuthorPaperDialog = ({
                   htmlFor="paper-author-role"
                   className={FIELD_LABEL_CLASS}
                 >
-                  Author Role
+                  Author Role <span className="text-destructive">*</span>
                 </label>
                 {isLoadingRoles ? (
                   <Skeleton className="h-11 w-full rounded-xl" />
@@ -640,7 +677,7 @@ export const AddAuthorPaperDialog = ({
                     </PopoverTrigger>
                     <PopoverContent
                       align="start"
-                      className="w-[var(--radix-popper-anchor-width)] p-2"
+                      className="w-(--radix-popper-anchor-width) p-2"
                     >
                       <div className="space-y-2">
                         <div className="relative">
@@ -733,7 +770,7 @@ export const AddAuthorPaperDialog = ({
                     htmlFor="paper-author-name"
                     className={FIELD_LABEL_CLASS}
                   >
-                    Name
+                    Name <span className="text-destructive">*</span>
                   </label>
                   <Input
                     id="paper-author-name"
@@ -747,7 +784,7 @@ export const AddAuthorPaperDialog = ({
                     htmlFor="paper-author-email"
                     className={FIELD_LABEL_CLASS}
                   >
-                    Email
+                    Email <span className="text-destructive">*</span>
                   </label>
                   <Input
                     id="paper-author-email"

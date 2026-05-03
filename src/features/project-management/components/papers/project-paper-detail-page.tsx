@@ -282,6 +282,7 @@ const TAB_GROUPS: {
     tabs: [
       { id: 'overview', label: 'Overview', icon: FileText },
       { id: 'submission', label: 'Submission Status', icon: Calendar },
+      { id: 'author', label: 'CRediT Authors', icon: Users },
     ],
   },
   {
@@ -300,10 +301,7 @@ const TAB_GROUPS: {
     label: 'Members',
     icon: Users,
     defaultTab: 'member' as Tab,
-    tabs: [
-      { id: 'member', label: 'Members', icon: Users },
-      { id: 'author', label: 'Authors', icon: Users },
-    ],
+    tabs: [{ id: 'member', label: 'Members', icon: Users }],
   },
 ];
 
@@ -1233,7 +1231,7 @@ export const ProjectPaperDetailPage = ({
                       <Pencil className="size-4" />
                     </div>
                     <p className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                      Authors
+                      Head Writer
                     </p>
                   </div>
                   <p className="text-foreground font-serif text-3xl font-bold">
@@ -1977,7 +1975,7 @@ export const ProjectPaperDetailPage = ({
                 <div className="border-border -mx-6 -mt-6 mb-6 flex items-center justify-between border-b px-6 py-4">
                   <div className="flex items-center gap-2">
                     <h2 className="text-foreground text-base font-semibold">
-                      Authors
+                      CRediT Authors
                     </h2>
                     <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
                       {paperContributorsQuery.isLoading ? '—' : totalAuthors}
@@ -1992,7 +1990,7 @@ export const ProjectPaperDetailPage = ({
                         className="gap-1.5"
                       >
                         <UserPlus className="size-4" />
-                        Add Author
+                        Add CRediT Author
                       </Button>
                     )}
                     <Button
@@ -2020,7 +2018,7 @@ export const ProjectPaperDetailPage = ({
                   </div>
                 ) : authorsList.length === 0 ? (
                   <div className="text-muted-foreground py-12 text-center">
-                    No authors found.
+                    No CRediT authors found.
                   </div>
                 ) : (
                   <div className="bg-card overflow-hidden rounded-md border shadow-sm">
@@ -2065,7 +2063,7 @@ export const ProjectPaperDetailPage = ({
                               <div className="flex items-center justify-center gap-2">
                                 <Button
                                   size="action"
-                                  variant="action"
+                                  variant="outlineAction"
                                   onClick={() => setViewingAuthor(author)}
                                 >
                                   View
@@ -4015,6 +4013,7 @@ export const ProjectPaperDetailPage = ({
           setIsAddAuthorOpen(open);
           if (!open) setEditingAuthor(null);
         }}
+        projectId={projectId}
         subProjectId={paperSubProjectId}
         paperId={paperId}
         isManager={isManager}

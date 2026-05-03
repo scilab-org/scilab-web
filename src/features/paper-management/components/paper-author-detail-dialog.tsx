@@ -1,12 +1,11 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/ui/user-avatar';
 
 import type { PaperContributorItem } from '../types';
@@ -52,6 +51,27 @@ const getRoleDisplayLabel = (role: string | null | undefined) => {
   return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : (role ?? '');
 };
 
+const Field = ({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) => (
+  <div className="space-y-0.5">
+    <p className="text-muted-foreground font-mono text-[11px] tracking-widest uppercase">
+      {label}
+    </p>
+    <p
+      className={`text-foreground text-base font-medium ${mono ? 'font-mono' : ''}`}
+    >
+      {value}
+    </p>
+  </div>
+);
+
 export const PaperAuthorDetailDialog = ({
   author,
   open,
@@ -83,131 +103,53 @@ export const PaperAuthorDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Author Details</DialogTitle>
-          <DialogDescription>
-            Detailed information about this paper author.
-          </DialogDescription>
+          <DialogTitle>CRediT Author Details</DialogTitle>
         </DialogHeader>
 
-        <div className="scrollbar-dialog -mr-6 flex-1 space-y-6 overflow-y-auto py-4 pr-6">
-          <div className="flex items-center gap-4">
-            <UserAvatar
-              firstName={author.firstName || ''}
-              username={fullName}
-              size="lg"
+        {/* Author identity */}
+        <div className="flex items-center gap-3">
+          <UserAvatar
+            firstName={author.firstName || ''}
+            username={fullName}
+            size="lg"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-foreground truncate text-xl font-bold">
+              {fullName}
+            </p>
+            <p className="text-muted-foreground truncate text-base">{email}</p>
+          </div>
+          <Badge
+            variant={isHeadWriter ? 'admin' : 'outline'}
+            className="shrink-0 font-mono text-[10px] tracking-widest uppercase"
+          >
+            {roleLabel || 'No Role'}
+          </Badge>
+        </div>
+
+        <Separator />
+
+        {/* Fields grid */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <Field label="ORCID" value={orcid} mono />
+          <Field label="Affiliation" value={affiliation} />
+          {department && <Field label="Department" value={department} />}
+          {position && <Field label="Position" value={position} />}
+          {affiliationStartYear !== null && (
+            <Field
+              label="Affiliation Period"
+              value={`${affiliationStartYear}${affiliationEndYear ? ` – ${affiliationEndYear}` : ' – Present'}`}
             />
-            <div className="flex flex-col gap-1.5">
-              <h2 className="text-foreground text-xl font-bold">{fullName}</h2>
-              <Badge
-                variant={isHeadWriter ? 'admin' : 'outline'}
-                className="w-fit font-mono text-[10px] tracking-widest uppercase"
-              >
-                {roleLabel || 'No Role'}
-              </Badge>
+          )}
+          {author.authorRoleName && (
+            <Field label="Author Role" value={author.authorRoleName} />
+          )}
+          {roleDescription && (
+            <div className="col-span-2">
+              <Field label="Role Description" value={roleDescription} />
             </div>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="gap-0">
-              <CardHeader className="px-6 pt-4 pb-2">
-                <CardTitle className="text-muted-foreground font-mono text-xs font-semibold tracking-widest uppercase">
-                  Contact Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                    Email Address
-                  </p>
-                  <p className="text-foreground font-medium">{email || '—'}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="gap-0">
-              <CardHeader className="px-6 pt-4 pb-2">
-                <CardTitle className="text-muted-foreground font-mono text-xs font-semibold tracking-widest uppercase">
-                  Academic Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                    ORCID
-                  </p>
-                  <p className="text-foreground font-mono text-sm">{orcid}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                    Affiliation
-                  </p>
-                  <p className="text-foreground font-medium">{affiliation}</p>
-                </div>
-                {department && (
-                  <div>
-                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                      Department
-                    </p>
-                    <p className="text-foreground font-medium">{department}</p>
-                  </div>
-                )}
-                {position && (
-                  <div>
-                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                      Position
-                    </p>
-                    <p className="text-foreground font-medium">{position}</p>
-                  </div>
-                )}
-                {affiliationStartYear !== null && (
-                  <div>
-                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                      Affiliation Period
-                    </p>
-                    <p className="text-foreground font-medium">
-                      {affiliationStartYear}
-                      {affiliationEndYear
-                        ? ` – ${affiliationEndYear}`
-                        : ' – Present'}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {(author.authorRoleName || roleDescription) && (
-            <Card className="gap-0">
-              <CardHeader className="px-6 pt-4 pb-2">
-                <CardTitle className="text-muted-foreground font-mono text-xs font-semibold tracking-widest uppercase">
-                  Role Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {author.authorRoleName && (
-                  <div>
-                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                      Role Name
-                    </p>
-                    <p className="text-foreground font-medium">
-                      {author.authorRoleName}
-                    </p>
-                  </div>
-                )}
-                {roleDescription && (
-                  <div>
-                    <p className="text-muted-foreground font-mono text-[10px] tracking-widest uppercase">
-                      Description
-                    </p>
-                    <p className="text-foreground text-sm leading-relaxed">
-                      {roleDescription}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           )}
         </div>
       </DialogContent>
