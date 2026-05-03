@@ -112,7 +112,7 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
               href={entry.submittedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline break-all text-sm"
+              className="text-primary text-sm break-all hover:underline"
             >
               {entry.submittedUrl}
             </a>

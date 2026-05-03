@@ -125,10 +125,10 @@ export const PaperMembersDialog = ({
   const canAddMembers = (isManager || _isAuthor) && !isSystemAdmin;
 
   const dialogTitle = isManager
-    ? 'Add Authors to Paper'
+    ? 'Add Head Writer to Paper'
     : 'Add Contributor to Paper';
   const dialogDesc = isManager
-    ? 'Select project authors to add'
+    ? 'Select project head writers to add'
     : 'Select project contributors to add';
 
   return (
