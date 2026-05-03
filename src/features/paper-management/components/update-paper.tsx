@@ -941,10 +941,11 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               htmlFor="update-paper-journal"
               className="text-sm font-medium"
             >
-              Journal / Conference
+              Journal / Conference <span className="text-destructive">*</span>
             </label>
             <select
               id="update-paper-journal"
+              required
               value={formData.conferenceJournalId}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -1060,7 +1061,9 @@ export const UpdatePaper = ({ paperId, paper }: UpdatePaperProps) => {
               type="submit"
               form="update-paper-form"
               disabled={
-                updatePaperMutation.isPending || !formData.authors.trim()
+                updatePaperMutation.isPending ||
+                !formData.authors.trim() ||
+                !formData.conferenceJournalId
               }
               variant="darkRed"
             >

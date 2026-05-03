@@ -130,7 +130,9 @@ export const CreatePaper = () => {
   const [formData, setFormData] = React.useState(initialFormData);
   const [pdfFile, setPdfFile] = React.useState<File | undefined>(undefined);
   const [bibFile, setBibFile] = React.useState<File | undefined>(undefined);
-  const [bibCitationKey, setBibCitationKey] = React.useState<string | null>(null);
+  const [bibCitationKey, setBibCitationKey] = React.useState<string | null>(
+    null,
+  );
   const [pendingBibVenueName, setPendingBibVenueName] = React.useState('');
   const [gapTypeSearch, setGapTypeSearch] = React.useState('');
   const [isGapTypeOpen, setIsGapTypeOpen] = React.useState(false);
@@ -1025,10 +1027,11 @@ export const CreatePaper = () => {
               htmlFor="create-paper-journal"
               className="text-sm font-medium"
             >
-              Conference / Journal
+              Conference / Journal <span className="text-destructive">*</span>
             </label>
             <select
               id="create-paper-journal"
+              required
               value={formData.conferenceJournalId}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -1157,7 +1160,8 @@ export const CreatePaper = () => {
                 !formData.title.trim() ||
                 !formData.authors.trim() ||
                 !pdfFile ||
-                isParsing
+                isParsing ||
+                !formData.conferenceJournalId
               }
               variant="darkRed"
             >
