@@ -102,6 +102,24 @@ const CurrentStatusDetail = ({ entry }: { entry: PaperStatusHistoryEntry }) => {
         </div>
       )}
 
+      {entry.submittedUrl && (
+        <div className="space-y-1.5">
+          <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+            Submission URL
+          </p>
+          <div className="bg-card rounded-xl border p-5 shadow-sm transition-colors">
+            <a
+              href={entry.submittedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline break-all text-sm"
+            >
+              {entry.submittedUrl}
+            </a>
+          </div>
+        </div>
+      )}
+
       {entry.note && (
         <div className="space-y-1.5">
           <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">

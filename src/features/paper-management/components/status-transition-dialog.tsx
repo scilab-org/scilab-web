@@ -181,6 +181,7 @@ export const StatusTransitionDialog = ({
     'version',
   );
   const [directFile, setDirectFile] = React.useState<File | null>(null);
+  const [submittedUrl, setSubmittedUrl] = React.useState<string>('');
 
   const availableTransitions =
     SUBMISSION_STATUS_TRANSITIONS[currentStatus] ?? [];
@@ -195,6 +196,7 @@ export const StatusTransitionDialog = ({
     setSelectedPdfId('');
     setUploadMode('version');
     setDirectFile(null);
+    setSubmittedUrl('');
   };
 
   const transitionMutation = useTransitionPaperStatus({
@@ -221,6 +223,7 @@ export const StatusTransitionDialog = ({
         note: note.trim() || undefined,
         revisionType: isRevisionRequired ? revisionType : undefined,
         pdfFileId: response.value,
+        submittedUrl: submittedUrl.trim() || undefined,
       });
     },
     onError: () => {
@@ -246,6 +249,7 @@ export const StatusTransitionDialog = ({
           note: note.trim() || undefined,
           revisionType: isRevisionRequired ? revisionType : undefined,
           pdfFileId: selectedPdfId,
+          submittedUrl: submittedUrl.trim() || undefined,
         });
       }
       return;
@@ -382,6 +386,25 @@ export const StatusTransitionDialog = ({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Submitted URL — only for Submitted / Resubmitted */}
+          {isPdfRequired && (
+            <div className="space-y-1.5">
+              <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+                Submission URL{' '}
+                <span className="font-normal tracking-normal normal-case">
+                  (optional)
+                </span>
+              </p>
+              <input
+                type="url"
+                value={submittedUrl}
+                onChange={(e) => setSubmittedUrl(e.target.value)}
+                placeholder="https://…"
+                className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring/50 w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-[3px]"
+              />
             </div>
           )}
 

@@ -535,6 +535,7 @@ export type PaperStatusHistoryEntry = {
   pdfFileId?: string | null;
   pdfFileName?: string | null;
   pdfFileUrl?: string | null;
+  submittedUrl?: string | null;
   createdOnUtc: string;
   createdBy: string;
 };
@@ -551,6 +552,7 @@ export type TransitionPaperStatusDto = {
   note?: string;
   revisionType?: string;
   pdfFileId?: string;
+  submittedUrl?: string;
 };
 
 export type PaperVersionFileItem = {
