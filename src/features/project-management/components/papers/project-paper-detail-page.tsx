@@ -2089,7 +2089,7 @@ export const ProjectPaperDetailPage = ({
                                             deletePaperAuthorMutation.isPending
                                           }
                                         >
-                                          Delete
+                                          DELETE
                                         </Button>
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>

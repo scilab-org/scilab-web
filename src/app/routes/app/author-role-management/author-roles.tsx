@@ -33,10 +33,10 @@ export const clientLoader =
 const AuthorRolesRoute = () => {
   return (
     <>
-      <Head title="Author Role Management" />
+      <Head title="CRediT Author Management" />
       <ContentLayout
-        title="Author Role Management"
-        description="Manage author roles"
+        title="CRediT Author Management"
+        description="Manage CRediT authors"
       >
         <div className="space-y-4">
           <div className="flex items-center justify-end">

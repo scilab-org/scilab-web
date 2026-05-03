@@ -2579,6 +2579,7 @@ export const LatexPaperEditor = ({
   const [pdfPageNum, setPdfPageNum] = useState(1);
   const [pdfNumPages, setPdfNumPages] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const pdfPageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [pdfContainerWidth, setPdfContainerWidth] = useState(0);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
@@ -4391,6 +4392,43 @@ export const LatexPaperEditor = ({
     setPdfNumPages(0);
   }, [pdfUrl]);
 
+  // Track current page via IntersectionObserver when all pages are rendered
+  useEffect(() => {
+    if (!pdfNumPages) return;
+    const root = pdfContainerRef.current;
+    if (!root) return;
+    const visibilityMap = new Map<number, number>();
+    const observers: IntersectionObserver[] = [];
+    pdfPageRefs.current.slice(0, pdfNumPages).forEach((el, idx) => {
+      if (!el) return;
+      const pageNum = idx + 1;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          visibilityMap.set(pageNum, entry.intersectionRatio);
+          let maxRatio = -1;
+          let maxPage = 1;
+          visibilityMap.forEach((ratio, page) => {
+            if (ratio > maxRatio) {
+              maxRatio = ratio;
+              maxPage = page;
+            }
+          });
+          setPdfPageNum(maxPage);
+        },
+        { root, threshold: [0, 0.25, 0.5, 0.75, 1.0] },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((obs) => obs.disconnect());
+  }, [pdfNumPages]);
+
+  // Scroll to a specific page
+  const scrollToPage = useCallback((page: number) => {
+    const el = pdfPageRefs.current[page - 1];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   // Observe PDF container width for responsive page sizing
   useEffect(() => {
     const el = pdfContainerRef.current;
@@ -5553,9 +5591,7 @@ export const LatexPaperEditor = ({
                         <button
                           type="button"
                           disabled={pdfPageNum <= 1}
-                          onClick={() =>
-                            setPdfPageNum((p) => Math.max(1, p - 1))
-                          }
+                          onClick={() => scrollToPage(pdfPageNum - 1)}
                           className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
                         >
                           <ChevronLeft className="h-3.5 w-3.5" />
@@ -5569,9 +5605,7 @@ export const LatexPaperEditor = ({
                         <button
                           type="button"
                           disabled={pdfPageNum >= pdfNumPages}
-                          onClick={() =>
-                            setPdfPageNum((p) => Math.min(pdfNumPages, p + 1))
-                          }
+                          onClick={() => scrollToPage(pdfPageNum + 1)}
                           className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
                         >
                           <ChevronRight className="h-3.5 w-3.5" />
@@ -5683,9 +5717,10 @@ export const LatexPaperEditor = ({
                       ) : pdfUrl ? (
                         <Document
                           file={pdfUrl}
-                          onLoadSuccess={({ numPages }) =>
-                            setPdfNumPages(numPages)
-                          }
+                          onLoadSuccess={({ numPages }) => {
+                            setPdfNumPages(numPages);
+                            setPdfPageNum(1);
+                          }}
                           loading={
                             <div className="flex flex-col items-center gap-3 py-16">
                               <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
@@ -5710,18 +5745,27 @@ export const LatexPaperEditor = ({
                           }
                           className="flex flex-col items-center gap-6"
                         >
-                          <Page
-                            pageNumber={pdfPageNum}
-                            width={
-                              pdfContainerWidth > 64
-                                ? Math.min(pdfContainerWidth - 48, 900) *
-                                  (pdfZoom / 100)
-                                : undefined
-                            }
-                            className="rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
-                            renderAnnotationLayer
-                            renderTextLayer
-                          />
+                          {Array.from({ length: pdfNumPages }, (_, i) => (
+                            <div
+                              key={i + 1}
+                              ref={(el) => {
+                                pdfPageRefs.current[i] = el;
+                              }}
+                            >
+                              <Page
+                                pageNumber={i + 1}
+                                width={
+                                  pdfContainerWidth > 64
+                                    ? Math.min(pdfContainerWidth - 48, 900) *
+                                      (pdfZoom / 100)
+                                    : undefined
+                                }
+                                className="rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+                                renderAnnotationLayer
+                                renderTextLayer
+                              />
+                            </div>
+                          ))}
                         </Document>
                       ) : (
                         <div className="flex flex-1 flex-col items-center justify-center gap-3">

@@ -112,7 +112,14 @@ export const AddAuthorPaperDialog = ({
   const authorRoles = authorRolesResponse?.result?.items || [];
 
   const canAddMembers = (isManager || isAuthor) && !isSystemAdmin;
-  const isEditMode = Boolean(author?.id);
+
+  // Freeze isEditMode so it only updates when the dialog opens.
+  // This prevents the title/form from flashing to "Add" mode during the
+  // close animation (when the parent clears editingAuthor while open=false).
+  const [isEditMode, setIsEditMode] = useState(Boolean(author?.id));
+  useEffect(() => {
+    if (open) setIsEditMode(Boolean(author?.id));
+  }, [open, author?.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -183,23 +190,39 @@ export const AddAuthorPaperDialog = ({
       return;
     }
 
+    // Skip while loading to avoid clearing affiliation set from author data
+    if (memberAffiliationsQuery.isLoading) return;
+
     if (memberAffiliations.length === 1) {
       if (autoSelectedMemberIdRef.current !== selectedMemberId) {
         const affil = memberAffiliations[0].affiliation;
         if (affil) {
-          setSelectedAffiliationId(affil.id);
-          setSelectedAffiliationName(affil.name || '');
+          // In edit mode, only auto-select if no affiliation is already set
+          if (!selectedAffiliationId) {
+            setSelectedAffiliationId(affil.id);
+            setSelectedAffiliationName(affil.name || '');
+          }
           autoSelectedMemberIdRef.current = selectedMemberId;
         }
       }
     } else if (memberAffiliations.length === 0) {
       if (autoSelectedMemberIdRef.current !== selectedMemberId) {
-        setSelectedAffiliationId(null);
-        setSelectedAffiliationName('');
+        // Only clear if not in edit mode with an existing affiliation
+        if (!isEditMode || autoSelectedMemberIdRef.current !== null) {
+          setSelectedAffiliationId(null);
+          setSelectedAffiliationName('');
+        }
         autoSelectedMemberIdRef.current = selectedMemberId;
       }
     }
-  }, [open, memberAffiliations, selectedMemberId]);
+  }, [
+    open,
+    memberAffiliations,
+    memberAffiliationsQuery.isLoading,
+    selectedMemberId,
+    selectedAffiliationId,
+    isEditMode,
+  ]);
   const availableAuthors = useMemo(
     () => availableAuthorsQuery.data?.result?.items ?? [],
     [availableAuthorsQuery.data?.result?.items],
@@ -330,8 +353,8 @@ export const AddAuthorPaperDialog = ({
         if (!nextOpen) handleClose();
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
+      <DialogContent className="[&_[data-scrollable]]:scrollbar-thin [&_[data-scrollable]]:scrollbar-track-transparent [&_[data-scrollable]]:scrollbar-thumb-border flex max-h-[90vh] flex-col overflow-hidden sm:max-w-xl">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2">
             <DialogTitle>
               {isEditMode ? 'Update CRediT Author' : 'Add CRediT Author'}
@@ -367,7 +390,10 @@ export const AddAuthorPaperDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div
+          data-scrollable
+          className="[&::-webkit-scrollbar-thumb]:bg-border -mr-6 flex-1 space-y-5 overflow-y-auto py-2 pr-6 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+        >
           {canAddMembers ? (
             <>
               {isEditMode ? null : (
@@ -818,7 +844,7 @@ export const AddAuthorPaperDialog = ({
           )}
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="shrink-0 pt-2">
           <Button
             type="button"
             variant="ghost"

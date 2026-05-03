@@ -14,6 +14,7 @@ import {
   Users,
   Globe,
   Building2,
+  BadgeCheck,
 } from 'lucide-react';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
@@ -304,9 +305,9 @@ const adminNavigationGroups: SideNavigationGroup[] = [
         icon: Layers3,
       },
       {
-        name: 'Author Roles',
+        name: 'CRediT Author',
         to: paths.app.authorRoleManagement.authorRoles.getHref(),
-        icon: Users,
+        icon: BadgeCheck,
       },
       {
         name: 'Domains',
