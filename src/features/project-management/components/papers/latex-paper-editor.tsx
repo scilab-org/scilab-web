@@ -2371,12 +2371,12 @@ const registerLatexLanguage = (monaco: Monaco) => {
     {
       label: '\\begin{figure}',
       insertText:
-        '\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{$1}\n  \\caption{$2}\n  \\label{fig:$3}\n\\end{figure}',
+        '\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=\\columnwidth]{$1}\n  \\caption{$2}\n  \\label{fig:$3}\n\\end{figure}',
       detail: 'Figure template',
     },
     {
       label: '\\includegraphics',
-      insertText: '\\includegraphics[width=0.8\\textwidth]{$1}',
+      insertText: '\\includegraphics[width=\\columnwidth]{$1}',
       detail: 'Insert image',
     },
     {
@@ -3978,7 +3978,7 @@ export const LatexPaperEditor = ({
     if (!cursorPosition) return;
 
     const label = toLatexLabel(fileUrl) || 'image';
-    const latexImageBlock = `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.8\\textwidth]{${fileUrl}}\n  \\caption{Image}\n  \\label{fig:${label}}\n\\end{figure}\n`;
+    const latexImageBlock = `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=\\columnwidth]{${fileUrl}}\n  \\caption{Image}\n  \\label{fig:${label}}\n\\end{figure}\n`;
 
     const insertRange = {
       startLineNumber: cursorPosition.lineNumber,
