@@ -70,6 +70,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/status-transition`,
   PAPER_VERSION_FILES: (paperId: string, versionId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/versions/${versionId}/files`,
+  PAPER_DIRECT_FILE: (paperId: string) =>
+    `${LAB_SERVICE_PREFIX}/papers/${paperId}/files`,
   PAPER_VERSION_FILE_BY_ID: (id: string) =>
     `${LAB_SERVICE_PREFIX}/papers/version-files/${id}`,
 } as const;

@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import Editor, { type Monaco } from '@monaco-editor/react';
 import type * as MonacoEditor from 'monaco-editor';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -35,6 +36,7 @@ import { toast } from 'sonner';
 import { cn } from '@/utils/cn';
 
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
+import { createPaperVersionFile } from '@/features/paper-management/api/create-paper-version-file';
 import { useCombinePaper } from '@/features/paper-management/api/combine-paper';
 import { useUpdateCombineVersion } from '@/features/paper-management/api/update-combine-version';
 import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
@@ -655,14 +657,24 @@ export const CombineEditor = ({
   // Stats
   const stats = useMemo(() => computeLatexStats(content), [content]);
 
-  // PDF download
-  const handleDownloadPdf = useCallback(() => {
-    if (!pdfUrl) return;
-    const a = document.createElement('a');
-    a.href = pdfUrl;
-    a.download = `${paperTitle || 'combined'}.pdf`;
-    a.click();
-  }, [pdfUrl, paperTitle]);
+  // Save as PDF — uploads compiled PDF to the version file endpoint
+  const saveAsPdfMutation = useMutation({
+    mutationFn: async () => {
+      if (!pdfUrl) throw new Error('No compiled PDF');
+      const res = await fetch(pdfUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `${paperTitle || 'combined'}.pdf`, {
+        type: 'application/pdf',
+      });
+      return createPaperVersionFile({
+        paperId,
+        versionId: combineId,
+        data: { file },
+      });
+    },
+    onSuccess: () => toast.success('PDF saved to version files'),
+    onError: () => toast.error('Failed to save PDF'),
+  });
 
   // Copy content
   const handleCopyContent = useCallback(async () => {
@@ -917,6 +929,26 @@ export const CombineEditor = ({
                       </button>
                     </>
                   )}
+
+                  {/* Save as PDF */}
+                  <button
+                    type="button"
+                    disabled={!pdfUrl || saveAsPdfMutation.isPending}
+                    title={
+                      pdfUrl
+                        ? 'Save compiled PDF to version files'
+                        : 'Compile first to enable'
+                    }
+                    onClick={() => saveAsPdfMutation.mutate()}
+                    className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+                  >
+                    {saveAsPdfMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="h-3 w-3" />
+                    )}
+                    Save as PDF
+                  </button>
                 </div>
               </div>
             </div>
@@ -1042,7 +1074,13 @@ export const CombineEditor = ({
                         <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
                         <button
                           type="button"
-                          onClick={handleDownloadPdf}
+                          onClick={() => {
+                            if (!pdfUrl) return;
+                            const a = document.createElement('a');
+                            a.href = pdfUrl;
+                            a.download = `${paperTitle || 'combined'}.pdf`;
+                            a.click();
+                          }}
                           className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
                         >
                           <Download className="h-3.5 w-3.5" />

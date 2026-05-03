@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { createPaperDirectFile } from '../api/create-paper-version-file';
 import { useGetPaperVersionFiles } from '../api/get-paper-version-files';
 import { useGetPaperVersions } from '../api/get-paper-versions';
 import { useTransitionPaperStatus } from '../api/transition-paper-status';
@@ -175,6 +177,10 @@ export const StatusTransitionDialog = ({
   const [note, setNote] = React.useState('');
   const [selectedVersionId, setSelectedVersionId] = React.useState<string>('');
   const [selectedPdfId, setSelectedPdfId] = React.useState<string>('');
+  const [uploadMode, setUploadMode] = React.useState<'version' | 'direct'>(
+    'version',
+  );
+  const [directFile, setDirectFile] = React.useState<File | null>(null);
 
   const availableTransitions =
     SUBMISSION_STATUS_TRANSITIONS[currentStatus] ?? [];
@@ -187,6 +193,8 @@ export const StatusTransitionDialog = ({
     setNote('');
     setSelectedVersionId('');
     setSelectedPdfId('');
+    setUploadMode('version');
+    setDirectFile(null);
   };
 
   const transitionMutation = useTransitionPaperStatus({
@@ -203,22 +211,61 @@ export const StatusTransitionDialog = ({
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) =>
+      createPaperDirectFile({ paperId, data: { file } }),
+    onSuccess: (response) => {
+      transitionMutation.mutate({
+        projectId,
+        targetStatus: Number(targetStatus),
+        note: note.trim() || undefined,
+        revisionType: isRevisionRequired ? revisionType : undefined,
+        pdfFileId: response.value,
+      });
+    },
+    onError: () => {
+      toast.error('Failed to upload PDF');
+    },
+  });
+
+  const isPending = transitionMutation.isPending || uploadMutation.isPending;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetStatus) return;
     if (isRevisionRequired && !revisionType) return;
-    if (isPdfRequired && !selectedPdfId) return;
+    if (isPdfRequired) {
+      if (uploadMode === 'direct') {
+        if (!directFile) return;
+        uploadMutation.mutate(directFile);
+      } else {
+        if (!selectedPdfId) return;
+        transitionMutation.mutate({
+          projectId,
+          targetStatus: Number(targetStatus),
+          note: note.trim() || undefined,
+          revisionType: isRevisionRequired ? revisionType : undefined,
+          pdfFileId: selectedPdfId,
+        });
+      }
+      return;
+    }
 
     transitionMutation.mutate({
       projectId,
       targetStatus: Number(targetStatus),
       note: note.trim() || undefined,
       revisionType: isRevisionRequired ? revisionType : undefined,
-      pdfFileId: isPdfRequired ? selectedPdfId : undefined,
+      pdfFileId: undefined,
     });
   };
 
-  if (availableTransitions.length === 0) return null;
+  const isSubmitDisabled =
+    !targetStatus ||
+    (isRevisionRequired && !revisionType) ||
+    (isPdfRequired && uploadMode === 'version' && !selectedPdfId) ||
+    (isPdfRequired && uploadMode === 'direct' && !directFile) ||
+    isPending;
 
   return (
     <Dialog
@@ -270,18 +317,72 @@ export const StatusTransitionDialog = ({
             </Select>
           </div>
 
-          {/* File version selection — only for Submitted / Resubmitted */}
+          {/* PDF attachment — only for Submitted / Resubmitted */}
           {isPdfRequired && (
-            <FileVersionSelector
-              paperId={paperId}
-              selectedVersionId={selectedVersionId}
-              onVersionChange={(versionId) => {
-                setSelectedVersionId(versionId);
-                setSelectedPdfId('');
-              }}
-              selectedFileId={selectedPdfId}
-              onFileChange={setSelectedPdfId}
-            />
+            <div className="space-y-3">
+              {/* Mode toggle */}
+              <div className="flex overflow-hidden rounded-md border text-xs font-medium">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadMode('version');
+                    setDirectFile(null);
+                  }}
+                  className={`flex-1 py-1.5 transition-colors ${
+                    uploadMode === 'version'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Select from versions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadMode('direct');
+                    setSelectedVersionId('');
+                    setSelectedPdfId('');
+                  }}
+                  className={`flex-1 py-1.5 transition-colors ${
+                    uploadMode === 'direct'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Upload PDF directly
+                </button>
+              </div>
+
+              {uploadMode === 'version' ? (
+                <FileVersionSelector
+                  paperId={paperId}
+                  selectedVersionId={selectedVersionId}
+                  onVersionChange={(versionId) => {
+                    setSelectedVersionId(versionId);
+                    setSelectedPdfId('');
+                  }}
+                  selectedFileId={selectedPdfId}
+                  onFileChange={setSelectedPdfId}
+                />
+              ) : (
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+                    PDF File
+                  </p>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => setDirectFile(e.target.files?.[0] ?? null)}
+                    className="border-input text-foreground file:bg-muted file:text-foreground w-full cursor-pointer rounded-md border px-3 py-1.5 text-xs file:mr-2 file:rounded file:border-0 file:px-2 file:py-1 file:text-xs file:font-medium"
+                  />
+                  {directFile && (
+                    <p className="text-muted-foreground text-xs">
+                      {directFile.name}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Revision type — only for Revision Required */}
@@ -346,7 +447,7 @@ export const StatusTransitionDialog = ({
               variant="ghost"
               size="sm"
               onClick={() => setOpen(false)}
-              disabled={transitionMutation.isPending}
+              disabled={isPending}
             >
               CANCEL
             </Button>
@@ -354,14 +455,9 @@ export const StatusTransitionDialog = ({
               variant="darkRed"
               type="submit"
               size="sm"
-              disabled={
-                !targetStatus ||
-                (isRevisionRequired && !revisionType) ||
-                (isPdfRequired && !selectedPdfId) ||
-                transitionMutation.isPending
-              }
+              disabled={isSubmitDisabled}
             >
-              {transitionMutation.isPending ? <Loader /> : 'SAVE'}
+              {isPending ? <Loader /> : 'SAVE'}
             </Button>
           </DialogFooter>
         </form>

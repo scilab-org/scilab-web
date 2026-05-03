@@ -5336,46 +5336,49 @@ export const LatexPaperEditor = ({
                     <span>{latexStats.numHeaders} headers</span>
                   </div>
                 </div>
-                {(!isActiveSectionReadOnly || previewEditContent !== null) && (
-                  <AlertDialog
-                    open={showSaveConfirm}
-                    onOpenChange={setShowSaveConfirm}
-                  >
-                    <AlertDialogTrigger asChild>
-                      <button
-                        type="button"
-                        className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${BTN.CREATE}`}
-                        disabled={updateSectionMutation.isPending}
-                      >
-                        {updateSectionMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Save className="h-3 w-3" />
-                        )}
-                        {updateSectionMutation.isPending
-                          ? 'Saving…'
-                          : 'Save Changes'}
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Save</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Save changes to this section?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>CANCEL</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleSave}
-                          className={BTN.CREATE}
+                <div className="flex items-center gap-2">
+                  {(!isActiveSectionReadOnly ||
+                    previewEditContent !== null) && (
+                    <AlertDialog
+                      open={showSaveConfirm}
+                      onOpenChange={setShowSaveConfirm}
+                    >
+                      <AlertDialogTrigger asChild>
+                        <button
+                          type="button"
+                          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${BTN.CREATE}`}
+                          disabled={updateSectionMutation.isPending}
                         >
-                          SAVE
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                          {updateSectionMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Save className="h-3 w-3" />
+                          )}
+                          {updateSectionMutation.isPending
+                            ? 'Saving…'
+                            : 'Save Changes'}
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Save changes to this section?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>CANCEL</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleSave}
+                            className={BTN.CREATE}
+                          >
+                            SAVE
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
             </div>
 

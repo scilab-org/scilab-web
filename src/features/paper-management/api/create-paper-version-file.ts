@@ -35,6 +35,22 @@ export const createPaperVersionFile = ({
   );
 };
 
+export const createPaperDirectFile = ({
+  paperId,
+  data,
+}: {
+  paperId: string;
+  data: CreatePaperVersionFilePayload;
+}): Promise<TransitionPaperStatusApiResponse> => {
+  const formData = new FormData();
+  formData.append('file', data.file);
+  if (data.note) formData.append('note', data.note);
+
+  return api.post(PAPER_MANAGEMENT_API.PAPER_DIRECT_FILE(paperId), formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 type UseCreatePaperVersionFileOptions = {
   paperId: string;
   versionId: string;
