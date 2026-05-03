@@ -46,7 +46,7 @@ export const AuthorRolesFilter = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, name: e.target.value }))
           }
-          placeholder="Search by author role name..."
+          placeholder="Search by CRediT author name..."
           className="text-foreground placeholder:text-muted-foreground/50 flex-1 bg-transparent font-sans text-sm outline-none"
         />
         {filters.name && (

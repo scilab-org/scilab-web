@@ -38,10 +38,10 @@ export const UpdateAuthorRole = ({
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
-        toast.success('Author role updated successfully');
+        toast.success('CRediT author updated successfully');
       },
       onError: () => {
-        toast.error('Failed to update author role');
+        toast.error('Failed to update CRediT author');
       },
     },
   });
@@ -75,7 +75,7 @@ export const UpdateAuthorRole = ({
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Edit Author Role</DialogTitle>
+          <DialogTitle>Edit CRediT Author</DialogTitle>
           <DialogDescription>
             Update information for &quot;{authorRole.name}&quot;
           </DialogDescription>
@@ -98,7 +98,7 @@ export const UpdateAuthorRole = ({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              placeholder="Enter author role name"
+              placeholder="Enter CRediT author name"
               required
             />
           </div>

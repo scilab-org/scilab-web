@@ -31,10 +31,10 @@ export const CreateAuthorRole = () => {
       onSuccess: () => {
         setOpen(false);
         setFormData(initialFormData);
-        toast.success('Author role created successfully');
+        toast.success('CRediT author created successfully');
       },
       onError: () => {
-        toast.error('Failed to create author role');
+        toast.error('Failed to create CRediT author');
       },
     },
   });
@@ -58,11 +58,11 @@ export const CreateAuthorRole = () => {
       }}
     >
       <DialogTrigger asChild>
-        <CreateButton className="uppercase">CREATE AUTHOR ROLE</CreateButton>
+        <CreateButton className="uppercase">CREATE CRediT AUTHOR</CreateButton>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Create New Author Role</DialogTitle>
+          <DialogTitle>Create New CRediT Author</DialogTitle>
           <DialogDescription>
             Fill in the details below. Name and description are required.
           </DialogDescription>
@@ -85,7 +85,7 @@ export const CreateAuthorRole = () => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              placeholder="Enter author role name"
+              placeholder="Enter CRediT author name"
               required
             />
           </div>

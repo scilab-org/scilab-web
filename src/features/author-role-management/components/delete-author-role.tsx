@@ -31,9 +31,9 @@ export const DeleteAuthorRole = ({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Author Role</AlertDialogTitle>
+          <AlertDialogTitle>Delete CRediT Author</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this author role?
+            Are you sure you want to delete this CRediT author?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

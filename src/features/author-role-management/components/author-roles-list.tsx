@@ -66,10 +66,10 @@ export const AuthorRolesList = () => {
         <TableBody>
           {authorRoles.map((authorRole) => (
             <TableRow key={authorRole.id}>
-              <TableCell className="align-top font-medium break-words whitespace-normal">
+              <TableCell className="wrap-break-words align-top font-medium whitespace-normal">
                 {authorRole.name}
               </TableCell>
-              <TableCell className="align-top break-words whitespace-normal">
+              <TableCell className="wrap-break-words align-top whitespace-normal">
                 {authorRole.description || 'N/A'}
               </TableCell>
               <TableCell className="align-top">
@@ -78,7 +78,12 @@ export const AuthorRolesList = () => {
                   : 'N/A'}
               </TableCell>
               <TableCell className="pl-16 text-center align-top">
-                <Authorization allowedGroups={[GROUPS.PROJECT_PUBLISHER]}>
+                <Authorization
+                  allowedGroups={[
+                    GROUPS.SYSTEM_ADMIN,
+                    GROUPS.PROJECT_PUBLISHER,
+                  ]}
+                >
                   <div className="flex items-center justify-center gap-2">
                     <UpdateAuthorRole
                       authorRoleId={authorRole.id}

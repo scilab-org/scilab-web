@@ -536,6 +536,8 @@ export const CombineEditor = ({
   const [pdfPageNum, setPdfPageNum] = useState(1);
   const [pdfNumPages, setPdfNumPages] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const pdfScrollContainerRef = useRef<HTMLDivElement>(null);
+  const pdfPageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [pdfContainerWidth, setPdfContainerWidth] = useState(0);
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
@@ -584,6 +586,43 @@ export const CombineEditor = ({
     });
     observer.observe(pdfContainerRef.current);
     return () => observer.disconnect();
+  }, []);
+
+  // Track current page via IntersectionObserver when all pages are rendered
+  useEffect(() => {
+    if (!pdfNumPages) return;
+    const root = pdfScrollContainerRef.current;
+    if (!root) return;
+    const visibilityMap = new Map<number, number>();
+    const observers: IntersectionObserver[] = [];
+    pdfPageRefs.current.slice(0, pdfNumPages).forEach((el, idx) => {
+      if (!el) return;
+      const pageNum = idx + 1;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          visibilityMap.set(pageNum, entry.intersectionRatio);
+          let maxRatio = -1;
+          let maxPage = 1;
+          visibilityMap.forEach((ratio, page) => {
+            if (ratio > maxRatio) {
+              maxRatio = ratio;
+              maxPage = page;
+            }
+          });
+          setPdfPageNum(maxPage);
+        },
+        { root, threshold: [0, 0.25, 0.5, 0.75, 1.0] },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((obs) => obs.disconnect());
+  }, [pdfNumPages]);
+
+  // Scroll to a specific page
+  const scrollToPage = useCallback((page: number) => {
+    const el = pdfPageRefs.current[page - 1];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   // Compile LaTeX to PDF
@@ -1020,9 +1059,7 @@ export const CombineEditor = ({
                         <button
                           type="button"
                           disabled={pdfPageNum <= 1}
-                          onClick={() =>
-                            setPdfPageNum((p) => Math.max(1, p - 1))
-                          }
+                          onClick={() => scrollToPage(pdfPageNum - 1)}
                           className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
                         >
                           <ChevronLeft className="h-3.5 w-3.5" />
@@ -1036,9 +1073,7 @@ export const CombineEditor = ({
                         <button
                           type="button"
                           disabled={pdfPageNum >= pdfNumPages}
-                          onClick={() =>
-                            setPdfPageNum((p) => Math.min(pdfNumPages, p + 1))
-                          }
+                          onClick={() => scrollToPage(pdfPageNum + 1)}
                           className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
                         >
                           <ChevronRight className="h-3.5 w-3.5" />
@@ -1097,7 +1132,10 @@ export const CombineEditor = ({
                   </div>
 
                   {/* PDF content area */}
-                  <div className="flex-1 overflow-auto">
+                  <div
+                    ref={pdfScrollContainerRef}
+                    className="flex-1 overflow-auto"
+                  >
                     {isCompiling ? (
                       <div className="flex h-full items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
@@ -1120,28 +1158,39 @@ export const CombineEditor = ({
                         </div>
                       </div>
                     ) : pdfUrl ? (
-                      <div className="flex justify-center p-4">
+                      <div className="flex flex-col items-center gap-6 p-4">
                         <Document
                           file={pdfUrl}
-                          onLoadSuccess={({ numPages }) =>
-                            setPdfNumPages(numPages)
-                          }
+                          onLoadSuccess={({ numPages }) => {
+                            setPdfNumPages(numPages);
+                            setPdfPageNum(1);
+                          }}
                           loading={
                             <div className="flex items-center justify-center py-20">
                               <Loader2 className="size-6 animate-spin text-slate-400" />
                             </div>
                           }
                         >
-                          <Page
-                            pageNumber={pdfPageNum}
-                            width={
-                              pdfContainerWidth > 0
-                                ? (pdfContainerWidth - 32) * (pdfZoom / 100)
-                                : undefined
-                            }
-                            renderTextLayer
-                            renderAnnotationLayer
-                          />
+                          {Array.from({ length: pdfNumPages }, (_, i) => (
+                            <div
+                              key={i + 1}
+                              ref={(el) => {
+                                pdfPageRefs.current[i] = el;
+                              }}
+                              className="mb-6 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+                            >
+                              <Page
+                                pageNumber={i + 1}
+                                width={
+                                  pdfContainerWidth > 0
+                                    ? (pdfContainerWidth - 32) * (pdfZoom / 100)
+                                    : undefined
+                                }
+                                renderTextLayer
+                                renderAnnotationLayer
+                              />
+                            </div>
+                          ))}
                         </Document>
                       </div>
                     ) : (
