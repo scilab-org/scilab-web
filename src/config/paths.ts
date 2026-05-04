@@ -111,6 +111,12 @@ export const paths = {
         getHref: () => '/app/domains',
       },
     },
+    checkListManagement: {
+      checkLists: {
+        path: 'check-lists',
+        getHref: () => '/app/check-lists',
+      },
+    },
     affiliationManagement: {
       affiliations: {
         path: 'affiliations',
