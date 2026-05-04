@@ -1,9 +1,14 @@
+export type CheckListItemDto = {
+  id: string;
+  name: string;
+  rule: string;
+  weight: number;
+};
+
 export type CheckListDto = {
   id: string;
   section: string;
-  ruleName: string;
-  item: string;
-  weight: number;
+  items: CheckListItemDto[];
   createdOnUtc: string | null;
   createdBy: string | null;
   lastModifiedOnUtc: string | null;
@@ -37,26 +42,28 @@ export type GetCheckListByIdApiResponse = {
 
 export type GetCheckListsParams = {
   Section?: string;
-  RuleName?: string;
-  Item?: string;
+  Name?: string;
   Weight?: number;
   IsDeleted?: boolean;
   PageNumber?: number;
   PageSize?: number;
 };
 
+export type CheckListItemPayload = {
+  id: string;
+  name: string;
+  rule: string;
+  weight: number;
+};
+
 export type CreateCheckListDto = {
   section: string;
-  ruleName: string;
-  item: string;
-  weight: number;
+  items: CheckListItemPayload[];
 };
 
 export type UpdateCheckListDto = {
   section: string;
-  ruleName: string;
-  item: string;
-  weight: number;
+  items?: CheckListItemPayload[];
 };
 
 export type StringApiCreatedResponse = {

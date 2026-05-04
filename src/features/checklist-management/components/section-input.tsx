@@ -36,6 +36,7 @@ interface SectionInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  disabledSections?: string[];
 }
 
 export const SectionInput = ({
@@ -44,17 +45,32 @@ export const SectionInput = ({
   onChange,
   placeholder = 'Enter or select section',
   required,
+  disabledSections = [],
 }: SectionInputProps) => {
   const [open, setOpen] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(-1);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLUListElement>(null);
 
-  const filtered = value
-    ? SECTION_SUGGESTIONS.filter((s) =>
-        s.toLowerCase().includes(value.toLowerCase()),
-      )
-    : SECTION_SUGGESTIONS;
+  const filtered = React.useMemo(() => {
+    const base = value
+      ? SECTION_SUGGESTIONS.filter((s) =>
+          s.toLowerCase().includes(value.toLowerCase()),
+        )
+      : SECTION_SUGGESTIONS;
+    const available = base.filter(
+      (s) =>
+        !disabledSections.some(
+          (d) => d.trim().toLowerCase() === s.trim().toLowerCase(),
+        ),
+    );
+    const inUse = base.filter((s) =>
+      disabledSections.some(
+        (d) => d.trim().toLowerCase() === s.trim().toLowerCase(),
+      ),
+    );
+    return [...available, ...inUse];
+  }, [value, disabledSections]);
 
   // Reset active index when filtered list changes
   React.useEffect(() => {
@@ -176,27 +192,49 @@ export const SectionInput = ({
           role="listbox"
           className="bg-popover border-border absolute z-50 mt-1 max-h-52 w-full overflow-auto rounded-md border shadow-md"
         >
-          {filtered.map((s, i) => (
-            <li
-              key={s}
-              role="option"
-              aria-selected={i === activeIndex}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onChange(s);
-                setOpen(false);
-                setActiveIndex(-1);
-              }}
-              onMouseEnter={() => setActiveIndex(i)}
-              className={cn(
-                'cursor-pointer px-3 py-2 font-sans text-sm',
-                i === activeIndex ? 'bg-accent font-medium' : 'hover:bg-accent',
-                value === s && i !== activeIndex && 'font-medium',
-              )}
-            >
-              {s}
-            </li>
-          ))}
+          {filtered.map((s, i) => {
+            const isDisabled = disabledSections.some(
+              (d) => d.trim().toLowerCase() === s.trim().toLowerCase(),
+            );
+            return (
+              <li
+                key={s}
+                role="option"
+                aria-selected={i === activeIndex}
+                aria-disabled={isDisabled}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (isDisabled) return;
+                  onChange(s);
+                  setOpen(false);
+                  setActiveIndex(-1);
+                }}
+                onMouseEnter={() => !isDisabled && setActiveIndex(i)}
+                className={cn(
+                  'px-3 py-2 font-sans text-sm',
+                  isDisabled
+                    ? 'text-muted-foreground/50 cursor-not-allowed'
+                    : 'cursor-pointer',
+                  !isDisabled && i === activeIndex
+                    ? 'bg-accent font-medium'
+                    : !isDisabled && 'hover:bg-accent',
+                  !isDisabled &&
+                    value === s &&
+                    i !== activeIndex &&
+                    'font-medium',
+                )}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  {s}
+                  {isDisabled && (
+                    <span className="text-muted-foreground/60 text-xs">
+                      In use
+                    </span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
