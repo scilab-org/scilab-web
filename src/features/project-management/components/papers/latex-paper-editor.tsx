@@ -42,6 +42,7 @@ import {
   Eye,
   Info,
   Flag,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -98,6 +99,7 @@ import { getAssignedSectionsQueryOptions } from '@/features/paper-management/api
 import { getSection } from '@/features/paper-management/api/get-section';
 import { useGetSectionFiles } from '@/features/paper-management/api/get-section-files';
 import { useUploadSectionFile } from '@/features/paper-management/api/upload-section-file';
+import { useDeleteSectionFile } from '@/features/paper-management/api/delete-section-file';
 import { useSectionComments } from '@/features/paper-management/api/get-section-comments';
 import { SectionComments } from '@/features/paper-management/components/section-comments';
 import type { CommentDto } from '@/features/paper-management/types';
@@ -2631,6 +2633,10 @@ export const LatexPaperEditor = ({
   >([]);
   const [copiedFileUrl, setCopiedFileUrl] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
   const editorRef = useRef<MonacoEditor.editor.IStandaloneCodeEditor | null>(
     null,
   );
@@ -3089,6 +3095,13 @@ export const LatexPaperEditor = ({
     },
   });
 
+  const activeSectionMarkQuery = useMarkSection({
+    markSectionId: activeSection?.markSectionId || null,
+  });
+  const isActiveMainSection = (
+    activeSectionMarkQuery.data?.result?.items ?? []
+  ).some((item) => item.isMainSection && item.sectionId === activeSectionId);
+
   // Pre-warm comments for the contributor section as soon as preview opens.
   useSectionComments({
     sectionId: versionPreview?.item.sectionId ?? '',
@@ -3107,6 +3120,17 @@ export const LatexPaperEditor = ({
       },
       onError: () => {
         toast.error('Failed to upload file. Please try again.');
+      },
+    },
+  });
+
+  const deleteSectionFileMutation = useDeleteSectionFile({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success('File deleted successfully');
+      },
+      onError: () => {
+        toast.error('Failed to delete file. Please try again.');
       },
     },
   });
@@ -4673,6 +4697,19 @@ export const LatexPaperEditor = ({
                                 <Copy className="h-3 w-3" />
                               )}
                             </button>
+                            {!isActiveSectionReadOnly && activeSectionId && (
+                              <button
+                                type="button"
+                                disabled={deleteSectionFileMutation.isPending}
+                                onClick={() =>
+                                  setFileToDelete({ url: fileUrl, name })
+                                }
+                                className="flex h-5 w-5 items-center justify-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:hover:bg-red-900/30"
+                                title="Delete file"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -5659,6 +5696,7 @@ export const LatexPaperEditor = ({
                       disabled={
                         markSectionToCompletedMutation.isPending ||
                         isActiveSectionReadOnly ||
+                        isActiveMainSection ||
                         content !== savedContent ||
                         versionPreview !== null ||
                         activeSection?.status === 3 ||
@@ -5789,6 +5827,42 @@ export const LatexPaperEditor = ({
         {/* close outer card */}
       </div>
       {/* close content area */}
+      {/* Delete file confirm dialog */}
+      <AlertDialog
+        open={!!fileToDelete}
+        onOpenChange={(open) => {
+          if (!open) setFileToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete File</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{' '}
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                &ldquo;{fileToDelete?.name}&rdquo;
+              </span>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+              onClick={() => {
+                if (!fileToDelete || !activeSectionId) return;
+                deleteSectionFileMutation.mutate({
+                  sectionId: activeSectionId,
+                  fileName: fileToDelete.name,
+                });
+                setFileToDelete(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Image lightbox */}
       <Dialog
         open={!!imagePreviewUrl}

@@ -77,18 +77,12 @@ export const CheckListsList = () => {
           {checkLists.map((cl) => (
             <TableRow key={cl.id}>
               <TableCell className="font-medium">
-                <span
-                  className="block max-w-[160px] truncate"
-                  title={cl.section}
-                >
+                <span className="block max-w-40 truncate" title={cl.section}>
                   {cl.section}
                 </span>
               </TableCell>
               <TableCell>
-                <span
-                  className="block max-w-[120px] truncate"
-                  title={cl.ruleName}
-                >
+                <span className="block max-w-30 truncate" title={cl.ruleName}>
                   {cl.ruleName}
                 </span>
               </TableCell>

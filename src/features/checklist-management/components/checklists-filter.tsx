@@ -44,16 +44,6 @@ export const CheckListsFilter = () => {
     setSearchParams(params);
   };
 
-  const handleClearAll = () => {
-    setFilters({ section: '', ruleName: '', item: '', weight: '' });
-    const params = new URLSearchParams();
-    params.set('page', '1');
-    setSearchParams(params);
-  };
-
-  const hasFilters =
-    filters.section || filters.ruleName || filters.item || filters.weight;
-
   return (
     <form
       onSubmit={handleApply}

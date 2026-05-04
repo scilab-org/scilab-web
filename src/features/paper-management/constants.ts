@@ -47,6 +47,8 @@ export const PAPER_MANAGEMENT_API = {
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/number-of-complete-section`,
   SECTION_FILES: (sectionId: string) =>
     `${LAB_SERVICE_PREFIX}/sections/${sectionId}/files`,
+  SECTION_FILE_BY_NAME: (sectionId: string, fileName: string) =>
+    `${LAB_SERVICE_PREFIX}/sections/${sectionId}/files/${encodeURIComponent(fileName)}`,
   PAPER_SECTIONS_BY_ID: (paperId: string) =>
     `${LAB_SERVICE_PREFIX}/papers/${paperId}/sections`,
   COMPILE_LATEX: `${LATEX_SERVICE_PREFIX}/compile`,

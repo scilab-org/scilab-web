@@ -141,6 +141,7 @@ export const SectionInput = ({
           autoComplete="off"
           role="combobox"
           aria-expanded={open}
+          aria-controls="section-suggestions-list"
           aria-autocomplete="list"
           className="placeholder:text-muted-foreground flex-1 bg-transparent font-sans text-sm outline-none"
         />
@@ -170,6 +171,7 @@ export const SectionInput = ({
 
       {open && filtered.length > 0 && (
         <ul
+          id="section-suggestions-list"
           ref={listRef}
           role="listbox"
           className="bg-popover border-border absolute z-50 mt-1 max-h-52 w-full overflow-auto rounded-md border shadow-md"
