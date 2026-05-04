@@ -10,16 +10,14 @@ export const CheckListsFilter = () => {
 
   const [filters, setFilters] = React.useState({
     section: searchParams.get('section') || '',
-    ruleName: searchParams.get('ruleName') || '',
-    item: searchParams.get('item') || '',
+    name: searchParams.get('name') || '',
     weight: searchParams.get('weight') || '',
   });
 
   React.useEffect(() => {
     setFilters({
       section: searchParams.get('section') || '',
-      ruleName: searchParams.get('ruleName') || '',
-      item: searchParams.get('item') || '',
+      name: searchParams.get('name') || '',
       weight: searchParams.get('weight') || '',
     });
   }, [searchParams]);
@@ -31,11 +29,8 @@ export const CheckListsFilter = () => {
     if (filters.section) params.set('section', filters.section);
     else params.delete('section');
 
-    if (filters.ruleName) params.set('ruleName', filters.ruleName);
-    else params.delete('ruleName');
-
-    if (filters.item) params.set('item', filters.item);
-    else params.delete('item');
+    if (filters.name) params.set('name', filters.name);
+    else params.delete('name');
 
     if (filters.weight) params.set('weight', filters.weight);
     else params.delete('weight');
@@ -77,17 +72,17 @@ export const CheckListsFilter = () => {
         <div className="bg-background border-input focus-within:border-ring focus-within:ring-ring/50 flex h-10 flex-1 basis-36 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
           <Search className="text-muted-foreground size-4 shrink-0" />
           <input
-            value={filters.ruleName}
+            value={filters.name}
             onChange={(e) =>
-              setFilters((prev) => ({ ...prev, ruleName: e.target.value }))
+              setFilters((prev) => ({ ...prev, name: e.target.value }))
             }
-            placeholder="Rule Name..."
+            placeholder="Item name..."
             className="text-foreground placeholder:text-muted-foreground/50 w-0 flex-1 bg-transparent font-sans text-sm outline-none"
           />
-          {filters.ruleName && (
+          {filters.name && (
             <button
               type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, ruleName: '' }))}
+              onClick={() => setFilters((prev) => ({ ...prev, name: '' }))}
               className="text-muted-foreground hover:text-foreground"
             >
               <X className="size-4" />
@@ -95,37 +90,29 @@ export const CheckListsFilter = () => {
           )}
         </div>
 
-        <div className="bg-background border-input focus-within:border-ring focus-within:ring-ring/50 flex h-10 flex-1 basis-36 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
-          <Search className="text-muted-foreground size-4 shrink-0" />
-          <input
-            value={filters.item}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, item: e.target.value }))
-            }
-            placeholder="Item..."
-            className="text-foreground placeholder:text-muted-foreground/50 w-0 flex-1 bg-transparent font-sans text-sm outline-none"
-          />
-          {filters.item && (
-            <button
-              type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, item: '' }))}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
-
-        <div className="bg-background border-input focus-within:border-ring focus-within:ring-ring/50 flex h-10 w-28 shrink-0 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
+        <div className="bg-background border-input focus-within:border-ring focus-within:ring-ring/50 flex h-10 w-52 shrink-0 items-center gap-3 rounded-md border px-4 focus-within:ring-[3px]">
           <Input
             type="number"
             value={filters.weight}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, weight: e.target.value }))
-            }
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || (/^\d+$/.test(val) && Number(val) >= 1)) {
+                setFilters((prev) => ({ ...prev, weight: val }));
+              }
+            }}
+            onKeyDown={(e) => {
+              if (
+                e.key === '-' ||
+                e.key === '+' ||
+                e.key === 'e' ||
+                e.key === '.'
+              ) {
+                e.preventDefault();
+              }
+            }}
             placeholder="Weight"
-            className="border-0 bg-transparent p-0 font-sans text-sm shadow-none focus-visible:ring-0"
-            min={0}
+            className="placeholder:text-muted-foreground/50 border-0 bg-transparent p-0 font-sans text-sm shadow-none focus-visible:ring-0"
+            min={1}
           />
         </div>
       </div>

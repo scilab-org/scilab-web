@@ -13,21 +13,25 @@ export const clientLoader =
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') || 1);
     const section = url.searchParams.get('section') || undefined;
-    const ruleName = url.searchParams.get('ruleName') || undefined;
-    const item = url.searchParams.get('item') || undefined;
+    const name = url.searchParams.get('name') || undefined;
     const weightParam = url.searchParams.get('weight');
     const weight =
       weightParam !== null && weightParam !== ''
         ? Number(weightParam)
         : undefined;
+    const isDeletedParam = url.searchParams.get('isDeleted');
+    const isDeleted =
+      isDeletedParam === null || isDeletedParam === ''
+        ? undefined
+        : isDeletedParam === 'true';
 
     const query = getCheckListsQueryOptions({
       PageNumber: page,
       PageSize: 10,
       Section: section,
-      RuleName: ruleName,
-      Item: item,
+      Name: name,
       Weight: weight,
+      IsDeleted: isDeleted,
     });
 
     try {

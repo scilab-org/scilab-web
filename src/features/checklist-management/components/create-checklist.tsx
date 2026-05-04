@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { CreateButton } from '@/components/ui/create-button';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -16,24 +15,50 @@ import {
 
 import { FIELD_LABEL_CLASS } from '../constants';
 import { useCreateCheckList } from '../api/create-checklist';
+import { useCheckLists } from '../api/get-checklists';
+import {
+  CheckListItemsEditor,
+  CheckListItemFormRow,
+  createCheckListItemFormRow,
+  isCheckListItemFormRowValid,
+  normalizeCheckListItemFormRows,
+} from './checklist-items-editor';
 import { SectionInput } from './section-input';
 
 const initialFormData = {
   section: '',
-  ruleName: '',
-  item: '',
-  weight: '',
 };
 
 export const CreateCheckList = () => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState(initialFormData);
+  const [items, setItems] = React.useState<CheckListItemFormRow[]>(() => [
+    createCheckListItemFormRow(),
+  ]);
+
+  const allCheckListsQuery = useCheckLists({
+    params: { PageSize: 1000 },
+    queryConfig: { enabled: open },
+  });
+
+  const usedSections = React.useMemo(
+    () =>
+      (allCheckListsQuery.data?.result?.items ?? []).map((cl) =>
+        cl.section.trim(),
+      ),
+    [allCheckListsQuery.data],
+  );
+
+  const isSectionTaken = usedSections.some(
+    (s) => s.toLowerCase() === formData.section.trim().toLowerCase(),
+  );
 
   const createCheckListMutation = useCreateCheckList({
     mutationConfig: {
       onSuccess: () => {
         setOpen(false);
         setFormData(initialFormData);
+        setItems([createCheckListItemFormRow()]);
         toast.success('Check list created successfully');
       },
       onError: () => {
@@ -43,20 +68,16 @@ export const CreateCheckList = () => {
   });
 
   const isFormValid =
-    formData.section.trim() &&
-    formData.ruleName.trim() &&
-    formData.item.trim() &&
-    formData.weight !== '' &&
-    !isNaN(Number(formData.weight)) &&
-    Number(formData.weight) > 0;
+    formData.section.trim().length > 0 &&
+    !isSectionTaken &&
+    items.length > 0 &&
+    items.every(isCheckListItemFormRowValid);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createCheckListMutation.mutate({
       section: formData.section.trim(),
-      ruleName: formData.ruleName.trim(),
-      item: formData.item.trim(),
-      weight: Number(formData.weight),
+      items: normalizeCheckListItemFormRows(items),
     });
   };
 
@@ -65,24 +86,30 @@ export const CreateCheckList = () => {
       open={open}
       onOpenChange={(value) => {
         setOpen(value);
-        if (!value) setFormData(initialFormData);
+        if (!value) {
+          setFormData(initialFormData);
+          setItems([createCheckListItemFormRow()]);
+        }
       }}
     >
       <DialogTrigger asChild>
         <CreateButton className="uppercase">CREATE CHECK LIST</CreateButton>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Create New Check List</DialogTitle>
-          <DialogDescription>
-            Fill in the details to create a new check list item.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Create New Check List</DialogTitle>
+            <DialogDescription>
+              Fill in the section and checklist items to create a new check
+              list.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
         <form
           id="create-checklist-form"
           onSubmit={handleSubmit}
-          className="space-y-5 py-2"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-6 py-4"
         >
           <div className="space-y-2">
             <label
@@ -99,83 +126,37 @@ export const CreateCheckList = () => {
               }
               placeholder="Enter or select section"
               required
+              disabledSections={usedSections}
             />
+            {isSectionTaken && (
+              <p className="text-destructive text-sm">
+                A check list for this section already exists.
+              </p>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="create-checklist-rulename"
-              className={FIELD_LABEL_CLASS}
-            >
-              Rule Name <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="create-checklist-rulename"
-              value={formData.ruleName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, ruleName: e.target.value }))
-              }
-              placeholder="Enter rule name"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="create-checklist-item"
-              className={FIELD_LABEL_CLASS}
-            >
-              Item <span className="text-destructive">*</span>
-            </label>
-            <textarea
-              id="create-checklist-item"
-              value={formData.item}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, item: e.target.value }))
-              }
-              placeholder="Enter item"
-              required
-              rows={4}
-              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-md border bg-transparent px-3 py-2 font-sans text-sm shadow-sm outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="create-checklist-weight"
-              className={FIELD_LABEL_CLASS}
-            >
-              Weight <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="create-checklist-weight"
-              type="number"
-              value={formData.weight}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === '' || Number(val) > 0)
-                  setFormData((prev) => ({ ...prev, weight: val }));
-              }}
-              placeholder="Enter weight"
-              required
-              min={0}
-            />
-          </div>
+          <CheckListItemsEditor rows={items} onChange={setItems} />
         </form>
 
-        <DialogFooter className="pt-2">
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            CANCEL
-          </Button>
-          <Button
-            type="submit"
-            form="create-checklist-form"
-            disabled={createCheckListMutation.isPending || !isFormValid}
-            variant="darkRed"
-          >
-            {createCheckListMutation.isPending ? 'SAVING...' : 'SAVE'}
-          </Button>
-        </DialogFooter>
+        <div className="shrink-0 border-t px-6 py-4">
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+            >
+              CANCEL
+            </Button>
+            <Button
+              type="submit"
+              form="create-checklist-form"
+              disabled={createCheckListMutation.isPending || !isFormValid}
+              variant="darkRed"
+            >
+              {createCheckListMutation.isPending ? 'SAVING...' : 'SAVE'}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

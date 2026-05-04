@@ -15,25 +15,30 @@ import {
 import { useCheckLists } from '../api/get-checklists';
 import { DeleteCheckList } from './delete-checklist';
 import { UpdateCheckList } from './update-checklist';
+import { ViewCheckList } from './view-checklist';
 
 export const CheckListsList = () => {
   const [searchParams] = useSearchParams();
   const page = +(searchParams.get('page') || 1);
   const section = searchParams.get('section') || undefined;
-  const ruleName = searchParams.get('ruleName') || undefined;
-  const item = searchParams.get('item') || undefined;
+  const name = searchParams.get('name') || undefined;
   const weightParam = searchParams.get('weight');
   const weight =
     weightParam !== null && weightParam !== ''
       ? Number(weightParam)
       : undefined;
+  const isDeletedParam = searchParams.get('isDeleted');
+  const isDeleted =
+    isDeletedParam === null || isDeletedParam === ''
+      ? undefined
+      : isDeletedParam === 'true';
 
   const checkListsQuery = useCheckLists({
     params: {
       Section: section,
-      RuleName: ruleName,
-      Item: item,
+      Name: name,
       Weight: weight,
+      IsDeleted: isDeleted,
       PageNumber: page,
       PageSize: 10,
     },
@@ -66,11 +71,10 @@ export const CheckListsList = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[20%]">Section</TableHead>
-            <TableHead className="w-[15%]">Rule Name</TableHead>
-            <TableHead className="w-[40%]">Item</TableHead>
-            <TableHead className="w-[8%] text-center">Weight</TableHead>
-            <TableHead className="w-[17%] text-center">Actions</TableHead>
+            <TableHead className="w-[18%]">Section</TableHead>
+            <TableHead className="w-[50%]">Item Names</TableHead>
+            <TableHead className="w-[10%] text-center">Total Items</TableHead>
+            <TableHead className="w-[18%] text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -82,18 +86,19 @@ export const CheckListsList = () => {
                 </span>
               </TableCell>
               <TableCell>
-                <span className="block max-w-30 truncate" title={cl.ruleName}>
-                  {cl.ruleName}
+                <span
+                  className="block max-w-105 truncate text-sm"
+                  title={cl.items.map((item) => item.name).join(', ')}
+                >
+                  {cl.items.length > 0
+                    ? cl.items.map((item) => item.name).join(', ')
+                    : 'No items'}
                 </span>
               </TableCell>
-              <TableCell>
-                <span className="block max-w-[320px] truncate" title={cl.item}>
-                  {cl.item}
-                </span>
-              </TableCell>
-              <TableCell className="text-center">{cl.weight}</TableCell>
+              <TableCell className="text-center">{cl.items.length}</TableCell>
               <TableCell className="text-center">
                 <div className="flex items-center justify-center gap-2">
+                  <ViewCheckList checkListId={cl.id} />
                   <UpdateCheckList checkListId={cl.id} checkList={cl} />
                   <DeleteCheckList checkListId={cl.id} />
                 </div>

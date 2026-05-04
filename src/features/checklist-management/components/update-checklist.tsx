@@ -2,7 +2,6 @@ import * as React from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -14,8 +13,17 @@ import {
 } from '@/components/ui/dialog';
 
 import { FIELD_LABEL_CLASS } from '../constants';
+import { useCheckList } from '../api/get-checklist';
+import { useCheckLists } from '../api/get-checklists';
 import { useUpdateCheckList } from '../api/update-checklist';
 import { CheckListDto } from '../types';
+import {
+  CheckListItemsEditor,
+  CheckListItemFormRow,
+  isCheckListItemFormRowValid,
+  mapCheckListItemToFormRow,
+  normalizeCheckListItemFormRows,
+} from './checklist-items-editor';
 import { SectionInput } from './section-input';
 
 interface UpdateCheckListProps {
@@ -25,9 +33,6 @@ interface UpdateCheckListProps {
 
 const initialFormData = {
   section: '',
-  ruleName: '',
-  item: '',
-  weight: '',
 };
 
 export const UpdateCheckList = ({
@@ -36,6 +41,34 @@ export const UpdateCheckList = ({
 }: UpdateCheckListProps) => {
   const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState(initialFormData);
+  const [items, setItems] = React.useState<CheckListItemFormRow[]>([]);
+
+  const checkListDetailQuery = useCheckList({
+    checkListId,
+    queryConfig: {
+      enabled: open,
+    },
+  });
+
+  const allCheckListsQuery = useCheckLists({
+    params: { PageSize: 1000 },
+    queryConfig: { enabled: open },
+  });
+
+  const resolvedCheckList =
+    checkListDetailQuery.data?.result.checkList ?? checkList;
+
+  const usedSections = React.useMemo(
+    () =>
+      (allCheckListsQuery.data?.result?.items ?? [])
+        .filter((cl) => cl.id !== checkListId)
+        .map((cl) => cl.section.trim()),
+    [allCheckListsQuery.data, checkListId],
+  );
+
+  const isSectionTaken = usedSections.some(
+    (s) => s.toLowerCase() === formData.section.trim().toLowerCase(),
+  );
 
   const updateCheckListMutation = useUpdateCheckList({
     mutationConfig: {
@@ -52,51 +85,66 @@ export const UpdateCheckList = ({
   React.useEffect(() => {
     if (open) {
       setFormData({
-        section: checkList.section || '',
-        ruleName: checkList.ruleName || '',
-        item: checkList.item || '',
-        weight: String(checkList.weight ?? ''),
+        section: resolvedCheckList.section || '',
       });
+      setItems(
+        resolvedCheckList.items.length > 0
+          ? resolvedCheckList.items.map(mapCheckListItemToFormRow)
+          : [],
+      );
     }
-  }, [open, checkList]);
+  }, [open, resolvedCheckList]);
 
   const isFormValid =
-    formData.section.trim() &&
-    formData.ruleName.trim() &&
-    formData.item.trim() &&
-    formData.weight !== '' &&
-    !isNaN(Number(formData.weight)) &&
-    Number(formData.weight) > 0;
+    formData.section.trim().length > 0 &&
+    !isSectionTaken &&
+    (items.length === 0 || items.every(isCheckListItemFormRowValid));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedItems = normalizeCheckListItemFormRows(items);
+
     updateCheckListMutation.mutate({
       checkListId,
       data: {
         section: formData.section.trim(),
-        ruleName: formData.ruleName.trim(),
-        item: formData.item.trim(),
-        weight: Number(formData.weight),
+        ...(normalizedItems.length > 0 ? { items: normalizedItems } : {}),
       },
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        if (!value) {
+          setFormData(initialFormData);
+          setItems([]);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outlineAction">EDIT</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Edit Check List</DialogTitle>
-          <DialogDescription>
-            Update information for this check list item.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl">
+        <div className="shrink-0 px-6 pt-6">
+          <DialogHeader>
+            <DialogTitle>Edit Check List</DialogTitle>
+            <DialogDescription>
+              Update the section and checklist items. Items can be left empty.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        {checkListDetailQuery.isFetching && (
+          <p className="text-muted-foreground shrink-0 px-6 text-sm">
+            Loading latest checklist detail...
+          </p>
+        )}
         <form
           id="update-checklist-form"
           onSubmit={handleSubmit}
-          className="space-y-5 py-2"
+          className="scrollbar-dialog flex-1 space-y-5 overflow-y-auto px-6 py-4"
         >
           <div className="space-y-2">
             <label
@@ -112,79 +160,36 @@ export const UpdateCheckList = ({
                 setFormData((prev) => ({ ...prev, section: val }))
               }
               required
+              disabledSections={usedSections}
             />
+            {isSectionTaken && (
+              <p className="text-destructive text-sm">
+                A check list for this section already exists.
+              </p>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="update-checklist-rulename"
-              className={FIELD_LABEL_CLASS}
-            >
-              Rule Name <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="update-checklist-rulename"
-              value={formData.ruleName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, ruleName: e.target.value }))
-              }
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="update-checklist-item"
-              className={FIELD_LABEL_CLASS}
-            >
-              Item <span className="text-destructive">*</span>
-            </label>
-            <textarea
-              id="update-checklist-item"
-              value={formData.item}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, item: e.target.value }))
-              }
-              required
-              rows={4}
-              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-md border bg-transparent px-3 py-2 font-sans text-sm shadow-sm outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="update-checklist-weight"
-              className={FIELD_LABEL_CLASS}
-            >
-              Weight <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="update-checklist-weight"
-              type="number"
-              value={formData.weight}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === '' || Number(val) > 0)
-                  setFormData((prev) => ({ ...prev, weight: val }));
-              }}
-              required
-              min={0}
-            />
-          </div>
+          <CheckListItemsEditor rows={items} onChange={setItems} optional />
         </form>
-        <DialogFooter className="pt-2">
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            CANCEL
-          </Button>
-          <Button
-            type="submit"
-            form="update-checklist-form"
-            disabled={updateCheckListMutation.isPending || !isFormValid}
-            variant="darkRed"
-          >
-            {updateCheckListMutation.isPending ? 'SAVING...' : 'SAVE'}
-          </Button>
-        </DialogFooter>
+        <div className="shrink-0 border-t px-6 py-4">
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+            >
+              CANCEL
+            </Button>
+            <Button
+              type="submit"
+              form="update-checklist-form"
+              disabled={updateCheckListMutation.isPending || !isFormValid}
+              variant="darkRed"
+            >
+              {updateCheckListMutation.isPending ? 'SAVING...' : 'SAVE'}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
