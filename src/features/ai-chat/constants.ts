@@ -21,6 +21,7 @@ export const AI_CHAT_QUERY_KEYS = {
 export const CHAT_MODE = {
   CHAT: 'chat',
   WRITE: 'write',
+  VALIDATE: 'validate',
 } as const;
 
 export type ChatMode = (typeof CHAT_MODE)[keyof typeof CHAT_MODE];
@@ -30,6 +31,7 @@ export type ChatMode = (typeof CHAT_MODE)[keyof typeof CHAT_MODE];
 export const WRITING_ACTION = {
   PLANNING_QUESTIONS: 'planning_questions',
   SECTION_OUTPUT: 'section_output',
+  VALIDATION_RESULT: 'validation_result',
 } as const;
 
 export type WritingAction =

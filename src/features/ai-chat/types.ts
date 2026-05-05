@@ -66,6 +66,9 @@ export type WritingPayload = {
   referencedSections?: Array<{ sectionType: string; content: string }>;
   ruleset?: string;
   sectionContext?: string;
+  // Validate-mode specific
+  checklistItems?: Array<{ id: string; name: string; rule: string; weight: number }>;
+  journalStyle?: string;
 };
 
 export type SendMessageResponse = {
@@ -113,4 +116,19 @@ export type ValidationSummary = {
   issuesFound: number;
   issuesFixed: number;
   scope: string;
+};
+
+export type ValidationIssue = {
+  id: string;
+  stage: 'grammar' | 'semantic' | 'citation';
+  severity: 'error' | 'warning';
+  rule: string;
+  sentence: string;
+  detail: string;
+  citeKey?: string;
+};
+
+export type ValidationDetail = {
+  hasIssues: boolean;
+  issues: ValidationIssue[];
 };

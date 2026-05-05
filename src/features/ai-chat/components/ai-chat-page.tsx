@@ -5,6 +5,8 @@ import {
   PanelRightOpen,
   PanelRightClose,
   MessageSquare,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 
 import { Head } from '@/components/seo';
@@ -195,6 +197,21 @@ export const AIChatPage = () => {
               </div>
             )}
 
+            {sendMessageMutation.isError && (
+              <div className="border-destructive/30 bg-destructive/10 text-destructive mx-4 mb-2 flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span className="flex-1">
+                  An unexpected error occurred. Please try again later.
+                </span>
+                <button
+                  onClick={() => sendMessageMutation.reset()}
+                  className="shrink-0 opacity-70 transition-opacity hover:opacity-100"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             <ChatInput
               onSend={handleSend}
               isSending={sendMessageMutation.isPending}
