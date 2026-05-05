@@ -13,7 +13,7 @@ const ProjectPaperDetailRoute = () => {
       <ProjectPaperDetailPage
         projectId={projectId!}
         paperId={paperId!}
-        isManager={true}
+        isManager={false}
         backPath={paths.app.projectDetail.getHref(projectId!)}
         combineEditorPath={(combineId: string) =>
           paths.app.projectPaperCombineEditor.getHref(

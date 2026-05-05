@@ -2806,7 +2806,11 @@ export const ProjectPaperDetailPage = ({
 
             {/* ── Submission Status Panel ──────────────────────────── */}
             {activeTab === 'submission' && (
-              <PaperStatusHistory paperId={paperId} projectId={projectId} />
+              <PaperStatusHistory
+                paperId={paperId}
+                projectId={projectId}
+                isHeadWriter={isPaperAuthor}
+              />
             )}
           </div>
         </div>

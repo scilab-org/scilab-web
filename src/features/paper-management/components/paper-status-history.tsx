@@ -229,11 +229,13 @@ const StatusTimeline = ({
 type PaperStatusHistoryProps = {
   paperId: string;
   projectId?: string;
+  isHeadWriter?: boolean;
 };
 
 export const PaperStatusHistory = ({
   paperId,
   projectId,
+  isHeadWriter = false,
 }: PaperStatusHistoryProps) => {
   const historyQuery = usePaperStatusHistory({ paperId });
 
@@ -242,7 +244,7 @@ export const PaperStatusHistory = ({
   const latestEntry = history.length > 0 ? history[0] : null;
   const isTerminal =
     (SUBMISSION_STATUS_TRANSITIONS[currentStatus] ?? []).length === 0;
-  const canTransition = !isTerminal && !!projectId;
+  const canTransition = !isTerminal && !!projectId && isHeadWriter;
 
   const [selectedEntry, setSelectedEntry] =
     React.useState<PaperStatusHistoryEntry | null>(null);

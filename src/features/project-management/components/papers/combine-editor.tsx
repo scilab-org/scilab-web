@@ -28,7 +28,7 @@ import {
   FileText,
   X,
   RefreshCw,
-  LayoutGrid,
+  // LayoutGrid, // Tools panel - commented out
   PanelLeftOpen,
   PanelLeftClose,
 } from 'lucide-react';
@@ -542,7 +542,7 @@ export const CombineEditor = ({
   const [isCompiling, setIsCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  // const [isToolsOpen, setIsToolsOpen] = useState(false); // Tools panel - commented out
   const [editorWidthPct, setEditorWidthPct] = useState(50);
   const [pdfZoom, setPdfZoom] = useState(100);
   const isDraggingRef = useRef(false);
@@ -838,7 +838,7 @@ export const CombineEditor = ({
                   Close
                 </button>
 
-                {/* Tools toggle */}
+                {/* Tools toggle - commented out
                 <button
                   type="button"
                   onClick={() => setIsToolsOpen((v) => !v)}
@@ -851,6 +851,7 @@ export const CombineEditor = ({
                   <LayoutGrid className="h-3.5 w-3.5" />
                   Tools
                 </button>
+                */}
               </div>
 
               {/* Monaco Editor */}
@@ -1011,7 +1012,11 @@ export const CombineEditor = ({
                 }}
               />
 
-              {isToolsOpen ? (
+              {/* ── Tools panel commented out ──
+                  To restore: uncomment isToolsOpen state, LayoutGrid import, and Tools button
+                  above, then change `false` back to `isToolsOpen` */}
+              {/* eslint-disable-next-line no-constant-condition */}
+              {false ? (
                 /* ── Tools panel (AI only) ── */
                 <>
                   <div className="bg-editor-bg flex h-10 shrink-0 items-center gap-2 px-3 dark:bg-[#111111]">
