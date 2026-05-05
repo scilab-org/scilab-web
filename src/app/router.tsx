@@ -17,7 +17,7 @@ const SmartRedirect = () => {
     getUserGroups().includes('system:admin');
   return (
     <Navigate
-      to={isAdmin ? paths.app.projects.getHref() : paths.app.myTasks.getHref()}
+      to={isAdmin ? paths.app.dashboard.getHref() : paths.app.myTasks.getHref()}
       replace
     />
   );
@@ -68,8 +68,13 @@ export const createAppRouter = (queryClient: QueryClient) =>
       ErrorBoundary: AppRootErrorBoundary,
       children: [
         {
-          path: paths.app.dashboard.path,
+          index: true,
           element: <SmartRedirect />,
+        },
+        {
+          path: paths.app.dashboard.path,
+          lazy: () =>
+            import('./routes/app/dashboard').then(convert(queryClient)),
         },
         {
           path: paths.app.sample.path,
