@@ -10,6 +10,7 @@ import {
   Trash2,
   Check,
   X,
+  ShieldCheck,
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -27,6 +28,7 @@ import { useRenameSession } from '@/features/ai-chat/api/rename-session';
 import type {
   ChatMessage,
   PlanningQuestion,
+  ValidationDetail,
   WritingOutput,
 } from '@/features/ai-chat/types';
 import {
@@ -35,7 +37,11 @@ import {
   SESSION_MESSAGE_LIMIT,
   type ChatMode,
 } from '@/features/ai-chat/constants';
+import { useCheckLists } from '@/features/checklist-management/api/get-checklists';
+import type { CheckListItemDto } from '@/features/checklist-management/types';
+import { useJournal } from '@/features/journal-management/api/get-journal';
 import { useGetSection } from '@/features/paper-management/api/get-section';
+import { useWritingPaperDetail } from '@/features/paper-management/api/get-writing-paper';
 import { useProjectPapers } from '../../api/papers/get-project-papers';
 import { PlanningQnABox } from './planning-qna-box';
 
@@ -118,12 +124,18 @@ const CompactChatInput = ({
   mode,
   onModeChange,
   canWrite = false,
+  onValidate,
+  isValidating,
+  sectionHasContent,
 }: {
   onSend: (content: string) => void;
   isSending: boolean;
   mode: ChatMode;
   onModeChange: (mode: ChatMode) => void;
   canWrite?: boolean;
+  onValidate?: () => void;
+  isValidating?: boolean;
+  sectionHasContent?: boolean;
 }) => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -179,6 +191,21 @@ const CompactChatInput = ({
           >
             <PenLine className="h-3 w-3" />
             Write
+          </button>
+        )}
+        {canWrite && sectionHasContent && (
+          <button
+            type="button"
+            onClick={onValidate}
+            disabled={isValidating || isSending}
+            className="ml-auto flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white transition-colors hover:bg-emerald-700 disabled:bg-emerald-300 disabled:text-white"
+          >
+            {isValidating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <ShieldCheck className="h-3 w-3" />
+            )}
+            Validate section
           </button>
         )}
       </div>
@@ -596,6 +623,8 @@ export const EditorChatPanel = ({
   const [planningQuestions, setPlanningQuestions] = useState<
     PlanningQuestion[] | null
   >(null);
+  const [pendingValidationDetail, setPendingValidationDetail] =
+    useState<ValidationDetail | null>(null);
   // When true, suppress auto-select so the user stays on the blank "new chat" screen
   const isNewChatRef = useRef(false);
 
@@ -609,6 +638,27 @@ export const EditorChatPanel = ({
   });
   const ruleset = sectionQuery.data?.result?.rule;
   const sectionContext = sectionQuery.data?.result?.sectionContext;
+
+  // Fetch checklist items for this section (filtered by section title)
+  const checklistQuery = useCheckLists({
+    params: { Section: sectionTitle, PageSize: 100 },
+    queryConfig: { enabled: !!sectionTitle },
+  });
+  const checklistItems: CheckListItemDto[] =
+    checklistQuery.data?.result?.items?.flatMap((cl) => cl.items) ?? [];
+
+  // Fetch journal style: section → paperId → paper.journal (journalId) → journal.style
+  const paperId = sectionQuery.data?.result?.paperId;
+  const writingPaperQuery = useWritingPaperDetail({
+    paperId: paperId ?? '',
+    queryConfig: { enabled: !!paperId },
+  });
+  const journalId = writingPaperQuery.data?.result?.paper?.journal ?? undefined;
+  const journalQuery = useJournal({
+    journalId: journalId ?? '',
+    queryConfig: { enabled: !!journalId },
+  });
+  const journalStyle = journalQuery.data?.result?.journal?.style ?? undefined;
 
   // Use markSectionId (stable across versions) for session scoping.
   // Fall back to sectionId if markSectionId is not available.
@@ -661,6 +711,11 @@ export const EditorChatPanel = ({
           const output = meta.writingOutput as WritingOutput;
           onWriteOutput?.(output);
           setPlanningQuestions(null);
+        } else if (meta?.writingAction === WRITING_ACTION.VALIDATION_RESULT) {
+          const detail = meta.validationDetail as ValidationDetail;
+          if (detail?.hasIssues) {
+            setPendingValidationDetail(detail);
+          }
         }
       },
       onError: () => {
@@ -719,6 +774,61 @@ export const EditorChatPanel = ({
     ],
   );
 
+  const handleValidate = useCallback(() => {
+    if (!projectId || !sectionContent) return;
+    const projectPaperIds = (
+      (projectPapersQuery.data as any)?.result?.items ?? []
+    ).map((p: { id: string }) => p.id);
+    setPendingMessage('Validate section');
+    sendMessageMutation.mutate({
+      sessionId: activeSessionId ?? undefined,
+      projectId,
+      message: 'Validate section',
+      paperIds: projectPaperIds,
+      mode: CHAT_MODE.VALIDATE,
+      sectionId,
+      sectionTarget: sectionTitle,
+      writing: {
+        currentSection: sectionContent,
+        sectionContext: sectionContext || undefined,
+        checklistItems: checklistItems.length > 0 ? checklistItems : undefined,
+        journalStyle: journalStyle || undefined,
+      },
+    });
+  }, [
+    projectId,
+    sectionContent,
+    checklistItems,
+    journalStyle,
+    sectionId,
+    sectionTitle,
+    sectionContext,
+    activeSessionId,
+    sendMessageMutation,
+    projectPapersQuery.data,
+  ]);
+
+  const handleFixAll = useCallback(
+    (detail: ValidationDetail) => {
+      const lines = detail.issues.map((issue) => {
+        const prefix =
+          issue.stage === 'citation' && issue.citeKey
+            ? `[${issue.citeKey}] ${issue.rule}`
+            : issue.rule;
+        const detail_text =
+          issue.rule === 'Embedded @article Block'
+            ? 'Remove this entire BibTeX block from the section body completely.'
+            : issue.detail;
+        return `${prefix}:\n  Sentence: "${issue.sentence}"\n  Issue: ${detail_text}`;
+      });
+      const message = `[DIRECT CORRECTION]\nFix all validation issues:\n\n${lines.join('\n\n')}`;
+      setPendingValidationDetail(null);
+      setMode(CHAT_MODE.WRITE);
+      handleSend(message);
+    },
+    [handleSend],
+  );
+
   const handleQnASubmit = useCallback(
     (formattedAnswer: string) => {
       setPlanningQuestions(null);
@@ -758,7 +868,7 @@ export const EditorChatPanel = ({
     [activeSessionId],
   );
 
-  const handleModeChange = useCallback((newMode: 'chat' | 'write') => {
+  const handleModeChange = useCallback((newMode: ChatMode) => {
     setMode(newMode);
     setPlanningQuestions(null);
   }, []);
@@ -836,6 +946,26 @@ export const EditorChatPanel = ({
             </div>
           )}
 
+          {/* Ephemeral validation action bar — Fix All / Reject */}
+          {pendingValidationDetail?.hasIssues && (
+            <div className="border-border shrink-0 border-t px-3 py-2 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingValidationDetail(null)}
+                className="rounded px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+              >
+                Reject
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFixAll(pendingValidationDetail)}
+                className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
+              >
+                Fix All
+              </button>
+            </div>
+          )}
+
           {/* Planning Q&A form (replaces input when active) */}
           {planningQuestions ? (
             <PlanningQnABox
@@ -851,6 +981,12 @@ export const EditorChatPanel = ({
               mode={mode}
               onModeChange={handleModeChange}
               canWrite={canWrite}
+              onValidate={handleValidate}
+              isValidating={
+                sendMessageMutation.isPending &&
+                sendMessageMutation.variables?.mode === CHAT_MODE.VALIDATE
+              }
+              sectionHasContent={!!sectionContent}
             />
           )}
         </div>
