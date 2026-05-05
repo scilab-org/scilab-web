@@ -73,6 +73,20 @@ ${finalBody}
 \\end{document}`;
 };
 
+function extractCompileErrorDetail(err: unknown): string | null {
+  if (!err || typeof err !== 'object' || !('response' in err)) return null;
+  const axiosError = err as { response?: { data?: unknown } };
+  const responseData = axiosError.response?.data;
+  if (!(responseData instanceof ArrayBuffer)) return null;
+  try {
+    const text = new TextDecoder().decode(responseData);
+    const json = JSON.parse(text) as { detail?: string };
+    return json.detail ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const compileLatex = async ({
   content,
   packages,
@@ -87,17 +101,22 @@ export const compileLatex = async ({
     ? content
     : LATEX_DOCUMENT_WRAPPER(content, packages, referenceContent);
 
-  const response = await api.post(
-    PAPER_MANAGEMENT_API.COMPILE_LATEX,
-    { content: latexContent },
-    {
-      responseType: 'arraybuffer',
-      headers: { Accept: 'application/pdf' },
-    },
-  );
+  try {
+    const response = await api.post(
+      PAPER_MANAGEMENT_API.COMPILE_LATEX,
+      { content: latexContent },
+      {
+        responseType: 'arraybuffer',
+        headers: { Accept: 'application/pdf' },
+      },
+    );
 
-  const data = response as unknown as ArrayBuffer;
-  return new Blob([data], { type: 'application/pdf' });
+    const data = response as unknown as ArrayBuffer;
+    return new Blob([data], { type: 'application/pdf' });
+  } catch (err: unknown) {
+    const detail = extractCompileErrorDetail(err);
+    throw detail ? new Error(detail) : err;
+  }
 };
 
 type UseCompileLatexOptions = {

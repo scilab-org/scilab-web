@@ -40,6 +40,7 @@ import { paths } from '@/config/paths';
 import { useLogout, useUser } from '@/lib/auth';
 import { cn } from '@/utils/cn';
 import { capitalize } from '@/utils/string-utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 type SideNavigationItem = {
   name: string;
@@ -267,6 +268,11 @@ const adminNavigationGroups: SideNavigationGroup[] = [
     color: '#2d2926',
     items: [
       {
+        name: 'Dashboard',
+        to: paths.app.dashboard.getHref(),
+        icon: LayoutDashboard,
+      },
+      {
         name: 'Users',
         to: paths.app.userManagement.users.getHref(),
         icon: Users,
@@ -360,11 +366,13 @@ function NavItems({ items }: { items: SideNavigationItem[] }) {
 
 function AppSidebar() {
   const logout = useLogout();
+  const queryClient = useQueryClient();
   const { data: user } = useUser();
 
   const isAdmin = user?.groups?.includes('system:admin') ?? false;
 
   const handleLogout = () => {
+    queryClient.clear();
     logout.mutate();
   };
 
