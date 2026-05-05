@@ -46,6 +46,16 @@ import {
 } from '@/features/paper-management/api/preview-section-reference';
 import type { CombineDto } from '@/features/paper-management/types';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { EditorChatPanel } from './editor-chat-panel';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -532,6 +542,8 @@ export const CombineEditor = ({
   const [content, setContent] = useState(combine.content ?? '');
   const [savedContent, setSavedContent] = useState(combine.content ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveAsPdfDialogOpen, setSaveAsPdfDialogOpen] = useState(false);
   const pdfUrlRef = useRef<string | null>(null);
   const [pdfPageNum, setPdfPageNum] = useState(1);
   const [pdfNumPages, setPdfNumPages] = useState(0);
@@ -738,8 +750,9 @@ export const CombineEditor = ({
   );
 
   return (
-    <div className="latex-paper-editor-shell bg-editor-bg fixed inset-0 z-50 flex">
-      <style>{`
+    <>
+      <div className="latex-paper-editor-shell bg-editor-bg fixed inset-0 z-50 flex">
+        <style>{`
         .latex-paper-editor-shell .monaco-editor .margin-view-overlays .line-numbers,
         .latex-paper-editor-shell .monaco-editor .line-numbers {
           font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
@@ -757,88 +770,90 @@ export const CombineEditor = ({
           border-color: #2f6b5b !important;
         }
       `}</style>
-      {/* ── Content area: same bg as section editor ────────────── */}
-      <div className="bg-editor-bg flex min-h-0 flex-1 flex-col overflow-hidden p-2 dark:bg-[#1a1a1a]">
-        {/* Single outer card wrapping left sidebar + editor + right panel */}
-        <div className="bg-editor-content-bg flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-          {/* ── Left References Sidebar ────────────────────────── */}
-          {isSidebarOpen && (
-            <div className="bg-editor-bg flex w-72 shrink-0 flex-col overflow-hidden border-r border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1">
-                <div className="px-3 py-1">
-                  <p className="mb-1 text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                    References
-                  </p>
-                </div>
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <CombineReferencesPanel paperId={paperId} />
+        {/* ── Content area: same bg as section editor ────────────── */}
+        <div className="bg-editor-bg flex min-h-0 flex-1 flex-col overflow-hidden p-2 dark:bg-[#1a1a1a]">
+          {/* Single outer card wrapping left sidebar + editor + right panel */}
+          <div className="bg-editor-content-bg flex min-h-0 flex-1 overflow-hidden rounded-xl border border-[#d0d0ce] shadow-sm dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+            {/* ── Left References Sidebar ────────────────────────── */}
+            {isSidebarOpen && (
+              <div className="bg-editor-bg flex w-72 shrink-0 flex-col overflow-hidden border-r border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1">
+                  <div className="px-3 py-1">
+                    <p className="mb-1 text-[10px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                      References
+                    </p>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <CombineReferencesPanel paperId={paperId} />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div
-            ref={containerRef}
-            className="flex min-h-0 flex-1 overflow-hidden"
-          >
-            {/* ── Editor column ─────────────────────────────────── */}
             <div
-              ref={editorColRef}
-              className="bg-editor-content-bg flex shrink-0 flex-col overflow-hidden dark:bg-[#1e1e1e]"
-              style={{ width: `${editorWidthPct}%` }}
+              ref={containerRef}
+              className="flex min-h-0 flex-1 overflow-hidden"
             >
-              {/* Editor top bar */}
-              <div className="bg-editor-content-bg flex h-10 shrink-0 items-center border-b border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarOpen((prev) => !prev)}
-                  className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                  title={isSidebarOpen ? 'Hide references' : 'Show references'}
-                >
-                  {isSidebarOpen ? (
-                    <PanelLeftClose className="h-4 w-4" />
-                  ) : (
-                    <PanelLeftOpen className="h-4 w-4" />
-                  )}
-                </button>
+              {/* ── Editor column ─────────────────────────────────── */}
+              <div
+                ref={editorColRef}
+                className="bg-editor-content-bg flex shrink-0 flex-col overflow-hidden dark:bg-[#1e1e1e]"
+                style={{ width: `${editorWidthPct}%` }}
+              >
+                {/* Editor top bar */}
+                <div className="bg-editor-content-bg flex h-10 shrink-0 items-center border-b border-[#e0e0de] dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarOpen((prev) => !prev)}
+                    className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    title={
+                      isSidebarOpen ? 'Hide references' : 'Show references'
+                    }
+                  >
+                    {isSidebarOpen ? (
+                      <PanelLeftClose className="h-4 w-4" />
+                    ) : (
+                      <PanelLeftOpen className="h-4 w-4" />
+                    )}
+                  </button>
 
-                <div className="flex min-w-0 items-center gap-2 px-3">
-                  <span className="max-w-52 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {combine.name}
-                  </span>
-                </div>
-
-                {/* SOURCE indicator */}
-                <div className="ml-1 flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#2f6b5b]" />
-                  <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase dark:text-slate-500">
-                    Combined
-                  </span>
-                </div>
-
-                {isReadOnly && (
-                  <div className="ml-2 flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
-                    <Lock className="h-3 w-3 text-slate-400" />
-                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                      Read-only
+                  <div className="flex min-w-0 items-center gap-2 px-3">
+                    <span className="max-w-52 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      {combine.name}
                     </span>
                   </div>
-                )}
 
-                <div className="flex-1" />
+                  {/* SOURCE indicator */}
+                  <div className="ml-1 flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#2f6b5b]" />
+                    <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase dark:text-slate-500">
+                      Combined
+                    </span>
+                  </div>
 
-                {/* Close editor */}
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mx-2 flex h-7 items-center gap-1.5 rounded px-2 text-xs font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                  title="Close editor"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Close
-                </button>
+                  {isReadOnly && (
+                    <div className="ml-2 flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
+                      <Lock className="h-3 w-3 text-slate-400" />
+                      <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                        Read-only
+                      </span>
+                    </div>
+                  )}
 
-                {/* Tools toggle - commented out
+                  <div className="flex-1" />
+
+                  {/* Close editor */}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="mx-2 flex h-7 items-center gap-1.5 rounded px-2 text-xs font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                    title="Close editor"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Close
+                  </button>
+
+                  {/* Tools toggle - commented out
                 <button
                   type="button"
                   onClick={() => setIsToolsOpen((v) => !v)}
@@ -852,369 +867,421 @@ export const CombineEditor = ({
                   Tools
                 </button>
                 */}
-              </div>
-
-              {/* Monaco Editor */}
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <Editor
-                  height="100%"
-                  defaultLanguage="latex-custom"
-                  value={content}
-                  onChange={(value) => {
-                    if (!isReadOnly) setContent(value ?? '');
-                  }}
-                  onMount={handleEditorMount}
-                  beforeMount={registerLatexLanguage}
-                  theme="latex-light"
-                  options={{
-                    fontSize: 14,
-                    lineHeight: 22,
-                    minimap: { enabled: false },
-                    wordWrap: 'on',
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    readOnly: isReadOnly,
-                    padding: { top: 16, bottom: 16 },
-                    tabSize: 2,
-                    renderLineHighlight: 'line',
-                    fontFamily:
-                      "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-                    fontLigatures: true,
-                    smoothScrolling: true,
-                    scrollbar: {
-                      verticalScrollbarSize: 6,
-                      horizontalScrollbarSize: 6,
-                      useShadows: false,
-                    },
-                  }}
-                />
-              </div>
-
-              {/* Status bar at bottom of editor column */}
-              <div className="bg-editor-content-bg flex h-9 shrink-0 items-center justify-between border-t border-[#e0e0de] px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
-                <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
-                  <span>Words: {stats.totalWords}</span>
-                  <span>Headers: {stats.numHeaders}</span>
-                  <span>Figures: {stats.numFigures}</span>
-                  <span>
-                    Math: {stats.numMathInlines + stats.numMathDisplayed}
-                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* Saved / Unsaved indicator */}
-                  <span
-                    className={cn(
-                      'text-[10px] font-medium',
-                      hasChanges ? 'text-orange-500' : 'text-emerald-500',
-                    )}
-                  >
-                    {hasChanges ? 'Unsaved changes' : 'Saved'}
-                  </span>
 
-                  {/* isSave=false: Save button (POST isPreview=false → return to detail) */}
-                  {isAuthor && !(combine.isSave ?? true) && (
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
-                      onClick={handleSave}
-                      disabled={saveMutation.isPending}
-                    >
-                      {saveMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
-                    </button>
-                  )}
-
-                  {/* isSave=true, view mode: Edit button for author */}
-                  {isAuthor && (combine.isSave ?? true) && !isEditMode && (
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-lg border border-[#d0d0ce] px-3 py-1.5 text-xs font-semibold text-[#2f6b5b] hover:bg-[#f3efe6] dark:border-slate-700 dark:text-[#4eab8f] dark:hover:bg-slate-800"
-                      onClick={() => setIsEditMode(true)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </button>
-                  )}
-
-                  {/* isSave=true, edit mode: Cancel + Update */}
-                  {isAuthor && (combine.isSave ?? true) && isEditMode && (
-                    <>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                        onClick={() => {
-                          setContent(savedContent);
-                          setIsEditMode(false);
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
-                        onClick={handleUpdate}
-                        disabled={updateMutation.isPending || !hasChanges}
-                      >
-                        {updateMutation.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Save className="h-3.5 w-3.5" />
-                        )}
-                        {updateMutation.isPending ? 'Saving…' : 'Save Changes'}
-                      </button>
-                    </>
-                  )}
-
-                  {/* Save as PDF */}
-                  <button
-                    type="button"
-                    disabled={!pdfUrl || saveAsPdfMutation.isPending}
-                    title={
-                      pdfUrl
-                        ? 'Save compiled PDF to version files'
-                        : 'Compile first to enable'
-                    }
-                    onClick={() => saveAsPdfMutation.mutate()}
-                    className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-                  >
-                    {saveAsPdfMutation.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Download className="h-3 w-3" />
-                    )}
-                    Save as PDF
-                  </button>
+                {/* Monaco Editor */}
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <Editor
+                    height="100%"
+                    defaultLanguage="latex-custom"
+                    value={content}
+                    onChange={(value) => {
+                      if (!isReadOnly) setContent(value ?? '');
+                    }}
+                    onMount={handleEditorMount}
+                    beforeMount={registerLatexLanguage}
+                    theme="latex-light"
+                    options={{
+                      fontSize: 14,
+                      lineHeight: 22,
+                      minimap: { enabled: false },
+                      wordWrap: 'on',
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      readOnly: isReadOnly,
+                      padding: { top: 16, bottom: 16 },
+                      tabSize: 2,
+                      renderLineHighlight: 'line',
+                      fontFamily:
+                        "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+                      fontLigatures: true,
+                      smoothScrolling: true,
+                      scrollbar: {
+                        verticalScrollbarSize: 6,
+                        horizontalScrollbarSize: 6,
+                        useShadows: false,
+                      },
+                    }}
+                  />
                 </div>
-              </div>
-            </div>
 
-            {/* ── Right panel ──────────────────────────────────── */}
-            <div className="bg-editor-bg relative m-2 flex flex-1 flex-col overflow-hidden rounded-xl dark:bg-[#111111]">
-              {/* Drag handle on left edge */}
-              <div
-                className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-col-resize rounded-l-xl hover:bg-[#2f6b5b]/20 active:bg-[#2f6b5b]/30"
-                onPointerDown={(e) => {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  isDraggingRef.current = true;
-                }}
-                onPointerMove={handleSeparatorDrag}
-                onPointerUp={() => {
-                  isDraggingRef.current = false;
-                  setEditorWidthPct(widthPctRef.current);
-                  if (pdfContainerRef.current) {
-                    setPdfContainerWidth(pdfContainerRef.current.clientWidth);
-                  }
-                }}
-              />
-
-              {/* ── Tools panel commented out ──
-                  To restore: uncomment isToolsOpen state, LayoutGrid import, and Tools button
-                  above, then change `false` back to `isToolsOpen` */}
-              {/* eslint-disable-next-line no-constant-condition */}
-              {false ? (
-                /* ── Tools panel (AI only) ── */
-                <>
-                  <div className="bg-editor-bg flex h-10 shrink-0 items-center gap-2 px-3 dark:bg-[#111111]">
-                    <MessageSquareText className="size-3.5 text-[#2f6b5b]" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      AI
+                {/* Status bar at bottom of editor column */}
+                <div className="bg-editor-content-bg flex h-9 shrink-0 items-center justify-between border-t border-[#e0e0de] px-3 dark:border-[#2a2a2a] dark:bg-[#1e1e1e]">
+                  <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
+                    <span>Words: {stats.totalWords}</span>
+                    <span>Headers: {stats.numHeaders}</span>
+                    <span>Figures: {stats.numFigures}</span>
+                    <span>
+                      Math: {stats.numMathInlines + stats.numMathDisplayed}
                     </span>
                   </div>
-                  <div className="bg-editor-bg flex flex-1 flex-col overflow-hidden dark:bg-[#111111]">
-                    <EditorChatPanel
-                      projectId={projectId}
-                      sectionTitle={combine.name}
-                      canWrite={isAuthor && !isReadOnly}
-                    />
-                  </div>
-                </>
-              ) : (
-                /* ── PDF preview panel ── */
-                <>
-                  {/* PDF toolbar */}
-                  <div
-                    ref={pdfContainerRef}
-                    className="bg-editor-bg flex h-10 shrink-0 items-center gap-1 px-3 dark:bg-[#111111]"
-                  >
-                    {/* Compile button */}
+                  <div className="flex items-center gap-2">
+                    {/* Saved / Unsaved indicator */}
+                    <span
+                      className={cn(
+                        'text-[10px] font-medium',
+                        hasChanges ? 'text-orange-500' : 'text-emerald-500',
+                      )}
+                    >
+                      {hasChanges ? 'Unsaved changes' : 'Saved'}
+                    </span>
+
+                    {/* isSave=false: Save button (POST isPreview=false → return to detail) */}
+                    {isAuthor && !(combine.isSave ?? true) && (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
+                        onClick={() => setSaveDialogOpen(true)}
+                        disabled={saveMutation.isPending}
+                      >
+                        {saveMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
+                      </button>
+                    )}
+
+                    {/* isSave=true, view mode: Edit button for author */}
+                    {isAuthor && (combine.isSave ?? true) && !isEditMode && (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 rounded-lg border border-[#d0d0ce] px-3 py-1.5 text-xs font-semibold text-[#2f6b5b] hover:bg-[#f3efe6] dark:border-slate-700 dark:text-[#4eab8f] dark:hover:bg-slate-800"
+                        onClick={() => setIsEditMode(true)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                    )}
+
+                    {/* isSave=true, edit mode: Cancel + Update */}
+                    {isAuthor && (combine.isSave ?? true) && isEditMode && (
+                      <>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                          onClick={() => {
+                            setContent(savedContent);
+                            setIsEditMode(false);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
+                          onClick={() => setSaveDialogOpen(true)}
+                          disabled={updateMutation.isPending || !hasChanges}
+                        >
+                          {updateMutation.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Save className="h-3.5 w-3.5" />
+                          )}
+                          {updateMutation.isPending
+                            ? 'Saving…'
+                            : 'Save Changes'}
+                        </button>
+                      </>
+                    )}
+
+                    {/* Save as PDF */}
                     <button
                       type="button"
-                      onClick={handleCompile}
-                      disabled={isCompiling}
-                      className="flex h-7 items-center gap-1.5 rounded border border-transparent px-3 text-xs font-medium text-slate-600 transition-all hover:border-slate-300 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-[#333] dark:hover:text-slate-200"
+                      disabled={!pdfUrl || saveAsPdfMutation.isPending}
+                      title={
+                        pdfUrl
+                          ? 'Save compiled PDF to version files'
+                          : 'Compile first to enable'
+                      }
+                      onClick={() => setSaveAsPdfDialogOpen(true)}
+                      className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+                    >
+                      {saveAsPdfMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Download className="h-3 w-3" />
+                      )}
+                      Save as PDF
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Right panel ──────────────────────────────────── */}
+              <div className="bg-editor-bg relative m-2 flex flex-1 flex-col overflow-hidden rounded-xl dark:bg-[#111111]">
+                {/* Drag handle on left edge */}
+                <div
+                  className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-col-resize rounded-l-xl hover:bg-[#2f6b5b]/20 active:bg-[#2f6b5b]/30"
+                  onPointerDown={(e) => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    isDraggingRef.current = true;
+                  }}
+                  onPointerMove={handleSeparatorDrag}
+                  onPointerUp={() => {
+                    isDraggingRef.current = false;
+                    setEditorWidthPct(widthPctRef.current);
+                    if (pdfContainerRef.current) {
+                      setPdfContainerWidth(pdfContainerRef.current.clientWidth);
+                    }
+                  }}
+                />
+
+                {/* ── Tools panel commented out ──
+                  To restore: uncomment isToolsOpen state, LayoutGrid import, and Tools button
+                  above, then change `false` back to `isToolsOpen` */}
+                {/* eslint-disable-next-line no-constant-condition */}
+                {false ? (
+                  /* ── Tools panel (AI only) ── */
+                  <>
+                    <div className="bg-editor-bg flex h-10 shrink-0 items-center gap-2 px-3 dark:bg-[#111111]">
+                      <MessageSquareText className="size-3.5 text-[#2f6b5b]" />
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        AI
+                      </span>
+                    </div>
+                    <div className="bg-editor-bg flex flex-1 flex-col overflow-hidden dark:bg-[#111111]">
+                      <EditorChatPanel
+                        projectId={projectId}
+                        sectionTitle={combine.name}
+                        canWrite={isAuthor && !isReadOnly}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  /* ── PDF preview panel ── */
+                  <>
+                    {/* PDF toolbar */}
+                    <div
+                      ref={pdfContainerRef}
+                      className="bg-editor-bg flex h-10 shrink-0 items-center gap-1 px-3 dark:bg-[#111111]"
+                    >
+                      {/* Compile button */}
+                      <button
+                        type="button"
+                        onClick={handleCompile}
+                        disabled={isCompiling}
+                        className="flex h-7 items-center gap-1.5 rounded border border-transparent px-3 text-xs font-medium text-slate-600 transition-all hover:border-slate-300 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-[#333] dark:hover:text-slate-200"
+                      >
+                        {isCompiling ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        Compile
+                      </button>
+
+                      <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
+
+                      {/* Page navigation */}
+                      {pdfNumPages > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={pdfPageNum <= 1}
+                            onClick={() => scrollToPage(pdfPageNum - 1)}
+                            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="min-w-14 text-center text-xs text-slate-600 tabular-nums dark:text-slate-400">
+                            <span className="font-semibold text-[#1a6b4e] dark:text-[#4fc3a1]">
+                              {String(pdfPageNum).padStart(2, '0')}
+                            </span>{' '}
+                            of {String(pdfNumPages).padStart(2, '0')}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={pdfPageNum >= pdfNumPages}
+                            onClick={() => scrollToPage(pdfPageNum + 1)}
+                            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                          <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
+                        </>
+                      )}
+
+                      {/* Zoom controls */}
+                      {pdfUrl && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPdfZoom((z) => Math.max(50, z - 10))
+                            }
+                            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="min-w-10 text-center text-[10px] text-slate-500 tabular-nums">
+                            {pdfZoom}%
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPdfZoom((z) => Math.min(200, z + 10))
+                            }
+                            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                          <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!pdfUrl) return;
+                              const a = document.createElement('a');
+                              a.href = pdfUrl;
+                              a.download = `${paperTitle || 'combined'}.pdf`;
+                              a.click();
+                            }}
+                            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCopyContent}
+                            className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* PDF content area */}
+                    <div
+                      ref={pdfScrollContainerRef}
+                      className="flex-1 overflow-auto"
                     >
                       {isCompiling ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <div className="flex h-full items-center justify-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <Loader2 className="size-8 animate-spin text-[#2f6b5b]" />
+                            <span className="text-sm text-slate-500">
+                              Compiling…
+                            </span>
+                          </div>
+                        </div>
+                      ) : compileError ? (
+                        <div className="flex h-full items-center justify-center">
+                          <div className="flex flex-col items-center gap-2 py-16 text-center">
+                            <p className="text-sm font-medium text-red-500">
+                              LaTeX compilation failed
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Please check the required packages and LaTeX
+                              commands, then click Compile again.
+                            </p>
+                          </div>
+                        </div>
+                      ) : pdfUrl ? (
+                        <div className="flex flex-col items-center gap-6 p-4">
+                          <Document
+                            file={pdfUrl}
+                            onLoadSuccess={({ numPages }) => {
+                              setPdfNumPages(numPages);
+                              setPdfPageNum(1);
+                            }}
+                            loading={
+                              <div className="flex items-center justify-center py-20">
+                                <Loader2 className="size-6 animate-spin text-slate-400" />
+                              </div>
+                            }
+                          >
+                            {Array.from({ length: pdfNumPages }, (_, i) => (
+                              <div
+                                key={i + 1}
+                                ref={(el) => {
+                                  pdfPageRefs.current[i] = el;
+                                }}
+                                className="mb-6 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+                              >
+                                <Page
+                                  pageNumber={i + 1}
+                                  width={
+                                    pdfContainerWidth > 0
+                                      ? (pdfContainerWidth - 32) *
+                                        (pdfZoom / 100)
+                                      : undefined
+                                  }
+                                  renderTextLayer
+                                  renderAnnotationLayer
+                                />
+                              </div>
+                            ))}
+                          </Document>
+                        </div>
                       ) : (
-                        <RefreshCw className="h-3.5 w-3.5" />
+                        <div className="flex h-full items-center justify-center">
+                          <div className="flex flex-col items-center gap-3 text-center">
+                            <Eye className="size-10 text-slate-300 dark:text-slate-600" />
+                            <p className="text-sm text-slate-500">
+                              Click &ldquo;Compile&rdquo; to preview PDF
+                            </p>
+                          </div>
+                        </div>
                       )}
-                      Compile
-                    </button>
-
-                    <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
-
-                    {/* Page navigation */}
-                    {pdfNumPages > 0 && (
-                      <>
-                        <button
-                          type="button"
-                          disabled={pdfPageNum <= 1}
-                          onClick={() => scrollToPage(pdfPageNum - 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
-                        >
-                          <ChevronLeft className="h-3.5 w-3.5" />
-                        </button>
-                        <span className="min-w-14 text-center text-xs text-slate-600 tabular-nums dark:text-slate-400">
-                          <span className="font-semibold text-[#1a6b4e] dark:text-[#4fc3a1]">
-                            {String(pdfPageNum).padStart(2, '0')}
-                          </span>{' '}
-                          of {String(pdfNumPages).padStart(2, '0')}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={pdfPageNum >= pdfNumPages}
-                          onClick={() => scrollToPage(pdfPageNum + 1)}
-                          className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white disabled:opacity-30 dark:text-slate-400 dark:hover:bg-[#333]"
-                        >
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </button>
-                        <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
-                      </>
-                    )}
-
-                    {/* Zoom controls */}
-                    {pdfUrl && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPdfZoom((z) => Math.max(50, z - 10))
-                          }
-                          className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="min-w-10 text-center text-[10px] text-slate-500 tabular-nums">
-                          {pdfZoom}%
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPdfZoom((z) => Math.min(200, z + 10))
-                          }
-                          className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                        <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!pdfUrl) return;
-                            const a = document.createElement('a');
-                            a.href = pdfUrl;
-                            a.download = `${paperTitle || 'combined'}.pdf`;
-                            a.click();
-                          }}
-                          className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCopyContent}
-                          className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* PDF content area */}
-                  <div
-                    ref={pdfScrollContainerRef}
-                    className="flex-1 overflow-auto"
-                  >
-                    {isCompiling ? (
-                      <div className="flex h-full items-center justify-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <Loader2 className="size-8 animate-spin text-[#2f6b5b]" />
-                          <span className="text-sm text-slate-500">
-                            Compiling…
-                          </span>
-                        </div>
-                      </div>
-                    ) : compileError ? (
-                      <div className="flex h-full items-center justify-center">
-                        <div className="flex flex-col items-center gap-2 py-16 text-center">
-                          <p className="text-sm font-medium text-red-500">
-                            LaTeX compilation failed
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            Please check the required packages and LaTeX
-                            commands, then click Compile again.
-                          </p>
-                        </div>
-                      </div>
-                    ) : pdfUrl ? (
-                      <div className="flex flex-col items-center gap-6 p-4">
-                        <Document
-                          file={pdfUrl}
-                          onLoadSuccess={({ numPages }) => {
-                            setPdfNumPages(numPages);
-                            setPdfPageNum(1);
-                          }}
-                          loading={
-                            <div className="flex items-center justify-center py-20">
-                              <Loader2 className="size-6 animate-spin text-slate-400" />
-                            </div>
-                          }
-                        >
-                          {Array.from({ length: pdfNumPages }, (_, i) => (
-                            <div
-                              key={i + 1}
-                              ref={(el) => {
-                                pdfPageRefs.current[i] = el;
-                              }}
-                              className="mb-6 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
-                            >
-                              <Page
-                                pageNumber={i + 1}
-                                width={
-                                  pdfContainerWidth > 0
-                                    ? (pdfContainerWidth - 32) * (pdfZoom / 100)
-                                    : undefined
-                                }
-                                renderTextLayer
-                                renderAnnotationLayer
-                              />
-                            </div>
-                          ))}
-                        </Document>
-                      </div>
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <div className="flex flex-col items-center gap-3 text-center">
-                          <Eye className="size-10 text-slate-300 dark:text-slate-600" />
-                          <p className="text-sm text-slate-500">
-                            Click &ldquo;Compile&rdquo; to preview PDF
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Save Changes confirmation dialog */}
+      <AlertDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              This content may have been generated with AI assistance and should
+              be reviewed carefully. By clicking &lsquo;Save&rsquo;, you accept
+              responsibility for the final content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!(combine.isSave ?? true)) handleSave();
+                else handleUpdate();
+              }}
+            >
+              Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save as PDF confirmation dialog */}
+      <AlertDialog
+        open={saveAsPdfDialogOpen}
+        onOpenChange={setSaveAsPdfDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save as PDF</AlertDialogTitle>
+            <AlertDialogDescription>
+              This content may have been generated with AI assistance and should
+              be reviewed carefully. By clicking &lsquo;Save&rsquo;, you accept
+              responsibility for the final content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => saveAsPdfMutation.mutate()}>
+              Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
