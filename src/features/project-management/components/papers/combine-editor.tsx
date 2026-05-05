@@ -1168,11 +1168,14 @@ export const CombineEditor = ({
                           </div>
                         </div>
                       ) : compileError ? (
-                        <div className="flex h-full items-center justify-center">
-                          <div className="flex flex-col items-center gap-2 py-16 text-center">
+                        <div className="flex h-full items-center justify-center p-4">
+                          <div className="flex max-w-md flex-col gap-3 text-center">
                             <p className="text-sm font-medium text-red-500">
                               LaTeX compilation failed
                             </p>
+                            <pre className="max-h-32 overflow-auto rounded bg-red-50 p-2 text-left text-xs whitespace-pre-wrap text-red-600 dark:bg-red-950/30 dark:text-red-400">
+                              {compileError}
+                            </pre>
                             <p className="text-xs text-slate-400">
                               Please check the required packages and LaTeX
                               commands, then click Compile again.
