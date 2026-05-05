@@ -853,6 +853,7 @@ const PickBestDialog = ({
 
   const versionsQuery = useMarkSection({
     markSectionId: open ? markSectionId : null,
+    queryConfig: { staleTime: 0 },
   });
   const allVersions = versionsQuery.data?.result?.items ?? [];
 

@@ -56,7 +56,7 @@ export const clientLoader =
 
 type StatusConfig = {
   text: string;
-  variant: 'draft' | 'active' | 'completed' | 'archived' | 'outline';
+  variant: 'draft' | 'success' | 'completed' | 'archived' | 'outline';
 };
 
 const STATUS_MAP: Record<number, StatusConfig> = {
@@ -66,7 +66,7 @@ const STATUS_MAP: Record<number, StatusConfig> = {
   },
   2: {
     text: 'Active',
-    variant: 'active',
+    variant: 'success',
   },
   3: {
     text: 'Completed',

@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
-import { QueryConfig } from '@/lib/react-query';
 
 import {
   PAPER_MANAGEMENT_API,
@@ -19,7 +18,10 @@ export const useMarkSection = ({
   queryConfig,
 }: {
   markSectionId: string | null;
-  queryConfig?: QueryConfig<typeof getMarkSection>;
+  queryConfig?: Omit<
+    UseQueryOptions<GetMarkSectionApiResponse>,
+    'queryKey' | 'queryFn'
+  >;
 }) =>
   useQuery({
     queryKey: [PAPER_MANAGEMENT_QUERY_KEYS.MARK_SECTION, markSectionId],

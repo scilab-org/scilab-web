@@ -124,6 +124,14 @@ const Breadcrumb = () => {
         };
       }
 
+      // "details/<uuid>" → Project Detail breadcrumb linking to the full detail path
+      if (segment === 'details' && isIdLikeSegment(next)) {
+        return {
+          label: 'Project Detail',
+          path: '/' + arr.slice(0, index + 2).join('/'),
+        };
+      }
+
       // Handle UUID-like segments
       if (isIdLikeSegment(segment)) {
         const prev = arr[index - 1];
@@ -134,7 +142,7 @@ const Breadcrumb = () => {
           };
         }
         // Don't show detail label for ID segment, stop at preceding text
-        if (prev === 'papers' || prev === 'references') {
+        if (prev === 'papers' || prev === 'references' || prev === 'details') {
           return null;
         }
         return null;
