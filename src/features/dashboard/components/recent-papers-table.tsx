@@ -65,7 +65,7 @@ export const RecentPapersTable = ({ papers }: RecentPapersTableProps) => (
                     {paper.title}
                   </Link>
                 </TableCell>
-                <TableCell className="w-36 align-top text-right">
+                <TableCell className="w-36 text-right align-top">
                   <Badge variant="outline" className="text-xs">
                     {SUBMISSION_STATUS[paper.status ?? 1] ?? '—'}
                   </Badge>
