@@ -845,7 +845,9 @@ export const ProjectPaperDetailPage = ({
           queryKey: [TASK_MANAGEMENT_QUERY_KEYS.PAPER_TASKS, paperId],
         });
       },
-      onError: (error: any) => {
+      onError: (error: any, variables) => {
+        // DnD mutations handle their own error toast via the inline onError callback
+        if (dndMutatingRef.current.has(variables.id)) return;
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
           toast.error(

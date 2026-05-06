@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Send,
   MessageSquare,
@@ -644,8 +644,10 @@ export const EditorChatPanel = ({
     params: { Section: sectionTitle, PageSize: 100 },
     queryConfig: { enabled: !!sectionTitle },
   });
-  const checklistItems: CheckListItemDto[] =
-    checklistQuery.data?.result?.items?.flatMap((cl) => cl.items) ?? [];
+  const checklistItems: CheckListItemDto[] = useMemo(
+    () => checklistQuery.data?.result?.items?.flatMap((cl) => cl.items) ?? [],
+    [checklistQuery.data],
+  );
 
   // Fetch journal style: section → paperId → paper.journal (journalId) → journal.style
   const paperId = sectionQuery.data?.result?.paperId;
@@ -948,18 +950,18 @@ export const EditorChatPanel = ({
 
           {/* Ephemeral validation action bar — Fix All / Reject */}
           {pendingValidationDetail?.hasIssues && (
-            <div className="border-border shrink-0 border-t px-3 py-2 flex items-center justify-end gap-2">
+            <div className="border-border flex shrink-0 items-center justify-end gap-2 border-t px-3 py-2">
               <button
                 type="button"
                 onClick={() => setPendingValidationDetail(null)}
-                className="rounded px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                className="rounded px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
               >
                 Reject
               </button>
               <button
                 type="button"
                 onClick={() => handleFixAll(pendingValidationDetail)}
-                className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
+                className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
               >
                 Fix All
               </button>

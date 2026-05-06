@@ -131,7 +131,7 @@ export const CreateJournal = () => {
           {/* Name */}
           <div className="space-y-1.5">
             <label htmlFor="cj-name" className="text-sm font-medium">
-              Journal Name <span className="text-destructive">*</span>
+              Name <span className="text-destructive">*</span>
             </label>
             <Input
               id="cj-name"

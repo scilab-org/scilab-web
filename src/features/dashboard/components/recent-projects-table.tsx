@@ -66,7 +66,7 @@ export const RecentProjectsTable = ({ projects }: RecentProjectsTableProps) => (
                       {project.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="w-28 align-top text-right">
+                  <TableCell className="w-28 text-right align-top">
                     <Badge variant={status?.variant ?? 'outline'}>
                       {status?.label ?? project.status}
                     </Badge>

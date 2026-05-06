@@ -67,7 +67,12 @@ export type WritingPayload = {
   ruleset?: string;
   sectionContext?: string;
   // Validate-mode specific
-  checklistItems?: Array<{ id: string; name: string; rule: string; weight: number }>;
+  checklistItems?: Array<{
+    id: string;
+    name: string;
+    rule: string;
+    weight: number;
+  }>;
   journalStyle?: string;
 };
 
