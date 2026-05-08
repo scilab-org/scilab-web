@@ -5,16 +5,21 @@ import {
   AdminDashboard,
   AdminDashboardSkeleton,
   AdminDashboardError,
+  UserDashboard,
+  UserDashboardSkeleton,
 } from '@/features/dashboard';
+import { getUserGroups } from '@/lib/auth';
 
 const DashboardRoute = () => {
   const { data, isLoading, isError } = useDashboard();
+  const isAdmin = getUserGroups().includes('system:admin');
 
   const content = () => {
-    if (isLoading) return <AdminDashboardSkeleton />;
+    if (isLoading)
+      return isAdmin ? <AdminDashboardSkeleton /> : <UserDashboardSkeleton />;
     if (isError || !data) return <AdminDashboardError />;
     if (data.role === 'admin') return <AdminDashboard data={data} />;
-    return null;
+    return <UserDashboard data={data} />;
   };
 
   return (
