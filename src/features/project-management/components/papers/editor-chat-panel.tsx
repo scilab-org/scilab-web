@@ -334,14 +334,12 @@ const CompactMessageList = ({
 
 const SessionList = ({
   projectId,
-  sectionId,
   activeSessionId,
   onSelectSession,
   onNewChat,
   onSessionDeleted,
 }: {
   projectId: string;
-  sectionId?: string;
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
   onNewChat: () => void;
@@ -354,7 +352,7 @@ const SessionList = ({
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const sessionsQuery = useSessions({
-    params: { projectId, sectionId: sectionId, limit: 10, offset: 0 },
+    params: { projectId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
@@ -655,7 +653,7 @@ export const EditorChatPanel = ({
     paperId: paperId ?? '',
     queryConfig: { enabled: !!paperId },
   });
-  const journalId = writingPaperQuery.data?.result?.paper?.journal ?? undefined;
+  const journalId = writingPaperQuery.data?.result?.paper?.conferenceJournalId ?? undefined;
   const journalQuery = useJournal({
     journalId: journalId ?? '',
     queryConfig: { enabled: !!journalId },
@@ -681,7 +679,7 @@ export const EditorChatPanel = ({
 
   // Auto-select the most recent session when sessions load and none is active
   const sessionsQuery = useSessions({
-    params: { projectId, sectionId: sessionScopeId, limit: 10, offset: 0 },
+    params: { projectId, limit: 10, offset: 0 },
     queryConfig: { enabled: !!projectId },
   });
 
@@ -812,6 +810,7 @@ export const EditorChatPanel = ({
 
   const handleFixAll = useCallback(
     (detail: ValidationDetail) => {
+      if (!projectId) return;
       const lines = detail.issues.map((issue) => {
         const prefix =
           issue.stage === 'citation' && issue.citeKey
@@ -826,9 +825,38 @@ export const EditorChatPanel = ({
       const message = `[DIRECT CORRECTION]\nFix all validation issues:\n\n${lines.join('\n\n')}`;
       setPendingValidationDetail(null);
       setMode(CHAT_MODE.WRITE);
-      handleSend(message);
+      setPendingMessage(message);
+
+      const projectPaperIds = (
+        (projectPapersQuery.data as any)?.result?.items ?? []
+      ).map((p: { id: string }) => p.id);
+
+      sendMessageMutation.mutate({
+        sessionId: activeSessionId ?? undefined,
+        projectId,
+        message,
+        paperIds: projectPaperIds,
+        mode: 'write',
+        sectionId,
+        sectionTarget: sectionTitle,
+        writing: {
+          currentSection: sectionContent,
+          ruleset: ruleset || undefined,
+          sectionContext: sectionContext || undefined,
+        },
+      });
     },
-    [handleSend],
+    [
+      projectId,
+      sectionId,
+      sectionTitle,
+      sectionContent,
+      ruleset,
+      sectionContext,
+      activeSessionId,
+      sendMessageMutation,
+      projectPapersQuery.data,
+    ],
   );
 
   const handleQnASubmit = useCallback(
@@ -995,7 +1023,6 @@ export const EditorChatPanel = ({
       ) : (
         <SessionList
           projectId={projectId}
-          sectionId={sessionScopeId}
           activeSessionId={activeSessionId}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}
