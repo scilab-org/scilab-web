@@ -41,6 +41,8 @@ import { useLogout, useUser } from '@/lib/auth';
 import { cn } from '@/utils/cn';
 import { capitalize } from '@/utils/string-utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { useUserDetail } from '@/features/user-management/api/get-user';
 
 type SideNavigationItem = {
   name: string;
@@ -191,7 +193,12 @@ const Breadcrumb = () => {
 };
 
 const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
-  const { data: user } = useUser();
+  const { data: authUser } = useUser();
+  const { data: userDetail } = useUserDetail({
+    userId: authUser?.id ?? '',
+    queryConfig: { enabled: !!authUser?.id },
+  });
+  const user = userDetail?.result?.user ?? authUser;
 
   return (
     <div className="flex flex-col gap-3 overflow-hidden">
@@ -199,12 +206,12 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
         to={paths.app.profile.getHref()}
         className="hover:bg-sidebar-accent flex items-center gap-3 rounded-md p-1 transition-colors"
       >
-        <div className="bg-sidebar-accent flex size-8 shrink-0 items-center justify-center rounded-full">
-          <span className="text-sidebar-accent-foreground text-xs font-medium">
-            {user?.firstName?.[0]}
-            {user?.lastName?.[0]}
-          </span>
-        </div>
+        <UserAvatar
+          avatarUrl={userDetail?.result?.user?.avatarUrl}
+          firstName={user?.firstName}
+          size="sm"
+          className="shrink-0"
+        />
         <div className="grid flex-1 text-left text-sm leading-tight transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0">
           <span className="truncate font-semibold">
             {capitalize(user?.firstName ?? '')}{' '}
