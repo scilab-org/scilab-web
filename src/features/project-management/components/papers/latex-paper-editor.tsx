@@ -1365,6 +1365,8 @@ const InlineReferenceSectionEditor = ({
     PreviewReferencePaperBank[]
   >([]);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
+  // Track previous pendingReferencedPaperIds length to detect accept/reject transitions
+  const prevPendingIdsLengthRef = useRef(0);
 
   const togglePaperBank = useCallback((paperBankId: string) => {
     setSelectedPaperBankIds((prev) =>
@@ -1419,51 +1421,16 @@ const InlineReferenceSectionEditor = ({
     [inUseEditorHeight],
   );
 
-  // Fetch review data when switching to review tab
-  const loadReviewData = useCallback(async () => {
-    // TODO: replace with real logic (e.g. availablePaperBanks or otherReferences IDs)
-    const allIds = [
-      'bbf97430-1f65-4548-b776-cecb94669b7b',
-      '9d7fb1ae-1a4e-4e98-b2b1-33f5bda50a01',
-      '51133ee3-3dfe-46c0-bf38-6c61aaed3032',
-    ];
-    if (allIds.length === 0) {
-      setReviewReferenceContent('');
-      setReviewPaperBanks([]);
-      return;
-    }
-    setIsReviewLoading(true);
-    try {
-      const response = await previewSectionReference(allIds);
-      setReviewReferenceContent(response.result.referenceContent);
-      setReviewPaperBanks(response.result.paperBanks);
-    } catch {
-      setReviewReferenceContent('');
-      setReviewPaperBanks([]);
-      toast.error('Failed to load review references.');
-    } finally {
-      setIsReviewLoading(false);
-    }
-  }, []);
-
   const handleSwitchTab = useCallback(
     (tab: 'in-use' | 'review') => {
       setReferenceViewTab(tab);
       if (tab === 'review') {
-        void loadReviewData();
-        // Notify parent that compile should use review content
         onActiveReferenceContentChange?.(reviewReferenceContent);
       } else {
-        // Switch back to in-use: notify parent to use in-use content
         onActiveReferenceContentChange?.(usedReferenceContent);
       }
     },
-    [
-      loadReviewData,
-      reviewReferenceContent,
-      usedReferenceContent,
-      onActiveReferenceContentChange,
-    ],
+    [reviewReferenceContent, usedReferenceContent, onActiveReferenceContentChange],
   );
 
   // Notify parent whenever review reference content changes (after fetch)
@@ -1486,9 +1453,21 @@ const InlineReferenceSectionEditor = ({
 
   // When the writing LLM returns referenced paper IDs, auto-populate the
   // Preview tab and switch to it so the user can inspect before accepting.
+  // When IDs are cleared (accept/reject), reset the Preview tab to empty.
   useEffect(() => {
-    if (pendingReferencedPaperIds.length === 0) return;
+    if (pendingReferencedPaperIds.length === 0) {
+      // If we previously had IDs (i.e., accept/reject just happened), clear the Preview tab
+      if (prevPendingIdsLengthRef.current > 0) {
+        setReviewReferenceContent('');
+        setReviewPaperBanks([]);
+        setReferenceViewTab('in-use');
+        onActiveReferenceContentChange?.(usedReferenceContent);
+      }
+      prevPendingIdsLengthRef.current = 0;
+      return;
+    }
 
+    prevPendingIdsLengthRef.current = pendingReferencedPaperIds.length;
     let cancelled = false;
     setIsReviewLoading(true);
     setReferenceViewTab('review');
@@ -1514,7 +1493,7 @@ const InlineReferenceSectionEditor = ({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingReferencedPaperIds]);
+  }, [pendingReferencedPaperIds, onActiveReferenceContentChange, usedReferenceContent]);
 
   // Auto-select review paper bank IDs in update dialog
   const handleOpenUpdateDialog = useCallback(() => {

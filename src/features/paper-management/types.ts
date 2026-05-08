@@ -96,6 +96,7 @@ export type WritingPaperDto = {
   rule?: string | null;
   gapTypes: PaperGapTypeDto[];
   journal?: string | null;
+  conferenceJournalId?: string | null;
   styleName?: string | null;
   styleDescription?: string | null;
   styleRule?: string | null;
