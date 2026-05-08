@@ -69,8 +69,63 @@ export type AdminDashboardResponse = {
   recentPapers: RecentPaper[];
 };
 
+// ── User KPI types ────────────────────────────────────────────────────────────
+
+export type UserProjectKpis = {
+  total: number;
+  active: number;
+  byStatus: Record<string, number>;
+};
+
+export type UserTaskKpis = {
+  total: number;
+  byStatus: {
+    todo: number;
+    inProgress: number;
+    inReview: number;
+    completed: number;
+    closed: number;
+  };
+};
+
+export type UserPaperKpis = {
+  total: number;
+  bySubmissionStatus: Record<string, number>;
+};
+
+export type UserKpis = {
+  myProjects: UserProjectKpis;
+  myTasks: UserTaskKpis;
+  myPapers: UserPaperKpis;
+};
+
+export type UserRecentTask = {
+  id: string;
+  name: string;
+  taskType: number;
+  status: number;
+  paperId: string;
+  paperTitle: string;
+  nextReviewDate: string | null;
+  lastModifiedAt: string;
+};
+
+export type UserRecentPaper = {
+  id: string;
+  projectId: string | null;
+  title: string;
+  paperStatus: number | null;
+  submissionStatus: number | null;
+  conferenceJournalName: string | null;
+  conferenceJournalEndAt: string | null;
+  lastModifiedAt: string;
+};
+
 export type UserDashboardResponse = {
   role: 'user';
+  kpis: UserKpis;
+  myRecentTasks: UserRecentTask[];
+  myRecentPapers: UserRecentPaper[];
 };
 
 export type DashboardResponse = AdminDashboardResponse | UserDashboardResponse;

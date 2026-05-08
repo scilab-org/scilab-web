@@ -1,13 +1,18 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
 import { api } from '@/lib/api-client';
+import { getUserGroups } from '@/lib/auth';
 import { QueryConfig } from '@/lib/react-query';
 
 import { DASHBOARD_API, DASHBOARD_QUERY_KEYS } from '../constants';
 import { DashboardResponse } from '../types';
 
-const getDashboard = (): Promise<DashboardResponse> =>
-  api.get(DASHBOARD_API.DASHBOARD);
+const getDashboard = (): Promise<DashboardResponse> => {
+  const isAdmin = getUserGroups().includes('system:admin');
+  return api.get(
+    isAdmin ? DASHBOARD_API.ADMIN_DASHBOARD : DASHBOARD_API.USER_DASHBOARD,
+  );
+};
 
 export const getDashboardQueryOptions = () =>
   queryOptions({
