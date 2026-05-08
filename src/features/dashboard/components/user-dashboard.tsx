@@ -1,6 +1,9 @@
 import { UserDashboardResponse, UserKpis } from '../types';
 import { DonutChartCard, DonutChartCardSkeleton } from './donut-chart-card';
-import { RecentTasksTable, RecentTasksTableSkeleton } from './recent-tasks-table';
+import {
+  RecentTasksTable,
+  RecentTasksTableSkeleton,
+} from './recent-tasks-table';
 import {
   RecentUserPapersTable,
   RecentUserPapersTableSkeleton,

@@ -33,7 +33,6 @@ import {
   PanelLeftClose,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/utils/cn';
 
 import { compileLatex } from '@/features/paper-management/api/compile-latex';
 import { createPaperVersionFile } from '@/features/paper-management/api/create-paper-version-file';
@@ -56,6 +55,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { BTN } from '@/lib/button-styles';
 import { EditorChatPanel } from './editor-chat-panel';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -542,8 +543,8 @@ export const CombineEditor = ({
   const [content, setContent] = useState(combine.content ?? '');
   const [savedContent, setSavedContent] = useState(combine.content ?? '');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveAsPdfDialogOpen, setSaveAsPdfDialogOpen] = useState(false);
+  const [saveAsPdfConfirmText, setSaveAsPdfConfirmText] = useState('');
   const pdfUrlRef = useRef<string | null>(null);
   const [pdfPageNum, setPdfPageNum] = useState(1);
   const [pdfNumPages, setPdfNumPages] = useState(0);
@@ -917,28 +918,18 @@ export const CombineEditor = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {/* Saved / Unsaved indicator */}
-                    <span
-                      className={cn(
-                        'text-[10px] font-medium',
-                        hasChanges ? 'text-orange-500' : 'text-emerald-500',
-                      )}
-                    >
-                      {hasChanges ? 'Unsaved changes' : 'Saved'}
-                    </span>
-
-                    {/* isSave=false: Save button (POST isPreview=false → return to detail) */}
+                    {/* isSave=false: Save button */}
                     {isAuthor && !(combine.isSave ?? true) && (
                       <button
                         type="button"
-                        className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
-                        onClick={() => setSaveDialogOpen(true)}
+                        className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${BTN.CREATE}`}
+                        onClick={handleSave}
                         disabled={saveMutation.isPending}
                       >
                         {saveMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4" />
+                          <Save className="h-3 w-3" />
                         )}
                         {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
                       </button>
@@ -956,56 +947,22 @@ export const CombineEditor = ({
                       </button>
                     )}
 
-                    {/* isSave=true, edit mode: Cancel + Update */}
+                    {/* isSave=true, edit mode: Save Changes */}
                     {isAuthor && (combine.isSave ?? true) && isEditMode && (
-                      <>
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                          onClick={() => {
-                            setContent(savedContent);
-                            setIsEditMode(false);
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 rounded-lg bg-[#630f0f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#4f0c0c] disabled:opacity-50"
-                          onClick={() => setSaveDialogOpen(true)}
-                          disabled={updateMutation.isPending || !hasChanges}
-                        >
-                          {updateMutation.isPending ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Save className="h-3.5 w-3.5" />
-                          )}
-                          {updateMutation.isPending
-                            ? 'Saving…'
-                            : 'Save Changes'}
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${BTN.CREATE}`}
+                        onClick={handleUpdate}
+                        disabled={updateMutation.isPending || !hasChanges}
+                      >
+                        {updateMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Save className="h-3 w-3" />
+                        )}
+                        {updateMutation.isPending ? 'Saving…' : 'Save Changes'}
+                      </button>
                     )}
-
-                    {/* Save as PDF */}
-                    <button
-                      type="button"
-                      disabled={!pdfUrl || saveAsPdfMutation.isPending}
-                      title={
-                        pdfUrl
-                          ? 'Save compiled PDF to version files'
-                          : 'Compile first to enable'
-                      }
-                      onClick={() => setSaveAsPdfDialogOpen(true)}
-                      className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-                    >
-                      {saveAsPdfMutation.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Download className="h-3 w-3" />
-                      )}
-                      Save as PDF
-                    </button>
                   </div>
                 </div>
               </div>
@@ -1131,13 +1088,7 @@ export const CombineEditor = ({
                           <div className="h-4 w-px bg-[#d0d0ce] dark:bg-[#3a3a3a]" />
                           <button
                             type="button"
-                            onClick={() => {
-                              if (!pdfUrl) return;
-                              const a = document.createElement('a');
-                              a.href = pdfUrl;
-                              a.download = `${paperTitle || 'combined'}.pdf`;
-                              a.click();
-                            }}
+                            onClick={() => setSaveAsPdfDialogOpen(true)}
                             className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-[#333]"
                           >
                             <Download className="h-3.5 w-3.5" />
@@ -1238,48 +1189,40 @@ export const CombineEditor = ({
         </div>
       </div>
 
-      {/* Save Changes confirmation dialog */}
-      <AlertDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Save Changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              This content may have been generated with AI assistance and should
-              be reviewed carefully. By clicking &lsquo;Save&rsquo;, you accept
-              responsibility for the final content.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (!(combine.isSave ?? true)) handleSave();
-                else handleUpdate();
-              }}
-            >
-              Save
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Save as PDF confirmation dialog */}
       <AlertDialog
         open={saveAsPdfDialogOpen}
-        onOpenChange={setSaveAsPdfDialogOpen}
+        onOpenChange={(open) => {
+          setSaveAsPdfDialogOpen(open);
+          if (!open) setSaveAsPdfConfirmText('');
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Save as PDF</AlertDialogTitle>
             <AlertDialogDescription>
               This content may have been generated with AI assistance and should
-              be reviewed carefully. By clicking &lsquo;Save&rsquo;, you accept
-              responsibility for the final content.
+              be reviewed carefully. By saving, you accept responsibility for
+              the final content. Type{' '}
+              <span className="font-mono font-semibold">CONFIRM</span> to
+              proceed.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <Input
+            className="mt-1"
+            placeholder="Type CONFIRM to enable Save"
+            value={saveAsPdfConfirmText}
+            onChange={(e) => setSaveAsPdfConfirmText(e.target.value)}
+          />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => saveAsPdfMutation.mutate()}>
+            <AlertDialogAction
+              disabled={saveAsPdfConfirmText !== 'CONFIRM'}
+              onClick={() => {
+                saveAsPdfMutation.mutate();
+                setSaveAsPdfConfirmText('');
+              }}
+            >
               Save
             </AlertDialogAction>
           </AlertDialogFooter>

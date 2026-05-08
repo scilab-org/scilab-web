@@ -1430,7 +1430,11 @@ const InlineReferenceSectionEditor = ({
         onActiveReferenceContentChange?.(usedReferenceContent);
       }
     },
-    [reviewReferenceContent, usedReferenceContent, onActiveReferenceContentChange],
+    [
+      reviewReferenceContent,
+      usedReferenceContent,
+      onActiveReferenceContentChange,
+    ],
   );
 
   // Notify parent whenever review reference content changes (after fetch)
@@ -1493,7 +1497,11 @@ const InlineReferenceSectionEditor = ({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingReferencedPaperIds, onActiveReferenceContentChange, usedReferenceContent]);
+  }, [
+    pendingReferencedPaperIds,
+    onActiveReferenceContentChange,
+    usedReferenceContent,
+  ]);
 
   // Auto-select review paper bank IDs in update dialog
   const handleOpenUpdateDialog = useCallback(() => {

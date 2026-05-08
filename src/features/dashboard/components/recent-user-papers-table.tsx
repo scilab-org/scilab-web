@@ -30,7 +30,9 @@ type RecentUserPapersTableProps = {
   papers: UserRecentPaper[];
 };
 
-export const RecentUserPapersTable = ({ papers }: RecentUserPapersTableProps) => (
+export const RecentUserPapersTable = ({
+  papers,
+}: RecentUserPapersTableProps) => (
   <Card className="gap-0">
     <CardHeader className="flex-row items-center justify-between border-b px-5 pt-5 pb-4">
       <CardTitle className="text-sm font-medium">Recent Papers</CardTitle>
@@ -74,7 +76,7 @@ export const RecentUserPapersTable = ({ papers }: RecentUserPapersTableProps) =>
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="w-36 align-top text-right">
+                <TableCell className="w-36 text-right align-top">
                   <Badge variant="outline" className="text-xs">
                     {SUBMISSION_STATUS[paper.submissionStatus ?? 1] ?? '—'}
                   </Badge>

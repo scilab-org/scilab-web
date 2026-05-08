@@ -428,6 +428,8 @@ export const ProjectPaperDetailPage = ({
   const [viewingAuthor, setViewingAuthor] =
     useState<PaperContributorItem | null>(null);
   const [viewingVersionId, setViewingVersionId] = useState<string | null>(null);
+  const [viewingPdfUrl, setViewingPdfUrl] = useState<string | null>(null);
+  const [viewPdfConfirmText, setViewPdfConfirmText] = useState('');
   const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<
     string | null
   >(null);
@@ -3667,14 +3669,12 @@ export const ProjectPaperDetailPage = ({
                                   : '—'}
                               </TableCell>
                               <TableCell className="text-center">
-                                <Button variant="action" size="action" asChild>
-                                  <a
-                                    href={file.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    View PDF
-                                  </a>
+                                <Button
+                                  variant="action"
+                                  size="action"
+                                  onClick={() => setViewingPdfUrl(file.fileUrl)}
+                                >
+                                  View PDF
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -4033,6 +4033,50 @@ export const ProjectPaperDetailPage = ({
           if (!open) setViewingAuthor(null);
         }}
       />
+
+      {/* ── View PDF Confirm ─────────────────────────────────── */}
+      <AlertDialog
+        open={!!viewingPdfUrl}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingPdfUrl(null);
+            setViewPdfConfirmText('');
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Open PDF</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will open the compiled PDF in a new tab. The file was
+              generated from the combine editor and saved to cloud storage. Type{' '}
+              <span className="font-mono font-semibold">CONFIRM</span> to
+              proceed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            className="mt-1"
+            placeholder="Type CONFIRM to enable Open"
+            value={viewPdfConfirmText}
+            onChange={(e) => setViewPdfConfirmText(e.target.value)}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel className={BTN.CANCEL}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={BTN.CREATE}
+              disabled={viewPdfConfirmText !== 'CONFIRM'}
+              onClick={() => {
+                if (viewingPdfUrl)
+                  window.open(viewingPdfUrl, '_blank', 'noopener,noreferrer');
+                setViewingPdfUrl(null);
+                setViewPdfConfirmText('');
+              }}
+            >
+              Open
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ContentLayout>
   );
 };

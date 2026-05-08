@@ -144,7 +144,9 @@ export const ProfileView = () => {
           <div className="space-y-4">
             <div>
               <p className={fieldLabel}>Role</p>
-              <p className="mt-1 text-base font-medium">{primaryRole}</p>
+              <p className="mt-1 text-base font-medium">
+                {primaryRole === 'Administrator' ? 'Administrator' : 'User'}
+              </p>
             </div>
             <div>
               <p className={fieldLabel}>Username</p>

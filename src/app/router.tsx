@@ -9,7 +9,7 @@ import { ProtectedRoute, PublicRoute, AdminRoute, useUser } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
 const SmartRedirect = () => {
-  const { data: user, isLoading } = useUser();
+  const { isLoading } = useUser();
   if (isLoading) return null;
   return <Navigate to={paths.app.dashboard.getHref()} replace />;
 };

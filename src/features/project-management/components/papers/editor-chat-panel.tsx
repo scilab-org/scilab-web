@@ -653,7 +653,8 @@ export const EditorChatPanel = ({
     paperId: paperId ?? '',
     queryConfig: { enabled: !!paperId },
   });
-  const journalId = writingPaperQuery.data?.result?.paper?.conferenceJournalId ?? undefined;
+  const journalId =
+    writingPaperQuery.data?.result?.paper?.conferenceJournalId ?? undefined;
   const journalQuery = useJournal({
     journalId: journalId ?? '',
     queryConfig: { enabled: !!journalId },

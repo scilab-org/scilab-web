@@ -192,10 +192,6 @@ const Breadcrumb = () => {
 
 const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
   const { data: user } = useUser();
-  const isAdmin = user?.groups?.includes('system:admin') ?? false;
-  const roleLabel = isAdmin
-    ? 'Administrator'
-    : (user?.groups?.[0]?.split(':').pop() ?? 'Member');
 
   return (
     <div className="flex flex-col gap-3 overflow-hidden">
@@ -213,9 +209,6 @@ const UserProfile = ({ onLogout }: { onLogout: () => void }) => {
           <span className="truncate font-semibold">
             {capitalize(user?.firstName ?? '')}{' '}
             {capitalize(user?.lastName ?? '')}
-          </span>
-          <span className="text-sidebar-foreground/70 truncate text-xs">
-            {roleLabel}
           </span>
         </div>
       </NavLink>
