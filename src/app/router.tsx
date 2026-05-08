@@ -6,21 +6,12 @@ import { RouterProvider } from 'react-router/dom';
 import { Navigate, Outlet } from 'react-router';
 
 import { ProtectedRoute, PublicRoute, AdminRoute, useUser } from '@/lib/auth';
-import { getUserGroups } from '@/lib/auth';
 import { paths } from '@/config/paths';
 
 const SmartRedirect = () => {
   const { data: user, isLoading } = useUser();
   if (isLoading) return null;
-  const isAdmin =
-    user?.groups?.includes('system:admin') ??
-    getUserGroups().includes('system:admin');
-  return (
-    <Navigate
-      to={isAdmin ? paths.app.dashboard.getHref() : paths.app.myTasks.getHref()}
-      replace
-    />
-  );
+  return <Navigate to={paths.app.dashboard.getHref()} replace />;
 };
 
 import {
