@@ -126,10 +126,10 @@ export const PaperMembersDialog = ({
 
   const dialogTitle = isManager
     ? 'Add Head Writer to Paper'
-    : 'Add Contributor to Paper';
+    : 'Add Member to Paper';
   const dialogDesc = isManager
     ? 'Select project head writers to add'
-    : 'Select project contributors to add';
+    : 'Select project members to add';
 
   return (
     <Dialog
@@ -239,8 +239,8 @@ export const PaperMembersDialog = ({
                   <div className="bg-muted/30 rounded-xl py-10 text-center">
                     <p className="text-muted-foreground text-sm">
                       {searchText
-                        ? `No ${isManager ? 'authors' : 'contributors'} found for "${searchText}"`
-                        : `No available ${isManager ? 'authors' : 'contributors'} in this project`}
+                        ? `No ${isManager ? 'authors' : 'members'} found for "${searchText}"`
+                        : `No available ${isManager ? 'authors' : 'members'} in this project`}
                     </p>
                   </div>
                 )}
@@ -249,7 +249,7 @@ export const PaperMembersDialog = ({
           ) : (
             <div className="bg-muted/30 rounded-xl py-10 text-center">
               <p className="text-muted-foreground text-sm">
-                You do not have permission to add contributors.
+                You do not have permission to add members.
               </p>
             </div>
           )}

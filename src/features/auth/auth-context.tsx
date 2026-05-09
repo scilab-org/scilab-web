@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { User } from '@/types/api';
 
 import { authService } from './auth-service';
@@ -77,6 +79,7 @@ export const useAuthContext = (): AuthContextValue => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const queryClient = useQueryClient();
 
   // Restore session from stored refresh token on mount
   React.useEffect(() => {
@@ -110,8 +113,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = React.useCallback(() => {
     authService.logout();
+    queryClient.clear();
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout }}>
