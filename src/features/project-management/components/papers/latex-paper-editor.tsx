@@ -612,7 +612,7 @@ const SectionVersionsPanel = ({
   if (items.length === 0) {
     return (
       <div className="bg-editor-bg flex items-center justify-center rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
-        No contributor versions found.
+        No writer versions found.
       </div>
     );
   }
@@ -1496,7 +1496,6 @@ const InlineReferenceSectionEditor = ({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     pendingReferencedPaperIds,
     onActiveReferenceContentChange,
@@ -4286,8 +4285,12 @@ export const LatexPaperEditor = ({
       // Release the lock AFTER all state updates are committed.
       // Use a microtask to ensure React has flushed the batched state updates
       // before any effect can run with stale data.
+      // Bump the in-use reload key HERE (inside the microtask, after the lock
+      // is released) so that loadInUseReferences runs with saveInProgressRef
+      // already false — otherwise the effect bails out due to the guard check.
       queueMicrotask(() => {
         saveInProgressRef.current = false;
+        setInUseReferenceReloadKey((prev) => prev + 1);
       });
 
       onSave?.(contentToSave, latestSectionId);
@@ -4311,6 +4314,7 @@ export const LatexPaperEditor = ({
     localPackages,
     localRefPackages,
     pendingReferencedPaperIds,
+    setInUseReferenceReloadKey,
   ]);
 
   const handleClose = useCallback(() => {

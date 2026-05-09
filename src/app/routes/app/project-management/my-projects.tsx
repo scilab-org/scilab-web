@@ -148,7 +148,7 @@ const MyProjectsRoute = () => {
       <Head title="Assigned Projects" />
       <ContentLayout
         title="Assigned Projects"
-        description="Research projects you are a contributor to"
+        description="Research projects assigned to you"
       >
         <form
           onSubmit={handleApply}

@@ -34,13 +34,13 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       }
     >
       <ErrorBoundary FallbackComponent={MainErrorFallback}>
-        <AuthProvider>
-          <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
             <Toaster position="top-right" richColors />
             {shouldShowQueryDevtools && <ReactQueryDevtools />}
             {children}
-          </QueryClientProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </QueryClientProvider>
       </ErrorBoundary>
     </React.Suspense>
   );

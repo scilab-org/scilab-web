@@ -32,6 +32,21 @@ export const useDeleteProject = ({
       toast.success('Project deleted successfully');
       onSuccess?.(...args);
     },
+    onError: (error: unknown) => {
+      const axiosError = error as {
+        response?: { data?: { errors?: { errorMessage?: string }[] } };
+      };
+      const errorMessage =
+        axiosError?.response?.data?.errors?.[0]?.errorMessage;
+
+      if (errorMessage === 'PROJECT_HAS_PAPER') {
+        toast.error(
+          'Cannot delete this project because it still has papers associated with it. Please remove all papers first.',
+        );
+      } else {
+        toast.error('Failed to delete project. Please try again.');
+      }
+    },
     ...restConfig,
     mutationFn: deleteProject,
   });
