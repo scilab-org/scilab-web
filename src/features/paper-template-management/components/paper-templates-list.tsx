@@ -79,7 +79,7 @@ export const PaperTemplatesList = () => {
                 <TableCell>
                   <Badge variant="outline">{template.code}</Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
+                <TableCell className="text-muted-foreground max-w-0 truncate text-sm">
                   {template.description || '—'}
                 </TableCell>
                 <TableCell className="text-center">

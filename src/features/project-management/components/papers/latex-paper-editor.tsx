@@ -1318,6 +1318,7 @@ const InlineReferenceSectionEditor = ({
   onSaveSectionContent,
   isSavingSectionContent = false,
   pendingReferencedPaperIds = [],
+  onRefreshInUse,
 }: {
   content: string;
   canEdit: boolean;
@@ -1342,6 +1343,8 @@ const InlineReferenceSectionEditor = ({
   isSavingSectionContent?: boolean;
   /** Paper IDs returned by the writing LLM — auto-populates the Preview tab. */
   pendingReferencedPaperIds?: string[];
+  /** Called when the user clicks the In Use tab — triggers a fresh API fetch. */
+  onRefreshInUse?: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -1428,12 +1431,14 @@ const InlineReferenceSectionEditor = ({
         onActiveReferenceContentChange?.(reviewReferenceContent);
       } else {
         onActiveReferenceContentChange?.(usedReferenceContent);
+        onRefreshInUse?.();
       }
     },
     [
       reviewReferenceContent,
       usedReferenceContent,
       onActiveReferenceContentChange,
+      onRefreshInUse,
     ],
   );
 
@@ -3925,7 +3930,46 @@ export const LatexPaperEditor = ({
   // a forward-declaration issue.
   handleUpdateSectionReferenceRef.current = handleUpdateSectionReference;
 
-  // Auto-render on first mount with the initial section content
+  // Refresh in-use reference data on demand (e.g. when user clicks the In Use tab).
+  // Resolves the latest section ID the same way as handleUpdateSectionReference —
+  // with forceFresh so cached assigned-sections data is bypassed.
+  const handleRefreshInUse = useCallback(async () => {
+    const section = activeSectionRef.current;
+    if (!section) return;
+
+    const markSectionId = (section.markSectionId || section.id).trim();
+
+    const sectionIdToFetch =
+      (await resolveLatestSectionIdFromAssignedSections(
+        markSectionId,
+        section,
+        { forceFresh: true },
+      )) ||
+      resolvedActiveSectionId ||
+      section.id;
+
+    setIsInUseReferenceLoading(true);
+    setInUseReferenceContent('');
+    setInUsePaperBanks([]);
+    try {
+      const data = await getSectionReferenceInUseForEditor(sectionIdToFetch);
+      setResolvedActiveSectionId(sectionIdToFetch);
+      setInUseReferenceContent(data.referenceContent);
+      setInUsePaperBanks(data.paperBanks);
+    } catch {
+      setInUseReferenceContent('');
+      setInUsePaperBanks([]);
+    } finally {
+      setIsInUseReferenceLoading(false);
+    }
+  }, [
+    resolveLatestSectionIdFromAssignedSections,
+    resolvedActiveSectionId,
+    setResolvedActiveSectionId,
+    setInUsePaperBanks,
+    setInUseReferenceContent,
+  ]);
+
   const hasRenderedOnce = useRef(false);
   useEffect(() => {
     if (!hasRenderedOnce.current) {
@@ -4282,15 +4326,33 @@ export const LatexPaperEditor = ({
         setPendingReferencedPaperIds([]);
       }
 
-      // Release the lock AFTER all state updates are committed.
-      // Use a microtask to ensure React has flushed the batched state updates
-      // before any effect can run with stale data.
-      // Bump the in-use reload key HERE (inside the microtask, after the lock
-      // is released) so that loadInUseReferences runs with saveInProgressRef
-      // already false — otherwise the effect bails out due to the guard check.
+      // Directly fetch in-use references with the confirmed post-save section ID.
+      // This is more reliable than bumping inUseReferenceReloadKey and letting
+      // the effect re-resolve the ID — on the first save, assigned-sections may
+      // not yet contain the new section ID, causing the effect to use a wrong ID.
+      // Keep saveInProgressRef = true during the fetch so the loadInUseReferences
+      // effect (which will fire because activeSectionId changed) bails out and
+      // doesn't run a concurrent fetch with a potentially stale ID.
+      setIsInUseReferenceLoading(true);
+      setInUseReferenceContent('');
+      setInUsePaperBanks([]);
+      try {
+        const inUseData =
+          await getSectionReferenceInUseForEditor(latestSectionId);
+        setInUseReferenceContent(inUseData.referenceContent);
+        setInUsePaperBanks(inUseData.paperBanks);
+      } catch {
+        setInUseReferenceContent('');
+        setInUsePaperBanks([]);
+      } finally {
+        setIsInUseReferenceLoading(false);
+      }
+
+      // Release the lock AFTER all state updates (including the in-use fetch)
+      // are committed. Use a microtask to ensure React has flushed batched
+      // state updates before any effect can run with stale data.
       queueMicrotask(() => {
         saveInProgressRef.current = false;
-        setInUseReferenceReloadKey((prev) => prev + 1);
       });
 
       onSave?.(contentToSave, latestSectionId);
@@ -4314,7 +4376,6 @@ export const LatexPaperEditor = ({
     localPackages,
     localRefPackages,
     pendingReferencedPaperIds,
-    setInUseReferenceReloadKey,
   ]);
 
   const handleClose = useCallback(() => {
@@ -5379,6 +5440,7 @@ export const LatexPaperEditor = ({
                     onSaveSectionContent={handleSave}
                     isSavingSectionContent={updateSectionMutation.isPending}
                     pendingReferencedPaperIds={pendingReferencedPaperIds}
+                    onRefreshInUse={handleRefreshInUse}
                   />
                 )}
 
